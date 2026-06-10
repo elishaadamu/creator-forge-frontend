@@ -1,0 +1,665 @@
+import { useState, useEffect } from 'react'
+import {
+  Users, Database, Shield, ShieldCheck, ShieldAlert,
+  Trash2, RefreshCw, Key, Settings, AlertTriangle, Loader2,
+  Mail, Activity, Eye, EyeOff, Save, X, Play, Search, EyeIcon
+} from 'lucide-react'
+
+export default function AdminControl() {
+  const [users, setUsers] = useState([])
+  const [stats, setStats] = useState(null)
+  const [sysSettings, setSysSettings] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [deletingUser, setDeletingUser] = useState(null) // holds username to delete
+  const [confirmDeleteText, setConfirmDeleteText] = useState('')
+  const [actionLoading, setActionLoading] = useState(false)
+
+  // Edit settings form states
+  const [isEditingSettings, setIsEditingSettings] = useState(false)
+  const [editApifyKey, setEditApifyKey] = useState('')
+  const [editAnthropicKey, setEditAnthropicKey] = useState('')
+  const [editSendGridKey, setEditSendGridKey] = useState('')
+  const [editFromEmail, setEditFromEmail] = useState('')
+  const [editFromName, setEditFromName] = useState('')
+
+  const [showEditApify, setShowEditApify] = useState(false)
+  const [showEditAnthropic, setShowEditAnthropic] = useState(false)
+  const [showEditSendGrid, setShowEditSendGrid] = useState(false)
+
+  // System utility scripts states
+  const [utilityLoading, setUtilityLoading] = useState(false)
+  const [repairResult, setRepairResult] = useState(null)
+
+  // Audit Logs states
+  const [auditLogs, setAuditLogs] = useState([])
+  const [logSearchQuery, setLogSearchQuery] = useState('')
+  const [expandedLogId, setExpandedLogId] = useState(null)
+
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      // 1. Fetch registered users
+      const usersRes = await fetch('/api/admin/users')
+      const usersData = await usersRes.json()
+      if (usersData.status === 'success') {
+        setUsers(usersData.users || [])
+      }
+
+      // 2. Fetch system/database stats
+      const statsRes = await fetch('/api/admin/system-stats')
+      const statsData = await statsRes.json()
+      if (statsData.status === 'success') {
+        setStats(statsData)
+      }
+
+      // 3. Fetch global system settings (API keys)
+      const settingsRes = await fetch('/api/settings')
+      const settingsData = await settingsRes.json()
+      setSysSettings(settingsData)
+
+      // Initialize edit fields
+      setEditApifyKey(settingsData.apify_api_key || '')
+      setEditAnthropicKey(settingsData.anthropic_api_key || '')
+      setEditSendGridKey(settingsData.sendgrid_api_key || '')
+      setEditFromEmail(settingsData.from_email || '')
+      setEditFromName(settingsData.from_name || '')
+
+      // 4. Fetch recent activity audit logs
+      const logsRes = await fetch('/api/audit/logs?limit=25')
+      if (logsRes.ok) {
+        const logsData = await logsRes.json()
+        setAuditLogs(logsData || [])
+      }
+
+    } catch (e) {
+      console.error('Failed to load admin control data:', e)
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const handleDeleteUser = async () => {
+    if (confirmDeleteText !== deletingUser) return
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(deletingUser)}`, {
+        method: 'DELETE'
+      })
+      const data = await res.json()
+      if (data.status === 'success') {
+        setDeletingUser(null)
+        setConfirmDeleteText('')
+        loadData()
+      }
+    } catch (e) {
+      console.error('Failed to delete user:', e)
+    }
+    setActionLoading(false)
+  }
+
+  const handleSaveSettings = async () => {
+    setActionLoading(true)
+    const payload = {}
+
+    // Only send key to update if the user has changed it from its masked bullet string
+    if (editApifyKey && !editApifyKey.startsWith('•')) {
+      payload.apify_api_key = editApifyKey
+    }
+    if (editAnthropicKey && !editAnthropicKey.startsWith('•')) {
+      payload.anthropic_api_key = editAnthropicKey
+    }
+    if (editSendGridKey && !editSendGridKey.startsWith('•')) {
+      payload.sendgrid_api_key = editSendGridKey
+    }
+
+    payload.from_email = editFromEmail
+    payload.from_name = editFromName
+
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (res.ok) {
+        setIsEditingSettings(false)
+        await loadData()
+      } else {
+        const errData = await res.json()
+        alert('Failed to save settings: ' + (errData?.detail || 'Unknown error'))
+      }
+    } catch (e) {
+      console.error('Failed to save global configurations:', e)
+      alert('Network error while saving settings.')
+    }
+    setActionLoading(false)
+  }
+
+  const runAvatarRepair = async () => {
+    setUtilityLoading(true)
+    setRepairResult(null)
+    try {
+      const res = await fetch('/api/admin/fix-avatars', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setRepairResult(data.fixed ?? 0)
+        // Refresh stats since some records changed
+        const statsRes = await fetch('/api/admin/system-stats')
+        const statsData = await statsRes.json()
+        if (statsData.status === 'success') setStats(statsData)
+      }
+    } catch (e) {
+      console.error('Failed to execute avatar repair:', e)
+    }
+    setUtilityLoading(false)
+  }
+
+  // Filter logs based on search query
+  const filteredLogs = auditLogs.filter(log => {
+    if (!logSearchQuery) return true
+    const q = logSearchQuery.toLowerCase()
+    return (
+      (log.action && log.action.toLowerCase().includes(q)) ||
+      (log.entity_type && log.entity_type.toLowerCase().includes(q)) ||
+      (log.actor && log.actor.toLowerCase().includes(q))
+    )
+  })
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="animate-spin text-white/40 mb-3" size={24} />
+        <p className="text-[13px] text-white/40">Loading admin control panel…</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-[18px] font-bold text-white">System Admin Control</h2>
+          <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            Manage user accounts, database state, global configuration keys, and execution events.
+          </p>
+        </div>
+        <button
+          onClick={loadData}
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-white/5 hover:bg-white/12 text-white/50 hover:text-white"
+        >
+          <RefreshCw size={13} />
+        </button>
+      </div>
+
+      {/* Stats Cards (expanded to 8 counts) */}
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: 'Database Size', value: stats?.db_size || '0.0 KB', icon: Database, color: '#3b82f6' },
+          { label: 'Registered Users', value: stats?.users_count ?? 0, icon: Users, color: '#10b981' },
+          { label: 'Active Campaigns', value: stats?.campaigns_count ?? 0, icon: Settings, color: '#6366f1' },
+          { label: 'Outreach Messages', value: stats?.outreach_count ?? 0, icon: Mail, color: '#ec4899' },
+          { label: 'Creators Scraped', value: stats?.creators_count ?? 0, icon: ShieldCheck, color: '#a78bfa' },
+          { label: 'AI Product Recs', value: stats?.recs_count ?? 0, icon: Key, color: '#f59e0b' },
+          { label: 'Suppressed Contacts', value: stats?.suppression_count ?? 0, icon: ShieldAlert, color: '#ef4444' },
+          { label: 'System Audit Logs', value: stats?.audit_logs_count ?? 0, icon: Activity, color: '#06b6d4' },
+        ].map((card, idx) => {
+          const Icon = card.icon
+          return (
+            <div key={idx} className="rounded-2xl border p-4 flex items-center gap-4" style={{ background: '#0a0a0a', borderColor: 'rgba(255,255,255,0.06)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${card.color}15`, color: card.color }}>
+                <Icon size={18} />
+              </div>
+              <div>
+                <p className="text-[11px] text-white/40 font-medium">{card.label}</p>
+                <p className="text-[18px] font-bold text-white mt-0.5">{card.value}</p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* User Accounts list */}
+      <div className="rounded-2xl border" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}>
+        <div className="px-5 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <h3 className="text-[14px] font-bold text-white">Registered User Accounts</h3>
+          <p className="text-[11px] text-white/40 mt-0.5">Operators registered to use the dashboard console.</p>
+        </div>
+
+        <table className="w-full text-left" style={{ borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ background: '#0e0e0e', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              {['Username', 'Email', 'Active Session Creator', 'AI Keys Consented', 'Registered Date', 'Actions'].map(h => (
+                <th key={h} className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-white/30">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {users.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-10 text-[13px] text-white/30">
+                  No user accounts registered yet.
+                </td>
+              </tr>
+            ) : (
+              users.map(u => (
+                <tr key={u.username} className="border-b hover:bg-white/[0.01]" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                  {/* Username */}
+                  <td className="px-5 py-3.5 text-[13px] font-semibold text-white">
+                    {u.username}
+                  </td>
+                  {/* Email */}
+                  <td className="px-5 py-3.5 text-[13px] text-white/70">
+                    {u.email}
+                  </td>
+                  {/* Active Onboarded Creator */}
+                  <td className="px-5 py-3.5 text-[12px] text-white/50">
+                    {u.handle ? (
+                      <span className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">
+                        <span className="capitalize text-white/70 font-semibold">{u.platform}:</span>
+                        <span className="text-white/80 font-mono">@{u.handle}</span>
+                      </span>
+                    ) : (
+                      <span className="text-white/25 italic">Not onboarded</span>
+                    )}
+                  </td>
+                  {/* AI Keys Consented */}
+                  <td className="px-5 py-3.5 text-[12px]">
+                    {u.has_ai_keys ? (
+                      <span className="text-emerald-400 font-semibold inline-flex items-center gap-1">
+                        <ShieldCheck size={12} /> Consented (Saved)
+                      </span>
+                    ) : (
+                      <span className="text-white/30 inline-flex items-center gap-1">
+                        <ShieldAlert size={12} className="text-white/20" /> Temporary Memory Only
+                      </span>
+                    )}
+                  </td>
+                  {/* Registered Date */}
+                  <td className="px-5 py-3.5 text-[12px] text-white/40">
+                    {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                  </td>
+                  {/* Actions */}
+                  <td className="px-5 py-3.5 text-[12px]">
+                    <button
+                      onClick={() => setDeletingUser(u.username)}
+                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-1.5 rounded-lg transition-all"
+                      title="Delete user account"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Configurations & Utilities */}
+      <div className="grid grid-cols-2 gap-6">
+        {/* Global Settings Editor */}
+        <div className="rounded-2xl border p-5 space-y-4" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-[14px] font-bold text-white">Global Server Configurations</h3>
+              <p className="text-[11px] text-white/40 mt-0.5">Manage system fallback API keys & credentials in `.env`.</p>
+            </div>
+            {!isEditingSettings ? (
+              <button
+                onClick={() => setIsEditingSettings(true)}
+                className="text-[11px] font-semibold bg-white/5 border border-white/10 hover:bg-white/10 text-white px-2.5 py-1.5 rounded-lg transition-all"
+              >
+                Edit settings
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={actionLoading}
+                  className="text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 disabled:opacity-40"
+                >
+                  {actionLoading ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditingSettings(false)
+                    // Reset to server defaults
+                    if (sysSettings) {
+                      setEditApifyKey(sysSettings.apify_api_key || '')
+                      setEditAnthropicKey(sysSettings.anthropic_api_key || '')
+                      setEditSendGridKey(sysSettings.sendgrid_api_key || '')
+                      setEditFromEmail(sysSettings.from_email || '')
+                      setEditFromName(sysSettings.from_name || '')
+                    }
+                  }}
+                  disabled={actionLoading}
+                  className="text-[11px] font-semibold bg-white/5 hover:bg-white/10 text-white/70 px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-40"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3.5 text-[12px]">
+            {/* Apify Key */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-white/40 font-medium">Apify API Key</span>
+              {isEditingSettings ? (
+                <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
+                  <input
+                    type={showEditApify ? 'text' : 'password'}
+                    value={editApifyKey}
+                    onChange={e => setEditApifyKey(e.target.value)}
+                    className="flex-1 bg-transparent outline-none text-white font-mono text-[11px]"
+                    placeholder="Enter key to update..."
+                  />
+                  <button onClick={() => setShowEditApify(!showEditApify)} className="text-white/30 hover:text-white/60">
+                    {showEditApify ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-white/70">{sysSettings?.apify_api_key || 'Not Set'}</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.apify_configured ? 'bg-green-400' : 'bg-amber-400'}`} />
+                </div>
+              )}
+            </div>
+
+            {/* Anthropic Key */}
+            <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
+              <span className="text-white/40 font-medium">Anthropic API Key</span>
+              {isEditingSettings ? (
+                <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
+                  <input
+                    type={showEditAnthropic ? 'text' : 'password'}
+                    value={editAnthropicKey}
+                    onChange={e => setEditAnthropicKey(e.target.value)}
+                    className="flex-1 bg-transparent outline-none text-white font-mono text-[11px]"
+                    placeholder="Enter key to update..."
+                  />
+                  <button onClick={() => setShowEditAnthropic(!showEditAnthropic)} className="text-white/30 hover:text-white/60">
+                    {showEditAnthropic ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-white/70">{sysSettings?.anthropic_api_key || 'Not Set'}</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.ai_configured ? 'bg-green-400' : 'bg-amber-400'}`} />
+                </div>
+              )}
+            </div>
+
+            {/* SendGrid Key */}
+            <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
+              <span className="text-white/40 font-medium">SendGrid API Key</span>
+              {isEditingSettings ? (
+                <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
+                  <input
+                    type={showEditSendGrid ? 'text' : 'password'}
+                    value={editSendGridKey}
+                    onChange={e => setEditSendGridKey(e.target.value)}
+                    className="flex-1 bg-transparent outline-none text-white font-mono text-[11px]"
+                    placeholder="Enter key to update..."
+                  />
+                  <button onClick={() => setShowEditSendGrid(!showEditSendGrid)} className="text-white/30 hover:text-white/60">
+                    {showEditSendGrid ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-white/70">{sysSettings?.sendgrid_api_key || 'Not Set'}</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.sendgrid_api_key ? 'bg-green-400' : 'bg-amber-400'}`} />
+                </div>
+              )}
+            </div>
+
+            {/* Default From Email & Name */}
+            <div className="grid grid-cols-2 gap-4 border-t border-white/[0.04] pt-3">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-white/40 font-medium">Default From Email</span>
+                {isEditingSettings ? (
+                  <input
+                    type="email"
+                    value={editFromEmail}
+                    onChange={e => setEditFromEmail(e.target.value)}
+                    className="bg-[#070707] border border-white/8 rounded-xl px-3 py-2 outline-none text-white text-[11px]"
+                    placeholder="from@domain.com"
+                  />
+                ) : (
+                  <span className="text-[12px] text-white/70">{sysSettings?.from_email || 'Not Set'}</span>
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-white/40 font-medium">Default From Name</span>
+                {isEditingSettings ? (
+                  <input
+                    type="text"
+                    value={editFromName}
+                    onChange={e => setEditFromName(e.target.value)}
+                    className="bg-[#070707] border border-white/8 rounded-xl px-3 py-2 outline-none text-white text-[11px]"
+                    placeholder="Admin Name"
+                  />
+                ) : (
+                  <span className="text-[12px] text-white/70">{sysSettings?.from_name || 'Not Set'}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Active LLM Model info */}
+            <div className="py-2.5 flex items-center justify-between border-t border-white/[0.04] mt-2">
+              <span className="text-white/40 font-medium">Active LLM Model</span>
+              <span className="font-mono text-[11px] text-emerald-400 font-semibold">{sysSettings?.ai_model || 'Not configured'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* System Diagnostics & Utilities */}
+        <div className="rounded-2xl border p-5 space-y-4 flex flex-col justify-between" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-[14px] font-bold text-white">System Actions & Utilities</h3>
+              <p className="text-[11px] text-white/40 mt-0.5">Realtime maintenance routines and diagnostics control.</p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="p-3.5 rounded-xl border flex items-center justify-between" style={{ background: '#070707', borderColor: 'rgba(255,255,255,0.06)' }}>
+                <div className="space-y-0.5">
+                  <p className="text-[12px] font-semibold text-white">Repair Scraped Avatar URLs</p>
+                  <p className="text-[10px] text-white/40 leading-normal">
+                    Fixes escaped character strings inside unicode-encoded avatar image URLs in the DB.
+                  </p>
+                </div>
+                <button
+                  disabled={utilityLoading}
+                  onClick={runAvatarRepair}
+                  className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-40 transition-all flex-shrink-0"
+                >
+                  {utilityLoading ? <Loader2 size={11} className="animate-spin" /> : <Play size={10} />}
+                  Run Repair
+                </button>
+              </div>
+
+              {repairResult !== null && (
+                <div className="p-3 rounded-xl border text-[11px] flex items-center gap-2 bg-emerald-500/5 border-emerald-500/20 text-emerald-400">
+                  <ShieldCheck size={14} className="flex-shrink-0" />
+                  Repair run completed. Updated {repairResult} bad URL avatar references.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* System Diagnostic Status Banners */}
+          <div className="space-y-2.5 pt-4 border-t border-white/[0.04]">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-white/40">Database Status</span>
+              <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                SQLite Schema Connected
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-white/40">Proxy Engine</span>
+              <span className="text-blue-400 font-semibold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                In-Memory Proxy Active
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* System Activity Logs Section */}
+      <div className="rounded-2xl border p-5 space-y-4" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="text-[14px] font-bold text-white">System Activity Logs</h3>
+            <p className="text-[11px] text-white/40 mt-0.5">Real-time audit log tracker of system and operator actions.</p>
+          </div>
+          {/* Search Box */}
+          <div className="flex items-center gap-2 bg-[#070707] border border-white/10 px-3 py-1.5 rounded-xl w-64">
+            <Search size={13} className="text-white/30 flex-shrink-0" />
+            <input
+              type="text"
+              value={logSearchQuery}
+              onChange={e => setLogSearchQuery(e.target.value)}
+              className="bg-transparent border-none outline-none text-white text-[11px] placeholder:text-white/20 w-full"
+              placeholder="Search by action, actor, or entity..."
+            />
+            {logSearchQuery && (
+              <button onClick={() => setLogSearchQuery('')} className="text-white/30 hover:text-white/60">
+                <X size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-xl border border-white/5">
+          <table className="w-full text-left" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#0e0e0e', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                {['Timestamp', 'Actor', 'Action', 'Entity Type', 'Entity ID', 'Details'].map(h => (
+                  <th key={h} className="px-4 py-2.5 text-[9px] font-semibold uppercase tracking-wider text-white/30">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-[12px] text-white/30 font-mono">
+                    No matching activity logs found.
+                  </td>
+                </tr>
+              ) : (
+                filteredLogs.map(log => (
+                  <tr key={log.id} className="border-b border-white/[0.03] hover:bg-white/[0.01]">
+                    <td className="px-4 py-3 text-[11px] text-white/40 font-mono">
+                      {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-[11px]">
+                      <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/70 font-semibold font-mono text-[10px]">
+                        {log.actor || 'system'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[11px] text-white font-medium">
+                      {log.action}
+                    </td>
+                    <td className="px-4 py-3 text-[11px] text-white/50 capitalize">
+                      {log.entity_type || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-[11px] text-white/40 font-mono text-[10px]">
+                      {log.entity_id || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-[11px]">
+                      <button
+                        onClick={() => setExpandedLogId(expandedLogId === log.id ? null : log.id)}
+                        className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 font-semibold"
+                      >
+                        <EyeIcon size={11} />
+                        {expandedLogId === log.id ? 'Collapse' : 'Inspect'}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Expanded details container */}
+        {expandedLogId && (
+          <div className="mt-4 p-4 rounded-xl border border-blue-500/10 space-y-2 animate-fade-in" style={{ background: '#070707' }}>
+            <div className="flex items-center justify-between border-b border-white/[0.04] pb-2">
+              <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
+                <Activity size={12} className="text-blue-400" />
+                Inspect Log Data: {expandedLogId}
+              </span>
+              <button onClick={() => setExpandedLogId(null)} className="text-white/30 hover:text-white/60">
+                <X size={12} />
+              </button>
+            </div>
+            <pre className="text-[10px] text-white/70 overflow-x-auto p-3 bg-black/40 rounded-lg font-mono leading-relaxed" style={{ maxHeight: '200px' }}>
+              {JSON.stringify(auditLogs.find(l => l.id === expandedLogId)?.details || {}, null, 2)}
+            </pre>
+          </div>
+        )}
+      </div>
+
+      {/* Delete User Confirmation Modal */}
+      {deletingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border p-5 space-y-4" style={{ background: '#0e0e0e', borderColor: 'rgba(255,255,255,0.1)' }}>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={16} />
+              </div>
+              <div>
+                <h4 className="text-[14px] font-bold text-white">Delete User Account?</h4>
+                <p className="text-[12px] text-white/50 leading-relaxed mt-1">
+                  This will permanently delete the operator account <span className="font-mono text-white/80">@{deletingUser}</span> and clear all associated onboarding state backups from the database.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[11px] text-white/40">Type the username <span className="text-white/60 font-semibold font-mono">{deletingUser}</span> to confirm:</p>
+              <input
+                className="w-full rounded-xl border px-3 py-2 text-[12px] text-white outline-none font-mono placeholder:text-white/10"
+                style={{ background: '#070707', borderColor: 'rgba(255,255,255,0.08)' }}
+                placeholder={deletingUser}
+                value={confirmDeleteText}
+                onChange={e => setConfirmDeleteText(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                disabled={actionLoading}
+                onClick={() => { setDeletingUser(null); setConfirmDeleteText('') }}
+                className="flex-1 py-2 rounded-xl text-[12px] text-white/60 hover:text-white border border-white/10 transition-all disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={actionLoading || confirmDeleteText !== deletingUser}
+                onClick={handleDeleteUser}
+                className="flex-1 py-2 rounded-xl text-[12px] font-semibold text-white bg-red-600 hover:bg-red-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+              >
+                {actionLoading ? <Loader2 size={12} className="animate-spin" /> : 'Delete Permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
