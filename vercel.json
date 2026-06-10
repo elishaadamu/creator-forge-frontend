@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://YOUR_RAILWAY_PROJECT_URL.up.railway.app/:path*"
+      "destination": "https://creator-forge-backend.onrender.com/api/:path*"
     },
     {
       "source": "/((?!api/).*)",
