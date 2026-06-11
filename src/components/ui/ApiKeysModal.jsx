@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { X, ExternalLink, Check, Eye, EyeOff, ChevronDown, Loader2, AlertCircle, Sparkles, Zap, Download, ShieldCheck, Database } from 'lucide-react'
+import { X, ExternalLink, Check, Eye, EyeOff, ChevronDown, Loader2, AlertCircle, Sparkles, Zap, Download, ShieldCheck, Database, Trash2 } from 'lucide-react'
 import WingLogo from './WingLogo'
 import { loadKeys, saveKeys, testApifyToken } from '../../services/scraper'
 import { loadAiKeys, saveAiKeys, hasGeminiKey, hasTogetherKey, getAiKeysConsent, setAiKeysConsent, saveAiKeysToDb, deleteAiKeysFromDb } from '../../services/ai'
 import { useForge } from '../../App'
 
 export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping' }) {
-  const { userProfile } = useForge()
+  const { userProfile, updateAiKeys } = useForge()
   const [tab, setTab] = useState(defaultTab) // 'scraping' | 'ai'
 
   // ── Scraping keys ──────────────────────────────────────────────────────────
@@ -45,15 +45,19 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
 
   const handleSave = async () => {
     saveKeys({ apifyToken: apKey, youtubeApiKey: ytKey })
-    saveAiKeys({ geminiKey: gemKey, togetherKey, nvidiaKey: nvKey })
+    updateAiKeys({ geminiKey: gemKey, togetherKey, nvidiaKey: nvKey })
 
     // Handle DB persistence based on consent
     if (tab === 'ai' && userProfile?.username) {
       const hasAnyAiKey = !!(gemKey.trim() || togetherKey.trim() || nvKey.trim())
-      if (consentSave && hasAnyAiKey) {
+      if (consentSave) {
         setAiKeysConsent(true)
-        await saveAiKeysToDb(userProfile.username)
-      } else if (!consentSave) {
+        if (hasAnyAiKey) {
+          await saveAiKeysToDb(userProfile.username)
+        } else {
+          await deleteAiKeysFromDb(userProfile.username)
+        }
+      } else {
         setAiKeysConsent(false)
         await deleteAiKeysFromDb(userProfile.username)
       }
@@ -136,7 +140,7 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
             <div>
               <p className="text-[15px] font-semibold text-white">API Keys</p>
               <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                {consentSave && isLoggedIn ? 'Saved to your account' : 'Stored in-memory only'}
+                {consentSave && isLoggedIn ? 'Saved to your account' : 'Cloud sync available'}
               </p>
             </div>
           </div>
@@ -187,14 +191,18 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
             )}
             <div className="space-y-0.5">
               <h4 className="text-[12px] font-semibold text-white">
-                {consentSave && isLoggedIn && tab === 'ai'
-                  ? 'Keys Saved to Account'
-                  : 'Transient Security Enforced'}
+                {tab === 'scraping' 
+                  ? 'Local Storage' 
+                  : consentSave && isLoggedIn 
+                    ? 'Cloud Sync Enabled' 
+                    : 'Secure Cloud Save'}
               </h4>
               <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                {consentSave && isLoggedIn && tab === 'ai'
-                  ? 'Your AI keys are saved to your account database. They will be automatically restored when you log in. You can revoke this anytime by unchecking the consent below.'
-                  : 'API keys are held strictly in-memory. They are never saved to localStorage or any database, and will be cleared when you close the tab or log out.'}
+                {tab === 'scraping'
+                  ? 'Scraping keys are kept in your browser and never stored on the server.'
+                  : consentSave && isLoggedIn
+                    ? 'Your AI keys are saved to your account and loaded automatically.'
+                    : 'Save your AI keys below to automatically restore them next time you log in.'}
               </p>
             </div>
           </div>
@@ -382,15 +390,25 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
                   style={{ background: '#111', borderColor: gemConnected ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
                   <input
                     type={showGem ? 'text' : 'password'}
+                    autoComplete="new-password"
                     className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
                     placeholder="AIzaSy..."
                     value={gemKey}
                     onChange={e => setGemKey(e.target.value)}
                     autoFocus={tab === 'ai'}
                   />
-                  <button onClick={() => setShowGem(v => !v)} className="text-white/25 hover:text-white/60 transition-colors">
+                  <button onClick={() => setShowGem(v => !v)} className="text-white/25 hover:text-white/60 transition-colors mr-1">
                     {showGem ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
+                  {gemKey && (
+                    <button
+                      onClick={() => setGemKey('')}
+                      title="Delete key"
+                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -420,14 +438,24 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
                   style={{ background: '#111', borderColor: togetherConnected ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
                   <input
                     type={showTogether ? 'text' : 'password'}
+                    autoComplete="new-password"
                     className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
                     placeholder="together-api-..."
                     value={togetherKey}
                     onChange={e => setTogetherKey(e.target.value)}
                   />
-                  <button onClick={() => setShowTogether(v => !v)} className="text-white/25 hover:text-white/60 transition-colors">
+                  <button onClick={() => setShowTogether(v => !v)} className="text-white/25 hover:text-white/60 transition-colors mr-1">
                     {showTogether ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
+                  {togetherKey && (
+                    <button
+                      onClick={() => setTogetherKey('')}
+                      title="Delete key"
+                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -457,14 +485,24 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
                   style={{ background: '#111', borderColor: nvConnected ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
                   <input
                     type={showNv ? 'text' : 'password'}
+                    autoComplete="new-password"
                     className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
                     placeholder="nvapi-..."
                     value={nvKey}
                     onChange={e => setNvKey(e.target.value)}
                   />
-                  <button onClick={() => setShowNv(v => !v)} className="text-white/25 hover:text-white/60 transition-colors">
+                  <button onClick={() => setShowNv(v => !v)} className="text-white/25 hover:text-white/60 transition-colors mr-1">
                     {showNv ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
+                  {nvKey && (
+                    <button
+                      onClick={() => setNvKey('')}
+                      title="Delete key"
+                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
                 <p className="text-[11px] mt-1.5" style={{ color: 'rgba(255,255,255,0.18)' }}>
                   If neither Together nor NVIDIA keys are set, product mockup images will be omitted.
@@ -498,7 +536,7 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
                         Save my AI keys to my account
                       </p>
                       <p className="text-[11px] leading-relaxed mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                        Your keys will be stored in the database and automatically restored when you log in. You can remove them anytime from settings.
+                        Your keys will be stored in your account and automatically restored when you log in.
                       </p>
                     </div>
                   </label>

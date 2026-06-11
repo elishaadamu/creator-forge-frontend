@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react'
 import { useForge } from '../../App'
 import { ArrowRight, Lock, User, AlertTriangle, ShieldCheck, HelpCircle, Eye, EyeOff } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
-import { restoreAiKeysFromLoginData } from '../../services/ai'
 
 export default function Login() {
-  const { goTo, updateCreator, setUserProfile } = useForge()
+  const { goTo, updateCreator, setUserProfile, updateAiKeys } = useForge()
   const [identifier, setIdentifier] = useState('') // email or username
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -77,7 +76,7 @@ export default function Login() {
 
         // Restore AI keys from DB if user previously consented
         if (data.ai_keys) {
-          restoreAiKeysFromLoginData(data.ai_keys)
+          updateAiKeys(data.ai_keys)
         }
 
         if (setUserProfile) {

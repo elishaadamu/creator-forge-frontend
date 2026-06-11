@@ -21,6 +21,7 @@ export default function Signup() {
   const [visible, setVisible] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80)
@@ -58,6 +59,7 @@ export default function Signup() {
     if (!username.trim() || !email.trim() || !password || strength.score < 2) return
 
     setSubmitted(true)
+    setError('')
 
     const profile = {
       username: username.trim(),
@@ -106,9 +108,16 @@ export default function Signup() {
         studio_data
       })
     })
-      .then(res => {
+      .then(async res => {
         if (!res.ok) {
-          throw new Error('Failed to register account on database.')
+          let msg = 'Failed to register account on database.'
+          try {
+            const data = await res.json()
+            if (data && data.detail) {
+              msg = data.detail
+            }
+          } catch {}
+          throw new Error(msg)
         }
         return res.json()
       })
@@ -129,15 +138,17 @@ export default function Signup() {
           setAiKeysConsent(true)
           saveAiKeysToDb(username.trim())
         }
+
+        // Short simulated creation delay for premium UX
+        setTimeout(() => {
+          goTo('dashboard')
+        }, 1200)
       })
       .catch(err => {
         console.error('[Forge] Signup DB storage failed:', err)
+        setError(err.message || 'Failed to register account on database.')
+        setSubmitted(false)
       })
-
-    // Short simulated creation delay for premium UX
-    setTimeout(() => {
-      goTo('dashboard')
-    }, 1200)
   }
 
   const isFormValid = username.trim() && email.trim() && password && strength.score >= 2 && agree
@@ -204,6 +215,17 @@ export default function Signup() {
               </p>
             </div>
           </div>
+
+          {/* Error message */}
+          {error && (
+            <div 
+              className="rounded-xl border p-3 flex items-center gap-2.5 text-left"
+              style={{ background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+            >
+              <AlertTriangle className="text-red-500 flex-shrink-0" size={14} />
+              <p className="text-[12px] text-red-200 leading-snug">{error}</p>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSignup} className="space-y-4">

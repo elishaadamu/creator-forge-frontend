@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import Marketing from './Marketing'
 import ContentCalendar from './ContentCalendar'
@@ -164,7 +164,21 @@ const TAB_LABELS = {
 
 export default function DashboardLayout() {
   const { creatorData, isRegistered, aiActionsCount, goTo, apiModalOpen, setApiModalOpen } = useForge()
-  const [activeTab, setActiveTab] = useState('preview') // default to app preview so they see it first!
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return localStorage.getItem('forge_dashboard_active_tab') || 'preview'
+    } catch {
+      return 'preview'
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('forge_dashboard_active_tab', activeTab)
+    } catch (e) {
+      console.warn('[Forge] Failed to cache active dashboard tab:', e)
+    }
+  }, [activeTab])
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [chatOpen, setChatOpen] = useState(false)
 

@@ -78,6 +78,8 @@ export async function saveAiKeysToDb(username) {
         }
       })
     })
+    const data = await res.json()
+    console.log('[Forge] saveAiKeysToDb response:', data)
     if (!res.ok) throw new Error('Failed to save AI keys')
     return true
   } catch (err) {
@@ -89,11 +91,13 @@ export async function saveAiKeysToDb(username) {
 export async function deleteAiKeysFromDb(username) {
   if (!username) return
   try {
-    await fetch('/api/auth/delete-ai-keys', {
+    const res = await fetch('/api/auth/delete-ai-keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username })
     })
+    const data = await res.json()
+    console.log('[Forge] deleteAiKeysFromDb response:', data)
     aiKeysConsentGiven = false
   } catch (err) {
     console.error('[Forge] Failed to delete AI keys from DB:', err)

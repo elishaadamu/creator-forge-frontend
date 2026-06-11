@@ -161,7 +161,29 @@ function GlobalToast({ toast, onClose }) {
 }
 
 export default function App() {
-  const [step, setStep] = useState('welcome')
+  const [step, setStep] = useState(() => {
+    try {
+      const path = window.location.pathname
+      const cachedUser = localStorage.getItem('forge_user_profile')
+      const activeSession = localStorage.getItem('forge_active_session')
+      if (path === '/dashboard') {
+        if (cachedUser && activeSession === 'true') {
+          return 'dashboard'
+        }
+        return 'login'
+      }
+      if (path === '/login') return 'login'
+      if (path === '/signup') return 'signup'
+
+      if (path === '/') {
+        const cachedStep = localStorage.getItem('forge_onboarding_step')
+        if (cachedStep && ['welcome', 'creator-link', 'analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(cachedStep)) {
+          return cachedStep
+        }
+      }
+    } catch {}
+    return 'welcome'
+  })
 
   const [userProfile, setUserProfile] = useState(() => {
     try {
@@ -187,6 +209,23 @@ export default function App() {
   
   // API Keys modal state
   const [apiModalOpen, setApiModalOpen] = useState(false)
+
+  const [aiKeys, setAiKeysState] = useState({
+    geminiKey: '',
+    togetherKey: '',
+    nvidiaKey: '',
+  })
+
+  const updateAiKeys = useCallback((newKeys) => {
+    if (newKeys) {
+      restoreAiKeysFromLoginData(newKeys)
+      setAiKeysState({
+        geminiKey: newKeys.geminiKey || '',
+        togetherKey: newKeys.togetherKey || '',
+        nvidiaKey: newKeys.nvidiaKey || '',
+      })
+    }
+  }, [])
 
   const [globalToast, setGlobalToast] = useState(null)
   const triggerToast = useCallback((message, type = 'success') => {
@@ -368,7 +407,12 @@ export default function App() {
           window.history.replaceState(null, '', '/login')
         }
       } else {
-        setStep('welcome')
+        const cachedStep = localStorage.getItem('forge_onboarding_step')
+        if (cachedStep && ['welcome', 'creator-link', 'analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(cachedStep)) {
+          setStep(cachedStep)
+        } else {
+          setStep('welcome')
+        }
       }
     }
 
@@ -384,6 +428,20 @@ export default function App() {
     }
   }, [creatorData])
 
+  // Persist onboarding step to localStorage
+  useEffect(() => {
+    try {
+      const isOnboardingStep = ['welcome', 'creator-link', 'analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(step)
+      if (isOnboardingStep) {
+        localStorage.setItem('forge_onboarding_step', step)
+      } else if (step === 'dashboard' || step === 'login' || step === 'signup') {
+        localStorage.removeItem('forge_onboarding_step')
+      }
+    } catch (e) {
+      console.warn('[Forge] Failed to save onboarding step:', e)
+    }
+  }, [step])
+
   // Restore AI keys from DB if user is logged in
   useEffect(() => {
     if (userProfile?.username) {
@@ -394,19 +452,24 @@ export default function App() {
         })
         .then(data => {
           if (data.status === 'success' && data.ai_keys) {
-            restoreAiKeysFromLoginData(data.ai_keys)
+            updateAiKeys(data.ai_keys)
           }
         })
         .catch(err => {
           console.error('[Forge] Failed to restore AI keys from DB on mount:', err)
         })
     }
-  }, [userProfile])
+  }, [userProfile, updateAiKeys])
 
   // Logout callback - clears transient keys, active session, and dashboard caches
   const logout = useCallback(() => {
     clearInMemoryKeys()
     clearInMemoryAiKeys()
+    setAiKeysState({
+      geminiKey: '',
+      togetherKey: '',
+      nvidiaKey: '',
+    })
 
     localStorage.clear()
     setUserProfile(null)
@@ -452,7 +515,9 @@ export default function App() {
     syncSessionToDb,
     apiModalOpen,
     setApiModalOpen,
-    triggerToast
+    triggerToast,
+    aiKeys,
+    updateAiKeys
   }
 
   // /ops route — internal operator pipeline panel (login-protected)

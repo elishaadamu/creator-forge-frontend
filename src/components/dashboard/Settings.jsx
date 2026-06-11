@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForge } from '../../App'
-import { Check, Radio, RefreshCw, Calendar, Upload, Mail, ChevronRight, AlertCircle, Zap, ShieldCheck } from 'lucide-react'
+import { Check, Radio, RefreshCw, Calendar, Upload, Mail, ChevronRight, AlertCircle, Zap, ShieldCheck, Trash2, Sparkles, Eye, EyeOff, ChevronDown, Loader2, Download, Database, ExternalLink } from 'lucide-react'
+import { loadAiKeys, saveAiKeys, getAiKeysConsent, setAiKeysConsent, saveAiKeysToDb, deleteAiKeysFromDb } from '../../services/ai'
 
 // ─── Toggle ──────────────────────────────────────────────────────────────────
 
@@ -169,7 +170,7 @@ const NOTIFICATION_SETTINGS = [
 ]
 
 export default function Settings() {
-  const { creatorData, setApiModalOpen } = useForge()
+  const { creatorData, setApiModalOpen, userProfile, aiKeys, updateAiKeys } = useForge()
   const [automations, setAutomations] = useState(INITIAL_AUTOMATIONS)
   const [notifications, setNotifications] = useState({
     newMember: true,
@@ -179,7 +180,137 @@ export default function Settings() {
     automationRun: true,
   })
   const [saved, setSaved] = useState(false)
-  const [activeSection, setActiveSection] = useState('profile')
+  const [activeSection, setActiveSection] = useState(() => {
+    try {
+      return localStorage.getItem('forge_settings_active_section') || 'profile'
+    } catch {
+      return 'profile'
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('forge_settings_active_section', activeSection)
+    } catch (e) {
+      console.warn('[Forge] Failed to cache active settings section:', e)
+    }
+  }, [activeSection])
+
+  // ── AI keys ────────────────────────────────────────────────────────────────
+  const [gemKey,      setGemKey]      = useState('')
+  const [togetherKey, setTogetherKey] = useState('')
+  const [nvKey,       setNvKey]       = useState('')
+  const [showGem,     setShowGem]     = useState(false)
+  const [showTogether,setShowTogether]= useState(false)
+  const [showNv,       setShowNv]       = useState(false)
+
+  // ── Consent for saving AI keys to DB ───────────────────────────────────────
+  const [consentSave, setConsentSave] = useState(false)
+  const [keysSaved, setKeysSaved] = useState(false)
+
+  // Load keys on mount
+  useEffect(() => {
+    setConsentSave(getAiKeysConsent())
+  }, [])
+
+  // Sync state if aiKeys changes in context (e.g. loads asynchronously)
+  useEffect(() => {
+    if (aiKeys) {
+      setGemKey(aiKeys.geminiKey || '')
+      setTogetherKey(aiKeys.togetherKey || '')
+      setNvKey(aiKeys.nvidiaKey || '')
+    }
+  }, [aiKeys])
+
+  const handleDeleteIndividualKey = async (keyType) => {
+    let updatedGem = gemKey
+    let updatedTogether = togetherKey
+    let updatedNv = nvKey
+
+    if (keyType === 'gemini') {
+      setGemKey('')
+      updatedGem = ''
+    } else if (keyType === 'together') {
+      setTogetherKey('')
+      updatedTogether = ''
+    } else if (keyType === 'nvidia') {
+      setNvKey('')
+      updatedNv = ''
+    }
+
+    updateAiKeys({ geminiKey: updatedGem, togetherKey: updatedTogether, nvidiaKey: updatedNv })
+
+    if (userProfile?.username) {
+      const hasAnyAiKey = !!(updatedGem.trim() || updatedTogether.trim() || updatedNv.trim())
+      if (consentSave) {
+        if (hasAnyAiKey) {
+          const success = await saveAiKeysToDb(userProfile.username)
+          console.log(`[Forge] saveAiKeysToDb response after deleting ${keyType} (success status):`, success)
+        } else {
+          await deleteAiKeysFromDb(userProfile.username)
+          console.log(`[Forge] All AI keys cleared. deleteAiKeysFromDb called after deleting ${keyType}.`)
+        }
+      } else {
+        await deleteAiKeysFromDb(userProfile.username)
+        console.log(`[Forge] Consent false. deleteAiKeysFromDb called after deleting ${keyType}.`)
+      }
+    }
+  }
+
+  const handleSaveApiKeys = async () => {
+    updateAiKeys({ geminiKey: gemKey, togetherKey, nvidiaKey: nvKey })
+
+    if (userProfile?.username) {
+      const hasAnyAiKey = !!(gemKey.trim() || togetherKey.trim() || nvKey.trim())
+      if (consentSave) {
+        setAiKeysConsent(true)
+        if (hasAnyAiKey) {
+          const success = await saveAiKeysToDb(userProfile.username)
+          console.log('[Forge] saveAiKeysToDb response success status:', success)
+        } else {
+          await deleteAiKeysFromDb(userProfile.username)
+        }
+      } else {
+        setAiKeysConsent(false)
+        await deleteAiKeysFromDb(userProfile.username)
+      }
+    }
+
+    setKeysSaved(true)
+    setTimeout(() => { setKeysSaved(false) }, 1500)
+  }
+
+  const handleDownloadPdf = () => {
+    fetch('/api/settings/download-keys-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apify_token: '',
+        youtube_api_key: '',
+        gemini_api_key: gemKey,
+        together_api_key: togetherKey,
+        nvidia_api_key: nvKey
+      })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to generate PDF')
+        return res.blob()
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'creator_forge_api_keys.pdf'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+      })
+      .catch(err => {
+        console.error('[Forge] PDF download error:', err)
+        alert('Could not download API keys PDF backup. Please try again.')
+      })
+  }
 
   const handleSave = () => {
     setSaved(true)
@@ -275,37 +406,172 @@ export default function Settings() {
           <div className="space-y-6">
             <div>
               <h2 className="forge-heading mb-1" style={{ fontSize: '22px', letterSpacing: '-0.03em' }}>API Keys</h2>
-              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.38)' }}>Manage your Scraping and AI integrations.</p>
+              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.38)' }}>Manage your AI and Generation integrations.</p>
             </div>
 
-            <div className="rounded-xl border p-6" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.07)' }}>
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                  <Zap size={18} className="text-white/50" />
-                </div>
-                <div>
-                  <h3 className="text-[14px] font-semibold text-white mb-1">Manage Integrations</h3>
-                  <p className="text-[12px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                    Configure your Apify, YouTube, Gemini, Together, and NVIDIA API keys. These power Forge's ability to pull your data and generate AI content.
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setApiModalOpen(true)}
-                className="forge-btn-secondary text-[13px] py-2.5 px-5"
-              >
-                Configure API Keys
-              </button>
-            </div>
-            
-            <div className="rounded-xl border p-4 flex items-start gap-3" style={{ background: 'rgba(16, 185, 129, 0.04)', borderColor: 'rgba(16, 185, 129, 0.15)' }}>
-              <ShieldCheck className="text-emerald-400 mt-0.5" size={15} />
+            <div className="space-y-5">
+              {/* Gemini key */}
               <div>
-                <h4 className="text-[12px] font-semibold text-white">Your keys are secure</h4>
-                <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                  You control whether your AI keys are saved to your account or kept temporarily in memory. Manage this directly in the API Keys modal.
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[12px] font-semibold text-white">Google Gemini API Key</p>
+                  {gemKey.trim() && (
+                    <div className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(100,220,100,0.8)' }}>
+                      <Check size={10} /> Connected
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
+                  style={{ background: '#111', borderColor: gemKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                  <input
+                    type={showGem ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
+                    placeholder="AIzaSy..."
+                    value={gemKey}
+                    onChange={e => setGemKey(e.target.value)}
+                  />
+                  <button onClick={() => setShowGem(v => !v)} className="text-white/25 hover:text-white/60 transition-colors mr-1">
+                    {showGem ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                  {gemKey && (
+                    <button
+                      onClick={() => handleDeleteIndividualKey('gemini')}
+                      title="Delete key"
+                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Together.ai key */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[12px] font-semibold text-white">Together.ai Key (optional)</p>
+                  {togetherKey.trim() && (
+                    <div className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(100,220,100,0.8)' }}>
+                      <Check size={10} /> Connected
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
+                  style={{ background: '#111', borderColor: togetherKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                  <input
+                    type={showTogether ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
+                    placeholder="together-api-..."
+                    value={togetherKey}
+                    onChange={e => setTogetherKey(e.target.value)}
+                  />
+                  <button onClick={() => setShowTogether(v => !v)} className="text-white/25 hover:text-white/60 transition-colors mr-1">
+                    {showTogether ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                  {togetherKey && (
+                    <button
+                      onClick={() => handleDeleteIndividualKey('together')}
+                      title="Delete key"
+                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* NVIDIA NIM Key */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[12px] font-semibold text-white">NVIDIA NIM Key (optional)</p>
+                  {nvKey.trim() && (
+                    <div className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(100,220,100,0.8)' }}>
+                      <Check size={10} /> Connected
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
+                  style={{ background: '#111', borderColor: nvKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                  <input
+                    type={showNv ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
+                    placeholder="nvapi-..."
+                    value={nvKey}
+                    onChange={e => setNvKey(e.target.value)}
+                  />
+                  <button onClick={() => setShowNv(v => !v)} className="text-white/25 hover:text-white/60 transition-colors mr-1">
+                    {showNv ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                  {nvKey && (
+                    <button
+                      onClick={() => handleDeleteIndividualKey('nvidia')}
+                      title="Delete key"
+                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Consent checkbox */}
+              {!!userProfile?.username && (gemKey.trim() || togetherKey.trim() || nvKey.trim()) && (
+                <div
+                  className="rounded-xl border p-4 transition-all duration-200 mt-4"
+                  style={{
+                    background: consentSave ? 'rgba(16,185,129,0.04)' : 'rgba(255,255,255,0.02)',
+                    borderColor: consentSave ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <div className="mt-0.5 flex-shrink-0">
+                      <div
+                        className="w-4 h-4 rounded border flex items-center justify-center transition-all duration-150"
+                        style={{
+                          background: consentSave ? 'rgba(16,185,129,0.9)' : 'transparent',
+                          borderColor: consentSave ? 'rgba(16,185,129,0.9)' : 'rgba(255,255,255,0.25)',
+                        }}
+                        onClick={() => setConsentSave(v => !v)}
+                      >
+                        {consentSave && <Check size={10} className="text-white" strokeWidth={3} />}
+                      </div>
+                    </div>
+                    <div onClick={() => setConsentSave(v => !v)}>
+                      <p className="text-[12px] font-semibold text-white leading-tight">
+                        Save my AI keys to my account
+                      </p>
+                      <p className="text-[11px] leading-relaxed mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                        Your keys will be stored in the database and automatically restored when you log in.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2.5 pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSaveApiKeys}
+                  disabled={!(gemKey.trim() || togetherKey.trim() || nvKey.trim())}
+                  className="forge-btn-primary flex-1 text-[14px] py-3 gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {keysSaved ? <><Check size={14} /> Saved!</> : 'Save API Keys'}
+                </button>
+              </div>
+
+              {(gemKey.trim() || togetherKey.trim() || nvKey.trim()) && (
+                <button
+                  onClick={handleDownloadPdf}
+                  className="forge-btn-secondary w-full text-[12px] py-2.5 flex items-center justify-center gap-2"
+                  style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
+                >
+                  <Download size={13} className="text-white/40" />
+                  Download API Keys PDF Backup
+                </button>
+              )}
             </div>
           </div>
         )}
