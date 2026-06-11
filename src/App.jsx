@@ -434,6 +434,14 @@ export default function App() {
       const isOnboardingStep = ['welcome', 'creator-link', 'analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(step)
       if (isOnboardingStep) {
         localStorage.setItem('forge_onboarding_step', step)
+        
+        // Log all localStorage contents to developer console during onboarding
+        const store = {}
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          store[key] = localStorage.getItem(key)
+        }
+        console.log(`[Forge] Onboarding active step: "${step}". Current localStorage:`, store)
       } else if (step === 'dashboard' || step === 'login' || step === 'signup') {
         localStorage.removeItem('forge_onboarding_step')
       }
