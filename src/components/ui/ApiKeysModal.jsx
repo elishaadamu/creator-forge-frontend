@@ -106,7 +106,7 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
     const result = await testApifyToken(apKey)
     if (result.ok) {
       setTestStatus('ok')
-      setTestMsg(`Connected as ${result.username}`)
+      setTestMsg('Connected to Apify')
     } else {
       setTestStatus('error')
       setTestMsg(result.error || 'Invalid token')

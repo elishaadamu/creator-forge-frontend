@@ -18,14 +18,38 @@ let inMemoryAiKeys = {
 // Whether user has consented to save AI keys to DB
 let aiKeysConsentGiven = false
 
+try {
+  inMemoryAiKeys.geminiKey = localStorage.getItem('forge_gemini_api_key') || ''
+  inMemoryAiKeys.togetherKey = localStorage.getItem('forge_together_api_key') || ''
+  inMemoryAiKeys.nvidiaKey = localStorage.getItem('forge_nvidia_api_key') || ''
+  aiKeysConsentGiven = localStorage.getItem('forge_ai_keys_consent') === 'true'
+} catch (e) {
+  console.warn('[Forge] Failed to load AI keys from localStorage:', e)
+}
+
 export function loadAiKeys() {
   return inMemoryAiKeys
 }
 
 export function saveAiKeys({ geminiKey, togetherKey, nvidiaKey }) {
-  if (geminiKey   !== undefined) inMemoryAiKeys.geminiKey   = (geminiKey || '').trim()
-  if (togetherKey !== undefined) inMemoryAiKeys.togetherKey = (togetherKey || '').trim()
-  if (nvidiaKey   !== undefined) inMemoryAiKeys.nvidiaKey   = (nvidiaKey || '').trim()
+  if (geminiKey   !== undefined) {
+    inMemoryAiKeys.geminiKey = (geminiKey || '').trim()
+    try {
+      localStorage.setItem('forge_gemini_api_key', inMemoryAiKeys.geminiKey)
+    } catch (e) {}
+  }
+  if (togetherKey !== undefined) {
+    inMemoryAiKeys.togetherKey = (togetherKey || '').trim()
+    try {
+      localStorage.setItem('forge_together_api_key', inMemoryAiKeys.togetherKey)
+    } catch (e) {}
+  }
+  if (nvidiaKey   !== undefined) {
+    inMemoryAiKeys.nvidiaKey = (nvidiaKey || '').trim()
+    try {
+      localStorage.setItem('forge_nvidia_api_key', inMemoryAiKeys.nvidiaKey)
+    } catch (e) {}
+  }
 }
 
 export function clearInMemoryAiKeys() {
@@ -35,6 +59,12 @@ export function clearInMemoryAiKeys() {
     nvidiaKey: '',
   }
   aiKeysConsentGiven = false
+  try {
+    localStorage.removeItem('forge_gemini_api_key')
+    localStorage.removeItem('forge_together_api_key')
+    localStorage.removeItem('forge_nvidia_api_key')
+    localStorage.removeItem('forge_ai_keys_consent')
+  } catch (e) {}
 }
 
 export function hasGeminiKey() {
@@ -60,6 +90,9 @@ export function getAiKeysConsent() {
 
 export function setAiKeysConsent(value) {
   aiKeysConsentGiven = !!value
+  try {
+    localStorage.setItem('forge_ai_keys_consent', String(aiKeysConsentGiven))
+  } catch (e) {}
 }
 
 export async function saveAiKeysToDb(username) {

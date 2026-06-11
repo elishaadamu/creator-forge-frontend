@@ -210,10 +210,21 @@ export default function App() {
   // API Keys modal state
   const [apiModalOpen, setApiModalOpen] = useState(false)
 
-  const [aiKeys, setAiKeysState] = useState({
-    geminiKey: '',
-    togetherKey: '',
-    nvidiaKey: '',
+  const [aiKeys, setAiKeysState] = useState(() => {
+    try {
+      const keys = loadAiKeys()
+      return {
+        geminiKey: keys.geminiKey || '',
+        togetherKey: keys.togetherKey || '',
+        nvidiaKey: keys.nvidiaKey || '',
+      }
+    } catch {
+      return {
+        geminiKey: '',
+        togetherKey: '',
+        nvidiaKey: '',
+      }
+    }
   })
 
   const updateAiKeys = useCallback((newKeys) => {

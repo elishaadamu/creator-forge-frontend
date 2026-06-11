@@ -21,13 +21,34 @@ let inMemoryKeys = {
   apifyToken: '',
 }
 
+try {
+  inMemoryKeys.youtubeApiKey = localStorage.getItem('forge_youtube_api_key') || ''
+  inMemoryKeys.apifyToken = localStorage.getItem('forge_apify_token') || ''
+} catch (e) {
+  console.warn('[Forge] Failed to load scraping keys from localStorage:', e)
+}
+
 export function loadKeys() {
   return inMemoryKeys
 }
 
 export function saveKeys({ youtubeApiKey, apifyToken }) {
-  if (youtubeApiKey !== undefined) inMemoryKeys.youtubeApiKey = (youtubeApiKey || '').trim()
-  if (apifyToken    !== undefined) inMemoryKeys.apifyToken    = (apifyToken || '').trim()
+  if (youtubeApiKey !== undefined) {
+    inMemoryKeys.youtubeApiKey = (youtubeApiKey || '').trim()
+    try {
+      localStorage.setItem('forge_youtube_api_key', inMemoryKeys.youtubeApiKey)
+    } catch (e) {
+      console.warn('[Forge] Failed to save youtube key to localStorage:', e)
+    }
+  }
+  if (apifyToken !== undefined) {
+    inMemoryKeys.apifyToken = (apifyToken || '').trim()
+    try {
+      localStorage.setItem('forge_apify_token', inMemoryKeys.apifyToken)
+    } catch (e) {
+      console.warn('[Forge] Failed to save apify token to localStorage:', e)
+    }
+  }
 }
 
 export function clearInMemoryKeys() {
@@ -35,6 +56,10 @@ export function clearInMemoryKeys() {
     youtubeApiKey: '',
     apifyToken: '',
   }
+  try {
+    localStorage.removeItem('forge_youtube_api_key')
+    localStorage.removeItem('forge_apify_token')
+  } catch (e) {}
 }
 
 /**
