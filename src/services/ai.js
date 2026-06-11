@@ -24,7 +24,7 @@ try {
   inMemoryAiKeys.geminiKey = localStorage.getItem('forge_gemini_api_key') || ''
   inMemoryAiKeys.togetherKey = localStorage.getItem('forge_together_api_key') || ''
   inMemoryAiKeys.nvidiaKey = localStorage.getItem('forge_nvidia_api_key') || ''
-  inMemoryAiKeys.openaiKey = localStorage.getItem('forge_openai_api_key') || ''
+  inMemoryAiKeys.openaiKey = localStorage.getItem('forge_openai_api_key') || import.meta.env.VITE_OPENAI_API_KEY || ''
   inMemoryAiKeys.anthropicKey = localStorage.getItem('forge_anthropic_api_key') || ''
   
   if (!localStorage.getItem('forge_openai_api_key') && inMemoryAiKeys.openaiKey) {
