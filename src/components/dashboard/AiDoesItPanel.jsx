@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import {
   generateMarketingPack, generateProductImage,
-  regenerateSection, hasGeminiKey, hasTogetherKey
+  regenerateSection, hasTextKey, hasTogetherKey
 } from '../../services/ai'
 import ApiKeysModal from '../ui/ApiKeysModal'
 
@@ -571,7 +571,7 @@ export default function AiDoesItPanel({ onClose }) {
   // ── Run generation ───────────────────────────────────────────────────────────
 
   const run = async () => {
-    if (!hasGeminiKey()) { setApiModalOpen(true); return }
+    if (!hasTextKey()) { setApiModalOpen(true); return }
     if (incrementAiActions) incrementAiActions()
 
     setPhase('running')
@@ -688,11 +688,11 @@ export default function AiDoesItPanel({ onClose }) {
                 </span>
               ))}
             </div>
-            {!hasGeminiKey() && (
+            {!hasTextKey() && (
               <div className="flex items-center justify-center gap-2 mb-4 text-[12px]"
                 style={{ color: 'rgba(255,180,0,0.8)' }}>
                 <AlertCircle size={12} />
-                Add your Gemini API key first — it's free
+                Add an AI API key first (Gemini, OpenAI, or NVIDIA)
                 <button onClick={() => setApiModalOpen(true)}
                   className="underline text-white/50 hover:text-white transition-colors">Add key →</button>
               </div>

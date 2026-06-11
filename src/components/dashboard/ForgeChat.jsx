@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useForge } from '../../App'
 import { Sparkles, Send, X, ChevronDown, Copy, Check, Calendar, FileText, Minus } from 'lucide-react'
-import { hasGeminiKey, askForgeChat } from '../../services/ai'
+import { hasTextKey, askForgeChat } from '../../services/ai'
 
 const SUGGESTED_PROMPTS = [
   'What should I post today?',

@@ -22,9 +22,13 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
   const [gemKey,      setGemKey]      = useState('')
   const [togetherKey, setTogetherKey] = useState('')
   const [nvKey,       setNvKey]       = useState('')
+  const [openaiKey,   setOpenaiKey]   = useState('')
+  const [anthropicKey,setAnthropicKey] = useState('')
   const [showGem,     setShowGem]     = useState(false)
   const [showTogether,setShowTogether]= useState(false)
   const [showNv,       setShowNv]       = useState(false)
+  const [showOpenai,   setShowOpenai]   = useState(false)
+  const [showAnthropic,setShowAnthropic] = useState(false)
 
   // ── Consent for saving AI keys to DB ───────────────────────────────────────
   const [consentSave, setConsentSave] = useState(false)
@@ -39,17 +43,19 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
     setGemKey(aiKeys.geminiKey      || '')
     setTogetherKey(aiKeys.togetherKey || '')
     setNvKey(aiKeys.nvidiaKey        || '')
+    setOpenaiKey(aiKeys.openaiKey    || '')
+    setAnthropicKey(aiKeys.anthropicKey || '')
     // Restore consent state
     setConsentSave(getAiKeysConsent())
   }, [])
 
   const handleSave = async () => {
     saveKeys({ apifyToken: apKey, youtubeApiKey: ytKey })
-    updateAiKeys({ geminiKey: gemKey, togetherKey, nvidiaKey: nvKey })
+    updateAiKeys({ geminiKey: gemKey, togetherKey, nvidiaKey: nvKey, openaiKey: openaiKey, anthropicKey })
 
     // Handle DB persistence based on consent
     if (tab === 'ai' && userProfile?.username) {
-      const hasAnyAiKey = !!(gemKey.trim() || togetherKey.trim() || nvKey.trim())
+      const hasAnyAiKey = !!(gemKey.trim() || togetherKey.trim() || nvKey.trim() || openaiKey.trim() || anthropicKey.trim())
       if (consentSave) {
         setAiKeysConsent(true)
         if (hasAnyAiKey) {
@@ -76,7 +82,9 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
         youtube_api_key: ytKey,
         gemini_api_key: gemKey,
         together_api_key: togetherKey,
-        nvidia_api_key: nvKey
+        nvidia_api_key: nvKey,
+        openai_api_key: openaiKey,
+        anthropic_api_key: anthropicKey
       })
     })
       .then(res => {
@@ -118,8 +126,10 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
   const gemConnected     = !!gemKey.trim()
   const togetherConnected= !!togetherKey.trim()
   const nvConnected      = !!nvKey.trim()
-  const hasAnyAiKey      = gemConnected || togetherConnected || nvConnected
-  const canSave          = !!(apKey.trim() || ytKey.trim() || gemKey.trim() || togetherKey.trim() || nvKey.trim())
+  const openaiConnected  = !!openaiKey.trim()
+  const anthropicConnected = !!anthropicKey.trim()
+  const hasAnyAiKey      = gemConnected || togetherConnected || nvConnected || openaiConnected || anthropicConnected
+  const canSave          = !!(apKey.trim() || ytKey.trim() || gemKey.trim() || togetherKey.trim() || nvKey.trim() || openaiKey.trim() || anthropicKey.trim())
   const isLoggedIn       = !!userProfile?.username
 
   return (
@@ -349,10 +359,10 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <p className="text-[11px] font-semibold text-white/50 mb-3 uppercase tracking-wider">What gets generated</p>
                 {[
-                  { icon: '✉', label: 'Launch email',          key: 'NVIDIA / Gemini',    color: 'rgba(66,133,244,0.8)' },
-                  { icon: '📸', label: 'Instagram + TikTok + X', key: 'NVIDIA / Gemini',   color: 'rgba(66,133,244,0.8)' },
-                  { icon: '📊', label: 'Pitch deck (5 slides)', key: 'NVIDIA / Gemini',    color: 'rgba(66,133,244,0.8)' },
-                  { icon: '🖼', label: 'Product mockup image',  key: 'NVIDIA / Together', color: 'rgba(118,185,0,0.8)' },
+                  { icon: '✉', label: 'Launch email',          key: 'NVIDIA / OpenAI / Gemini', color: 'rgba(66,133,244,0.8)' },
+                  { icon: '📸', label: 'Instagram + TikTok + X', key: 'NVIDIA / OpenAI / Gemini', color: 'rgba(66,133,244,0.8)' },
+                  { icon: '📊', label: 'Pitch deck (5 slides)', key: 'NVIDIA / OpenAI / Gemini', color: 'rgba(66,133,244,0.8)' },
+                  { icon: '🖼', label: 'Product mockup image',  key: 'NVIDIA / OpenAI / Together', color: 'rgba(118,185,0,0.8)' },
                 ].map(item => (
                   <div key={item.label} className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
@@ -371,7 +381,10 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <p className="text-[12px] font-semibold text-white">Google Gemini API Key</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[12px] font-semibold text-white">Google Gemini API Key</p>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>gemini-2.5-flash</span>
+                    </div>
                     <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
                       Free at{' '}
                       <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer"
@@ -412,13 +425,109 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
                 </div>
               </div>
 
+              {/* OpenAI API Key */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[12px] font-semibold text-white">OpenAI API Key</p>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>gpt-5.5</span>
+                    </div>
+                    <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      Get a key at{' '}
+                      <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer"
+                        className="underline" style={{ color: 'rgba(16, 185, 129, 0.8)' }}>
+                        platform.openai.com <ExternalLink size={9} className="inline" />
+                      </a>
+                    </p>
+                  </div>
+                  {openaiConnected && (
+                    <div className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(100,220,100,0.8)' }}>
+                      <Check size={10} /> Connected
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
+                  style={{ background: '#111', borderColor: openaiConnected ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                  <input
+                    type={showOpenai ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
+                    placeholder="sk-proj-..."
+                    value={openaiKey}
+                    onChange={e => setOpenaiKey(e.target.value)}
+                  />
+                  <button onClick={() => setShowOpenai(v => !v)} className="text-white/25 hover:text-white/60 transition-colors mr-1">
+                    {showOpenai ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                  {openaiKey && (
+                    <button
+                      onClick={() => setOpenaiKey('')}
+                      title="Delete key"
+                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Anthropic API Key */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[12px] font-semibold text-white">Anthropic API Key</p>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>claude-opus-4-6</span>
+                    </div>
+                    <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      Get a key at{' '}
+                      <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer"
+                        className="underline" style={{ color: 'rgba(217, 119, 6, 0.8)' }}>
+                        console.anthropic.com <ExternalLink size={9} className="inline" />
+                      </a>
+                    </p>
+                  </div>
+                  {anthropicConnected && (
+                    <div className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(100,220,100,0.8)' }}>
+                      <Check size={10} /> Connected
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
+                  style={{ background: '#111', borderColor: anthropicConnected ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                  <input
+                    type={showAnthropic ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
+                    placeholder="sk-ant-..."
+                    value={anthropicKey}
+                    onChange={e => setAnthropicKey(e.target.value)}
+                  />
+                  <button onClick={() => setShowAnthropic(v => !v)} className="text-white/25 hover:text-white/60 transition-colors mr-1">
+                    {showAnthropic ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                  {anthropicKey && (
+                    <button
+                      onClick={() => setAnthropicKey('')}
+                      title="Delete key"
+                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Together.ai key */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <p className="text-[12px] font-semibold text-white">
-                      Together.ai Key <span className="font-normal text-white/40">(optional — for images)</span>
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[12px] font-semibold text-white">Together.ai Key</p>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>FLUX.1-schnell</span>
+                      <span className="text-[11px] text-white/40 font-normal">(optional)</span>
+                    </div>
                     <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
                       Free account at{' '}
                       <a href="https://api.together.ai" target="_blank" rel="noopener noreferrer"
@@ -463,9 +572,11 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <p className="text-[12px] font-semibold text-white">
-                      NVIDIA NIM Key <span className="font-normal text-white/40">(optional — for images and text)</span>
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[12px] font-semibold text-white">NVIDIA NIM Key</p>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>nemotron-3-ultra</span>
+                      <span className="text-[11px] text-white/40 font-normal">(optional)</span>
+                    </div>
                     <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
                       Free account at{' '}
                       <a href="https://build.nvidia.com" target="_blank" rel="noopener noreferrer"

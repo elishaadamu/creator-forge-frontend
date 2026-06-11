@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
-import { askForgeChat, generateStudioContent, hasGeminiKey, generateContentCalendar } from '../../services/ai'
+import { askForgeChat, generateStudioContent, hasTextKey, generateContentCalendar } from '../../services/ai'
 import {
   Sparkles, TrendingUp, Mail, Video, Share2, Users,
   RefreshCw, Copy, Check, X, Calendar, ChevronRight,
@@ -880,9 +880,9 @@ export default function Marketing() {
   // ── Load cache or trigger autofill on mount
   useEffect(() => {
     if (!week) {
-      if (hasGeminiKey() && autofillJob.status === 'idle') {
+      if (hasTextKey() && autofillJob.status === 'idle') {
         startBgJob(AUTOFILL_JOB, () => generateContentCalendar(creatorData, 'launch'))
-      } else if (!hasGeminiKey()) {
+      } else if (!hasTextKey()) {
         setWeek(INITIAL_WEEK)
       }
     }
@@ -930,7 +930,7 @@ export default function Marketing() {
     setGenerating(id)
     if (incrementAiActions) incrementAiActions()
     try {
-      if (!hasGeminiKey()) {
+      if (!hasTextKey()) {
         setApiModalOpen(true)
         setGenerating(null)
         return
@@ -979,7 +979,7 @@ export default function Marketing() {
     setCoachTrigger(id)
     if (incrementAiActions) incrementAiActions()
     try {
-      if (!hasGeminiKey()) {
+      if (!hasTextKey()) {
         setApiModalOpen(true)
         setGenerating(null)
         return

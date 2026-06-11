@@ -217,12 +217,16 @@ export default function App() {
         geminiKey: keys.geminiKey || '',
         togetherKey: keys.togetherKey || '',
         nvidiaKey: keys.nvidiaKey || '',
+        openaiKey: keys.openaiKey || '',
+        anthropicKey: keys.anthropicKey || '',
       }
     } catch {
       return {
         geminiKey: '',
         togetherKey: '',
         nvidiaKey: '',
+        openaiKey: '',
+        anthropicKey: '',
       }
     }
   })
@@ -234,6 +238,8 @@ export default function App() {
         geminiKey: newKeys.geminiKey || '',
         togetherKey: newKeys.togetherKey || '',
         nvidiaKey: newKeys.nvidiaKey || '',
+        openaiKey: newKeys.openaiKey || '',
+        anthropicKey: newKeys.anthropicKey || '',
       })
     }
   }, [])
@@ -492,6 +498,8 @@ export default function App() {
       geminiKey: '',
       togetherKey: '',
       nvidiaKey: '',
+      openaiKey: '',
+      anthropicKey: '',
     })
 
     localStorage.clear()

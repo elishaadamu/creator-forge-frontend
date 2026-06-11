@@ -13,6 +13,8 @@ let inMemoryAiKeys = {
   geminiKey: '',
   togetherKey: '',
   nvidiaKey: '',
+  openaiKey: '',
+  anthropicKey: '',
 }
 
 // Whether user has consented to save AI keys to DB
@@ -22,6 +24,13 @@ try {
   inMemoryAiKeys.geminiKey = localStorage.getItem('forge_gemini_api_key') || ''
   inMemoryAiKeys.togetherKey = localStorage.getItem('forge_together_api_key') || ''
   inMemoryAiKeys.nvidiaKey = localStorage.getItem('forge_nvidia_api_key') || ''
+  inMemoryAiKeys.openaiKey = localStorage.getItem('forge_openai_api_key') || ''
+  inMemoryAiKeys.anthropicKey = localStorage.getItem('forge_anthropic_api_key') || ''
+  
+  if (!localStorage.getItem('forge_openai_api_key') && inMemoryAiKeys.openaiKey) {
+    localStorage.setItem('forge_openai_api_key', inMemoryAiKeys.openaiKey)
+  }
+  
   aiKeysConsentGiven = localStorage.getItem('forge_ai_keys_consent') === 'true'
 } catch (e) {
   console.warn('[Forge] Failed to load AI keys from localStorage:', e)
@@ -31,7 +40,7 @@ export function loadAiKeys() {
   return inMemoryAiKeys
 }
 
-export function saveAiKeys({ geminiKey, togetherKey, nvidiaKey }) {
+export function saveAiKeys({ geminiKey, togetherKey, nvidiaKey, openaiKey, anthropicKey }) {
   if (geminiKey   !== undefined) {
     inMemoryAiKeys.geminiKey = (geminiKey || '').trim()
     try {
@@ -50,6 +59,18 @@ export function saveAiKeys({ geminiKey, togetherKey, nvidiaKey }) {
       localStorage.setItem('forge_nvidia_api_key', inMemoryAiKeys.nvidiaKey)
     } catch (e) {}
   }
+  if (openaiKey   !== undefined) {
+    inMemoryAiKeys.openaiKey = (openaiKey || '').trim()
+    try {
+      localStorage.setItem('forge_openai_api_key', inMemoryAiKeys.openaiKey)
+    } catch (e) {}
+  }
+  if (anthropicKey !== undefined) {
+    inMemoryAiKeys.anthropicKey = (anthropicKey || '').trim()
+    try {
+      localStorage.setItem('forge_anthropic_api_key', inMemoryAiKeys.anthropicKey)
+    } catch (e) {}
+  }
 }
 
 export function clearInMemoryAiKeys() {
@@ -57,12 +78,16 @@ export function clearInMemoryAiKeys() {
     geminiKey: '',
     togetherKey: '',
     nvidiaKey: '',
+    openaiKey: '',
+    anthropicKey: '',
   }
   aiKeysConsentGiven = false
   try {
     localStorage.removeItem('forge_gemini_api_key')
     localStorage.removeItem('forge_together_api_key')
     localStorage.removeItem('forge_nvidia_api_key')
+    localStorage.removeItem('forge_openai_api_key')
+    localStorage.removeItem('forge_anthropic_api_key')
     localStorage.removeItem('forge_ai_keys_consent')
   } catch (e) {}
 }
@@ -80,6 +105,21 @@ export function hasTogetherKey() {
 export function hasNvidiaKey() {
   const { nvidiaKey } = loadAiKeys()
   return !!nvidiaKey
+}
+
+export function hasOpenaiKey() {
+  const { openaiKey } = loadAiKeys()
+  return !!openaiKey
+}
+
+export function hasAnthropicKey() {
+  const { anthropicKey } = loadAiKeys()
+  return !!anthropicKey
+}
+
+export function hasTextKey() {
+  const { geminiKey, nvidiaKey, openaiKey, anthropicKey } = loadAiKeys()
+  return !!(geminiKey || nvidiaKey || openaiKey || anthropicKey)
 }
 
 // ── DB-persisted AI keys (user-consented) ──────────────────────────────────────
@@ -108,6 +148,8 @@ export async function saveAiKeysToDb(username) {
           geminiKey: keys.geminiKey,
           togetherKey: keys.togetherKey,
           nvidiaKey: keys.nvidiaKey,
+          openaiKey: keys.openaiKey,
+          anthropicKey: keys.anthropicKey,
         }
       })
     })
@@ -142,6 +184,8 @@ export function restoreAiKeysFromLoginData(aiKeysData) {
     inMemoryAiKeys.geminiKey   = aiKeysData.geminiKey   || ''
     inMemoryAiKeys.togetherKey = aiKeysData.togetherKey || ''
     inMemoryAiKeys.nvidiaKey   = aiKeysData.nvidiaKey   || ''
+    inMemoryAiKeys.openaiKey   = aiKeysData.openaiKey   || ''
+    inMemoryAiKeys.anthropicKey = aiKeysData.anthropicKey || ''
     aiKeysConsentGiven = true
   }
 }
@@ -157,7 +201,9 @@ function fmt(n) {
 
 // ── Gemini call ────────────────────────────────────────────────────────────────
 
-async function geminiCall(prompt, systemPrompt, maxTokens = 8192, signal = undefined) {
+// ── Gemini call ────────────────────────────────────────────────────────────────
+
+async function geminiCall(prompt, systemPrompt, maxTokens = 8192, signal = undefined, jsonMode = true) {
   const { geminiKey } = loadAiKeys()
   if (!geminiKey) throw new Error('NO_GEMINI_KEY')
 
@@ -167,10 +213,13 @@ async function geminiCall(prompt, systemPrompt, maxTokens = 8192, signal = undef
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: systemPrompt }] },
     generationConfig: {
-      responseMimeType: 'application/json',
       maxOutputTokens: maxTokens,
       temperature: 0.85,
     },
+  }
+
+  if (jsonMode) {
+    body.generationConfig.responseMimeType = 'application/json'
   }
 
   const res = await fetch(url, {
@@ -189,14 +238,224 @@ async function geminiCall(prompt, systemPrompt, maxTokens = 8192, signal = undef
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
   if (!text) throw new Error('Gemini returned empty response')
 
-  // Gemini with responseMimeType=json should return clean JSON, but strip fences just in case
-  const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
-  try {
-    return JSON.parse(cleaned)
-  } catch (err) {
-    console.error('[Forge] Gemini JSON parse failed. Raw response:', text)
-    throw err
+  if (jsonMode) {
+    const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+    try {
+      return JSON.parse(cleaned)
+    } catch (err) {
+      console.error('[Forge] Gemini JSON parse failed. Raw response:', text)
+      throw err
+    }
   }
+
+  return text
+}
+
+// ── Anthropic Call ─────────────────────────────────────────────────────────────
+
+async function anthropicCall(prompt, systemPrompt, maxTokens = 4096, signal = undefined, jsonMode = true) {
+  const { anthropicKey } = loadAiKeys()
+  if (!anthropicKey) throw new Error('NO_ANTHROPIC_KEY')
+
+  const url = '/api/anthropic/v1/messages'
+
+  const body = {
+    model: 'claude-opus-4-6',
+    max_tokens: maxTokens,
+    messages: [
+      { role: 'user', content: prompt }
+    ]
+  }
+
+  if (systemPrompt) {
+    body.system = systemPrompt
+  }
+
+  if (jsonMode) {
+    body.output_config = {
+      format: {
+        type: 'json_schema',
+        name: 'GenericResponse',
+        schema: {
+          type: 'object',
+          additionalProperties: true
+        }
+      }
+    }
+  }
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify(body),
+    signal,
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Anthropic ${res.status}: ${err.slice(0, 300)}`)
+  }
+
+  const data = await res.json()
+  const text = data?.content?.[0]?.text || ''
+  if (!text) throw new Error('Anthropic returned empty response')
+
+  if (jsonMode) {
+    const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+    try {
+      return JSON.parse(cleaned)
+    } catch (err) {
+      console.error('[Forge] Anthropic JSON parse failed. Raw response:', text)
+      throw err
+    }
+  }
+
+  return text
+}
+
+// ── OpenAI Call ───────────────────────────────────────────────────────────────
+
+async function openaiCall(prompt, systemPrompt, maxTokens = 4096, signal = undefined, jsonMode = true) {
+  const { openaiKey } = loadAiKeys()
+  if (!openaiKey) throw new Error('NO_OPENAI_KEY')
+
+  const url = '/api/openai/v1/responses'
+
+  const body = {
+    model: 'gpt-5.5',
+    reasoning: { effort: 'low' },
+    input: prompt,
+    max_completion_tokens: maxTokens,
+  }
+
+  if (systemPrompt) {
+    body.instructions = systemPrompt
+  }
+
+  if (jsonMode) {
+    body['text.format'] = { type: 'json_object' }
+  }
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${openaiKey}`
+    },
+    body: JSON.stringify(body),
+    signal,
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`OpenAI Responses ${res.status}: ${err.slice(0, 300)}`)
+  }
+
+  const data = await res.json()
+
+  let text = ''
+  if (data && typeof data.output_text === 'string') {
+    text = data.output_text
+  } else if (data && Array.isArray(data.output)) {
+    for (const item of data.output) {
+      if (item && item.type === 'message' && Array.isArray(item.content)) {
+        for (const c of item.content) {
+          if (c && c.type === 'output_text' && typeof c.text === 'string') {
+            text += c.text
+          } else if (c && typeof c.text === 'string') {
+            text += c.text
+          }
+        }
+      }
+    }
+  }
+
+  // Fallback to chat completions response format in case of proxy mapping
+  if (!text && data?.choices?.[0]?.message?.content) {
+    text = data.choices[0].message.content
+  }
+
+  if (!text) throw new Error('OpenAI returned empty response')
+
+  if (jsonMode) {
+    const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+    try {
+      return JSON.parse(cleaned)
+    } catch (err) {
+      console.error('[Forge] OpenAI JSON parse failed. Raw response:', text)
+      throw err
+    }
+  }
+
+  return text
+}
+
+// ── AI Text Call Dispatcher (Anthropic -> Nemotron -> OpenAI -> Gemini) ─────────
+
+async function aiTextCall(prompt, systemPrompt, maxTokens = 8192, signal = undefined, jsonMode = true) {
+  const { geminiKey, nvidiaKey, openaiKey, anthropicKey } = loadAiKeys()
+
+  // 1. Anthropic Claude
+  if (anthropicKey) {
+    try {
+      return await anthropicCall(prompt, systemPrompt, maxTokens, signal, jsonMode)
+    } catch (err) {
+      if (err.name === 'AbortError') throw err
+      console.warn("[Forge] Anthropic Claude call failed, trying fallback:", err)
+    }
+  }
+
+  // 2. Nvidia Nemotron
+  if (nvidiaKey) {
+    try {
+      const data = await nvidiaCall(prompt, systemPrompt, signal)
+      let content = data
+      if (data && data.content !== undefined) {
+        content = data.content
+      }
+      if (typeof content === 'string') {
+        if (jsonMode) {
+          const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+          return JSON.parse(cleaned)
+        }
+        return content
+      }
+      if (typeof content === 'object' && content !== null) {
+        return content
+      }
+      throw new Error("Invalid format from Nvidia Call")
+    } catch (err) {
+      if (err.name === 'AbortError') throw err
+      console.warn("[Forge] Nvidia Nemotron call failed, trying fallback:", err)
+    }
+  }
+
+  // 3. OpenAI Responses
+  if (openaiKey) {
+    try {
+      return await openaiCall(prompt, systemPrompt, maxTokens, signal, jsonMode)
+    } catch (err) {
+      if (err.name === 'AbortError') throw err
+      console.warn("[Forge] OpenAI Responses call failed, trying fallback:", err)
+    }
+  }
+
+  // 4. Gemini 2.5 Flash
+  if (geminiKey) {
+    try {
+      return await geminiCall(prompt, systemPrompt, maxTokens, signal, jsonMode)
+    } catch (err) {
+      if (err.name === 'AbortError') throw err
+      console.error("[Forge] Gemini call failed:", err)
+      throw err
+    }
+  }
+
+  throw new Error("NO_ACTIVE_AI_KEY")
 }
 
 // ── Nvidia Nemotron call ───────────────────────────────────────────────────────
@@ -278,21 +537,7 @@ Return this exact JSON (be specific, personal, creator-native — not generic):
   }
 }`
 
-  try {
-    const data = await nvidiaCall(prompt, system, signal)
-    // Handle wrapped content
-    if (data && data.content && typeof data.content === 'string') {
-      try { return JSON.parse(data.content) } catch(e) {}
-    }
-    if (data && data.content && typeof data.content === 'object') {
-      return data.content
-    }
-    return data
-  } catch (err) {
-    if (err.name === 'AbortError') throw err
-    console.warn("Nvidia Nemotron failed or returned invalid format, falling back to Gemini:", err)
-    return geminiCall(prompt, system, 8192, signal)
-  }
+  return aiTextCall(prompt, system, 8192, signal, true)
 }
 
 // ── Regenerate one section ─────────────────────────────────────────────────────
@@ -310,19 +555,7 @@ export async function regenerateSection(section, creatorData) {
     pitchDeck: `Create a fresh pitch deck for "${productName}" by ${name} in ${niche}. New framing. Return JSON: { "headline": "...", "tagline": "...", "slides": [{ "title": "...", "bullets": ["..."] }] }`,
   }
 
-  try {
-    const data = await nvidiaCall(prompts[section], 'You are a creator economy marketing expert. Return ONLY valid JSON.')
-    if (data && data.content && typeof data.content === 'string') {
-      try { return JSON.parse(data.content) } catch(e) {}
-    }
-    if (data && data.content && typeof data.content === 'object') {
-      return data.content
-    }
-    return data
-  } catch (err) {
-    console.warn("Nvidia Nemotron failed, falling back to Gemini:", err)
-    return geminiCall(prompts[section], 'You are a creator economy marketing expert. Return ONLY valid JSON.', 8192)
-  }
+  return aiTextCall(prompts[section], 'You are a creator economy marketing expert. Return ONLY valid JSON.', 8192, undefined, true)
 }
 
 // ── Gemini image generation (uses existing Gemini key — no extra signup) ───────
@@ -408,6 +641,45 @@ export async function generateProductImageWithTogether(creatorData, signal = und
   return null
 }
 
+// ── OpenAI GPT Image 2 generation ─────────────────────────────────────────────
+
+export async function generateProductImageWithOpenAI(creatorData, signal = undefined) {
+  const { openaiKey } = loadAiKeys()
+  if (!openaiKey) throw new Error('NO_OPENAI_KEY')
+
+  const productName = creatorData.productName || 'Creator Academy'
+  const niche       = creatorData.niche       || 'content creation'
+  const type        = creatorData.blueprint?.type || 'Web App'
+
+  const prompt = `Sleek dark ${type} screenshot mockup for "${productName}" — ${niche} creator platform. Premium SaaS UI, floating on deep dark background with subtle glow. Shows dashboard or course page with cards and metrics. No text. Professional product photography. Ultra detailed. Linear, Notion aesthetic.`
+
+  const res = await fetch('/api/openai/v1/images/generations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${openaiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-image-2',
+      prompt,
+      n: 1,
+      size: '1024x1024',
+      response_format: 'url',
+    }),
+    signal,
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`OpenAI gpt-image-2 ${res.status}: ${err.slice(0, 300)}`)
+  }
+
+  const data = await res.json()
+  if (data?.data?.[0]?.url) return data.data[0].url
+  if (data?.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`
+  return null
+}
+
 export async function generateProductImage(creatorData, signal = undefined) {
   const productName = creatorData.productName || 'Creator Academy'
   const niche       = creatorData.niche       || 'content creation'
@@ -415,31 +687,60 @@ export async function generateProductImage(creatorData, signal = undefined) {
 
   const prompt = `Sleek dark ${type} app screenshot mockup for a ${niche} creator platform called "${productName}". Premium SaaS UI on deep dark background with subtle glow. Shows a clean dashboard with course cards and metrics. No real text, just UI shapes and blocks. Professional product photography style. Linear, Notion aesthetic. Ultra detailed.`
 
-  const { nvidiaKey } = loadAiKeys()
-  const headers = { 'Content-Type': 'application/json' }
+  const { nvidiaKey, openaiKey, togetherKey, geminiKey } = loadAiKeys()
+
+  // 1. Nvidia
   if (nvidiaKey) {
-    headers['X-Nvidia-Api-Key'] = nvidiaKey
+    try {
+      const headers = { 'Content-Type': 'application/json', 'X-Nvidia-Api-Key': nvidiaKey }
+      const res = await fetch('/api/v1/infer', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ prompt, seed: 0 }),
+        signal,
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const b64 = data?.artifacts?.[0]?.base64
+        if (b64) return `data:image/jpeg;base64,${b64}`
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') throw err
+      console.warn("[Forge] NVIDIA NIM Image Generation failed, trying fallback:", err)
+    }
   }
 
-  const res = await fetch('/api/v1/infer', {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify({
-      prompt: prompt,
-      seed: 0
-    }),
-    signal,
-  })
-
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`NVIDIA NIM Image Generation ${res.status}: ${err.slice(0, 300)}`)
+  // 2. OpenAI GPT Image 2
+  if (openaiKey) {
+    try {
+      return await generateProductImageWithOpenAI(creatorData, signal)
+    } catch (err) {
+      if (err.name === 'AbortError') throw err
+      console.warn("[Forge] OpenAI gpt-image-2 Generation failed, trying fallback:", err)
+    }
   }
 
-  const data = await res.json()
-  const b64 = data?.artifacts?.[0]?.base64
-  if (!b64) throw new Error('NVIDIA NIM returned no image artifacts')
-  return `data:image/jpeg;base64,${b64}`
+  // 3. Together.ai FLUX
+  if (togetherKey) {
+    try {
+      return await generateProductImageWithTogether(creatorData, signal)
+    } catch (err) {
+      if (err.name === 'AbortError') throw err
+      console.warn("[Forge] Together.ai Image Generation failed, trying fallback:", err)
+    }
+  }
+
+  // 4. Gemini Image
+  if (geminiKey) {
+    try {
+      return await generateProductImageWithGemini(creatorData, signal)
+    } catch (err) {
+      if (err.name === 'AbortError') throw err
+      console.warn("[Forge] Gemini Image Generation failed:", err)
+    }
+  }
+
+  throw new Error("NO_ACTIVE_IMAGE_KEY")
 }
 
 // ── askForgeChat ───────────────────────────────────────────────────────────────
@@ -465,13 +766,7 @@ Do NOT output JSON. Output raw text with markdown formatting (using **bold** for
   const formattedHistory = history.map(msg => `${msg.role === 'forge' || msg.role === 'coach' ? 'Coach' : 'User'}: ${msg.content || msg.text || ''}`).join('\n\n')
   const finalPrompt = `Conversation History:\n\n${formattedHistory}\n\nUser: ${message}\n\nCoach:`
 
-  try {
-    const data = await nvidiaCall(finalPrompt, systemPrompt)
-    return data.content || data
-  } catch (err) {
-    console.warn("Nvidia Nemotron failed for coach chat, falling back to Gemini:", err)
-    return geminiCall(finalPrompt, systemPrompt, 8192)
-  }
+  return aiTextCall(finalPrompt, systemPrompt, 8192, undefined, false)
 }
 
 // ── generateStudioContent ──────────────────────────────────────────────────────
@@ -506,11 +801,11 @@ Return exactly this JSON:
 }`
 
   try {
-    const data = await nvidiaCall(prompt, system, signal)
+    const data = await aiTextCall(prompt, system, 8192, signal, true)
     return data.content || ''
   } catch (err) {
     if (err.name === 'AbortError') throw err
-    throw new Error(`Nvidia Nemotron generation failed: ${err.message}`)
+    throw new Error(`AI generation failed: ${err.message}`)
   }
 }
 
@@ -576,7 +871,7 @@ Return exactly this JSON structure (an array of 7 objects representing the days 
 Ensure each post id is a unique number (starting from 1 and incrementing). Make the titles tailored, highly specific, and creative based on the creator's niche and product.`
 
   try {
-    const data = await nvidiaCall(prompt, system, signal)
+    const data = await aiTextCall(prompt, system, 8192, signal, true)
     let parsed = null
     
     if (Array.isArray(data)) {
@@ -588,7 +883,7 @@ Ensure each post id is a unique number (starting from 1 and incrementing). Make 
       try {
         parsed = JSON.parse(data.content)
       } catch(e) {
-        throw new Error("Failed to parse Nvidia response content as JSON")
+        throw new Error("Failed to parse AI response content as JSON")
       }
     } else if (data && typeof data === 'object') {
       parsed = extractCalendarArray(data)
@@ -598,25 +893,11 @@ Ensure each post id is a unique number (starting from 1 and incrementing). Make 
       return parsed
     }
 
-    throw new Error("Nvidia did not return a valid calendar array")
+    throw new Error("AI did not return a valid calendar array")
   } catch (err) {
     if (err.name === 'AbortError') throw err
-    console.warn("Nvidia Nemotron failed, falling back to Gemini:", err)
-    
-    const geminiResult = await geminiCall(prompt, system, 8192, signal)
-    let parsedGemini = null
-    
-    if (Array.isArray(geminiResult)) {
-      parsedGemini = geminiResult
-    } else if (geminiResult && typeof geminiResult === 'object') {
-      parsedGemini = extractCalendarArray(geminiResult)
-    }
-
-    if (Array.isArray(parsedGemini)) {
-      return parsedGemini
-    }
-
-    throw new Error("Gemini fallback also did not return a valid calendar array")
+    console.error("AI Calendar generation failed:", err)
+    throw err
   }
 }
 
@@ -638,7 +919,7 @@ Return exactly this JSON:
   "status": "draft"
 }`
   try {
-    const data = await nvidiaCall(prompt, system, signal)
+    const data = await aiTextCall(prompt, system, 8192, signal, true)
     if (data && data.content && typeof data.content === 'string') {
       try { return JSON.parse(data.content) } catch(e) {}
     }
@@ -648,8 +929,8 @@ Return exactly this JSON:
     return data
   } catch (err) {
     if (err.name === 'AbortError') throw err
-    console.warn("Nvidia Nemotron failed, falling back to Gemini:", err)
-    return geminiCall(prompt, system, 8192, signal)
+    console.error("AI Single Calendar Post generation failed:", err)
+    throw err
   }
 }
 
@@ -690,7 +971,7 @@ Return exactly this JSON array structure:
 Keep product names authentic, tailored, and highly specific to the creator's niche.`
 
   try {
-    const data = await nvidiaCall(prompt, system)
+    const data = await aiTextCall(prompt, system, 8192, undefined, true)
 
     // 1. Direct array
     if (Array.isArray(data)) return data
@@ -721,10 +1002,10 @@ Keep product names authentic, tailored, and highly specific to the creator's nic
       if (arrVal) return arrVal
     }
 
-    throw new Error('Nvidia returned unrecognisable format')
+    throw new Error('AI returned unrecognisable format')
   } catch (err) {
-    console.warn('Nvidia Nemotron failed for recommendations, falling back to Gemini:', err)
-    return geminiCall(prompt, system, 8192)
+    console.error('AI failed for recommendations:', err)
+    throw err
   }
 }
 

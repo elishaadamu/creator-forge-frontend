@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForge, useBgJob } from '../../App'
 import { RefreshCw, Copy, Check, Plus, Sparkles, ChevronLeft, ChevronRight, Info, Calendar, AlertCircle, X, Pencil } from 'lucide-react'
-import { generateContentCalendar, generateSingleCalendarPost, hasGeminiKey } from '../../services/ai'
+import { generateContentCalendar, generateSingleCalendarPost, hasTextKey } from '../../services/ai'
 
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -330,7 +330,7 @@ export default function ContentCalendar() {
       }
     }
 
-    if (!hasGeminiKey()) {
+    if (!hasTextKey()) {
       // Offline fallback: adapt initial mock calendar
       const adaptedMock = INITIAL_CALENDAR.map(day => ({
         ...day,
@@ -444,7 +444,7 @@ export default function ContentCalendar() {
 
   const handleRegenerateWeek = () => {
     if (calJob.status === 'running') return
-    if (!hasGeminiKey()) {
+    if (!hasTextKey()) {
       setApiModalOpen(true)
       return
     }
@@ -456,7 +456,7 @@ export default function ContentCalendar() {
     setGeneratingSlot(day)
     if (incrementAiActions) incrementAiActions()
     try {
-      if (!hasGeminiKey()) {
+      if (!hasTextKey()) {
         setApiModalOpen(true)
         setGeneratingSlot(null)
         return
@@ -494,7 +494,7 @@ export default function ContentCalendar() {
     setRegeneratingPostId(postId)
     if (incrementAiActions) incrementAiActions()
     try {
-      if (!hasGeminiKey()) {
+      if (!hasTextKey()) {
         setApiModalOpen(true)
         setRegeneratingPostId(null)
         return
@@ -645,8 +645,7 @@ export default function ContentCalendar() {
         </div>
       </div>
 
-      {/* Warning Box */}
-      {!hasGeminiKey() && (
+      {!hasTextKey() && (
         <div className="mb-6 p-4 rounded-xl border flex items-center justify-between gap-4" style={{ background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.15)' }}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
@@ -654,7 +653,7 @@ export default function ContentCalendar() {
             </div>
             <div>
               <p className="text-[13px] font-medium text-white">Mock Mode Active</p>
-              <p className="text-[12px] text-white/50">Configure your Gemini API key in Settings to generate actual custom 7-day content plans.</p>
+              <p className="text-[12px] text-white/50">Configure your API keys in Settings to generate actual custom 7-day content plans.</p>
             </div>
           </div>
         </div>

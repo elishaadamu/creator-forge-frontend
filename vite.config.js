@@ -13,6 +13,18 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/api\/gemini/, ''),
       },
+      // OpenAI — text and image generation
+      '/api/openai': {
+        target: 'https://api.openai.com',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/openai/, ''),
+      },
+      // Anthropic — Claude text generation
+      '/api/anthropic': {
+        target: 'https://api.anthropic.com',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/anthropic/, ''),
+      },
       // Together.ai — free FLUX image generation
       '/api/together': {
         target: 'https://api.together.xyz',

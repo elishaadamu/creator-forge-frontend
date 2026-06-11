@@ -4,7 +4,7 @@ import { Check, Play, Eye, Heart } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { getScrapePromise } from '../../services/scraper'
 import { saveCreator, recommendCreator } from '../../services/opsApi'
-import { generateRecommendationsAI, hasGeminiKey } from '../../services/ai'
+import { generateRecommendationsAI, hasTextKey } from '../../services/ai'
 
 
 const ANALYSIS_STEPS = [
@@ -239,7 +239,7 @@ export default function Analyzing() {
             }
 
             const isPlaceholder = finalRecs && finalRecs.length === 1 && (finalRecs[0].product_name?.includes('[Placeholder]') || finalRecs[0].product_name?.includes('Placeholder'))
-            if ((!finalRecs || finalRecs.length === 0 || isPlaceholder) && hasGeminiKey()) {
+            if ((!finalRecs || finalRecs.length === 0 || isPlaceholder) && hasTextKey()) {
               console.log('[Forge] Backend returned placeholder or empty, generating custom recommendations in frontend...')
               finalRecs = await generateRecommendationsAI(data)
             }
