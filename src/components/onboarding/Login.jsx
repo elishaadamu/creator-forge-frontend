@@ -52,6 +52,7 @@ export default function Login() {
           password: password
         }))
         localStorage.setItem('forge_active_session', 'true')
+        localStorage.setItem('forge_login_timestamp', Date.now().toString())
 
         // Restore creatorData, calendar, launch pack, and studio copies from DB
         if (data.creator_data) {
@@ -234,15 +235,7 @@ export default function Login() {
 
           {/* Helper links */}
           <div className="text-center pt-2 flex flex-col gap-2.5">
-            <button
-              type="button"
-              onClick={() => goTo('signup')}
-              className="text-[12.5px] font-semibold hover:underline"
-              style={{ color: 'var(--theme-accent)' }}
-            >
-              Register a new account
-            </button>
-            <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.15)' }}>or</span>
+
             <button
               type="button"
               onClick={handleGoToSignup}

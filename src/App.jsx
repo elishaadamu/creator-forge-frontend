@@ -163,6 +163,19 @@ function GlobalToast({ toast, onClose }) {
 export default function App() {
   const [step, setStep] = useState(() => {
     try {
+      const now = Date.now()
+      const loginTimestamp = parseInt(localStorage.getItem('forge_login_timestamp') || '0', 10)
+      if (loginTimestamp > 0 && now - loginTimestamp > 3600000) {
+        localStorage.removeItem('forge_active_session')
+        localStorage.removeItem('forge_login_timestamp')
+      }
+
+      const onboardingTimestamp = parseInt(localStorage.getItem('forge_onboarding_timestamp') || '0', 10)
+      if (onboardingTimestamp > 0 && now - onboardingTimestamp > 3600000) {
+        localStorage.removeItem('forge_onboarding_step')
+        localStorage.removeItem('forge_onboarding_timestamp')
+      }
+
       const path = window.location.pathname
       const cachedUser = localStorage.getItem('forge_user_profile')
       const activeSession = localStorage.getItem('forge_active_session')
@@ -451,6 +464,9 @@ export default function App() {
       const isOnboardingStep = ['welcome', 'creator-link', 'analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(step)
       if (isOnboardingStep) {
         localStorage.setItem('forge_onboarding_step', step)
+        if (!localStorage.getItem('forge_onboarding_timestamp')) {
+          localStorage.setItem('forge_onboarding_timestamp', Date.now().toString())
+        }
         
         // Log all localStorage contents to developer console during onboarding
         const store = {}
@@ -465,11 +481,41 @@ export default function App() {
         })
       } else if (step === 'dashboard' || step === 'login' || step === 'signup') {
         localStorage.removeItem('forge_onboarding_step')
+        localStorage.removeItem('forge_onboarding_timestamp')
       }
     } catch (e) {
       console.warn('[Forge] Failed to save onboarding step:', e)
     }
   }, [step])
+
+  // Periodic expiration check (1 hour timeout for login and onboarding)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now()
+      const loginTs = parseInt(localStorage.getItem('forge_login_timestamp') || '0', 10)
+      if (loginTs > 0 && now - loginTs > 3600000) {
+        localStorage.removeItem('forge_active_session')
+        localStorage.removeItem('forge_login_timestamp')
+        if (step === 'dashboard') {
+          navigate('login')
+        }
+      }
+      
+      const onboardTs = parseInt(localStorage.getItem('forge_onboarding_timestamp') || '0', 10)
+      if (onboardTs > 0 && now - onboardTs > 3600000) {
+        localStorage.removeItem('forge_onboarding_step')
+        localStorage.removeItem('forge_onboarding_timestamp')
+        if (['creator-link', 'analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(step)) {
+          setCreatorData({
+            url: '', platform: null, handle: '', name: '', followers: 0, avatar: null, niche: '',
+            recentPosts: [], engagementRate: 0, brandColor: null, blueprint: null, productName: '', buildItems: []
+          })
+          navigate('welcome')
+        }
+      }
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [step, navigate])
 
   // Restore AI keys from DB if user is logged in
   useEffect(() => {
