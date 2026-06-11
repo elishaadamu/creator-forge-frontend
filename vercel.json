@@ -5,6 +5,22 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/gemini/:path*",
+      "destination": "https://generativelanguage.googleapis.com/:path*"
+    },
+    {
+      "source": "/api/openai/:path*",
+      "destination": "https://api.openai.com/:path*"
+    },
+    {
+      "source": "/api/anthropic/:path*",
+      "destination": "https://api.anthropic.com/:path*"
+    },
+    {
+      "source": "/api/together/:path*",
+      "destination": "https://api.together.xyz/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://creator-forge-backend.onrender.com/api/:path*"
     },
