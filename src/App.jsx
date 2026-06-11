@@ -12,8 +12,8 @@ import Login from './components/onboarding/Login'
 import DashboardLayout from './components/dashboard/DashboardLayout'
 import OpsLayout from './components/ops/OpsLayout'
 import OpsAuth from './components/ops/OpsAuth'
-import { clearInMemoryKeys } from './services/scraper'
-import { clearInMemoryAiKeys, restoreAiKeysFromLoginData } from './services/ai'
+import { clearInMemoryKeys, loadKeys } from './services/scraper'
+import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys } from './services/ai'
 import { CheckCircle, AlertCircle, X } from 'lucide-react'
 
 export const ForgeContext = createContext(null)
@@ -442,6 +442,10 @@ export default function App() {
           store[key] = localStorage.getItem(key)
         }
         console.log(`[Forge] Onboarding active step: "${step}". Current localStorage:`, store)
+        console.log('[Forge] Current in-memory Scraper & AI API keys:', {
+          scraping: loadKeys(),
+          ai: loadAiKeys()
+        })
       } else if (step === 'dashboard' || step === 'login' || step === 'signup') {
         localStorage.removeItem('forge_onboarding_step')
       }
