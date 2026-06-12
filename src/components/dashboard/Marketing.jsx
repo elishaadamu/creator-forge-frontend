@@ -692,12 +692,56 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 
-const TODAY_ACTIONS = [
-  { id: 'teaser',   priority: 'High',   label: 'Post your launch teaser',          rationale: 'Last post was 4 days ago. Audiences forget fast — a teaser now primes your best fans before launch.', cta: 'Generate teaser',   icon: Share2    },
-  { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Email converts 3-5x better than social. Your list needs to hear about this before you go wide.',         cta: 'Write email',        icon: Mail      },
-  { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes reel',   rationale: 'BTS content builds trust and outperforms promos by 2x in your niche. Low effort, high payoff.',           cta: 'Generate caption',   icon: Video     },
-  { id: 'calendar', priority: 'Medium', label: 'Schedule your next 7 days',        rationale: 'Creators who batch weekly post 4x more consistently. Forge can fill your entire week in seconds.',        cta: 'Generate week',      icon: Calendar  },
-]
+function getTodayActions(platform) {
+  const p = platform ? platform.toLowerCase() : 'other'
+  
+  if (p === 'youtube') {
+    return [
+      { id: 'teaser',   priority: 'High',   label: 'Post your launch teaser video',    rationale: 'Prime your channel viewers before launch — a short teaser video or Community tab post builds massive hype.', cta: 'Generate teaser',   icon: Share2 },
+      { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Convert subscribers to buyers. Your email list will drive the highest launch conversion rate.',         cta: 'Write email',        icon: Mail },
+      { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes Short',   rationale: 'Shorts humanize your channel and drive high-reach algorithmic discovery. Show them how you built it.',     cta: 'Generate caption',   icon: Video },
+      { id: 'calendar', priority: 'Medium', label: 'Schedule your launch week uploads',  rationale: 'Consistency is key on YouTube. Plan your main videos, Shorts, and Community posts for launch week.',      cta: 'Generate week',      icon: Calendar },
+    ]
+  }
+  if (p === 'instagram') {
+    return [
+      { id: 'teaser',   priority: 'High',   label: 'Post your launch teaser Reel',     rationale: 'Priming your Instagram feed with a teaser primes your fans and lets you pin a high-converting announcement post.', cta: 'Generate teaser',   icon: Share2 },
+      { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Move your IG followers to owned media. Email converts 3-5x better than a bio link.',                 cta: 'Write email',        icon: Mail },
+      { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes Reel/Story', rationale: 'BTS Reels build trust and build intimate connections. Show the raw, unpolished building process.',   cta: 'Generate caption',   icon: Video },
+      { id: 'calendar', priority: 'Medium', label: 'Schedule your launch week IG posts', rationale: 'Keep engagement high during launch week. Batch your feed posts, Stories, and Reels.',                    cta: 'Generate week',      icon: Calendar },
+    ]
+  }
+  if (p === 'twitter' || p === 'x') {
+    return [
+      { id: 'teaser',   priority: 'High',   label: 'Tweet your launch teaser thread',  rationale: 'Prime your timeline. A short hook-heavy teaser thread builds early bookmarks and retweets.',              cta: 'Generate teaser',   icon: Share2 },
+      { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Email guarantees delivery. X algorithm fluctuates, but email lands directly in your followers\' primary inboxes.', cta: 'Write email',        icon: Mail },
+      { id: 'bts',      priority: 'Medium', label: 'Post a behind-the-scenes thread',   rationale: 'Share screenshots and raw stats. X audiences love transparent \'build-in-public\' BTS stories.',           cta: 'Generate caption',   icon: Video },
+      { id: 'calendar', priority: 'Medium', label: 'Schedule your launch week X posts',   rationale: 'Batching your X posts ensures you maintain high visibility without being glued to the timeline.',          cta: 'Generate week',      icon: Calendar },
+    ]
+  }
+  if (p === 'tiktok') {
+    return [
+      { id: 'teaser',   priority: 'High',   label: 'Post your launch teaser TikTok',   rationale: 'Prime your FYP views. A high-energy teaser video generates early search demand and profile visits.',      cta: 'Generate teaser',   icon: Share2 },
+      { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Convert short-form views into direct revenue. Direct TikTok traffic to an email sequence.',               cta: 'Write email',        icon: Mail },
+      { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes TikTok',   rationale: 'TikTok audiences connect with authentic, low-production BTS clips. Show the late nights of building.',     cta: 'Generate caption',   icon: Video },
+      { id: 'calendar', priority: 'Medium', label: 'Schedule your launch week TikToks',   rationale: 'Batching video hooks and captions ensures you maintain daily uploads during your launch phase.',          cta: 'Generate week',      icon: Calendar },
+    ]
+  }
+  if (p === 'twitch') {
+    return [
+      { id: 'teaser',   priority: 'High',   label: 'Stream your launch countdown teaser', rationale: 'Announce the launch live! Prime your chat with a countdown and show early previews during stream.', cta: 'Generate teaser',   icon: Share2 },
+      { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Reach viewers when offline. An email notification brings loyal chat members back for launch day.',         cta: 'Write email',        icon: Mail },
+      { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes stream clip', rationale: 'Clip a funny or raw moment of creation. Share it on social channels to invite new viewers in.',    cta: 'Generate caption',   icon: Video },
+      { id: 'calendar', priority: 'Medium', label: 'Schedule launch week stream slots',   rationale: 'Set clear start times and titles for your stream events so your community knows exactly when to tune in.', cta: 'Generate week',      icon: Calendar },
+    ]
+  }
+  return [
+    { id: 'teaser',   priority: 'High',   label: 'Post your launch teaser',          rationale: 'Last post was 4 days ago. Audiences forget fast — a teaser now primes your best fans before launch.', cta: 'Generate teaser',   icon: Share2 },
+    { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Email converts 3-5x better than social. Your list needs to hear about this before you go wide.',         cta: 'Write email',        icon: Mail },
+    { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes reel',   rationale: 'BTS content builds trust and outperforms promos by 2x in your niche. Low effort, high payoff.',           cta: 'Generate caption',   icon: Video },
+    { id: 'calendar', priority: 'Medium', label: 'Schedule your next 7 days',        rationale: 'Creators who batch weekly post 4x more consistently. Forge can fill your entire week in seconds.',        cta: 'Generate week',      icon: Calendar },
+  ]
+}
 
 const PRIORITY_STYLES = {
   High:   { bg: 'rgba(255,255,255,0.12)', color: 'white' },
@@ -991,7 +1035,9 @@ export default function Marketing() {
     startBgJob(AUTOFILL_JOB, () => generateContentCalendar(creatorData, 'launch'))
   }
 
-  const visibleActions = TODAY_ACTIONS.filter(
+  const todayActions = getTodayActions(creatorData?.platform)
+
+  const visibleActions = todayActions.filter(
     a => !dismissedActions.includes(a.id) && !completedActions.includes(a.id)
   )
 
@@ -1105,11 +1151,34 @@ export default function Marketing() {
     const content = generatedContents[id] || CONTENT[id]
     const body    = content?.body || ''
 
+    const p = (creatorData?.platform || 'other').toLowerCase()
+    let teaserPostShape = { type: 'reel', label: 'Launch teaser post', platform: 'IG', color: 'rgba(225,48,108,0.25)', theme: 'launch' }
+    let btsPostShape = { type: 'reel', label: 'Behind-the-scenes caption', platform: 'IG', color: 'rgba(225,48,108,0.15)', theme: 'bts' }
+    let calendarPostShape = { type: 'thread', label: '7-Day launch plan drafted', platform: 'All', color: 'rgba(96,165,250,0.2)', theme: 'value' }
+
+    if (p === 'youtube') {
+      teaserPostShape = { type: 'Shorts', label: 'Launch teaser video', platform: 'YT', color: 'rgba(255,59,48,0.25)', theme: 'launch' }
+      btsPostShape = { type: 'Shorts', label: 'Behind-the-scenes Short', platform: 'YT', color: 'rgba(255,59,48,0.15)', theme: 'bts' }
+      calendarPostShape = { type: 'Video', label: 'Launch week uploads plan', platform: 'YT', color: 'rgba(255,59,48,0.2)', theme: 'value' }
+    } else if (p === 'twitter' || p === 'x') {
+      teaserPostShape = { type: 'Thread', label: 'Launch teaser thread', platform: 'X', color: 'rgba(96,165,250,0.25)', theme: 'launch' }
+      btsPostShape = { type: 'Post', label: 'Behind-the-scenes thread', platform: 'X', color: 'rgba(96,165,250,0.15)', theme: 'bts' }
+      calendarPostShape = { type: 'Thread', label: 'X launch plan scheduled', platform: 'X', color: 'rgba(96,165,250,0.2)', theme: 'value' }
+    } else if (p === 'tiktok') {
+      teaserPostShape = { type: 'Video', label: 'Launch teaser TikTok', platform: 'TT', color: 'rgba(0,200,200,0.25)', theme: 'launch' }
+      btsPostShape = { type: 'Video', label: 'Behind-the-scenes TikTok', platform: 'TT', color: 'rgba(0,200,200,0.15)', theme: 'bts' }
+      calendarPostShape = { type: 'Video', label: 'TikTok launch schedule plan', platform: 'TT', color: 'rgba(0,200,200,0.2)', theme: 'value' }
+    } else if (p === 'twitch') {
+      teaserPostShape = { type: 'Stream', label: 'Launch stream countdown', platform: 'Twitch', color: 'rgba(145,70,255,0.25)', theme: 'launch' }
+      btsPostShape = { type: 'Clip', label: 'Behind-the-scenes stream clip', platform: 'Twitch', color: 'rgba(145,70,255,0.15)', theme: 'bts' }
+      calendarPostShape = { type: 'Stream', label: 'Twitch launch streams schedule', platform: 'Twitch', color: 'rgba(145,70,255,0.2)', theme: 'value' }
+    }
+
     const ACTION_POST_MAP = {
-      teaser:   { type: 'reel',    label: 'Launch teaser post',         platform: 'IG',    color: 'rgba(225,48,108,0.25)',  theme: 'launch' },
-      email:    { type: 'email',   label: 'Launch announcement email',  platform: 'Email', color: 'rgba(255,255,255,0.12)', theme: 'launch' },
-      bts:      { type: 'reel',    label: 'Behind-the-scenes caption',  platform: 'IG',    color: 'rgba(225,48,108,0.15)',  theme: 'bts'    },
-      calendar: { type: 'thread',  label: '7-Day launch plan drafted',  platform: 'All',   color: 'rgba(96,165,250,0.2)',   theme: 'value'  },
+      teaser: teaserPostShape,
+      email: { type: 'email', label: 'Launch announcement email', platform: 'Email', color: 'rgba(255,255,255,0.12)', theme: 'launch' },
+      bts: btsPostShape,
+      calendar: calendarPostShape,
     }
 
     const postShape = ACTION_POST_MAP[id]
