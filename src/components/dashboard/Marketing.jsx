@@ -838,7 +838,7 @@ function mapCalendarResult(result) {
 }
 
 export default function Marketing() {
-  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb } = useForge()
+  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dbLoadedTimestamp } = useForge()
   const accent = getAccent(creatorData.platform)
   const autofillJob = useBgJob(AUTOFILL_JOB)
 
@@ -996,7 +996,7 @@ export default function Marketing() {
         console.error('Failed to parse cached completed actions:', e)
       }
     }
-  }, [creatorData?.handle])
+  }, [creatorData?.handle, dbLoadedTimestamp])
 
   // ── Load cache or trigger autofill on mount
   useEffect(() => {

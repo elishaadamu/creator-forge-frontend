@@ -248,7 +248,7 @@ function EmptySlot({ day, onGenerate, isGenerating }) {
 }
 
 export default function ContentCalendar() {
-  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb } = useForge()
+  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dbLoadedTimestamp } = useForge()
   const handle = creatorData?.handle || 'default'
 
   const [activeGoal, setActiveGoal] = useState(() => {
@@ -376,6 +376,7 @@ export default function ContentCalendar() {
         console.log(`[Forge ContentCalendar] Generated new 7-Day week calendar via AI for goal "${goal}":`, normalized)
         setCalendar(normalized)
         localStorage.setItem(cacheKey, JSON.stringify(normalized))
+        setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
       } else {
         throw new Error("Invalid response format received from AI.")
       }
@@ -401,7 +402,16 @@ export default function ContentCalendar() {
       return
     }
     loadOrGenerateCalendar(activeGoal, false)
-  }, [activeGoal, week, creatorData?.handle])
+  }, [activeGoal, week, creatorData?.handle, dbLoadedTimestamp])
+
+  // Reload activeGoal when database loads
+  useEffect(() => {
+    const handle = creatorData?.handle || 'default'
+    const cachedGoal = localStorage.getItem(`forge_${handle}_calendar_active_goal`) || 'launch'
+    if (cachedGoal !== activeGoal) {
+      setActiveGoal(cachedGoal)
+    }
+  }, [dbLoadedTimestamp, creatorData?.handle])
 
   const handleCopy = (id, text) => {
     navigator.clipboard.writeText(text)

@@ -439,7 +439,7 @@ const PACK_JOB   = 'launch-pack'
 const IMAGE_JOB  = 'launch-pack-image'
 
 export default function AiDoesItPanel({ onClose }) {
-  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb } = useForge()
+  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dbLoadedTimestamp } = useForge()
   const accent = getAccent(creatorData.platform)
   const packJob  = useBgJob(PACK_JOB)
   const imageJob = useBgJob(IMAGE_JOB)
@@ -527,7 +527,7 @@ export default function AiDoesItPanel({ onClose }) {
       })
       setStepStatus(initial)
     }
-  }, [creatorData?.handle])
+  }, [creatorData?.handle, dbLoadedTimestamp])
 
   // ── Re-apply background job results when they finish ─────────────────────────
   useEffect(() => {

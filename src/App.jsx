@@ -222,6 +222,7 @@ export default function App() {
   
   // API Keys modal state
   const [apiModalOpen, setApiModalOpen] = useState(false)
+  const [dbLoadedTimestamp, setDbLoadedTimestamp] = useState(0)
 
   const [aiKeys, setAiKeysState] = useState(() => {
     try {
@@ -543,22 +544,45 @@ export default function App() {
     return () => clearInterval(interval)
   }, [step, navigate])
 
-  // Restore AI keys from DB if user is logged in
+  // Restore full profile data from DB if user is logged in
   useEffect(() => {
     if (userProfile?.username) {
-      fetch(`/api/auth/load-ai-keys/${encodeURIComponent(userProfile.username)}`)
+      fetch(`/api/auth/profile/${encodeURIComponent(userProfile.username)}`)
         .then(res => {
-          if (!res.ok) throw new Error('Failed to load keys')
+          if (!res.ok) throw new Error('Failed to load user profile')
           return res.json()
         })
         .then(data => {
-          console.log('[Forge] Loaded AI Keys from database:', data.ai_keys)
-          if (data.status === 'success' && data.ai_keys) {
-            updateAiKeys(data.ai_keys)
+          console.log('[Forge] Restored user profile session from database:', data)
+          if (data.status === 'success') {
+            // Restore creatorData, calendar, launch pack, and studio copies from DB to localStorage
+            if (data.creator_data) {
+              localStorage.setItem('forge_creator_data', JSON.stringify(data.creator_data))
+              setCreatorData(prev => ({ ...prev, ...data.creator_data }))
+            }
+            if (data.calendar_data) {
+              Object.entries(data.calendar_data).forEach(([key, val]) => {
+                if (key && val) localStorage.setItem(key, val)
+              })
+            }
+            if (data.launch_pack_data) {
+              Object.entries(data.launch_pack_data).forEach(([key, val]) => {
+                if (key && val) localStorage.setItem(key, val)
+              })
+            }
+            if (data.studio_data) {
+              Object.entries(data.studio_data).forEach(([key, val]) => {
+                if (key && val) localStorage.setItem(key, val)
+              })
+            }
+            if (data.ai_keys) {
+              updateAiKeys(data.ai_keys)
+            }
+            setDbLoadedTimestamp(Date.now())
           }
         })
         .catch(err => {
-          console.error('[Forge] Failed to restore AI keys from DB on mount:', err)
+          console.error('[Forge] Failed to restore user profile from DB on mount:', err)
         })
     }
   }, [userProfile, updateAiKeys])
@@ -621,7 +645,8 @@ export default function App() {
     setApiModalOpen,
     triggerToast,
     aiKeys,
-    updateAiKeys
+    updateAiKeys,
+    dbLoadedTimestamp
   }
 
   // /ops route — internal operator pipeline panel (login-protected)
