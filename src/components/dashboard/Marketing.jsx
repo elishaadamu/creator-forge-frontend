@@ -816,7 +816,7 @@ export default function Marketing() {
   const [generatedContents, setGeneratedContents] = useState(() => {
     const handle = creatorData?.handle || 'default'
     try {
-      const cached = localStorage.getItem(`forge_${handle}_launch_pack_contents`)
+      const cached = localStorage.getItem(`forge_${handle}_launch_pack_contents`) || localStorage.getItem(`forge_${handle.toLowerCase()}_launch_pack_contents`)
       return cached ? JSON.parse(cached) : {}
     } catch (e) {
       console.error('Failed to parse cached launch pack contents:', e)
@@ -828,8 +828,9 @@ export default function Marketing() {
   const [week, setWeek]                         = useState(() => {
     const handle = creatorData?.handle || 'default'
     const cacheKey = `forge_calendar_${handle}_launch_w0`
+    const cacheKeyLower = `forge_calendar_${handle.toLowerCase()}_launch_w0`
     try {
-      const cached = localStorage.getItem(cacheKey)
+      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
       if (cached) {
         return mapCalendarResult(JSON.parse(cached))
       }
@@ -891,20 +892,25 @@ export default function Marketing() {
     const h = creatorData?.handle
     if (!h || h === 'default') return
     
-    const cachedContents = localStorage.getItem(`forge_${h}_launch_pack_contents`)
+    const cachedContents = localStorage.getItem(`forge_${h}_launch_pack_contents`) || localStorage.getItem(`forge_${h.toLowerCase()}_launch_pack_contents`)
     if (cachedContents) {
       try {
-        setGeneratedContents(JSON.parse(cachedContents))
+        const parsed = JSON.parse(cachedContents)
+        console.log('[Forge Marketing] Loaded cached launch pack contents:', parsed)
+        setGeneratedContents(parsed)
       } catch (e) {
         console.error('Failed to parse cached launch pack contents:', e)
       }
     }
     
     const cacheKey = `forge_calendar_${h}_launch_w0`
-    const cached = localStorage.getItem(cacheKey)
+    const cacheKeyLower = `forge_calendar_${h.toLowerCase()}_launch_w0`
+    const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
     if (cached) {
       try {
-        setWeek(mapCalendarResult(JSON.parse(cached)))
+        const parsed = JSON.parse(cached)
+        console.log('[Forge Marketing] Loaded cached launch week calendar:', parsed)
+        setWeek(mapCalendarResult(parsed))
       } catch (e) {
         console.error('Failed to parse cached calendar:', e)
       }
@@ -918,7 +924,8 @@ export default function Marketing() {
 
     if (!week) {
       const cacheKey = `forge_calendar_${h}_launch_w0`
-      const cached = localStorage.getItem(cacheKey)
+      const cacheKeyLower = `forge_calendar_${h.toLowerCase()}_launch_w0`
+      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
       if (cached) {
         // If cached calendar exists, load it and return (do NOT auto-generate)
         try {
@@ -951,7 +958,19 @@ export default function Marketing() {
         setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
       }
     } else if (autofillJob.status === 'error' || autofillJob.status === 'cancelled') {
-      setWeek(INITIAL_WEEK)
+      const handle = creatorData?.handle || 'default'
+      const cacheKey = `forge_calendar_${handle}_launch_w0`
+      const cacheKeyLower = `forge_calendar_${handle.toLowerCase()}_launch_w0`
+      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
+      if (cached) {
+        try {
+          setWeek(mapCalendarResult(JSON.parse(cached)))
+        } catch (e) {
+          setWeek(INITIAL_WEEK)
+        }
+      } else {
+        setWeek(INITIAL_WEEK)
+      }
       clearBgJob(AUTOFILL_JOB)
     }
   }, [autofillJob.status, autofillJob.result])
@@ -1011,6 +1030,7 @@ export default function Marketing() {
           }
         }
         const h = creatorData?.handle || 'default'
+        console.log(`[Forge Marketing] Refined marketing content for "${id}":`, updated[id])
         localStorage.setItem(`forge_${h}_launch_pack_contents`, JSON.stringify(updated))
         return updated
       })
@@ -1061,6 +1081,7 @@ export default function Marketing() {
           }
         }
         const h = creatorData?.handle || 'default'
+        console.log(`[Forge Marketing] Generated marketing content for "${id}":`, updated[id])
         localStorage.setItem(`forge_${h}_launch_pack_contents`, JSON.stringify(updated))
         return updated
       })

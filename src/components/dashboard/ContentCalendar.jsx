@@ -258,8 +258,9 @@ export default function ContentCalendar() {
   const [calendar, setCalendar] = useState(() => {
     const initialGoal = localStorage.getItem(`forge_${handle}_calendar_active_goal`) || 'launch'
     const cacheKey = `forge_calendar_${handle}_${initialGoal}_w0`
+    const cacheKeyLower = `forge_calendar_${handle.toLowerCase()}_${initialGoal.toLowerCase()}_w0`
     try {
-      const cached = localStorage.getItem(cacheKey)
+      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
       if (cached) return JSON.parse(cached)
     } catch (e) {
       console.error('Failed to parse cached calendar:', e)
@@ -318,10 +319,13 @@ export default function ContentCalendar() {
     const cacheKey = `forge_calendar_${handle}_${goal}_w${week}`
     
     if (!forceRegenerate) {
-      const cached = localStorage.getItem(cacheKey)
+      const cacheKeyLower = `forge_calendar_${handle.toLowerCase()}_${goal.toLowerCase()}_w${week}`
+      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
       if (cached) {
         try {
-          setCalendar(JSON.parse(cached))
+          const parsed = JSON.parse(cached)
+          console.log(`[Forge ContentCalendar] Loaded cached calendar for active goal "${goal}":`, parsed)
+          setCalendar(parsed)
           setError(null)
           return
         } catch (e) {
@@ -369,6 +373,7 @@ export default function ContentCalendar() {
             status: STATUS_STYLES[post.status] ? post.status : 'draft'
           }))
         }))
+        console.log(`[Forge ContentCalendar] Generated new 7-Day week calendar via AI for goal "${goal}":`, normalized)
         setCalendar(normalized)
         localStorage.setItem(cacheKey, JSON.stringify(normalized))
       } else {
@@ -437,6 +442,7 @@ export default function ContentCalendar() {
         }))
         const handle = creatorData?.handle || 'default'
         const cacheKey = `forge_calendar_${handle}_${activeGoal}_w${week}`
+        console.log('[Forge ContentCalendar] Background 7-day calendar week generation complete:', normalized)
         setCalendar(normalized)
         localStorage.setItem(cacheKey, JSON.stringify(normalized))
         clearBgJob(calJobId)
@@ -446,6 +452,19 @@ export default function ContentCalendar() {
     }
     if (calJob.status === 'error' || calJob.status === 'cancelled') {
       setError(calJob.status === 'cancelled' ? 'AI generation cancelled.' : 'AI generation failed. Showing cached or fallback data.')
+      const handle = creatorData?.handle || 'default'
+      const cacheKey = `forge_calendar_${handle}_${activeGoal}_w${week}`
+      const cacheKeyLower = `forge_calendar_${handle.toLowerCase()}_${activeGoal.toLowerCase()}_w${week}`
+      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
+      if (cached) {
+        try {
+          setCalendar(JSON.parse(cached))
+        } catch (e) {
+          setCalendar(INITIAL_CALENDAR)
+        }
+      } else {
+        setCalendar(INITIAL_CALENDAR)
+      }
       clearBgJob(calJobId)
     }
   }, [calJob.status, calJob.result])

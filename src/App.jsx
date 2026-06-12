@@ -352,6 +352,7 @@ export default function App() {
 
     const cData = currentCreatorData || creatorData
     const h = cData?.handle || 'default'
+    const hLower = h.toLowerCase()
     
     const calendar_data = {}
     const launch_pack_data = {}
@@ -361,9 +362,9 @@ export default function App() {
       const key = localStorage.key(i)
       if (key && key.startsWith('forge_calendar_')) {
         calendar_data[key] = localStorage.getItem(key)
-      } else if (key && (key.startsWith(`forge_${h}_launch_pack`) || key.startsWith(`forge_${h}_launch_image`))) {
+      } else if (key && (key.startsWith(`forge_${h}_launch_pack`) || key.startsWith(`forge_${hLower}_launch_pack`) || key.startsWith(`forge_${h}_launch_image`) || key.startsWith(`forge_${hLower}_launch_image`))) {
         launch_pack_data[key] = localStorage.getItem(key)
-      } else if (key && key.startsWith(`forge_${h}_studio_`)) {
+      } else if (key && (key.startsWith(`forge_${h}_studio_`) || key.startsWith(`forge_${hLower}_studio_`))) {
         studio_data[key] = localStorage.getItem(key)
       }
     }
@@ -383,7 +384,11 @@ export default function App() {
     })
       .then(res => res.json())
       .then(data => {
-        console.log('[Forge] Database session synced:', data)
+        console.log('[Forge] Database session synced successfully. Payload:', {
+          calendar_data,
+          launch_pack_data,
+          studio_data
+        }, 'Response:', data)
       })
       .catch(err => {
         console.error('[Forge] Session sync failed:', err)
@@ -547,6 +552,7 @@ export default function App() {
           return res.json()
         })
         .then(data => {
+          console.log('[Forge] Loaded AI Keys from database:', data.ai_keys)
           if (data.status === 'success' && data.ai_keys) {
             updateAiKeys(data.ai_keys)
           }
