@@ -182,40 +182,6 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
         </div>
 
         <div className="p-6 space-y-5 overflow-y-auto" style={{ maxHeight: '60vh' }}>
-          {/* Security Notice Banner */}
-          <div
-            className="rounded-xl border p-3.5 flex items-start gap-3 text-left"
-            style={{
-              background: consentSave && isLoggedIn && tab === 'ai'
-                ? 'rgba(16, 185, 129, 0.04)'
-                : 'rgba(59, 130, 246, 0.04)',
-              borderColor: consentSave && isLoggedIn && tab === 'ai'
-                ? 'rgba(16, 185, 129, 0.15)'
-                : 'rgba(59, 130, 246, 0.15)'
-            }}
-          >
-            {consentSave && isLoggedIn && tab === 'ai' ? (
-              <ShieldCheck className="text-emerald-400 flex-shrink-0 mt-0.5" size={15} />
-            ) : (
-              <AlertCircle className="text-blue-400 flex-shrink-0 mt-0.5" size={15} />
-            )}
-            <div className="space-y-0.5">
-              <h4 className="text-[12px] font-semibold text-white">
-                {tab === 'scraping' 
-                  ? 'Local Storage' 
-                  : consentSave && isLoggedIn 
-                    ? 'Cloud Sync Enabled' 
-                    : 'Secure Cloud Save'}
-              </h4>
-              <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                {tab === 'scraping'
-                  ? 'Scraping keys are kept in your browser and never stored on the server.'
-                  : consentSave && isLoggedIn
-                    ? 'Your AI keys are saved to your account and loaded automatically.'
-                    : 'Save your AI keys below to automatically restore them next time you log in.'}
-              </p>
-            </div>
-          </div>
 
           {/* ── SCRAPING TAB ─────────────────────────────────────────── */}
           {tab === 'scraping' && (
@@ -622,36 +588,21 @@ export default function ApiKeysModal({ onClose, platform, defaultTab = 'scraping
 
               {/* ── Consent to save AI keys ────────────────────────────── */}
               {isLoggedIn && hasAnyAiKey && (
-                <div
-                  className="rounded-xl border p-4 transition-all duration-200"
-                  style={{
-                    background: consentSave ? 'rgba(16,185,129,0.04)' : 'rgba(255,255,255,0.02)',
-                    borderColor: consentSave ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.08)',
-                  }}
-                >
-                  <label className="flex items-start gap-3 cursor-pointer select-none">
-                    <div className="mt-0.5 flex-shrink-0">
-                      <div
-                        className="w-4 h-4 rounded border flex items-center justify-center transition-all duration-150"
-                        style={{
-                          background: consentSave ? 'rgba(16,185,129,0.9)' : 'transparent',
-                          borderColor: consentSave ? 'rgba(16,185,129,0.9)' : 'rgba(255,255,255,0.25)',
-                        }}
-                        onClick={() => setConsentSave(v => !v)}
-                      >
-                        {consentSave && <Check size={10} className="text-white" strokeWidth={3} />}
-                      </div>
-                    </div>
-                    <div onClick={() => setConsentSave(v => !v)}>
-                      <p className="text-[12px] font-semibold text-white leading-tight">
-                        Save my AI keys to my account
-                      </p>
-                      <p className="text-[11px] leading-relaxed mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                        Your keys will be stored in your account and automatically restored when you log in.
-                      </p>
-                    </div>
-                  </label>
-                </div>
+                <label className="flex items-center gap-3 cursor-pointer select-none py-1">
+                  <div
+                    className="w-4 h-4 rounded border flex items-center justify-center transition-all duration-150"
+                    style={{
+                      background: consentSave ? 'white' : 'transparent',
+                      borderColor: consentSave ? 'white' : 'rgba(255,255,255,0.25)',
+                    }}
+                    onClick={() => setConsentSave(v => !v)}
+                  >
+                    {consentSave && <Check size={10} className="text-black" strokeWidth={3} />}
+                  </div>
+                  <span className="text-[13px] text-white/75" onClick={() => setConsentSave(v => !v)}>
+                    Save keys to my account for cloud sync
+                  </span>
+                </label>
               )}
             </>
           )}

@@ -359,10 +359,9 @@ export default function Signup() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="text-center max-w-md mx-auto w-full flex-shrink-0">
-        <p className="text-[11px]" style={{ color: 'var(--theme-text-muted)', opacity: 0.6 }}>
-          Forge protects user privacy. Credentials and scraped profiles never leave your sandbox.
+      <footer className="text-center max-w-md mx-auto w-full flex-shrink-0 pb-6">
+        <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
+          © 2026 Creator Forge. All rights reserved.
         </p>
       </footer>
     </div>

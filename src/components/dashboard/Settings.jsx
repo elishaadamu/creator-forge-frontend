@@ -169,8 +169,47 @@ const NOTIFICATION_SETTINGS = [
   { key: 'automationRun', label: 'Automation notifications', sub: 'When an automation creates a draft' },
 ]
 
+const NICHE_KEYWORDS = {
+  'Tech & Gadgets':         ['tech', 'technology', 'gadget', 'phone', 'apple', 'android', 'software', 'coding', 'dev', 'ai', 'programming', 'developer', 'computer', 'science', 'math'],
+  'Finance & Business':     ['finance', 'money', 'invest', 'crypto', 'business', 'entrepreneur', 'startup', 'trading', 'wealth', 'stocks', 'marketing', 'sales', 'realestate', 'property'],
+  'Health & Fitness':       ['fitness', 'health', 'workout', 'gym', 'nutrition', 'wellness', 'diet', 'run', 'yoga', 'crossfit', 'bodybuilding', 'muscle', 'athletics'],
+  'Gaming':                 ['gaming', 'games', 'gamer', 'twitch', 'esport', 'playstation', 'xbox', 'nintendo', 'stream', 'gameplay', 'letplay'],
+  'Beauty & Fashion':       ['beauty', 'makeup', 'fashion', 'style', 'skincare', 'outfit', 'luxury', 'ootd', 'glam', 'hair', 'nails', 'cosmetics'],
+  'Food & Cooking':         ['food', 'cook', 'recipe', 'restaurant', 'baking', 'chef', 'eat', 'culinary', 'kitchen', 'foodie', 'mukbang', 'dessert'],
+  'Travel & Lifestyle':     ['travel', 'lifestyle', 'adventure', 'explore', 'vlog', 'daily', 'trip', 'journey', 'nature', 'wanderlust', 'backpacker'],
+  'Education':              ['education', 'learn', 'teach', 'tutor', 'course', 'tutorial', 'how to', 'tips', 'guide', 'study', 'science', 'history', 'geography'],
+  'Comedy & Entertainment': ['comedy', 'funny', 'meme', 'entertainment', 'laugh', 'sketch', 'humor', 'jokes', 'fun', 'reaction', 'prank'],
+  'Music & Arts':           ['music', 'musician', 'artist', 'art', 'creative', 'singer', 'guitar', 'producer', 'beats', 'cover', 'dance', 'drawing', 'painting', 'craft'],
+  'Parenting & Family':     ['parent', 'family', 'mom', 'dad', 'kids', 'baby', 'parenting', 'children', 'motherhood', 'fatherhood', 'toddler'],
+  'Creator & Marketing':    ['creator', 'content', 'youtube', 'instagram', 'social media', 'marketing', 'brand', 'influence', 'growth', 'seo', 'sponsors']
+}
+
+function inferNicheFromHandle(handle) {
+  if (!handle) return 'Lifestyle & Creativity'
+  const lower = handle.toLowerCase()
+  for (const [niche, keywords] of Object.entries(NICHE_KEYWORDS)) {
+    if (keywords.some(k => lower.includes(k))) return niche
+  }
+  return 'Lifestyle & Creativity'
+}
+
 export default function Settings() {
-  const { creatorData, setApiModalOpen, userProfile, aiKeys, updateAiKeys } = useForge()
+  const { creatorData, updateCreator, setApiModalOpen, userProfile, setUserProfile, aiKeys, updateAiKeys, syncSessionToDb, triggerToast } = useForge()
+
+  const [profileName, setProfileName] = useState(creatorData.name || '')
+  const [profileHandle, setProfileHandle] = useState(creatorData.handle || '')
+  const [profileEmail, setProfileEmail] = useState(userProfile?.email || '')
+  const [profileNiche, setProfileNiche] = useState(creatorData.niche || '')
+
+  useEffect(() => {
+    setProfileName(creatorData.name || '')
+    setProfileHandle(creatorData.handle || '')
+    setProfileNiche(creatorData.niche || '')
+  }, [creatorData])
+
+  useEffect(() => {
+    setProfileEmail(userProfile?.email || '')
+  }, [userProfile])
   const [automations, setAutomations] = useState(INITIAL_AUTOMATIONS)
   const [notifications, setNotifications] = useState({
     newMember: true,
@@ -328,7 +367,79 @@ export default function Settings() {
       })
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const nameChanged = profileName !== (creatorData.name || '')
+    const handleChanged = profileHandle !== (creatorData.handle || '')
+    const emailChanged = profileEmail.trim().toLowerCase() !== (userProfile?.email || '').toLowerCase()
+    const nicheChanged = profileNiche !== (creatorData.niche || '')
+
+    const changedFields = []
+    if (nameChanged) changedFields.push('Display name')
+    if (handleChanged) changedFields.push('Handle')
+    if (emailChanged) changedFields.push('Email')
+    if (nicheChanged) changedFields.push('Niche')
+
+    // 1. Update creatorData in-memory
+    updateCreator({
+      name: profileName,
+      handle: profileHandle,
+      niche: profileNiche
+    })
+
+    // 2. If registered, save changes to DB
+    if (userProfile?.username) {
+      // Update email on DB if changed
+      if (emailChanged) {
+        try {
+          const res = await fetch('/api/auth/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: userProfile.username,
+              email: profileEmail.trim()
+            })
+          })
+          if (!res.ok) {
+            const err = await res.json()
+            alert('Failed to update email: ' + (err.detail || 'Email already registered.'))
+            return
+          }
+          const data = await res.json()
+          if (data.status === 'success') {
+            // Update local state
+            const updatedProfile = { ...userProfile, email: data.email }
+            localStorage.setItem('forge_user_profile', JSON.stringify(updatedProfile))
+            setUserProfile(updatedProfile)
+          }
+        } catch (e) {
+          console.error('Failed to update email in DB:', e)
+          alert('Failed to update email address.')
+          return
+        }
+      }
+
+      // Sync updated creatorData to DB
+      const updatedCreator = {
+        ...creatorData,
+        name: profileName,
+        handle: profileHandle,
+        niche: profileNiche
+      }
+      setTimeout(() => {
+        if (syncSessionToDb) {
+          syncSessionToDb(userProfile.username, updatedCreator)
+        }
+      }, 100)
+    }
+
+    if (changedFields.length > 0) {
+      const msg = `Successfully updated: ${changedFields.join(', ')}`
+      alert(msg)
+      if (triggerToast) {
+        triggerToast(msg, 'success')
+      }
+    }
+
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -391,10 +502,19 @@ export default function Settings() {
 
             <div className="space-y-3">
               {[
-                { label: 'Display name', value: creatorData.name || 'Creator', type: 'text' },
-                { label: 'Handle', value: creatorData.handle || '@creator', type: 'text' },
-                { label: 'Email', value: 'you@example.com', type: 'email' },
-                { label: 'Niche / topic', value: creatorData.niche || 'Technology & Lifestyle', type: 'text' },
+                { label: 'Display name', value: profileName, onChange: setProfileName, type: 'text' },
+                {
+                  label: 'Handle',
+                  value: profileHandle,
+                  onChange: (val) => {
+                    setProfileHandle(val)
+                    const inferred = inferNicheFromHandle(val)
+                    setProfileNiche(inferred)
+                  },
+                  type: 'text'
+                },
+                { label: 'Email', value: profileEmail, onChange: setProfileEmail, type: 'email' },
+                { label: 'Niche / topic', value: profileNiche, onChange: setProfileNiche, type: 'text' },
               ].map(field => (
                 <div key={field.label}>
                   <label className="block text-[12px] mb-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
@@ -403,7 +523,8 @@ export default function Settings() {
                   <div className="forge-input-wrap rounded-xl">
                     <input
                       className="forge-input text-[14px]"
-                      defaultValue={field.value}
+                      value={field.value}
+                      onChange={e => field.onChange(e.target.value)}
                       type={field.type}
                     />
                   </div>
@@ -622,36 +743,21 @@ export default function Settings() {
 
               {/* Consent checkbox */}
               {!!userProfile?.username && (gemKey.trim() || togetherKey.trim() || nvKey.trim() || openaiKey.trim()) && (
-                <div
-                  className="rounded-xl border p-4 transition-all duration-200 mt-4"
-                  style={{
-                    background: consentSave ? 'rgba(16,185,129,0.04)' : 'rgba(255,255,255,0.02)',
-                    borderColor: consentSave ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.08)',
-                  }}
-                >
-                  <label className="flex items-start gap-3 cursor-pointer select-none">
-                    <div className="mt-0.5 flex-shrink-0">
-                      <div
-                        className="w-4 h-4 rounded border flex items-center justify-center transition-all duration-150"
-                        style={{
-                          background: consentSave ? 'rgba(16,185,129,0.9)' : 'transparent',
-                          borderColor: consentSave ? 'rgba(16,185,129,0.9)' : 'rgba(255,255,255,0.25)',
-                        }}
-                        onClick={() => setConsentSave(v => !v)}
-                      >
-                        {consentSave && <Check size={10} className="text-white" strokeWidth={3} />}
-                      </div>
-                    </div>
-                    <div onClick={() => setConsentSave(v => !v)}>
-                      <p className="text-[12px] font-semibold text-white leading-tight">
-                        Save my AI keys to my account
-                      </p>
-                      <p className="text-[11px] leading-relaxed mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                        Your keys will be stored in the database and automatically restored when you log in.
-                      </p>
-                    </div>
-                  </label>
-                </div>
+                <label className="flex items-center gap-3 cursor-pointer select-none py-1.5 mt-2">
+                  <div
+                    className="w-4 h-4 rounded border flex items-center justify-center transition-all duration-150"
+                    style={{
+                      background: consentSave ? 'white' : 'transparent',
+                      borderColor: consentSave ? 'white' : 'rgba(255,255,255,0.25)',
+                    }}
+                    onClick={() => setConsentSave(v => !v)}
+                  >
+                    {consentSave && <Check size={10} className="text-black" strokeWidth={3} />}
+                  </div>
+                  <span className="text-[13px] text-white/75" onClick={() => setConsentSave(v => !v)}>
+                    Save keys to my account for cloud sync
+                  </span>
+                </label>
               )}
             </div>
 
