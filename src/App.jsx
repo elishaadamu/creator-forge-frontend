@@ -308,20 +308,41 @@ export default function App() {
     setBgJobs(prev => { const next = { ...prev }; delete next[jobId]; return next })
   }, [])
 
-  const [creatorData, setCreatorData] = useState({
-    url: '',
-    platform: null,
-    handle: '',
-    name: '',
-    followers: 0,
-    avatar: null,
-    niche: '',
-    recentPosts: [],
-    engagementRate: 0,
-    brandColor: null,
-    blueprint: null,
-    productName: '',
-    buildItems: [],
+  const [creatorData, setCreatorData] = useState(() => {
+    try {
+      const cached = localStorage.getItem('forge_creator_data')
+      return cached ? JSON.parse(cached) : {
+        url: '',
+        platform: null,
+        handle: '',
+        name: '',
+        followers: 0,
+        avatar: null,
+        niche: '',
+        recentPosts: [],
+        engagementRate: 0,
+        brandColor: null,
+        blueprint: null,
+        productName: '',
+        buildItems: [],
+      }
+    } catch {
+      return {
+        url: '',
+        platform: null,
+        handle: '',
+        name: '',
+        followers: 0,
+        avatar: null,
+        niche: '',
+        recentPosts: [],
+        engagementRate: 0,
+        brandColor: null,
+        blueprint: null,
+        productName: '',
+        buildItems: [],
+      }
+    }
   })
 
   // Synchronize localStorage configuration to the backend SQLite database

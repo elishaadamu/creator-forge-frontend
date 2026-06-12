@@ -248,7 +248,7 @@ function EmptySlot({ day, onGenerate, isGenerating }) {
 }
 
 export default function ContentCalendar() {
-  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast } = useForge()
+  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb } = useForge()
   const handle = creatorData?.handle || 'default'
 
   const [activeGoal, setActiveGoal] = useState(() => {
@@ -348,6 +348,7 @@ export default function ContentCalendar() {
       }))
       setCalendar(adaptedMock)
       localStorage.setItem(cacheKey, JSON.stringify(adaptedMock))
+      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
       return
     }
 
@@ -389,6 +390,11 @@ export default function ContentCalendar() {
   }
 
   useEffect(() => {
+    const handle = creatorData?.handle
+    if (!handle || handle === 'default') {
+      setCalendar(INITIAL_CALENDAR)
+      return
+    }
     loadOrGenerateCalendar(activeGoal, false)
   }, [activeGoal, week, creatorData?.handle])
 
@@ -409,6 +415,7 @@ export default function ContentCalendar() {
       localStorage.setItem(cacheKey, JSON.stringify(updated))
       return updated
     })
+    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
   }
 
   // Apply background-job result when it finishes (works even after leaving the page)
@@ -434,6 +441,7 @@ export default function ContentCalendar() {
         localStorage.setItem(cacheKey, JSON.stringify(normalized))
         clearBgJob(calJobId)
         if (triggerToast) triggerToast('7-Day calendar week generated!', 'success')
+        setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
       }
     }
     if (calJob.status === 'error' || calJob.status === 'cancelled') {
@@ -481,6 +489,7 @@ export default function ContentCalendar() {
           if (triggerToast) triggerToast('New post draft generated!', 'success')
           return updated
         })
+        setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
       
     } catch (err) {
       console.error(err)
@@ -521,6 +530,7 @@ export default function ContentCalendar() {
         if (triggerToast) triggerToast('Post draft regenerated successfully!', 'success')
         return updated
       })
+      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
     } catch (err) {
       console.error(err)
       alert("Failed to regenerate post suggestion: " + err.message)
@@ -562,6 +572,7 @@ export default function ContentCalendar() {
       return updated
     })
     setIsAddModalOpen(false)
+    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
   }
 
   const handleScheduleAllDrafts = () => {
@@ -577,6 +588,7 @@ export default function ContentCalendar() {
       localStorage.setItem(cacheKey, JSON.stringify(updated))
       return updated
     })
+    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
   }
 
   const handleSaveEditedPost = (updatedPost) => {
@@ -595,6 +607,7 @@ export default function ContentCalendar() {
     })
     setSelectedPost(null)
     setSelectedDay(null)
+    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
   }
 
   const totalPosts = calendar ? calendar.reduce((s, d) => s + (d.posts ? d.posts.length : 0), 0) : 0

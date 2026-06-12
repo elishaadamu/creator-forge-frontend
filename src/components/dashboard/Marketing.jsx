@@ -794,7 +794,7 @@ function mapCalendarResult(result) {
 }
 
 export default function Marketing() {
-  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast } = useForge()
+  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb } = useForge()
   const accent = getAccent(creatorData.platform)
   const autofillJob = useBgJob(AUTOFILL_JOB)
 
@@ -813,7 +813,16 @@ export default function Marketing() {
   })
   const [generating, setGenerating]             = useState(null)
   const [openOutputId, setOpenOutputId]         = useState(null)  // which action's output is open
-  const [generatedContents, setGeneratedContents] = useState({})
+  const [generatedContents, setGeneratedContents] = useState(() => {
+    const handle = creatorData?.handle || 'default'
+    try {
+      const cached = localStorage.getItem(`forge_${handle}_launch_pack_contents`)
+      return cached ? JSON.parse(cached) : {}
+    } catch (e) {
+      console.error('Failed to parse cached launch pack contents:', e)
+      return {}
+    }
+  })
   const [selectedPost, setSelectedPost]         = useState(null)
   const [selectedPostDay, setSelectedPostDay]   = useState(null)
   const [week, setWeek]                         = useState(() => {
@@ -877,9 +886,49 @@ export default function Marketing() {
 
   const coachMessage = getCoachMessage(coachTrigger, creatorData)
 
+  // Load/reload cached contents when handle resolves or changes
+  useEffect(() => {
+    const h = creatorData?.handle
+    if (!h || h === 'default') return
+    
+    const cachedContents = localStorage.getItem(`forge_${h}_launch_pack_contents`)
+    if (cachedContents) {
+      try {
+        setGeneratedContents(JSON.parse(cachedContents))
+      } catch (e) {
+        console.error('Failed to parse cached launch pack contents:', e)
+      }
+    }
+    
+    const cacheKey = `forge_calendar_${h}_launch_w0`
+    const cached = localStorage.getItem(cacheKey)
+    if (cached) {
+      try {
+        setWeek(mapCalendarResult(JSON.parse(cached)))
+      } catch (e) {
+        console.error('Failed to parse cached calendar:', e)
+      }
+    }
+  }, [creatorData?.handle])
+
   // ── Load cache or trigger autofill on mount
   useEffect(() => {
+    const h = creatorData?.handle
+    if (!h || h === 'default') return
+
     if (!week) {
+      const cacheKey = `forge_calendar_${h}_launch_w0`
+      const cached = localStorage.getItem(cacheKey)
+      if (cached) {
+        // If cached calendar exists, load it and return (do NOT auto-generate)
+        try {
+          setWeek(mapCalendarResult(JSON.parse(cached)))
+        } catch (e) {
+          console.error('Failed to parse cached calendar:', e)
+        }
+        return
+      }
+
       if (hasTextKey() && autofillJob.status === 'idle') {
         startBgJob(AUTOFILL_JOB, () => generateContentCalendar(creatorData, 'launch'))
       } else if (!hasTextKey()) {
@@ -899,6 +948,7 @@ export default function Marketing() {
         localStorage.setItem(cacheKey, JSON.stringify(autofillJob.result))
         clearBgJob(AUTOFILL_JOB)
         if (triggerToast) triggerToast('Weekly content calendar autofilled!', 'success')
+        setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
       }
     } else if (autofillJob.status === 'error' || autofillJob.status === 'cancelled') {
       setWeek(INITIAL_WEEK)
@@ -951,14 +1001,20 @@ export default function Marketing() {
       
       const result = await generateStudioContent(contentType, newContext, creatorData, tone)
       
-      setGeneratedContents(prev => ({
-        ...prev,
-        [id]: {
-          title: CONTENT[id]?.title || contentType,
-          platforms: result.platforms || CONTENT[id]?.platforms || ['All platforms'],
-          body: result.body || result.text || result
+      setGeneratedContents(prev => {
+        const updated = {
+          ...prev,
+          [id]: {
+            title: CONTENT[id]?.title || contentType,
+            platforms: result.platforms || CONTENT[id]?.platforms || ['All platforms'],
+            body: result.body || result.text || result
+          }
         }
-      }))
+        const h = creatorData?.handle || 'default'
+        localStorage.setItem(`forge_${h}_launch_pack_contents`, JSON.stringify(updated))
+        return updated
+      })
+      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
     } catch (err) {
       console.error(err)
       alert("Error refining content: " + err.message)
@@ -995,17 +1051,23 @@ export default function Marketing() {
       
       const result = await generateStudioContent(contentType, "I need launch materials.", creatorData)
       
-      setGeneratedContents(prev => ({
-        ...prev,
-        [id]: {
-          title: CONTENT[id].title,
-          platforms: result.platforms || CONTENT[id].platforms,
-          body: result.body || result.text || result
+      setGeneratedContents(prev => {
+        const updated = {
+          ...prev,
+          [id]: {
+            title: CONTENT[id].title,
+            platforms: result.platforms || CONTENT[id].platforms,
+            body: result.body || result.text || result
+          }
         }
-      }))
+        const h = creatorData?.handle || 'default'
+        localStorage.setItem(`forge_${h}_launch_pack_contents`, JSON.stringify(updated))
+        return updated
+      })
       
       setGenerating(null)
       setOpenOutputId(id)
+      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
     } catch (err) {
       console.error(err)
       alert("Error generating content: " + err.message)
@@ -1073,6 +1135,7 @@ export default function Marketing() {
     })
 
     setTimeout(() => setScheduledToast(null), 3000)
+    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
   }
 
   const handleCopy = () => {
@@ -1128,6 +1191,7 @@ export default function Marketing() {
     }
 
     setIsAddModalOpen(false)
+    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
   }
 
   const handleSaveEditedPost = (updatedPost, day) => {
@@ -1165,6 +1229,7 @@ export default function Marketing() {
     localStorage.setItem(`forge_calendar_${h}_launch_w0`, JSON.stringify(updatedRaw))
     setSelectedPost(null)
     if (triggerToast) triggerToast('Post draft updated!', 'success')
+    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
   }
 
   return (
@@ -1468,6 +1533,7 @@ export default function Marketing() {
                         localStorage.setItem(`forge_${handle}_completed_actions`, JSON.stringify(next))
                         return next
                       })
+                      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
                     }}
                     className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-full flex items-center justify-center transition-all text-white/30 hover:text-white/70"
                     style={{ background: 'rgba(255,255,255,0.06)' }} title="Mark done">
@@ -1480,6 +1546,7 @@ export default function Marketing() {
                         localStorage.setItem(`forge_${handle}_dismissed_actions`, JSON.stringify(next))
                         return next
                       })
+                      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
                     }}
                     className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-full flex items-center justify-center transition-all text-white/30 hover:text-white/70"
                     style={{ background: 'rgba(255,255,255,0.06)' }} title="Dismiss">
