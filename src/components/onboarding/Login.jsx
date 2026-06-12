@@ -141,19 +141,15 @@ export default function Login() {
 
           {/* Security Alert Notice */}
           <div 
-            className="rounded-xl border p-3.5 flex items-start gap-3"
+            className="rounded-xl border p-3"
             style={{ 
-              background: 'rgba(59, 130, 246, 0.04)', 
-              borderColor: 'rgba(59, 130, 246, 0.15)' 
+              background: 'rgba(255,255,255,0.01)', 
+              borderColor: 'rgba(255,255,255,0.05)' 
             }}
           >
-            <AlertTriangle className="text-blue-400 flex-shrink-0 mt-0.5" size={15} />
-            <div className="space-y-0.5 text-left">
-              <h4 className="text-[12px] font-semibold text-white">Secure API Key Management</h4>
-              <p className="text-[11px] leading-relaxed" style={{ color: 'var(--theme-text-muted)' }}>
-                By default, API keys are held transiently in-memory. You can check "Save my AI keys to my account" in settings to automatically restore them on login.
-              </p>
-            </div>
+            <p className="text-[11px] leading-relaxed text-white/30 text-center">
+              Manage your API credentials and cloud sync settings anytime in your settings dashboard.
+            </p>
           </div>
 
           {/* Error message */}
