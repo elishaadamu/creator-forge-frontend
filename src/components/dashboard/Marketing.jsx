@@ -850,10 +850,20 @@ export default function Marketing() {
   const CONTENT = buildContent(handle, productName, niche)
 
   const [dismissedActions, setDismissedActions] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(`forge_${handle}_dismissed_actions`) || '[]') } catch { return [] }
+    try {
+      const newKey = `forge_${handle}_launch_pack_dismissed_actions`
+      const oldKey = `forge_${handle}_dismissed_actions`
+      const cached = localStorage.getItem(newKey) || localStorage.getItem(oldKey)
+      return cached ? JSON.parse(cached) : []
+    } catch { return [] }
   })
   const [completedActions, setCompletedActions] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(`forge_${handle}_completed_actions`) || '[]') } catch { return [] }
+    try {
+      const newKey = `forge_${handle}_launch_pack_completed_actions`
+      const oldKey = `forge_${handle}_completed_actions`
+      const cached = localStorage.getItem(newKey) || localStorage.getItem(oldKey)
+      return cached ? JSON.parse(cached) : []
+    } catch { return [] }
   })
   const [generating, setGenerating]             = useState(null)
   const [openOutputId, setOpenOutputId]         = useState(null)  // which action's output is open
@@ -957,6 +967,33 @@ export default function Marketing() {
         setWeek(mapCalendarResult(parsed))
       } catch (e) {
         console.error('Failed to parse cached calendar:', e)
+      }
+    }
+    const cachedDismissed = localStorage.getItem(`forge_${h}_launch_pack_dismissed_actions`) ||
+                            localStorage.getItem(`forge_${h.toLowerCase()}_launch_pack_dismissed_actions`) ||
+                            localStorage.getItem(`forge_${h}_dismissed_actions`) ||
+                            localStorage.getItem(`forge_${h.toLowerCase()}_dismissed_actions`)
+    if (cachedDismissed) {
+      try {
+        const parsed = JSON.parse(cachedDismissed)
+        console.log('[Forge Marketing] Loaded cached dismissed priorities:', parsed)
+        setDismissedActions(parsed)
+      } catch (e) {
+        console.error('Failed to parse cached dismissed actions:', e)
+      }
+    }
+
+    const cachedCompleted = localStorage.getItem(`forge_${h}_launch_pack_completed_actions`) ||
+                            localStorage.getItem(`forge_${h.toLowerCase()}_launch_pack_completed_actions`) ||
+                            localStorage.getItem(`forge_${h}_completed_actions`) ||
+                            localStorage.getItem(`forge_${h.toLowerCase()}_completed_actions`)
+    if (cachedCompleted) {
+      try {
+        const parsed = JSON.parse(cachedCompleted)
+        console.log('[Forge Marketing] Loaded cached completed priorities:', parsed)
+        setCompletedActions(parsed)
+      } catch (e) {
+        console.error('Failed to parse cached completed actions:', e)
       }
     }
   }, [creatorData?.handle])
@@ -1220,7 +1257,7 @@ export default function Marketing() {
     // Mark as completed so it vanishes from Today's Priorities
     setCompletedActions(prev => {
       const next = prev.includes(id) ? prev : [...prev, id]
-      localStorage.setItem(`forge_${handle}_completed_actions`, JSON.stringify(next))
+      localStorage.setItem(`forge_${handle}_launch_pack_completed_actions`, JSON.stringify(next))
       return next
     })
 
@@ -1620,7 +1657,7 @@ export default function Marketing() {
                     onClick={() => {
                       setCompletedActions(p => {
                         const next = p.includes(action.id) ? p : [...p, action.id]
-                        localStorage.setItem(`forge_${handle}_completed_actions`, JSON.stringify(next))
+                        localStorage.setItem(`forge_${handle}_launch_pack_completed_actions`, JSON.stringify(next))
                         return next
                       })
                       setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
@@ -1633,7 +1670,7 @@ export default function Marketing() {
                     onClick={() => {
                       setDismissedActions(p => {
                         const next = p.includes(action.id) ? p : [...p, action.id]
-                        localStorage.setItem(`forge_${handle}_dismissed_actions`, JSON.stringify(next))
+                        localStorage.setItem(`forge_${handle}_launch_pack_dismissed_actions`, JSON.stringify(next))
                         return next
                       })
                       setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)

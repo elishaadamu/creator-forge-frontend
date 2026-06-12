@@ -439,7 +439,7 @@ const PACK_JOB   = 'launch-pack'
 const IMAGE_JOB  = 'launch-pack-image'
 
 export default function AiDoesItPanel({ onClose }) {
-  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast } = useForge()
+  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb } = useForge()
   const accent = getAccent(creatorData.platform)
   const packJob  = useBgJob(PACK_JOB)
   const imageJob = useBgJob(IMAGE_JOB)
@@ -476,18 +476,58 @@ export default function AiDoesItPanel({ onClose }) {
   const [errorMsg, setErrorMsg] = useState('')
   const [regenning, setRegenning] = useState({})
 
-  // Write pack and image to localStorage on change
+  // Write pack and image to localStorage on change and sync to DB
   useEffect(() => {
     if (pack) {
       localStorage.setItem(`forge_${handle}_launch_pack`, JSON.stringify(pack))
+      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
     }
-  }, [pack, handle])
+  }, [pack, handle, syncSessionToDb])
 
   useEffect(() => {
     if (imageUrl) {
       localStorage.setItem(`forge_${handle}_launch_image`, imageUrl)
+      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
     }
-  }, [imageUrl, handle])
+  }, [imageUrl, handle, syncSessionToDb])
+
+  // Load/reload cached contents when handle resolves or changes
+  useEffect(() => {
+    const h = creatorData?.handle
+    if (!h || h === 'default') return
+
+    const cachedPack = localStorage.getItem(`forge_${h}_launch_pack`) || localStorage.getItem(`forge_${h.toLowerCase()}_launch_pack`)
+    if (cachedPack) {
+      try {
+        setPack(JSON.parse(cachedPack))
+        setPhase('done')
+      } catch (e) {
+        console.error('Failed to parse cached pack:', e)
+      }
+    }
+
+    const cachedImage = localStorage.getItem(`forge_${h}_launch_image`) || localStorage.getItem(`forge_${h.toLowerCase()}_launch_image`)
+    if (cachedImage) {
+      setImageUrl(cachedImage)
+    }
+
+    const cachedEdits = localStorage.getItem(`forge_${h}_launch_pack_edits`) || localStorage.getItem(`forge_${h.toLowerCase()}_launch_pack_edits`)
+    if (cachedEdits) {
+      try {
+        setEdits(JSON.parse(cachedEdits))
+      } catch (e) {
+        console.error('Failed to parse cached edits:', e)
+      }
+    }
+
+    if (cachedPack || cachedImage) {
+      const initial = {}
+      STEPS.forEach(s => { 
+        initial[s.id] = (s.id === 'image' && cachedImage) || (s.id !== 'image' && cachedPack) ? 'done' : 'pending' 
+      })
+      setStepStatus(initial)
+    }
+  }, [creatorData?.handle])
 
   // ── Re-apply background job results when they finish ─────────────────────────
   useEffect(() => {
@@ -551,7 +591,23 @@ export default function AiDoesItPanel({ onClose }) {
   }, [imageJob.status, imageJob.result, imageJob.error, handle, clearBgJob])
 
   // Edited values
-  const [edits, setEdits] = useState({})
+  const [edits, setEdits] = useState(() => {
+    try {
+      const cached = localStorage.getItem(`forge_${handle}_launch_pack_edits`)
+      return cached ? JSON.parse(cached) : {}
+    } catch {
+      return {}
+    }
+  })
+
+  // Persist user inline edits to localStorage and sync to DB
+  useEffect(() => {
+    if (handle !== '@creator' && Object.keys(edits).length > 0) {
+      localStorage.setItem(`forge_${handle}_launch_pack_edits`, JSON.stringify(edits))
+      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+    }
+  }, [edits, handle, syncSessionToDb])
+
   const val = (path, fallback = '') => edits[path] !== undefined ? edits[path] : fallback
   const set = (path, v) => setEdits(p => ({ ...p, [path]: v }))
 
