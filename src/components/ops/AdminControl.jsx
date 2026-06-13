@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import {
   Users, Database, Shield, ShieldCheck, ShieldAlert,
   Trash2, RefreshCw, Key, Settings, AlertTriangle, Loader2,
@@ -34,14 +34,15 @@ export default function AdminControl() {
   const [showEditSendGrid, setShowEditSendGrid] = useState(false)
   const [showEditGoogleAppPassword, setShowEditGoogleAppPassword] = useState(false)
 
-  // System utility scripts states
-  const [utilityLoading, setUtilityLoading] = useState(false)
-  const [repairResult, setRepairResult] = useState(null)
+
 
   // Audit Logs states
   const [auditLogs, setAuditLogs] = useState([])
   const [logSearchQuery, setLogSearchQuery] = useState('')
   const [expandedLogId, setExpandedLogId] = useState(null)
+  const [inspectedLog, setInspectedLog] = useState(null)
+  const [inspectLoading, setInspectLoading] = useState(false)
+  const [showRawMetadata, setShowRawMetadata] = useState(false)
 
   const loadData = async () => {
     setLoading(true)
@@ -162,23 +163,28 @@ export default function AdminControl() {
     setActionLoading(false)
   }
 
-  const runAvatarRepair = async () => {
-    setUtilityLoading(true)
-    setRepairResult(null)
+
+
+  const handleInspectLog = async (logId) => {
+    if (expandedLogId === logId) {
+      setExpandedLogId(null)
+      setInspectedLog(null)
+      return
+    }
+    setExpandedLogId(logId)
+    setInspectLoading(true)
+    setInspectedLog(null)
+    setShowRawMetadata(false)
     try {
-      const res = await fetch('/api/admin/fix-avatars', { method: 'POST' })
+      const res = await fetch(`/api/audit/logs/${logId}/inspect`)
       if (res.ok) {
         const data = await res.json()
-        setRepairResult(data.fixed ?? 0)
-        // Refresh stats since some records changed
-        const statsRes = await fetch('/api/admin/system-stats')
-        const statsData = await statsRes.json()
-        if (statsData.status === 'success') setStats(statsData)
+        setInspectedLog(data)
       }
     } catch (e) {
-      console.error('Failed to execute avatar repair:', e)
+      console.error('Failed to inspect log details:', e)
     }
-    setUtilityLoading(false)
+    setInspectLoading(false)
   }
 
   // Filter logs based on search query
@@ -326,7 +332,7 @@ export default function AdminControl() {
       </div>
 
       {/* Configurations & Utilities */}
-      <div className="grid grid-cols-2 gap-6">
+      <div>
         {/* Global Settings Editor */}
         <div className="rounded-2xl border p-5 space-y-4" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}>
           <div className="flex items-center justify-between">
@@ -484,7 +490,7 @@ export default function AdminControl() {
                   className="bg-[#070707] border border-white/8 rounded-xl px-3 py-2 outline-none text-white text-[12px] font-semibold"
                 >
                   <option value="gemini">Gemini AI (Default)</option>
-                  <option value="openai">OpenAI (GPT-4o)</option>
+                  <option value="openai">OpenAI (GPT-5.5)</option>
                   <option value="claude">Claude AI (Anthropic)</option>
                 </select>
               ) : (
@@ -586,60 +592,6 @@ export default function AdminControl() {
             </div>
           </div>
         </div>
-
-        {/* System Diagnostics & Utilities */}
-        <div className="rounded-2xl border p-5 space-y-4 flex flex-col justify-between" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-[14px] font-bold text-white">System Actions & Utilities</h3>
-              <p className="text-[11px] text-white/40 mt-0.5">Realtime maintenance routines and diagnostics control.</p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="p-3.5 rounded-xl border flex items-center justify-between" style={{ background: '#070707', borderColor: 'rgba(255,255,255,0.06)' }}>
-                <div className="space-y-0.5">
-                  <p className="text-[12px] font-semibold text-white">Repair Scraped Avatar URLs</p>
-                  <p className="text-[10px] text-white/40 leading-normal">
-                    Fixes escaped character strings inside unicode-encoded avatar image URLs in the DB.
-                  </p>
-                </div>
-                <button
-                  disabled={utilityLoading}
-                  onClick={runAvatarRepair}
-                  className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-40 transition-all flex-shrink-0"
-                >
-                  {utilityLoading ? <Loader2 size={11} className="animate-spin" /> : <Play size={10} />}
-                  Run Repair
-                </button>
-              </div>
-
-              {repairResult !== null && (
-                <div className="p-3 rounded-xl border text-[11px] flex items-center gap-2 bg-emerald-500/5 border-emerald-500/20 text-emerald-400">
-                  <ShieldCheck size={14} className="flex-shrink-0" />
-                  Repair run completed. Updated {repairResult} bad URL avatar references.
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* System Diagnostic Status Banners */}
-          <div className="space-y-2.5 pt-4 border-t border-white/[0.04]">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-white/40">Database Status</span>
-              <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                SQLite Schema Connected
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-white/40">Proxy Engine</span>
-              <span className="text-blue-400 font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                In-Memory Proxy Active
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* System Activity Logs Section */}
@@ -687,57 +639,243 @@ export default function AdminControl() {
                 </tr>
               ) : (
                 filteredLogs.map(log => (
-                  <tr key={log.id} className="border-b border-white/[0.03] hover:bg-white/[0.01]">
-                    <td className="px-4 py-3 text-[11px] text-white/40 font-mono">
-                      {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-[11px]">
-                      <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/70 font-semibold font-mono text-[10px]">
-                        {log.actor || 'system'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[11px] text-white font-medium">
-                      {log.action}
-                    </td>
-                    <td className="px-4 py-3 text-[11px] text-white/50 capitalize">
-                      {log.entity_type || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-[11px] text-white/40 font-mono text-[10px]">
-                      {log.entity_id || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-[11px]">
-                      <button
-                        onClick={() => setExpandedLogId(expandedLogId === log.id ? null : log.id)}
-                        className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 font-semibold"
-                      >
-                        <EyeIcon size={11} />
-                        {expandedLogId === log.id ? 'Collapse' : 'Inspect'}
-                      </button>
-                    </td>
-                  </tr>
+                  <Fragment key={log.id}>
+                    <tr className="border-b border-white/[0.03] hover:bg-white/[0.01]">
+                      <td className="px-4 py-3 text-[11px] text-white/40 font-mono">
+                        {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-[11px]">
+                        <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/70 font-semibold font-mono text-[10px]">
+                          {log.actor || 'system'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-[11px] text-white font-medium">
+                        {log.action}
+                      </td>
+                      <td className="px-4 py-3 text-[11px] text-white/50 capitalize">
+                        {log.entity_type || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-[11px] text-white/40 font-mono text-[10px]">
+                        {log.entity_id || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-[11px]">
+                        <button
+                          onClick={() => handleInspectLog(log.id)}
+                          className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 font-semibold"
+                        >
+                          <EyeIcon size={11} />
+                          {expandedLogId === log.id ? 'Collapse' : 'Inspect'}
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedLogId === log.id && (
+                      <tr className="bg-white/[0.005] hover:bg-transparent">
+                        <td colSpan={6} className="px-4 py-3 border-b border-white/[0.03] align-top">
+                          <div 
+                            className="overflow-hidden"
+                            style={{
+                              animation: 'fadeIn 0.25s ease forwards, slideInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                            }}
+                          >
+                            <div className="p-4 rounded-xl border border-blue-500/10 space-y-4" style={{ background: '#070707' }}>
+                              <div className="flex items-center justify-between border-b border-white/[0.04] pb-2">
+                                <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
+                                  <Activity size={12} className="text-blue-400 animate-pulse" />
+                                  Inspect Log Event: {expandedLogId}
+                                </span>
+                                <button onClick={() => { setExpandedLogId(null); setInspectedLog(null); }} className="text-white/30 hover:text-white/60">
+                                  <X size={12} />
+                                </button>
+                              </div>
+
+                              {inspectLoading ? (
+                                <div className="flex items-center gap-2 py-4 justify-center text-[11px] text-white/40">
+                                  <Loader2 size={13} className="animate-spin" />
+                                  Retrieving detailed audit parameters and referenced database records...
+                                </div>
+                              ) : inspectedLog ? (
+                                <div className="space-y-4">
+                                  {/* Event Core Info */}
+                                  <div className="grid grid-cols-4 gap-4 p-3 bg-white/[0.02] border border-white/5 rounded-xl text-[11px]">
+                                    <div>
+                                      <span className="text-white/30 block">Action Performed</span>
+                                      <span className="text-white font-semibold font-mono">{inspectedLog.action}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-white/30 block">Actor / Triggered By</span>
+                                      <span className="text-emerald-400 font-semibold font-mono">@{inspectedLog.actor || 'system'}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-white/30 block">Execution Time</span>
+                                      <span className="text-white/70 font-mono">
+                                        {inspectedLog.created_at ? new Date(inspectedLog.created_at).toLocaleString() : '—'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="text-white/30 block">IP / Origin Host</span>
+                                      <span className="text-white/50 font-mono">{inspectedLog.ip_address || '127.0.0.1 (Local)'}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Hydrated Entity Details */}
+                                  {inspectedLog.entity_details ? (
+                                    <div className="space-y-2">
+                                      <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">
+                                        Referenced {inspectedLog.entity_details.type.replace('_', ' ')} Record details:
+                                      </span>
+                                      
+                                      {inspectedLog.entity_details.type === 'creator' && (
+                                        <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-3.5 rounded-xl">
+                                          {inspectedLog.entity_details.profile_pic ? (
+                                            <img 
+                                              src={inspectedLog.entity_details.profile_pic} 
+                                              className="w-12 h-12 rounded-full object-cover border border-white/15 bg-white/5 flex-shrink-0"
+                                              alt=""
+                                              onError={(e) => { e.target.style.display = 'none'; }}
+                                            />
+                                          ) : (
+                                            <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-[14px] flex-shrink-0 font-mono">
+                                              {(inspectedLog.entity_details.name || inspectedLog.entity_details.handle || '?').charAt(0).toUpperCase()}
+                                            </div>
+                                          )}
+                                          <div className="space-y-1">
+                                            <div className="text-[13px] font-bold text-white flex items-center gap-2">
+                                              {inspectedLog.entity_details.name || inspectedLog.entity_details.handle}
+                                              <span className="px-2 py-0.5 rounded-full text-[9px] bg-white/5 border border-white/10 text-white/60 font-semibold font-mono">
+                                                {inspectedLog.entity_details.platform}
+                                              </span>
+                                            </div>
+                                            <div className="text-[11px] text-white/50">
+                                              Handle: <span className="text-blue-400 font-mono">@{inspectedLog.entity_details.handle}</span>
+                                              {inspectedLog.entity_details.follower_count && (
+                                                <>
+                                                  <span className="mx-2 text-white/10">|</span>
+                                                  Followers: <span className="text-white/80 font-semibold">{Number(inspectedLog.entity_details.follower_count).toLocaleString()}</span>
+                                                </>
+                                              )}
+                                            </div>
+                                            <div className="flex items-center gap-2 pt-1">
+                                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                                inspectedLog.entity_details.status === 'qualified' ? 'bg-green-500/10 text-green-400' :
+                                                inspectedLog.entity_details.status === 'rejected' ? 'bg-red-500/10 text-red-400' :
+                                                'bg-amber-500/10 text-amber-400'
+                                              }`}>
+                                                Campaign status: {inspectedLog.entity_details.status}
+                                              </span>
+                                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                                inspectedLog.entity_details.ai_status === 'analyzed' ? 'bg-purple-500/10 text-purple-400' :
+                                                'bg-white/5 text-white/40'
+                                              }`}>
+                                                AI Model Action: {inspectedLog.entity_details.ai_status || 'Unprocessed'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {inspectedLog.entity_details.type === 'campaign' && (
+                                        <div className="bg-white/5 border border-white/10 p-3.5 rounded-xl space-y-2">
+                                          <div className="text-[13px] font-bold text-white flex items-center gap-2">
+                                            Campaign Name: <span className="text-blue-400">{inspectedLog.entity_details.name}</span>
+                                          </div>
+                                          <div className="grid grid-cols-3 gap-2 text-[11px]">
+                                            <div>
+                                              <span className="text-white/30 block">Campaign Status</span>
+                                              <span className="capitalize text-emerald-400 font-semibold font-mono">{inspectedLog.entity_details.status}</span>
+                                            </div>
+                                            <div>
+                                              <span className="text-white/30 block">Daily Limit</span>
+                                              <span className="text-white font-semibold font-mono">{inspectedLog.entity_details.daily_send_limit || 'No limit'}</span>
+                                            </div>
+                                            <div>
+                                              <span className="text-white/30 block">Total Dispatched</span>
+                                              <span className="text-white font-semibold font-mono">{inspectedLog.entity_details.total_sent || 0}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {inspectedLog.entity_details.type === 'outreach_message' && (
+                                        <div className="bg-white/5 border border-white/10 p-3.5 rounded-xl space-y-3">
+                                          <div className="flex items-center justify-between border-b border-white/[0.04] pb-2">
+                                            <span className="text-[12px] font-bold text-white flex items-center gap-1.5">
+                                              Draft Email Message
+                                            </span>
+                                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                              inspectedLog.entity_details.status === 'sent' ? 'bg-emerald-500/10 text-emerald-400' :
+                                              inspectedLog.entity_details.status === 'queued' ? 'bg-blue-500/10 text-blue-400' :
+                                              inspectedLog.entity_details.status === 'failed' ? 'bg-red-500/10 text-red-400' :
+                                              'bg-white/5 text-white/50'
+                                            }`}>
+                                              {inspectedLog.entity_details.status}
+                                            </span>
+                                          </div>
+                                          {inspectedLog.entity_details.creator_handle && (
+                                            <div className="text-[11px]">
+                                              <span className="text-white/30">Target Recipient: </span>
+                                              <span className="text-blue-400 font-semibold font-mono">{inspectedLog.entity_details.creator_handle}</span>
+                                            </div>
+                                          )}
+                                          <div>
+                                            <span className="text-white/30 text-[11px] block mb-1 font-semibold">Subject Line:</span>
+                                            <div className="text-[11px] text-white bg-black/30 px-3 py-2 rounded-lg font-mono">
+                                              {inspectedLog.entity_details.subject || '(No Subject Line Generated)'}
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <span className="text-white/30 text-[11px] block mb-1 font-semibold">Message Body:</span>
+                                            <div className="text-[11px] text-white/80 bg-black/40 p-3 rounded-lg font-mono whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto">
+                                              {inspectedLog.entity_details.body}
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-4 text-[10px] text-white/40 pt-1">
+                                            <span>Send Method: <strong className="text-white/70 uppercase">{inspectedLog.entity_details.send_method}</strong></span>
+                                            {inspectedLog.entity_details.sent_at && (
+                                              <span>Sent At: <strong className="text-white/70 font-mono">{new Date(inspectedLog.entity_details.sent_at).toLocaleString()}</strong></span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="p-3 bg-white/5 border border-white/5 text-white/40 rounded-xl text-[11px] text-center font-mono">
+                                      No related database entity found for {inspectedLog.entity_type || 'this action'} (ID: {inspectedLog.entity_id || 'None'})
+                                    </div>
+                                  )}
+
+                                  {/* Collapsible raw metadata */}
+                                  <div className="border-t border-white/[0.04] pt-3">
+                                    <button
+                                      onClick={() => setShowRawMetadata(!showRawMetadata)}
+                                      className="text-[10px] text-white/30 hover:text-white/60 transition-colors flex items-center gap-1 font-mono uppercase tracking-wider"
+                                    >
+                                      <span>{showRawMetadata ? '▼ Hide' : '▶ Show'} Raw Audit Log Metadata JSON</span>
+                                    </button>
+                                    {showRawMetadata && (
+                                      <pre className="mt-2 text-[10px] text-white/70 overflow-x-auto p-3 bg-black/40 rounded-lg font-mono leading-relaxed" style={{ maxHeight: '150px' }}>
+                                        {JSON.stringify(inspectedLog.details || {}, null, 2)}
+                                      </pre>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="py-4 text-center text-[11px] text-white/30">
+                                  Failed to load details for this audit log.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Expanded details container */}
-        {expandedLogId && (
-          <div className="mt-4 p-4 rounded-xl border border-blue-500/10 space-y-2 animate-fade-in" style={{ background: '#070707' }}>
-            <div className="flex items-center justify-between border-b border-white/[0.04] pb-2">
-              <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
-                <Activity size={12} className="text-blue-400" />
-                Inspect Log Data: {expandedLogId}
-              </span>
-              <button onClick={() => setExpandedLogId(null)} className="text-white/30 hover:text-white/60">
-                <X size={12} />
-              </button>
-            </div>
-            <pre className="text-[10px] text-white/70 overflow-x-auto p-3 bg-black/40 rounded-lg font-mono leading-relaxed" style={{ maxHeight: '200px' }}>
-              {JSON.stringify(auditLogs.find(l => l.id === expandedLogId)?.details || {}, null, 2)}
-            </pre>
-          </div>
-        )}
+
       </div>
 
       {/* Delete User Confirmation Modal */}
