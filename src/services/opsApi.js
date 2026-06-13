@@ -57,6 +57,9 @@ export const scrapeCreator = (platform, handle) =>
 export const analyzeCreator = (id) =>
   req('POST', `/creators/${id}/analyze`)
 
+export const getCreatorAnalysis = (id) =>
+  req('GET', `/creators/${id}/analysis`)
+
 export const qualifyCreator = (id, status) =>
   req('POST', `/creators/${id}/qualify`, { status })
 

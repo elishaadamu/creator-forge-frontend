@@ -18,13 +18,21 @@ export default function AdminControl() {
   const [isEditingSettings, setIsEditingSettings] = useState(false)
   const [editApifyKey, setEditApifyKey] = useState('')
   const [editAnthropicKey, setEditAnthropicKey] = useState('')
+  const [editOpenAIKey, setEditOpenAIKey] = useState('')
+  const [editGeminiKey, setEditGeminiKey] = useState('')
+  const [editActiveProvider, setEditActiveProvider] = useState('gemini')
   const [editSendGridKey, setEditSendGridKey] = useState('')
   const [editFromEmail, setEditFromEmail] = useState('')
   const [editFromName, setEditFromName] = useState('')
+  const [editGoogleEmail, setEditGoogleEmail] = useState('')
+  const [editGoogleAppPassword, setEditGoogleAppPassword] = useState('')
 
   const [showEditApify, setShowEditApify] = useState(false)
   const [showEditAnthropic, setShowEditAnthropic] = useState(false)
+  const [showEditOpenAI, setShowEditOpenAI] = useState(false)
+  const [showEditGemini, setShowEditGemini] = useState(false)
   const [showEditSendGrid, setShowEditSendGrid] = useState(false)
+  const [showEditGoogleAppPassword, setShowEditGoogleAppPassword] = useState(false)
 
   // System utility scripts states
   const [utilityLoading, setUtilityLoading] = useState(false)
@@ -60,9 +68,14 @@ export default function AdminControl() {
       // Initialize edit fields
       setEditApifyKey(settingsData.apify_api_key || '')
       setEditAnthropicKey(settingsData.anthropic_api_key || '')
+      setEditOpenAIKey(settingsData.openai_api_key || '')
+      setEditGeminiKey(settingsData.gemini_api_key || '')
+      setEditActiveProvider(settingsData.active_ai_provider || 'gemini')
       setEditSendGridKey(settingsData.sendgrid_api_key || '')
       setEditFromEmail(settingsData.from_email || '')
       setEditFromName(settingsData.from_name || '')
+      setEditGoogleEmail(settingsData.google_email || '')
+      setEditGoogleAppPassword(settingsData.google_app_password || '')
 
       // 4. Fetch recent activity audit logs
       const logsRes = await fetch('/api/audit/logs?limit=25')
@@ -111,12 +124,23 @@ export default function AdminControl() {
     if (editAnthropicKey && !editAnthropicKey.startsWith('•')) {
       payload.anthropic_api_key = editAnthropicKey
     }
+    if (editOpenAIKey && !editOpenAIKey.startsWith('•')) {
+      payload.openai_api_key = editOpenAIKey
+    }
+    if (editGeminiKey && !editGeminiKey.startsWith('•')) {
+      payload.gemini_api_key = editGeminiKey
+    }
     if (editSendGridKey && !editSendGridKey.startsWith('•')) {
       payload.sendgrid_api_key = editSendGridKey
     }
+    if (editGoogleAppPassword && !editGoogleAppPassword.startsWith('•')) {
+      payload.google_app_password = editGoogleAppPassword
+    }
 
+    payload.active_ai_provider = editActiveProvider
     payload.from_email = editFromEmail
     payload.from_name = editFromName
+    payload.google_email = editGoogleEmail
 
     try {
       const res = await fetch('/api/settings', {
@@ -334,9 +358,14 @@ export default function AdminControl() {
                     if (sysSettings) {
                       setEditApifyKey(sysSettings.apify_api_key || '')
                       setEditAnthropicKey(sysSettings.anthropic_api_key || '')
+                      setEditOpenAIKey(sysSettings.openai_api_key || '')
+                      setEditGeminiKey(sysSettings.gemini_api_key || '')
+                      setEditActiveProvider(sysSettings.active_ai_provider || 'gemini')
                       setEditSendGridKey(sysSettings.sendgrid_api_key || '')
                       setEditFromEmail(sysSettings.from_email || '')
                       setEditFromName(sysSettings.from_name || '')
+                      setEditGoogleEmail(sysSettings.google_email || '')
+                      setEditGoogleAppPassword(sysSettings.google_app_password || '')
                     }
                   }}
                   disabled={actionLoading}
@@ -375,7 +404,7 @@ export default function AdminControl() {
 
             {/* Anthropic Key */}
             <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
-              <span className="text-white/40 font-medium">Anthropic API Key</span>
+              <span className="text-white/40 font-medium">Anthropic (Claude) API Key</span>
               {isEditingSettings ? (
                 <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
                   <input
@@ -392,71 +421,168 @@ export default function AdminControl() {
               ) : (
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[11px] text-white/70">{sysSettings?.anthropic_api_key || 'Not Set'}</span>
-                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.ai_configured ? 'bg-green-400' : 'bg-amber-400'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.anthropic_api_key ? 'bg-green-400' : 'bg-amber-400'}`} />
                 </div>
               )}
             </div>
 
-            {/* SendGrid Key */}
+            {/* OpenAI API Key */}
             <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
-              <span className="text-white/40 font-medium">SendGrid API Key</span>
+              <span className="text-white/40 font-medium">OpenAI API Key</span>
               {isEditingSettings ? (
                 <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
                   <input
-                    type={showEditSendGrid ? 'text' : 'password'}
-                    value={editSendGridKey}
-                    onChange={e => setEditSendGridKey(e.target.value)}
+                    type={showEditOpenAI ? 'text' : 'password'}
+                    value={editOpenAIKey}
+                    onChange={e => setEditOpenAIKey(e.target.value)}
                     className="flex-1 bg-transparent outline-none text-white font-mono text-[11px]"
                     placeholder="Enter key to update..."
                   />
-                  <button onClick={() => setShowEditSendGrid(!showEditSendGrid)} className="text-white/30 hover:text-white/60">
-                    {showEditSendGrid ? <EyeOff size={12} /> : <Eye size={12} />}
+                  <button onClick={() => setShowEditOpenAI(!showEditOpenAI)} className="text-white/30 hover:text-white/60">
+                    {showEditOpenAI ? <EyeOff size={12} /> : <Eye size={12} />}
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-white/70">{sysSettings?.sendgrid_api_key || 'Not Set'}</span>
-                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.sendgrid_api_key ? 'bg-green-400' : 'bg-amber-400'}`} />
+                  <span className="font-mono text-[11px] text-white/70">{sysSettings?.openai_api_key || 'Not Set'}</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.openai_api_key ? 'bg-green-400' : 'bg-amber-400'}`} />
                 </div>
               )}
             </div>
 
-            {/* Default From Email & Name */}
-            <div className="grid grid-cols-2 gap-4 border-t border-white/[0.04] pt-3">
-              <div className="flex flex-col gap-1.5">
-                <span className="text-white/40 font-medium">Default From Email</span>
-                {isEditingSettings ? (
+            {/* Gemini API Key */}
+            <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
+              <span className="text-white/40 font-medium">Gemini API Key</span>
+              {isEditingSettings ? (
+                <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
                   <input
-                    type="email"
-                    value={editFromEmail}
-                    onChange={e => setEditFromEmail(e.target.value)}
-                    className="bg-[#070707] border border-white/8 rounded-xl px-3 py-2 outline-none text-white text-[11px]"
-                    placeholder="from@domain.com"
+                    type={showEditGemini ? 'text' : 'password'}
+                    value={editGeminiKey}
+                    onChange={e => setEditGeminiKey(e.target.value)}
+                    className="flex-1 bg-transparent outline-none text-white font-mono text-[11px]"
+                    placeholder="Enter key to update..."
                   />
-                ) : (
-                  <span className="text-[12px] text-white/70">{sysSettings?.from_email || 'Not Set'}</span>
-                )}
+                  <button onClick={() => setShowEditGemini(!showEditGemini)} className="text-white/30 hover:text-white/60">
+                    {showEditGemini ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-white/70">{sysSettings?.gemini_api_key || 'Not Set'}</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.gemini_api_key ? 'bg-green-400' : 'bg-amber-400'}`} />
+                </div>
+              )}
+            </div>
+
+            {/* Active AI Provider selection */}
+            <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
+              <span className="text-white/40 font-medium">Active AI Provider</span>
+              {isEditingSettings ? (
+                <select
+                  value={editActiveProvider}
+                  onChange={e => setEditActiveProvider(e.target.value)}
+                  className="bg-[#070707] border border-white/8 rounded-xl px-3 py-2 outline-none text-white text-[12px] font-semibold"
+                >
+                  <option value="gemini">Gemini AI (Default)</option>
+                  <option value="openai">OpenAI (GPT-4o)</option>
+                  <option value="claude">Claude AI (Anthropic)</option>
+                </select>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="capitalize text-[12px] text-emerald-400 font-semibold font-mono">
+                    {sysSettings?.active_ai_provider || 'gemini'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Google SMTP Credentials Section */}
+            <div className="border-t border-white/[0.06] mt-4 pt-3">
+              <span className="text-white/60 font-semibold text-[11px] uppercase tracking-wider block mb-2">Google SMTP Dispatcher</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-white/40 font-medium">Google SMTP Email</span>
+                  {isEditingSettings ? (
+                    <input
+                      type="email"
+                      value={editGoogleEmail}
+                      onChange={e => setEditGoogleEmail(e.target.value)}
+                      className="bg-[#070707] border border-white/8 rounded-xl px-3 py-2 outline-none text-white text-[11px]"
+                      placeholder="username@gmail.com"
+                    />
+                  ) : (
+                    <span className="text-[12px] text-white/70 font-mono">{sysSettings?.google_email || 'Not Set'}</span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-white/40 font-medium">Google App Password</span>
+                  {isEditingSettings ? (
+                    <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
+                      <input
+                        type={showEditGoogleAppPassword ? 'text' : 'password'}
+                        value={editGoogleAppPassword}
+                        onChange={e => setEditGoogleAppPassword(e.target.value)}
+                        className="flex-1 bg-transparent outline-none text-white font-mono text-[11px]"
+                        placeholder="xxxx xxxx xxxx xxxx"
+                      />
+                      <button onClick={() => setShowEditGoogleAppPassword(!showEditGoogleAppPassword)} className="text-white/30 hover:text-white/60">
+                        {showEditGoogleAppPassword ? <EyeOff size={12} /> : <Eye size={12} />}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-white/70 font-mono">{sysSettings?.google_app_password || 'Not Set'}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <span className="text-white/40 font-medium">Default From Name</span>
-                {isEditingSettings ? (
-                  <input
-                    type="text"
-                    value={editFromName}
-                    onChange={e => setEditFromName(e.target.value)}
-                    className="bg-[#070707] border border-white/8 rounded-xl px-3 py-2 outline-none text-white text-[11px]"
-                    placeholder="Admin Name"
-                  />
-                ) : (
-                  <span className="text-[12px] text-white/70">{sysSettings?.from_name || 'Not Set'}</span>
-                )}
+            </div>
+
+            {/* Legacy Sender configurations */}
+            <div className="border-t border-white/[0.04] mt-4 pt-3">
+              <span className="text-white/35 font-medium text-[10px] uppercase tracking-wider block mb-2">Legacy Sender Info (Optional)</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-white/30 font-medium">Default From Email</span>
+                  {isEditingSettings ? (
+                    <input
+                      type="email"
+                      value={editFromEmail}
+                      onChange={e => setEditFromEmail(e.target.value)}
+                      className="bg-[#070707]/60 border border-white/8 rounded-xl px-3 py-2 outline-none text-white text-[11px]"
+                      placeholder="partnerships@domain.com"
+                    />
+                  ) : (
+                    <span className="text-[11px] text-white/50">{sysSettings?.from_email || 'Not Set'}</span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-white/30 font-medium">Default From Name</span>
+                  {isEditingSettings ? (
+                    <input
+                      type="text"
+                      value={editFromName}
+                      onChange={e => setEditFromName(e.target.value)}
+                      className="bg-[#070707]/60 border border-white/8 rounded-xl px-3 py-2 outline-none text-white text-[11px]"
+                      placeholder="Creator Forge Team"
+                    />
+                  ) : (
+                    <span className="text-[11px] text-white/50">{sysSettings?.from_name || 'Not Set'}</span>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Active LLM Model info */}
             <div className="py-2.5 flex items-center justify-between border-t border-white/[0.04] mt-2">
               <span className="text-white/40 font-medium">Active LLM Model</span>
-              <span className="font-mono text-[11px] text-emerald-400 font-semibold">{sysSettings?.ai_model || 'Not configured'}</span>
+              <span className="font-mono text-[11px] text-emerald-400 font-semibold">
+                {sysSettings?.active_ai_provider === 'openai'
+                  ? 'gpt-5.5'
+                  : (sysSettings?.active_ai_provider === 'claude' || sysSettings?.active_ai_provider === 'anthropic')
+                    ? (sysSettings?.ai_model || 'claude-opus-4-6')
+                    : 'gemini-2.5-flash'}
+              </span>
             </div>
           </div>
         </div>
