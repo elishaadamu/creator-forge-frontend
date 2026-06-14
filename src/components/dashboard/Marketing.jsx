@@ -1908,8 +1908,6 @@ export default function Marketing() {
   )
 }
 
-// ─── POST DETAILS MODAL ───────────────────────────────────────────────────────
-
 const STATUS_COLORS = {
   draft:     { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' },
   scheduled: { bg: 'rgba(96,165,250,0.15)',  color: 'rgba(96,165,250,0.9)'  },
@@ -1917,11 +1915,39 @@ const STATUS_COLORS = {
 }
 
 function PostDetailsModal({ post, day, onClose, onSave, accent }) {
+  const { creatorData, incrementAiActions, setApiModalOpen, triggerToast } = useForge()
   const [edited, setEdited] = useState({ ...post })
   const [activeTab, setActiveTab] = useState('details') // 'details' | 'body'
+  const [isGeneratingBody, setIsGeneratingBody] = useState(false)
 
   const accentRgb = accent?.rgb || '255,255,255'
   const accentColor = accent?.color || 'white'
+
+  const handleWriteWithAi = async () => {
+    if (!hasTextKey()) {
+      setApiModalOpen(true)
+      return
+    }
+    setIsGeneratingBody(true)
+    if (incrementAiActions) incrementAiActions()
+    try {
+      const rawPlatform = edited.platform || 'Instagram'
+      const platformName = reverseMapPlatform(rawPlatform)
+      const text = await generateStudioContent(
+        { label: `${platformName} ${edited.type || 'Post'}`, platform: platformName },
+        edited.title || '',
+        creatorData,
+        'Confident'
+      )
+      setEdited(p => ({ ...p, body: text }))
+      if (triggerToast) triggerToast('Caption generated successfully!', 'success')
+    } catch (err) {
+      console.error(err)
+      if (triggerToast) triggerToast(err.message || 'Failed to generate caption', 'error')
+    } finally {
+      setIsGeneratingBody(false)
+    }
+  }
 
   return (
     <div
@@ -2097,17 +2123,35 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
           )}
 
           {activeTab === 'body' && (
-            <div className="p-5">
-              <label className="text-[11px] font-semibold uppercase tracking-wider block mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>Caption / Body Text</label>
+            <div className="p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-semibold uppercase tracking-wider block" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  Caption / Body Text
+                </label>
+                <button
+                  onClick={handleWriteWithAi}
+                  disabled={isGeneratingBody}
+                  className="forge-btn-secondary py-1 px-3 text-[11px] gap-1.5 flex items-center"
+                  style={{ borderColor: 'rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)' }}
+                >
+                  {isGeneratingBody ? (
+                    <RefreshCw size={11} className="animate-spin text-white" />
+                  ) : (
+                    <Sparkles size={11} className="text-[var(--theme-accent)]" />
+                  )}
+                  {isGeneratingBody ? 'Generating...' : 'Generate with AI'}
+                </button>
+              </div>
               <div className="forge-input-wrap">
                 <textarea
                   className="forge-input text-[13px] resize-y min-h-[200px] py-3 leading-relaxed"
                   placeholder="Write the full caption, email body, or script here..."
                   value={edited.body || ''}
                   onChange={e => setEdited(p => ({ ...p, body: e.target.value }))}
+                  disabled={isGeneratingBody}
                 />
               </div>
-              <p className="text-[11px] mt-2" style={{ color: 'rgba(255,255,255,0.2)' }}>{(edited.body || '').length} chars</p>
+              <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>{(edited.body || '').length} chars</p>
             </div>
           )}
         </div>
