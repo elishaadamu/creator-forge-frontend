@@ -865,7 +865,7 @@ export default function AiDoesItPanel({ onClose }) {
                   style={{ background: 'rgba(167,139,250,0.06)', border: '1px dashed rgba(167,139,250,0.18)' }}>
                   <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0"
                     style={{ borderColor: 'rgba(167,139,250,0.5)', borderTopColor: 'transparent' }} />
-                  <p className="text-[11px]" style={{ color: 'rgba(167,139,250,0.6)' }}>FLUX generating AI image…</p>
+                  <p className="text-[11px]" style={{ color: 'rgba(167,139,250,0.6)' }}>Generating AI image…</p>
                 </div>
               )}
               {imageUrl && (
