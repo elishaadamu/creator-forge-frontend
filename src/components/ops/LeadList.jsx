@@ -458,26 +458,84 @@ function ConfirmModal({ title, message, confirmLabel, confirmBg, onClose, onConf
 
 function ToastNotification({ toast, onClose }) {
   useEffect(() => {
-    const timer = setTimeout(onClose, 3000)
+    const timer = setTimeout(onClose, 3500)
     return () => clearTimeout(timer)
   }, [onClose])
 
   const isSuccess = toast.type === 'success'
+  const accent = isSuccess
+    ? { rgb: '52,211,153', border: 'rgba(52,211,153,0.15)', bgGlow: 'rgba(52,211,153,0.06)', iconColor: '#34d399' }
+    : { rgb: '248,113,113', border: 'rgba(248,113,113,0.15)', bgGlow: 'rgba(248,113,113,0.06)', iconColor: '#f87171' }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border transition-all duration-300 animate-in fade-in slide-in-from-bottom-5"
-         style={{
-           background: '#141414',
-           borderColor: isSuccess ? 'rgba(74,222,128,0.18)' : 'rgba(239,68,68,0.18)',
-           boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
-         }}>
-      {isSuccess ? (
-        <CheckCircle size={14} className="text-green-400" />
-      ) : (
-        <AlertCircle size={14} className="text-red-400" />
-      )}
-      <p className="text-[12px] font-medium text-white/90">{toast.message}</p>
-      <button onClick={onClose} className="text-white/20 hover:text-white/40 ml-2 transition-colors">✕</button>
+    <div
+      className="fixed bottom-6 right-6 z-50 flex items-center gap-3.5 rounded-2xl border shadow-[0_24px_64px_rgba(0,0,0,0.7)] overflow-hidden"
+      style={{
+        background: `radial-gradient(circle at 0% 0%, rgba(${accent.rgb}, 0.12) 0%, transparent 60%), rgba(13, 13, 13, 0.85)`,
+        borderColor: 'rgba(255,255,255,0.08)',
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.05)`,
+        backdropFilter: 'blur(20px) saturate(190%)',
+        minWidth: 300,
+        maxWidth: 400,
+        padding: '12px 14px',
+        animation: 'toastSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
+      }}
+    >
+      <style>{`
+        @keyframes toastSlideIn {
+          0% { opacity: 0; transform: translateY(30px) scale(0.92) rotate(0.5deg); filter: blur(5px); }
+          100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); filter: blur(0); }
+        }
+      `}</style>
+      
+      {/* Top border glow segment */}
+      <div
+        className="absolute inset-x-0 top-0 h-[1px]"
+        style={{
+          background: `linear-gradient(90deg, transparent 0%, rgba(${accent.rgb},0.35) 15%, rgba(${accent.rgb},0.08) 50%, transparent 100%)`
+        }}
+      />
+
+      {/* Icon container */}
+      <div
+        className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center border"
+        style={{
+          background: accent.bgGlow,
+          borderColor: accent.border,
+          boxShadow: `0 4px 12px rgba(${accent.rgb}, 0.05)`
+        }}
+      >
+        {isSuccess
+          ? <CheckCircle size={15} style={{ color: accent.iconColor }} />
+          : <AlertCircle size={15} style={{ color: accent.iconColor }} />
+        }
+      </div>
+
+      {/* Text content */}
+      <p className="flex-1 text-[12px] font-medium tracking-wide text-white/90 leading-snug">{toast.message}</p>
+
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        className="w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150 flex-shrink-0"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          color: 'rgba(255,255,255,0.4)',
+          border: '1px solid rgba(255,255,255,0.05)',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+          e.currentTarget.style.color = '#fff'
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+          e.currentTarget.style.color = 'rgba(255,255,255,0.4)'
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
+        }}
+      >
+        ✕
+      </button>
     </div>
   )
 }

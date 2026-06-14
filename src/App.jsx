@@ -63,95 +63,129 @@ function GlobalToast({ toast, onClose }) {
 
   const isSuccess = toast.type === 'success'
   const isError   = toast.type === 'error'
-  const isInfo    = !isSuccess && !isError
 
   const accent = isSuccess
-    ? { bar: '#4ade80', glow: 'rgba(74,222,128,0.15)', border: 'rgba(74,222,128,0.18)', icon: '#4ade80' }
+    ? {
+        rgb: '52,211,153', // emerald-400
+        gradient: 'linear-gradient(90deg, #34d399 0%, #10b981 100%)',
+        iconColor: '#34d399',
+        border: 'rgba(52,211,153,0.15)',
+        bgGlow: 'rgba(52,211,153,0.06)'
+      }
     : isError
-    ? { bar: '#f87171', glow: 'rgba(248,113,113,0.15)', border: 'rgba(248,113,113,0.2)',  icon: '#f87171' }
-    : { bar: '#60a5fa', glow: 'rgba(96,165,250,0.15)',  border: 'rgba(96,165,250,0.18)', icon: '#60a5fa' }
+    ? {
+        rgb: '248,113,113', // red-400
+        gradient: 'linear-gradient(90deg, #f87171 0%, #ef4444 100%)',
+        iconColor: '#f87171',
+        border: 'rgba(248,113,113,0.15)',
+        bgGlow: 'rgba(248,113,113,0.06)'
+      }
+    : {
+        rgb: '96,165,250', // blue-400
+        gradient: 'linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%)',
+        iconColor: '#60a5fa',
+        border: 'rgba(96,165,250,0.15)',
+        bgGlow: 'rgba(96,165,250,0.06)'
+      }
 
   return (
     <div
       className="fixed bottom-6 right-6 z-[9999] pointer-events-auto"
       style={{
-        animation: 'toastSlideIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
+        animation: 'toastSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
       }}
     >
       <style>{`
         @keyframes toastSlideIn {
-          from { opacity: 0; transform: translateY(18px) scale(0.95); }
-          to   { opacity: 1; transform: translateY(0)   scale(1);    }
+          0% { opacity: 0; transform: translateY(30px) scale(0.92) rotate(0.5deg); filter: blur(5px); }
+          100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); filter: blur(0); }
         }
       `}</style>
 
       <div
-        className="relative flex items-start gap-3.5 rounded-2xl border shadow-2xl overflow-hidden"
+        className="relative flex items-center gap-3.5 rounded-2xl border shadow-[0_24px_64px_rgba(0,0,0,0.7)] overflow-hidden"
         style={{
-          background: 'rgba(14,14,14,0.97)',
-          borderColor: accent.border,
-          boxShadow: `0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px ${accent.border}, inset 0 1px 0 rgba(255,255,255,0.04)`,
-          minWidth: 300,
-          maxWidth: 400,
-          padding: '14px 16px 18px',
+          background: `radial-gradient(circle at 0% 0%, rgba(${accent.rgb}, 0.12) 0%, transparent 60%), rgba(13, 13, 13, 0.85)`,
+          borderColor: 'rgba(255,255,255,0.08)',
+          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.05)`,
+          backdropFilter: 'blur(20px) saturate(190%)',
+          minWidth: 320,
+          maxWidth: 420,
+          padding: '14px 16px',
         }}
       >
-        {/* Left accent stripe */}
+        {/* Top border glow segment */}
         <div
-          className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl"
-          style={{ background: `linear-gradient(180deg, ${accent.bar} 0%, transparent 100%)` }}
+          className="absolute inset-x-0 top-0 h-[1px]"
+          style={{
+            background: `linear-gradient(90deg, transparent 0%, rgba(${accent.rgb},0.35) 15%, rgba(${accent.rgb},0.08) 50%, transparent 100%)`
+          }}
         />
 
-        {/* Icon */}
+        {/* Icon container */}
         <div
-          className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center mt-0.5"
-          style={{ background: accent.glow }}
+          className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border"
+          style={{
+            background: accent.bgGlow,
+            borderColor: accent.border,
+            boxShadow: `0 4px 12px rgba(${accent.rgb}, 0.05)`
+          }}
         >
           {isSuccess
-            ? <CheckCircle size={16} style={{ color: accent.icon }} />
-            : isError
-            ? <AlertCircle size={16} style={{ color: accent.icon }} />
-            : <AlertCircle size={16} style={{ color: accent.icon }} />
+            ? <CheckCircle size={17} style={{ color: accent.iconColor }} />
+            : <AlertCircle size={17} style={{ color: accent.iconColor }} />
           }
         </div>
 
-        {/* Content */}
+        {/* Text content */}
         <div className="flex-1 min-w-0 pr-6">
           <p
-            className="text-[13px] font-semibold leading-snug"
-            style={{ color: 'rgba(255,255,255,0.95)' }}
+            className="text-[13px] font-medium tracking-wide leading-snug"
+            style={{ color: 'rgba(255,255,255,0.92)' }}
           >
             {toast.message}
           </p>
           {toast.subtitle && (
-            <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
               {toast.subtitle}
             </p>
           )}
         </div>
 
-        {/* Close */}
+        {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
-          style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.35)' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.13)'; e.currentTarget.style.color = 'white' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}
+          className="absolute top-3.5 right-3.5 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            color: 'rgba(255,255,255,0.4)',
+            border: '1px solid rgba(255,255,255,0.05)',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+            e.currentTarget.style.color = '#fff'
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+            e.currentTarget.style.color = 'rgba(255,255,255,0.4)'
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
+          }}
         >
           <X size={11} />
         </button>
 
         {/* Progress bar */}
         <div
-          className="absolute bottom-0 left-0 right-0 h-[2px]"
-          style={{ background: 'rgba(255,255,255,0.06)' }}
+          className="absolute bottom-0 left-0 right-0 h-[2.5px]"
+          style={{ background: 'rgba(255,255,255,0.03)' }}
         >
           <div
-            className="h-full rounded-full transition-none"
+            className="h-full rounded-full transition-[width] duration-50 linear"
             style={{
               width: `${progress}%`,
-              background: `linear-gradient(90deg, ${accent.bar} 0%, ${accent.bar}88 100%)`,
-              transition: 'width 50ms linear',
+              background: accent.gradient,
+              boxShadow: `0 0 8px rgba(${accent.rgb}, 0.45)`
             }}
           />
         </div>

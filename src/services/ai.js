@@ -707,7 +707,7 @@ export async function generateProductImageWithOpenAI(creatorData, signal = undef
   const niche       = creatorData.niche       || 'content creation'
   const type        = creatorData.blueprint?.type || 'Web App'
 
-  const prompt = `Sleek dark ${type} screenshot mockup for "${productName}" — ${niche} creator platform. Premium SaaS UI, floating on deep dark background with subtle glow. Shows dashboard or course page with cards and metrics. No text. Professional product photography. Ultra detailed. Linear, Notion aesthetic.`
+  const prompt = `Sleek dark ${type} app screenshot mockup for a ${niche} creator platform called "${productName}". Premium SaaS UI on deep dark background with subtle glow. Shows a clean dashboard with course cards and metrics. No real text, just UI shapes and blocks. Professional product photography style. Linear, Notion aesthetic. Ultra detailed.`
 
   const res = await fetch('/api/openai/v1/responses', {
     method: 'POST',
@@ -725,16 +725,36 @@ export async function generateProductImageWithOpenAI(creatorData, signal = undef
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`OpenAI Responses Image ${res.status}: ${err.slice(0, 300)}`)
+    throw new Error(`OpenAI Responses ${res.status}: ${err.slice(0, 300)}`)
   }
 
   const data = await res.json()
-  const outputs = data?.output || []
-  const imageCall = outputs.find(o => o.type === 'image_generation_call')
-  if (imageCall && imageCall.result) {
-    return `data:image/png;base64,${imageCall.result}`
+  const result = data?.output?.find(out => out.type === 'image_generation_call')?.result
+  if (result) {
+    return `data:image/png;base64,${result}`
   }
   return null
+}
+
+async function saveImageToBackendMedia(imageResult) {
+  if (!imageResult) return null
+  try {
+    const res = await fetch('/api/media/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_data: imageResult })
+    })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.url) {
+        console.log('[Forge] Successfully saved generated image to backend:', data.url)
+        return data.url
+      }
+    }
+  } catch (err) {
+    console.warn('[Forge] Failed to save generated image to backend static media:', err)
+  }
+  return imageResult
 }
 
 export async function generateProductImage(creatorData, signal = undefined) {
@@ -745,11 +765,12 @@ export async function generateProductImage(creatorData, signal = undefined) {
   const prompt = `Sleek dark ${type} app screenshot mockup for a ${niche} creator platform called "${productName}". Premium SaaS UI on deep dark background with subtle glow. Shows a clean dashboard with course cards and metrics. No real text, just UI shapes and blocks. Professional product photography style. Linear, Notion aesthetic. Ultra detailed.`
 
   const { openaiKey, togetherKey, geminiKey } = loadAiKeys()
+  let rawImage = null
 
   // 2. OpenAI GPT Image 2
   if (openaiKey && !failedKeys.has(openaiKey)) {
     try {
-      return await generateProductImageWithOpenAI(creatorData, signal)
+      rawImage = await generateProductImageWithOpenAI(creatorData, signal)
     } catch (err) {
       if (err.name === 'AbortError') throw err
       if (err.message.includes('401') || err.message.includes('429')) {
@@ -760,9 +781,9 @@ export async function generateProductImage(creatorData, signal = undefined) {
   }
 
   // 3. Together.ai FLUX
-  if (togetherKey && !failedKeys.has(togetherKey)) {
+  if (!rawImage && togetherKey && !failedKeys.has(togetherKey)) {
     try {
-      return await generateProductImageWithTogether(creatorData, signal)
+      rawImage = await generateProductImageWithTogether(creatorData, signal)
     } catch (err) {
       if (err.name === 'AbortError') throw err
       if (err.message.includes('401') || err.message.includes('429')) {
@@ -773,9 +794,9 @@ export async function generateProductImage(creatorData, signal = undefined) {
   }
 
   // 4. Gemini Image
-  if (geminiKey && !failedKeys.has(geminiKey)) {
+  if (!rawImage && geminiKey && !failedKeys.has(geminiKey)) {
     try {
-      return await generateProductImageWithGemini(creatorData, signal)
+      rawImage = await generateProductImageWithGemini(creatorData, signal)
     } catch (err) {
       if (err.name === 'AbortError') throw err
       if (err.message.includes('401') || err.message.includes('429')) {
@@ -785,7 +806,11 @@ export async function generateProductImage(creatorData, signal = undefined) {
     }
   }
 
-  throw new Error("NO_ACTIVE_IMAGE_KEY")
+  if (!rawImage) {
+    throw new Error("NO_ACTIVE_IMAGE_KEY")
+  }
+
+  return await saveImageToBackendMedia(rawImage)
 }
 
 // ── askForgeChat ───────────────────────────────────────────────────────────────
@@ -1053,6 +1078,7 @@ Keep product names authentic, tailored, and highly specific to the creator's nic
 
     throw new Error('AI returned unrecognisable format')
   } catch (err) {
+    if (err.name === 'AbortError') throw err
     console.error('AI failed for recommendations:', err)
     throw err
   }
