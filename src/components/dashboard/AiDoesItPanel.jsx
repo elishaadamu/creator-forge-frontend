@@ -695,9 +695,9 @@ export default function AiDoesItPanel({ onClose }) {
           <div>
             <p className="text-[14px] font-semibold text-white">AI does it</p>
             <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              {phase === 'running' ? 'Nvidia Nemotron is writing your launch pack…'
+              {phase === 'running' ? 'AI is writing your launch pack…'
                 : phase === 'done' ? 'All done — click any field to edit'
-                : 'Nvidia writes everything · FLUX generates images'}
+                : 'AI writes everything · FLUX/DALL-E/Gemini generates images'}
             </p>
           </div>
         </div>
@@ -733,7 +733,7 @@ export default function AiDoesItPanel({ onClose }) {
             </div>
             <p className="text-[16px] font-bold text-white mb-2">Generate your full launch pack</p>
             <p className="text-[13px] mb-5 max-w-xs mx-auto" style={{ color: 'rgba(255,255,255,0.38)', lineHeight: 1.6 }}>
-              One click. Nvidia writes everything personalized to {creatorData.name || 'you'} — email, every social platform, pitch deck, and a product image.
+              One click. AI writes everything personalized to {creatorData.name || 'you'} — email, every social platform, pitch deck, and a product image.
             </p>
             <div className="flex flex-wrap justify-center gap-1.5 mb-6">
               {STEPS.map(s => (
@@ -748,7 +748,7 @@ export default function AiDoesItPanel({ onClose }) {
               <div className="flex items-center justify-center gap-2 mb-4 text-[12px]"
                 style={{ color: 'rgba(255,180,0,0.8)' }}>
                 <AlertCircle size={12} />
-                Add an AI API key first (Gemini, OpenAI, or NVIDIA)
+                Add an AI API key first (Gemini, OpenAI, or Claude)
                 <button onClick={() => setApiModalOpen(true)}
                   className="underline text-white/50 hover:text-white transition-colors">Add key →</button>
               </div>
@@ -779,7 +779,7 @@ export default function AiDoesItPanel({ onClose }) {
                 <div className="flex items-center gap-2">
                   <Sparkles size={13} style={{ color: accent.color }} className="animate-pulse" />
                   <span className="text-[12px] font-semibold" style={{ color: accent.color }}>
-                    Nvidia Nemotron working…
+                    AI working…
                   </span>
                 </div>
                 <button
@@ -889,7 +889,7 @@ export default function AiDoesItPanel({ onClose }) {
                     {imageError?.slice(0, 200) || 'Unknown error'}
                   </p>
                   <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    Ensure the NVIDIA API Key is set correctly in your backend `.env` file and NVIDIA NIM is available.
+                    Ensure your Together, OpenAI, or Gemini key is configured correctly for image generation.
                   </p>
                 </div>
               )}
@@ -897,7 +897,7 @@ export default function AiDoesItPanel({ onClose }) {
                 <div className="mt-3 flex items-center justify-between px-3 py-2 rounded-xl"
                   style={{ background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.1)' }}>
                   <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    NVIDIA NIM image generation was skipped or not configured.
+                    AI image generation was skipped or not configured.
                   </p>
                 </div>
               )}

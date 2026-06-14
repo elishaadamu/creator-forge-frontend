@@ -230,7 +230,6 @@ export default function App() {
       return {
         geminiKey: keys.geminiKey || '',
         togetherKey: keys.togetherKey || '',
-        nvidiaKey: keys.nvidiaKey || '',
         openaiKey: keys.openaiKey || '',
         anthropicKey: keys.anthropicKey || '',
       }
@@ -238,7 +237,6 @@ export default function App() {
       return {
         geminiKey: '',
         togetherKey: '',
-        nvidiaKey: '',
         openaiKey: '',
         anthropicKey: '',
       }
@@ -251,7 +249,6 @@ export default function App() {
       setAiKeysState({
         geminiKey: newKeys.geminiKey || '',
         togetherKey: newKeys.togetherKey || '',
-        nvidiaKey: newKeys.nvidiaKey || '',
         openaiKey: newKeys.openaiKey || '',
         anthropicKey: newKeys.anthropicKey || '',
       })
@@ -594,7 +591,6 @@ export default function App() {
     setAiKeysState({
       geminiKey: '',
       togetherKey: '',
-      nvidiaKey: '',
       openaiKey: '',
       anthropicKey: '',
     })

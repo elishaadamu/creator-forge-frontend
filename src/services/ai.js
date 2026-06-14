@@ -12,10 +12,11 @@
 let inMemoryAiKeys = {
   geminiKey: '',
   togetherKey: '',
-  nvidiaKey: '',
   openaiKey: '',
   anthropicKey: '',
 }
+
+const failedKeys = new Set()
 
 // Whether user has consented to save AI keys to DB
 let aiKeysConsentGiven = false
@@ -24,16 +25,21 @@ try {
   let storedOpenai = localStorage.getItem('forge_openai_api_key') || '';
   const envOpenai = import.meta.env.VITE_OPENAI_API_KEY || '';
   
-  // Self-healing: if cached key is the incorrect default ending in 'jwwA', overwrite it with the env key
-  if (storedOpenai.endsWith('jwwA') && envOpenai && !envOpenai.endsWith('jwwA')) {
-    console.log('[Forge] Detected obsolete default OpenAI API key in localStorage. Resetting to VITE_OPENAI_API_KEY...');
-    storedOpenai = envOpenai;
-    localStorage.setItem('forge_openai_api_key', envOpenai);
+  // Self-healing: if cached key is the incorrect default ending in 'jwwA', clear it or overwrite with env key
+  if (storedOpenai.endsWith('jwwA')) {
+    if (envOpenai && !envOpenai.endsWith('jwwA')) {
+      console.log('[Forge] Detected obsolete default OpenAI API key in localStorage. Resetting to VITE_OPENAI_API_KEY...');
+      storedOpenai = envOpenai;
+      localStorage.setItem('forge_openai_api_key', envOpenai);
+    } else {
+      console.log('[Forge] Detected obsolete default OpenAI API key in localStorage. Clearing it...');
+      storedOpenai = '';
+      localStorage.removeItem('forge_openai_api_key');
+    }
   }
 
   inMemoryAiKeys.geminiKey = localStorage.getItem('forge_gemini_api_key') || ''
   inMemoryAiKeys.togetherKey = localStorage.getItem('forge_together_api_key') || ''
-  inMemoryAiKeys.nvidiaKey = localStorage.getItem('forge_nvidia_api_key') || ''
   inMemoryAiKeys.openaiKey = storedOpenai || envOpenai || ''
   inMemoryAiKeys.anthropicKey = localStorage.getItem('forge_anthropic_api_key') || ''
   
@@ -50,7 +56,8 @@ export function loadAiKeys() {
   return inMemoryAiKeys
 }
 
-export function saveAiKeys({ geminiKey, togetherKey, nvidiaKey, openaiKey, anthropicKey }) {
+export function saveAiKeys({ geminiKey, togetherKey, openaiKey, anthropicKey }) {
+  failedKeys.clear()
   if (geminiKey   !== undefined) {
     inMemoryAiKeys.geminiKey = (geminiKey || '').trim()
     try {
@@ -63,16 +70,16 @@ export function saveAiKeys({ geminiKey, togetherKey, nvidiaKey, openaiKey, anthr
       localStorage.setItem('forge_together_api_key', inMemoryAiKeys.togetherKey)
     } catch (e) {}
   }
-  if (nvidiaKey   !== undefined) {
-    inMemoryAiKeys.nvidiaKey = (nvidiaKey || '').trim()
-    try {
-      localStorage.setItem('forge_nvidia_api_key', inMemoryAiKeys.nvidiaKey)
-    } catch (e) {}
-  }
+
   if (openaiKey   !== undefined) {
-    inMemoryAiKeys.openaiKey = (openaiKey || '').trim()
+    const val = (openaiKey || '').trim()
+    inMemoryAiKeys.openaiKey = val.endsWith('jwwA') ? '' : val
     try {
-      localStorage.setItem('forge_openai_api_key', inMemoryAiKeys.openaiKey)
+      if (inMemoryAiKeys.openaiKey) {
+        localStorage.setItem('forge_openai_api_key', inMemoryAiKeys.openaiKey)
+      } else {
+        localStorage.removeItem('forge_openai_api_key')
+      }
     } catch (e) {}
   }
   if (anthropicKey !== undefined) {
@@ -84,10 +91,10 @@ export function saveAiKeys({ geminiKey, togetherKey, nvidiaKey, openaiKey, anthr
 }
 
 export function clearInMemoryAiKeys() {
+  failedKeys.clear()
   inMemoryAiKeys = {
     geminiKey: '',
     togetherKey: '',
-    nvidiaKey: '',
     openaiKey: '',
     anthropicKey: '',
   }
@@ -95,7 +102,7 @@ export function clearInMemoryAiKeys() {
   try {
     localStorage.removeItem('forge_gemini_api_key')
     localStorage.removeItem('forge_together_api_key')
-    localStorage.removeItem('forge_nvidia_api_key')
+
     localStorage.removeItem('forge_openai_api_key')
     localStorage.removeItem('forge_anthropic_api_key')
     localStorage.removeItem('forge_ai_keys_consent')
@@ -112,10 +119,7 @@ export function hasTogetherKey() {
   return !!togetherKey
 }
 
-export function hasNvidiaKey() {
-  const { nvidiaKey } = loadAiKeys()
-  return !!nvidiaKey
-}
+
 
 export function hasOpenaiKey() {
   const { openaiKey } = loadAiKeys()
@@ -128,8 +132,8 @@ export function hasAnthropicKey() {
 }
 
 export function hasTextKey() {
-  const { geminiKey, nvidiaKey, openaiKey, anthropicKey } = loadAiKeys()
-  return !!(geminiKey || nvidiaKey || openaiKey || anthropicKey)
+  const { geminiKey, openaiKey, anthropicKey } = loadAiKeys()
+  return !!(geminiKey || openaiKey || anthropicKey)
 }
 
 // ── DB-persisted AI keys (user-consented) ──────────────────────────────────────
@@ -157,7 +161,7 @@ export async function saveAiKeysToDb(username) {
         ai_keys: {
           geminiKey: keys.geminiKey,
           togetherKey: keys.togetherKey,
-          nvidiaKey: keys.nvidiaKey,
+
           openaiKey: keys.openaiKey,
           anthropicKey: keys.anthropicKey,
         }
@@ -190,11 +194,13 @@ export async function deleteAiKeysFromDb(username) {
 }
 
 export function restoreAiKeysFromLoginData(aiKeysData) {
+  failedKeys.clear()
   if (aiKeysData && typeof aiKeysData === 'object') {
     inMemoryAiKeys.geminiKey   = aiKeysData.geminiKey   || ''
     inMemoryAiKeys.togetherKey = aiKeysData.togetherKey || ''
-    inMemoryAiKeys.nvidiaKey   = aiKeysData.nvidiaKey   || ''
-    inMemoryAiKeys.openaiKey   = aiKeysData.openaiKey   || ''
+
+    const val = aiKeysData.openaiKey || ''
+    inMemoryAiKeys.openaiKey   = val.endsWith('jwwA') ? '' : val
     inMemoryAiKeys.anthropicKey = aiKeysData.anthropicKey || ''
     aiKeysConsentGiven = true
   }
@@ -232,33 +238,58 @@ async function geminiCall(prompt, systemPrompt, maxTokens = 8192, signal = undef
     body.generationConfig.responseMimeType = 'application/json'
   }
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal,
-  })
+  const timeoutController = new AbortController()
+  const timeoutId = setTimeout(() => {
+    timeoutController.abort()
+  }, 45000)
 
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Gemini ${res.status}: ${err.slice(0, 300)}`)
-  }
-
-  const data = await res.json()
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-  if (!text) throw new Error('Gemini returned empty response')
-
-  if (jsonMode) {
-    const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
-    try {
-      return JSON.parse(cleaned)
-    } catch (err) {
-      console.error('[Forge] Gemini JSON parse failed. Raw response:', text)
-      throw err
+  let activeSignal = timeoutController.signal
+  if (signal) {
+    signal.addEventListener('abort', () => timeoutController.abort())
+    if (signal.aborted) {
+      timeoutController.abort()
     }
   }
 
-  return text
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: activeSignal,
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`Gemini ${res.status}: ${err.slice(0, 300)}`)
+    }
+
+    const data = await res.json()
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    if (!text) throw new Error('Gemini returned empty response')
+
+    if (jsonMode) {
+      const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+      try {
+        return JSON.parse(cleaned)
+      } catch (err) {
+        console.error('[Forge] Gemini JSON parse failed. Raw response:', text)
+        throw err
+      }
+    }
+
+    return text
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      if (signal && signal.aborted) {
+        throw err
+      }
+      throw new Error("Gemini request timed out after 45s")
+    }
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
 // ── Anthropic Call ─────────────────────────────────────────────────────────────
@@ -294,37 +325,62 @@ async function anthropicCall(prompt, systemPrompt, maxTokens = 4096, signal = un
     }
   }
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': anthropicKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify(body),
-    signal,
-  })
+  const timeoutController = new AbortController()
+  const timeoutId = setTimeout(() => {
+    timeoutController.abort()
+  }, 45000)
 
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Anthropic ${res.status}: ${err.slice(0, 300)}`)
-  }
-
-  const data = await res.json()
-  const text = data?.content?.[0]?.text || ''
-  if (!text) throw new Error('Anthropic returned empty response')
-
-  if (jsonMode) {
-    const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
-    try {
-      return JSON.parse(cleaned)
-    } catch (err) {
-      console.error('[Forge] Anthropic JSON parse failed. Raw response:', text)
-      throw err
+  let activeSignal = timeoutController.signal
+  if (signal) {
+    signal.addEventListener('abort', () => timeoutController.abort())
+    if (signal.aborted) {
+      timeoutController.abort()
     }
   }
 
-  return text
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(body),
+      signal: activeSignal,
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`Anthropic ${res.status}: ${err.slice(0, 300)}`)
+    }
+
+    const data = await res.json()
+    const text = data?.content?.[0]?.text || ''
+    if (!text) throw new Error('Anthropic returned empty response')
+
+    if (jsonMode) {
+      const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+      try {
+        return JSON.parse(cleaned)
+      } catch (err) {
+        console.error('[Forge] Anthropic JSON parse failed. Raw response:', text)
+        throw err
+      }
+    }
+
+    return text
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      if (signal && signal.aborted) {
+        throw err
+      }
+      throw new Error("Anthropic Claude request timed out after 45s")
+    }
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
 // ── OpenAI Call ───────────────────────────────────────────────────────────────
@@ -335,130 +391,143 @@ async function openaiCall(prompt, systemPrompt, maxTokens = 4096, signal = undef
 
   const url = '/api/openai/v1/responses'
 
+  const input = []
+  if (systemPrompt) {
+    input.push({
+      role: 'system',
+      content: [{ type: 'input_text', text: systemPrompt }]
+    })
+  }
+  input.push({
+    role: 'user',
+    content: [{ type: 'input_text', text: prompt }]
+  })
+
   const body = {
-    model: 'gpt-4o',
-    input: prompt,
+    model: 'gpt-5.5',
+    input: input,
     max_output_tokens: maxTokens,
   }
 
-  if (systemPrompt) {
-    body.instructions = systemPrompt
-  }
-
   if (jsonMode) {
-    body['text.format'] = { type: 'json_object' }
+    body.text = { format: { type: 'json_object' } }
   }
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiKey}`
-    },
-    body: JSON.stringify(body),
-    signal,
-  })
+  const timeoutController = new AbortController()
+  const timeoutId = setTimeout(() => {
+    timeoutController.abort()
+  }, 45000)
 
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`OpenAI Responses ${res.status}: ${err.slice(0, 300)}`)
+  let activeSignal = timeoutController.signal
+  if (signal) {
+    signal.addEventListener('abort', () => timeoutController.abort())
+    if (signal.aborted) {
+      timeoutController.abort()
+    }
   }
 
-  const data = await res.json()
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiKey}`
+      },
+      body: JSON.stringify(body),
+      signal: activeSignal,
+    })
 
-  let text = ''
-  if (data && typeof data.output_text === 'string') {
-    text = data.output_text
-  } else if (data && Array.isArray(data.output)) {
-    for (const item of data.output) {
-      if (item && item.type === 'message' && Array.isArray(item.content)) {
-        for (const c of item.content) {
-          if (c && c.type === 'output_text' && typeof c.text === 'string') {
-            text += c.text
-          } else if (c && typeof c.text === 'string') {
-            text += c.text
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`OpenAI Responses ${res.status}: ${err.slice(0, 300)}`)
+    }
+
+    const data = await res.json()
+    
+    // Extract text response from Responses API structure
+    let text = ''
+    if (data.output_text) {
+      text = data.output_text
+    } else if (Array.isArray(data.output)) {
+      for (const out of data.output) {
+        if (out.type === 'message' && Array.isArray(out.content)) {
+          for (const item of out.content) {
+            if (item && item.text) {
+              text = item.text
+              break
+            }
           }
         }
+        if (text) break
       }
     }
-  }
 
-  // Fallback to chat completions response format in case of proxy mapping
-  if (!text && data?.choices?.[0]?.message?.content) {
-    text = data.choices[0].message.content
-  }
+    if (!text) throw new Error('OpenAI Responses returned empty response')
 
-  if (!text) throw new Error('OpenAI returned empty response')
-
-  if (jsonMode) {
-    const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
-    try {
-      return JSON.parse(cleaned)
-    } catch (err) {
-      console.error('[Forge] OpenAI JSON parse failed. Raw response:', text)
-      throw err
+    if (jsonMode) {
+      const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+      try {
+        return JSON.parse(cleaned)
+      } catch (err) {
+        console.error('[Forge] OpenAI JSON parse failed. Raw response:', text)
+        throw err
+      }
     }
-  }
 
-  return text
+    return text
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      if (signal && signal.aborted) {
+        throw err
+      }
+      throw new Error("OpenAI Responses request timed out after 45s")
+    }
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
 // ── AI Text Call Dispatcher (Anthropic -> Nemotron -> OpenAI -> Gemini) ─────────
 
 async function aiTextCall(prompt, systemPrompt, maxTokens = 8192, signal = undefined, jsonMode = true) {
-  const { geminiKey, nvidiaKey, openaiKey, anthropicKey } = loadAiKeys()
+  const { geminiKey, openaiKey, anthropicKey } = loadAiKeys()
 
   // 1. Anthropic Claude
-  if (anthropicKey) {
+  if (anthropicKey && !failedKeys.has(anthropicKey)) {
     try {
       return await anthropicCall(prompt, systemPrompt, maxTokens, signal, jsonMode)
     } catch (err) {
       if (err.name === 'AbortError') throw err
+      if (err.message.includes('401') || err.message.includes('429')) {
+        failedKeys.add(anthropicKey)
+      }
       console.warn("[Forge] Anthropic Claude call failed, trying fallback:", err)
     }
   }
 
-  // 2. Nvidia Nemotron
-  if (nvidiaKey) {
-    try {
-      const data = await nvidiaCall(prompt, systemPrompt, signal)
-      let content = data
-      if (data && data.content !== undefined) {
-        content = data.content
-      }
-      if (typeof content === 'string') {
-        if (jsonMode) {
-          const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
-          return JSON.parse(cleaned)
-        }
-        return content
-      }
-      if (typeof content === 'object' && content !== null) {
-        return content
-      }
-      throw new Error("Invalid format from Nvidia Call")
-    } catch (err) {
-      if (err.name === 'AbortError') throw err
-      console.warn("[Forge] Nvidia Nemotron call failed, trying fallback:", err)
-    }
-  }
-
   // 3. OpenAI Responses
-  if (openaiKey) {
+  if (openaiKey && !failedKeys.has(openaiKey)) {
     try {
       return await openaiCall(prompt, systemPrompt, maxTokens, signal, jsonMode)
     } catch (err) {
       if (err.name === 'AbortError') throw err
+      if (err.message.includes('401') || err.message.includes('429')) {
+        failedKeys.add(openaiKey)
+      }
       console.warn("[Forge] OpenAI Responses call failed, trying fallback:", err)
     }
   }
 
   // 4. Gemini 2.5 Flash
-  if (geminiKey) {
+  if (geminiKey && !failedKeys.has(geminiKey)) {
     try {
       return await geminiCall(prompt, systemPrompt, maxTokens, signal, jsonMode)
     } catch (err) {
       if (err.name === 'AbortError') throw err
+      if (err.message.includes('401') || err.message.includes('429')) {
+        failedKeys.add(geminiKey)
+      }
       console.error("[Forge] Gemini call failed:", err)
       throw err
     }
@@ -467,29 +536,7 @@ async function aiTextCall(prompt, systemPrompt, maxTokens = 8192, signal = undef
   throw new Error("NO_ACTIVE_AI_KEY")
 }
 
-// ── Nvidia Nemotron call ───────────────────────────────────────────────────────
 
-async function nvidiaCall(prompt, systemPrompt, signal = undefined) {
-  const { nvidiaKey } = loadAiKeys()
-  const headers = { 'Content-Type': 'application/json' }
-  if (nvidiaKey) {
-    headers['X-Nvidia-Api-Key'] = nvidiaKey
-  }
-
-  const res = await fetch('/api/studio/generate', {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify({ system_prompt: systemPrompt, prompt: prompt }),
-    signal,
-  })
-
-  if (!res.ok) {
-    const errText = await res.text()
-    throw new Error(`Nvidia Nemotron generation failed: ${res.status} ${errText}`)
-  }
-
-  return await res.json()
-}
 
 // ── Generate full marketing pack ───────────────────────────────────────────────
 
@@ -662,30 +709,31 @@ export async function generateProductImageWithOpenAI(creatorData, signal = undef
 
   const prompt = `Sleek dark ${type} screenshot mockup for "${productName}" — ${niche} creator platform. Premium SaaS UI, floating on deep dark background with subtle glow. Shows dashboard or course page with cards and metrics. No text. Professional product photography. Ultra detailed. Linear, Notion aesthetic.`
 
-  const res = await fetch('/api/openai/v1/images/generations', {
+  const res = await fetch('/api/openai/v1/responses', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${openaiKey}`,
     },
     body: JSON.stringify({
-      model: 'dall-e-3',
-      prompt,
-      n: 1,
-      size: '1024x1024',
-      response_format: 'url',
+      model: 'gpt-5.5',
+      input: prompt,
+      tools: [{ type: 'image_generation' }],
     }),
     signal,
   })
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`OpenAI dall-e-3 ${res.status}: ${err.slice(0, 300)}`)
+    throw new Error(`OpenAI Responses Image ${res.status}: ${err.slice(0, 300)}`)
   }
 
   const data = await res.json()
-  if (data?.data?.[0]?.url) return data.data[0].url
-  if (data?.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`
+  const outputs = data?.output || []
+  const imageCall = outputs.find(o => o.type === 'image_generation_call')
+  if (imageCall && imageCall.result) {
+    return `data:image/png;base64,${imageCall.result}`
+  }
   return null
 }
 
@@ -696,55 +744,43 @@ export async function generateProductImage(creatorData, signal = undefined) {
 
   const prompt = `Sleek dark ${type} app screenshot mockup for a ${niche} creator platform called "${productName}". Premium SaaS UI on deep dark background with subtle glow. Shows a clean dashboard with course cards and metrics. No real text, just UI shapes and blocks. Professional product photography style. Linear, Notion aesthetic. Ultra detailed.`
 
-  const { nvidiaKey, openaiKey, togetherKey, geminiKey } = loadAiKeys()
-
-  // 1. Nvidia
-  if (nvidiaKey) {
-    try {
-      const headers = { 'Content-Type': 'application/json', 'X-Nvidia-Api-Key': nvidiaKey }
-      const res = await fetch('/api/v1/infer', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({ prompt, seed: 0 }),
-        signal,
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const b64 = data?.artifacts?.[0]?.base64
-        if (b64) return `data:image/jpeg;base64,${b64}`
-      }
-    } catch (err) {
-      if (err.name === 'AbortError') throw err
-      console.warn("[Forge] NVIDIA NIM Image Generation failed, trying fallback:", err)
-    }
-  }
+  const { openaiKey, togetherKey, geminiKey } = loadAiKeys()
 
   // 2. OpenAI GPT Image 2
-  if (openaiKey) {
+  if (openaiKey && !failedKeys.has(openaiKey)) {
     try {
       return await generateProductImageWithOpenAI(creatorData, signal)
     } catch (err) {
       if (err.name === 'AbortError') throw err
+      if (err.message.includes('401') || err.message.includes('429')) {
+        failedKeys.add(openaiKey)
+      }
       console.warn("[Forge] OpenAI gpt-image-2 Generation failed, trying fallback:", err)
     }
   }
 
   // 3. Together.ai FLUX
-  if (togetherKey) {
+  if (togetherKey && !failedKeys.has(togetherKey)) {
     try {
       return await generateProductImageWithTogether(creatorData, signal)
     } catch (err) {
       if (err.name === 'AbortError') throw err
+      if (err.message.includes('401') || err.message.includes('429')) {
+        failedKeys.add(togetherKey)
+      }
       console.warn("[Forge] Together.ai Image Generation failed, trying fallback:", err)
     }
   }
 
   // 4. Gemini Image
-  if (geminiKey) {
+  if (geminiKey && !failedKeys.has(geminiKey)) {
     try {
       return await generateProductImageWithGemini(creatorData, signal)
     } catch (err) {
       if (err.name === 'AbortError') throw err
+      if (err.message.includes('401') || err.message.includes('429')) {
+        failedKeys.add(geminiKey)
+      }
       console.warn("[Forge] Gemini Image Generation failed:", err)
     }
   }
@@ -848,7 +884,7 @@ export async function generateContentCalendar(creatorData, goal, signal = undefi
   const productDesc = blueprint?.description  || `a premium ${niche} platform`
   const bio         = creatorData.description ? `\nBio: "${creatorData.description.slice(0, 150)}"` : ''
 
-  const system = `You are an elite creator economy content planner. You design highly strategic, platform-native weekly content calendars. Return ONLY valid JSON.`
+  const system = `You are an elite creator economy content planner. You design highly strategic, platform-native weekly content calendars. Return ONLY a valid JSON object containing a "calendar" array.`
 
   const prompt = `Generate a 7-day weekly content calendar tailored to:
 Creator: ${name} (${handle})
@@ -866,21 +902,23 @@ For each post, provide:
 - theme: one of the allowed theme keys: "launch", "value", "bts", "proof", "cta", "community", "story"
 - status: one of "draft", "scheduled" (default most to "draft", but include a few "scheduled" or "posted" for variety)
 
-Return exactly this JSON structure (an array of 7 objects representing the days of the week, in order from Mon to Sun):
-[
-  {
-    "day": "Mon",
-    "posts": [
-      { "id": 1, "platform": "Instagram", "type": "Reel", "title": "...", "theme": "...", "status": "..." }
-    ]
-  },
-  ...
-]
+Return exactly this JSON structure (a JSON object containing a "calendar" array of 7 objects representing the days of the week, in order from Mon to Sun):
+{
+  "calendar": [
+    {
+      "day": "Mon",
+      "posts": [
+        { "id": 1, "platform": "Instagram", "type": "Reel", "title": "...", "theme": "...", "status": "..." }
+      ]
+    },
+    ...
+  ]
+}
 
 Ensure each post id is a unique number (starting from 1 and incrementing). Make the titles tailored, highly specific, and creative based on the creator's niche and product.`
 
   try {
-    const data = await aiTextCall(prompt, system, 8192, signal, true)
+    const data = await aiTextCall(prompt, system, 4096, signal, true)
     let parsed = null
     
     if (Array.isArray(data)) {
@@ -943,7 +981,7 @@ Return exactly this JSON:
   }
 }
 
-export async function generateRecommendationsAI(creatorData) {
+export async function generateRecommendationsAI(creatorData, signal = undefined) {
   const name      = creatorData.name      || creatorData.handle?.replace('@','') || 'this creator'
   const handle    = creatorData.handle    || '@creator'
   const platform  = creatorData.platform  || 'social media'
@@ -952,7 +990,7 @@ export async function generateRecommendationsAI(creatorData) {
   const niche     = creatorData.niche     || 'content creation'
   const bio       = creatorData.description ? `\nBio: "${creatorData.description.slice(0, 150)}"` : ''
 
-  const system = `You are a world-class creator monetization strategist. You analyze a creator's niche, audience, and platform, and recommend the top 4 highly personalized product types to launch. Return ONLY a valid JSON array. Ensure all string values are properly escaped (especially double quotes inside strings) and contain no raw newlines.`
+  const system = `You are a world-class creator monetization strategist. You analyze a creator's niche, audience, and platform, and recommend the top 4 highly personalized product types to launch. Return ONLY a valid JSON object containing a "recommendations" array. Ensure all string values are properly escaped (especially double quotes inside strings) and contain no raw newlines.`
 
   const prompt = `Generate exactly 4 product recommendations for:
 Creator: ${name} (${handle})
@@ -962,25 +1000,27 @@ Niche: ${niche}${bio}
 Recommend 4 products across different categories chosen from: "course", "community", "app", "physical_product", "saas", "coaching", "newsletter", "other".
 Order them from best match (highest confidence) to alternates.
 
-Return exactly this JSON array structure:
-[
-  {
-    "product_name": "Course / Product Name (creative and specific, do not include '[Placeholder]')",
-    "product_category": "course",
-    "tagline": "Catchy 5-8 word tagline",
-    "description": "2-sentence clear explanation of what this product is and how the audience accesses it",
-    "target_audience": "Specific audience segment",
-    "revenue_model": "Pricing strategy (e.g. $29/mo membership, $199 one-time course)",
-    "revenue_potential": "$5K–$20K / mo (reasonable estimation matching their followers/niche)",
-    "confidence_score": 0.95
-  },
-  ...
-]
+Return exactly this JSON structure:
+{
+  "recommendations": [
+    {
+      "product_name": "Course / Product Name (creative and specific, do not include '[Placeholder]')",
+      "product_category": "course",
+      "tagline": "Catchy 5-8 word tagline",
+      "description": "2-sentence clear explanation of what this product is and how the audience accesses it",
+      "target_audience": "Specific audience segment",
+      "revenue_model": "Pricing strategy (e.g. $29/mo membership, $199 one-time course)",
+      "revenue_potential": "$5K–$20K / mo (reasonable estimation matching their followers/niche)",
+      "confidence_score": 0.95
+    },
+    ...
+  ]
+}
 
 Keep product names authentic, tailored, and highly specific to the creator's niche.`
 
   try {
-    const data = await aiTextCall(prompt, system, 8192, undefined, true)
+    const data = await aiTextCall(prompt, system, 8192, signal, true)
 
     // 1. Direct array
     if (Array.isArray(data)) return data

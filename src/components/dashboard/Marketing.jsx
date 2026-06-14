@@ -182,13 +182,13 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const TODAY_IDX = (new Date().getDay() + 6) % 7 // 0=Mon
 
 const INITIAL_WEEK = [
-  { day: 'Mon', posts: [{ type: 'reel', label: 'Launch teaser reel', platform: 'IG', color: 'rgba(225,48,108,0.25)', done: false }] },
-  { day: 'Tue', posts: [{ type: 'email', label: 'Early access email', platform: 'Email', color: 'rgba(255,255,255,0.12)', done: false }] },
-  { day: 'Wed', posts: [{ type: 'thread', label: '5 things I wish I knew', platform: 'X', color: 'rgba(96,165,250,0.2)', done: false }, { type: 'story', label: 'BTS story', platform: 'IG', color: 'rgba(225,48,108,0.15)', done: false }] },
-  { day: 'Thu', posts: [{ type: 'live', label: 'YouTube live — product intro', platform: 'YT', color: 'rgba(255,59,48,0.2)', done: false }] },
-  { day: 'Fri', posts: [{ type: 'post', label: 'Launch day announcement', platform: 'All', color: 'rgba(255,255,255,0.1)', done: false }] },
+  { day: 'Mon', posts: [{ id: 'init-mon-1', type: 'reel', label: 'Launch teaser reel', platform: 'IG', color: 'rgba(225,48,108,0.25)', done: false }] },
+  { day: 'Tue', posts: [{ id: 'init-tue-1', type: 'email', label: 'Early access email', platform: 'Email', color: 'rgba(255,255,255,0.12)', done: false }] },
+  { day: 'Wed', posts: [{ id: 'init-wed-1', type: 'thread', label: '5 things I wish I knew', platform: 'X', color: 'rgba(96,165,250,0.2)', done: false }, { id: 'init-wed-2', type: 'story', label: 'BTS story', platform: 'IG', color: 'rgba(225,48,108,0.15)', done: false }] },
+  { day: 'Thu', posts: [{ id: 'init-thu-1', type: 'live', label: 'YouTube live — product intro', platform: 'YT', color: 'rgba(255,59,48,0.2)', done: false }] },
+  { day: 'Fri', posts: [{ id: 'init-fri-1', type: 'post', label: 'Launch day announcement', platform: 'All', color: 'rgba(255,255,255,0.1)', done: false }] },
   { day: 'Sat', posts: [] },
-  { day: 'Sun', posts: [{ type: 'recap', label: 'Week 1 recap + results', platform: 'YT', color: 'rgba(255,59,48,0.15)', done: false }] },
+  { day: 'Sun', posts: [{ id: 'init-sun-1', type: 'recap', label: 'Week 1 recap + results', platform: 'YT', color: 'rgba(255,59,48,0.15)', done: false }] },
 ]
 
 function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
@@ -247,7 +247,7 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
         const isToday = i === TODAY_IDX
         const dateStr = weekDates[i].toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
         return (
-          <div key={dayData.day}
+          <div key={`${dayData.day || 'day'}-${i}`}
             className="rounded-xl overflow-hidden"
             style={{
               background: isToday ? 'var(--theme-accent-bg)' : 'var(--theme-card-bg)',
@@ -269,8 +269,8 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
               {isToday && <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--theme-accent)' }} />}
             </div>
             <div className="p-1.5 space-y-1">
-              {dayData.posts.map((post, j) => (
-                <div key={j}
+              {(dayData.posts || []).map((post, j) => (
+                <div key={post.id ? `post-id-${post.id}-${j}` : `post-idx-${dayData.day}-${j}`}
                   className="group/card relative rounded-lg cursor-pointer transition-all duration-150 hover:brightness-110"
                   style={{ background: post.color }}
                   onClick={() => onCardClick && onCardClick(post, dayData.day)}
@@ -820,10 +820,11 @@ function reverseMapColorToTheme(color) {
 
 function mapCalendarResult(result) {
   if (!Array.isArray(result)) return null
+  let idCounter = 1
   return result.map(day => ({
     day: day.day,
     posts: (day.posts || []).map(post => ({
-      id: post.id || Math.random().toString(36).slice(2),
+      id: `post-gen-${idCounter++}`,
       type: post.type || 'post',
       label: post.title || 'Untitled Post',
       title: post.title || 'Untitled Post',
@@ -1018,7 +1019,7 @@ export default function Marketing() {
       }
 
       if (hasTextKey() && autofillJob.status === 'idle') {
-        startBgJob(AUTOFILL_JOB, () => generateContentCalendar(creatorData, 'launch'))
+        startBgJob(AUTOFILL_JOB, (sig) => generateContentCalendar(creatorData, 'launch', sig))
       } else if (!hasTextKey()) {
         setWeek(INITIAL_WEEK)
       }
@@ -1037,6 +1038,22 @@ export default function Marketing() {
         clearBgJob(AUTOFILL_JOB)
         if (triggerToast) triggerToast('Weekly content calendar autofilled!', 'success')
         setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+      } else {
+        console.warn('[Forge] Weekly calendar mapping failed. Falling back to default/cached week.')
+        const handle = creatorData?.handle || 'default'
+        const cacheKey = `forge_calendar_${handle}_launch_w0`
+        const cacheKeyLower = `forge_calendar_${handle.toLowerCase()}_launch_w0`
+        const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
+        if (cached) {
+          try {
+            setWeek(mapCalendarResult(JSON.parse(cached)))
+          } catch (e) {
+            setWeek(INITIAL_WEEK)
+          }
+        } else {
+          setWeek(INITIAL_WEEK)
+        }
+        clearBgJob(AUTOFILL_JOB)
       }
     } else if (autofillJob.status === 'error' || autofillJob.status === 'cancelled') {
       const handle = creatorData?.handle || 'default'
@@ -1069,7 +1086,7 @@ export default function Marketing() {
 
   const handleAutoFillWeek = () => {
     if (incrementAiActions) incrementAiActions()
-    startBgJob(AUTOFILL_JOB, () => generateContentCalendar(creatorData, 'launch'))
+    startBgJob(AUTOFILL_JOB, (sig) => generateContentCalendar(creatorData, 'launch', sig))
   }
 
   const todayActions = getTodayActions(creatorData?.platform)

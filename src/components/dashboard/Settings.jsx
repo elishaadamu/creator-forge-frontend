@@ -238,12 +238,10 @@ export default function Settings() {
   // ── AI keys ────────────────────────────────────────────────────────────────
   const [gemKey,      setGemKey]      = useState('')
   const [togetherKey, setTogetherKey] = useState('')
-  const [nvKey,       setNvKey]       = useState('')
   const [openaiKey,   setOpenaiKey]   = useState('')
   const [anthropicKey,setAnthropicKey] = useState('')
   const [showGem,     setShowGem]     = useState(false)
   const [showTogether,setShowTogether]= useState(false)
-  const [showNv,       setShowNv]       = useState(false)
   const [showOpenai,   setShowOpenai]   = useState(false)
   const [showAnthropic,setShowAnthropic] = useState(false)
 
@@ -261,7 +259,6 @@ export default function Settings() {
     if (aiKeys) {
       setGemKey(aiKeys.geminiKey || '')
       setTogetherKey(aiKeys.togetherKey || '')
-      setNvKey(aiKeys.nvidiaKey || '')
       setOpenaiKey(aiKeys.openaiKey || '')
       setAnthropicKey(aiKeys.anthropicKey || '')
     }
@@ -270,7 +267,6 @@ export default function Settings() {
   const handleDeleteIndividualKey = async (keyType) => {
     let updatedGem = gemKey
     let updatedTogether = togetherKey
-    let updatedNv = nvKey
     let updatedOpenai = openaiKey
     let updatedAnthropic = anthropicKey
 
@@ -280,9 +276,6 @@ export default function Settings() {
     } else if (keyType === 'together') {
       setTogetherKey('')
       updatedTogether = ''
-    } else if (keyType === 'nvidia') {
-      setNvKey('')
-      updatedNv = ''
     } else if (keyType === 'openai') {
       setOpenaiKey('')
       updatedOpenai = ''
@@ -291,10 +284,10 @@ export default function Settings() {
       updatedAnthropic = ''
     }
 
-    updateAiKeys({ geminiKey: updatedGem, togetherKey: updatedTogether, nvidiaKey: updatedNv, openaiKey: updatedOpenai, anthropicKey: updatedAnthropic })
+    updateAiKeys({ geminiKey: updatedGem, togetherKey: updatedTogether, openaiKey: updatedOpenai, anthropicKey: updatedAnthropic })
 
     if (userProfile?.username) {
-      const hasAnyAiKey = !!(updatedGem.trim() || updatedTogether.trim() || updatedNv.trim() || updatedOpenai.trim() || updatedAnthropic.trim())
+      const hasAnyAiKey = !!(updatedGem.trim() || updatedTogether.trim() || updatedOpenai.trim() || updatedAnthropic.trim())
       if (consentSave) {
         if (hasAnyAiKey) {
           const success = await saveAiKeysToDb(userProfile.username)
@@ -311,10 +304,10 @@ export default function Settings() {
   }
 
   const handleSaveApiKeys = async () => {
-    updateAiKeys({ geminiKey: gemKey, togetherKey, nvidiaKey: nvKey, openaiKey: openaiKey, anthropicKey })
+    updateAiKeys({ geminiKey: gemKey, togetherKey, openaiKey: openaiKey, anthropicKey })
 
     if (userProfile?.username) {
-      const hasAnyAiKey = !!(gemKey.trim() || togetherKey.trim() || nvKey.trim() || openaiKey.trim() || anthropicKey.trim())
+      const hasAnyAiKey = !!(gemKey.trim() || togetherKey.trim() || openaiKey.trim() || anthropicKey.trim())
       if (consentSave) {
         setAiKeysConsent(true)
         if (hasAnyAiKey) {
@@ -342,7 +335,6 @@ export default function Settings() {
         youtube_api_key: '',
         gemini_api_key: gemKey,
         together_api_key: togetherKey,
-        nvidia_api_key: nvKey,
         openai_api_key: openaiKey,
         anthropic_api_key: anthropicKey
       })
@@ -702,47 +694,10 @@ export default function Settings() {
                 </div>
               </div>
 
-              {/* NVIDIA NIM Key */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[12px] font-semibold text-white">NVIDIA NIM Key</p>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>nemotron-3-ultra</span>
-                    <span className="text-[11px] text-white/40 font-normal">(optional)</span>
-                  </div>
-                  {nvKey.trim() && (
-                    <div className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(100,220,100,0.8)' }}>
-                      <Check size={10} /> Connected
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
-                  style={{ background: '#111', borderColor: nvKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
-                  <input
-                    type={showNv ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
-                    placeholder="nvapi-..."
-                    value={nvKey}
-                    onChange={e => setNvKey(e.target.value)}
-                  />
-                  <button onClick={() => setShowNv(v => !v)} className="text-white/25 hover:text-white/60 transition-colors mr-1">
-                    {showNv ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                  {nvKey && (
-                    <button
-                      onClick={() => handleDeleteIndividualKey('nvidia')}
-                      title="Delete key"
-                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
+
 
               {/* Consent checkbox */}
-              {!!userProfile?.username && (gemKey.trim() || togetherKey.trim() || nvKey.trim() || openaiKey.trim()) && (
+              {!!userProfile?.username && (gemKey.trim() || togetherKey.trim() || openaiKey.trim()) && (
                 <label className="flex items-center gap-3 cursor-pointer select-none py-1.5 mt-2">
                   <div
                     className="w-4 h-4 rounded border flex items-center justify-center transition-all duration-150"
@@ -766,14 +721,14 @@ export default function Settings() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleSaveApiKeys}
-                  disabled={!(gemKey.trim() || togetherKey.trim() || nvKey.trim() || openaiKey.trim())}
+                  disabled={!(gemKey.trim() || togetherKey.trim() || openaiKey.trim())}
                   className="forge-btn-primary flex-1 text-[14px] py-3 gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   {keysSaved ? <><Check size={14} /> Saved!</> : 'Save API Keys'}
                 </button>
               </div>
 
-              {(gemKey.trim() || togetherKey.trim() || nvKey.trim() || openaiKey.trim()) && (
+              {(gemKey.trim() || togetherKey.trim() || openaiKey.trim()) && (
                 <button
                   onClick={handleDownloadPdf}
                   className="forge-btn-secondary w-full text-[12px] py-2.5 flex items-center justify-center gap-2"

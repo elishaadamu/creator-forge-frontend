@@ -458,6 +458,22 @@ export default function ContentCalendar() {
         clearBgJob(calJobId)
         if (triggerToast) triggerToast('7-Day calendar week generated!', 'success')
         setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+      } else {
+        console.warn('[Forge ContentCalendar] Background calendar result was not an array. Falling back.')
+        const handle = creatorData?.handle || 'default'
+        const cacheKey = `forge_calendar_${handle}_${activeGoal}_w${week}`
+        const cacheKeyLower = `forge_calendar_${handle.toLowerCase()}_${activeGoal.toLowerCase()}_w${week}`
+        const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
+        if (cached) {
+          try {
+            setCalendar(JSON.parse(cached))
+          } catch (e) {
+            setCalendar(INITIAL_CALENDAR)
+          }
+        } else {
+          setCalendar(INITIAL_CALENDAR)
+        }
+        clearBgJob(calJobId)
       }
     }
     if (calJob.status === 'error' || calJob.status === 'cancelled') {
