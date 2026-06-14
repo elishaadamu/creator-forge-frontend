@@ -21,10 +21,20 @@ let inMemoryAiKeys = {
 let aiKeysConsentGiven = false
 
 try {
+  let storedOpenai = localStorage.getItem('forge_openai_api_key') || '';
+  const envOpenai = import.meta.env.VITE_OPENAI_API_KEY || '';
+  
+  // Self-healing: if cached key is the incorrect default ending in 'jwwA', overwrite it with the env key
+  if (storedOpenai.endsWith('jwwA') && envOpenai && !envOpenai.endsWith('jwwA')) {
+    console.log('[Forge] Detected obsolete default OpenAI API key in localStorage. Resetting to VITE_OPENAI_API_KEY...');
+    storedOpenai = envOpenai;
+    localStorage.setItem('forge_openai_api_key', envOpenai);
+  }
+
   inMemoryAiKeys.geminiKey = localStorage.getItem('forge_gemini_api_key') || ''
   inMemoryAiKeys.togetherKey = localStorage.getItem('forge_together_api_key') || ''
   inMemoryAiKeys.nvidiaKey = localStorage.getItem('forge_nvidia_api_key') || ''
-  inMemoryAiKeys.openaiKey = localStorage.getItem('forge_openai_api_key') || import.meta.env.VITE_OPENAI_API_KEY || ''
+  inMemoryAiKeys.openaiKey = storedOpenai || envOpenai || ''
   inMemoryAiKeys.anthropicKey = localStorage.getItem('forge_anthropic_api_key') || ''
   
   if (!localStorage.getItem('forge_openai_api_key') && inMemoryAiKeys.openaiKey) {
@@ -326,10 +336,9 @@ async function openaiCall(prompt, systemPrompt, maxTokens = 4096, signal = undef
   const url = '/api/openai/v1/responses'
 
   const body = {
-    model: 'gpt-5.5',
-    reasoning: { effort: 'low' },
+    model: 'gpt-4o',
     input: prompt,
-    max_completion_tokens: maxTokens,
+    max_output_tokens: maxTokens,
   }
 
   if (systemPrompt) {
@@ -660,7 +669,7 @@ export async function generateProductImageWithOpenAI(creatorData, signal = undef
       'Authorization': `Bearer ${openaiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-image-2',
+      model: 'dall-e-3',
       prompt,
       n: 1,
       size: '1024x1024',
@@ -671,7 +680,7 @@ export async function generateProductImageWithOpenAI(creatorData, signal = undef
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`OpenAI gpt-image-2 ${res.status}: ${err.slice(0, 300)}`)
+    throw new Error(`OpenAI dall-e-3 ${res.status}: ${err.slice(0, 300)}`)
   }
 
   const data = await res.json()

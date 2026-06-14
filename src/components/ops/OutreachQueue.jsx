@@ -193,12 +193,43 @@ function MessageCard({ msg, onApprove, onReject, onSend, working }) {
   )
 }
 
+function ToastNotification({ toast, onClose }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000)
+    return () => clearTimeout(timer)
+  }, [onClose])
+
+  const isSuccess = toast.type === 'success'
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border transition-all duration-300 animate-in fade-in slide-in-from-bottom-5"
+         style={{
+           background: '#141414',
+           borderColor: isSuccess ? 'rgba(74,222,128,0.18)' : 'rgba(239,68,68,0.18)',
+           boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+         }}>
+      {isSuccess ? (
+        <CheckCircle size={14} className="text-green-400" />
+      ) : (
+        <AlertCircle size={14} className="text-red-400" />
+      )}
+      <p className="text-[12px] font-medium text-white/90">{toast.message}</p>
+      <button onClick={onClose} className="text-white/20 hover:text-white/40 ml-2 transition-colors">✕</button>
+    </div>
+  )
+}
+
 export default function OutreachQueue({ onCountChange }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
   const [statusFilter, setStatusFilter] = useState('review_pending')
   const [working, setWorking]   = useState(null)
+  const [toast, setToast]       = useState(null)
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type })
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -238,14 +269,26 @@ export default function OutreachQueue({ onCountChange }) {
 
   const handleApprove = async (id) => {
     setWorking(id)
-    try { await approveOutreach(id) } catch (e) { console.warn(e) }
+    try {
+      await approveOutreach(id)
+      showToast('Outreach draft approved!', 'success')
+    } catch (e) {
+      console.warn(e)
+      showToast(e.message || 'Failed to approve draft.', 'error')
+    }
     setWorking(null)
     load()
   }
 
   const handleReject = async (id) => {
     setWorking(id)
-    try { await rejectOutreach(id) } catch (e) { console.warn(e) }
+    try {
+      await rejectOutreach(id)
+      showToast('Outreach draft rejected.', 'success')
+    } catch (e) {
+      console.warn(e)
+      showToast(e.message || 'Failed to reject draft.', 'error')
+    }
     setWorking(null)
     load()
   }
@@ -253,7 +296,14 @@ export default function OutreachQueue({ onCountChange }) {
   const handleSend = async (id) => {
     if (!confirm('Send this email now? This cannot be undone.')) return
     setWorking(id)
-    try { await sendOutreach(id) } catch (e) { console.warn(e) }
+    try {
+      const res = await sendOutreach(id)
+      console.log('Outreach send success:', res)
+      showToast('Outreach email sent successfully!', 'success')
+    } catch (e) {
+      console.error('Outreach send failed:', e)
+      showToast(e.message || 'Failed to send outreach email.', 'error')
+    }
     setWorking(null)
     load()
   }
@@ -337,6 +387,13 @@ export default function OutreachQueue({ onCountChange }) {
             />
           ))}
         </div>
+      )}
+
+      {toast && (
+        <ToastNotification
+          toast={toast}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   )

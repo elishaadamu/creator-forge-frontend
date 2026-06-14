@@ -384,57 +384,9 @@ export default function AdminControl() {
           </div>
 
           <div className="space-y-3.5 text-[12px]">
-            {/* Apify Key */}
+            {/* GPT-5.5 Key */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-white/40 font-medium">Apify API Key</span>
-              {isEditingSettings ? (
-                <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
-                  <input
-                    type={showEditApify ? 'text' : 'password'}
-                    value={editApifyKey}
-                    onChange={e => setEditApifyKey(e.target.value)}
-                    className="flex-1 bg-transparent outline-none text-white font-mono text-[11px]"
-                    placeholder="Enter key to update..."
-                  />
-                  <button onClick={() => setShowEditApify(!showEditApify)} className="text-white/30 hover:text-white/60">
-                    {showEditApify ? <EyeOff size={12} /> : <Eye size={12} />}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-white/70">{sysSettings?.apify_api_key || 'Not Set'}</span>
-                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.apify_configured ? 'bg-green-400' : 'bg-amber-400'}`} />
-                </div>
-              )}
-            </div>
-
-            {/* Anthropic Key */}
-            <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
-              <span className="text-white/40 font-medium">Anthropic (Claude) API Key</span>
-              {isEditingSettings ? (
-                <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
-                  <input
-                    type={showEditAnthropic ? 'text' : 'password'}
-                    value={editAnthropicKey}
-                    onChange={e => setEditAnthropicKey(e.target.value)}
-                    className="flex-1 bg-transparent outline-none text-white font-mono text-[11px]"
-                    placeholder="Enter key to update..."
-                  />
-                  <button onClick={() => setShowEditAnthropic(!showEditAnthropic)} className="text-white/30 hover:text-white/60">
-                    {showEditAnthropic ? <EyeOff size={12} /> : <Eye size={12} />}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-white/70">{sysSettings?.anthropic_api_key || 'Not Set'}</span>
-                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.anthropic_api_key ? 'bg-green-400' : 'bg-amber-400'}`} />
-                </div>
-              )}
-            </div>
-
-            {/* OpenAI API Key */}
-            <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
-              <span className="text-white/40 font-medium">OpenAI API Key</span>
+              <span className="text-white/40 font-medium">GPT-5.5 API Key</span>
               {isEditingSettings ? (
                 <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
                   <input
@@ -456,9 +408,9 @@ export default function AdminControl() {
               )}
             </div>
 
-            {/* Gemini API Key */}
+            {/* Gemini 2.5 Flash Key */}
             <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
-              <span className="text-white/40 font-medium">Gemini API Key</span>
+              <span className="text-white/40 font-medium">Gemini 2.5 Flash API Key</span>
               {isEditingSettings ? (
                 <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
                   <input
@@ -476,6 +428,54 @@ export default function AdminControl() {
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[11px] text-white/70">{sysSettings?.gemini_api_key || 'Not Set'}</span>
                   <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.gemini_api_key ? 'bg-green-400' : 'bg-amber-400'}`} />
+                </div>
+              )}
+            </div>
+
+            {/* Claude Key */}
+            <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
+              <span className="text-white/40 font-medium">Claude API Key</span>
+              {isEditingSettings ? (
+                <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
+                  <input
+                    type={showEditAnthropic ? 'text' : 'password'}
+                    value={editAnthropicKey}
+                    onChange={e => setEditAnthropicKey(e.target.value)}
+                    className="flex-1 bg-transparent outline-none text-white font-mono text-[11px]"
+                    placeholder="Enter key to update..."
+                  />
+                  <button onClick={() => setShowEditAnthropic(!showEditAnthropic)} className="text-white/30 hover:text-white/60">
+                    {showEditAnthropic ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-white/70">{sysSettings?.anthropic_api_key || 'Not Set'}</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.anthropic_api_key ? 'bg-green-400' : 'bg-amber-400'}`} />
+                </div>
+              )}
+            </div>
+
+            {/* Apify Key */}
+            <div className="flex flex-col gap-1.5 border-t border-white/[0.04] pt-3">
+              <span className="text-white/40 font-medium">Apify API Key</span>
+              {isEditingSettings ? (
+                <div className="flex items-center gap-2 bg-[#070707] border border-white/8 rounded-xl px-3 py-2">
+                  <input
+                    type={showEditApify ? 'text' : 'password'}
+                    value={editApifyKey}
+                    onChange={e => setEditApifyKey(e.target.value)}
+                    className="flex-1 bg-transparent outline-none text-white font-mono text-[11px]"
+                    placeholder="Enter key to update..."
+                  />
+                  <button onClick={() => setShowEditApify(!showEditApify)} className="text-white/30 hover:text-white/60">
+                    {showEditApify ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-white/70">{sysSettings?.apify_api_key || 'Not Set'}</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${sysSettings?.apify_configured ? 'bg-green-400' : 'bg-amber-400'}`} />
                 </div>
               )}
             </div>
