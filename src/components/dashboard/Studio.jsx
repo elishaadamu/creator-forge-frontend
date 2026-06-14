@@ -278,7 +278,7 @@ export default function Studio() {
     setIsGenerating(true)
     setGenerated(null)
     if (incrementAiActions) incrementAiActions()
-    startBgJob(STUDIO_JOB, () => generateStudioContent(selectedType, input, creatorData, tone))
+    startBgJob(STUDIO_JOB, (sig) => generateStudioContent(selectedType, input, creatorData, tone, sig))
   }
 
   const handleRefine = (instruction) => {
@@ -286,11 +286,12 @@ export default function Studio() {
     setIsGenerating(true)
     setGenerated(null)
     if (incrementAiActions) incrementAiActions()
-    startBgJob(STUDIO_JOB, () => generateStudioContent(
+    startBgJob(STUDIO_JOB, (sig) => generateStudioContent(
       selectedType,
       `${input ? `${input}. ` : ''}Please rewrite the previous copy with this direction: ${instruction}`,
       creatorData,
-      tone
+      tone,
+      sig
     ))
   }
 
@@ -302,11 +303,12 @@ export default function Studio() {
     const matchedType = flatTypes.find(t => t.platform.toLowerCase() === platformName.toLowerCase()) || selectedType
     setSelectedType(matchedType)
     if (incrementAiActions) incrementAiActions()
-    startBgJob(STUDIO_JOB, () => generateStudioContent(
+    startBgJob(STUDIO_JOB, (sig) => generateStudioContent(
       matchedType,
       `${input ? `${input}. ` : ''}Adapt this copy to suit the ${platformName} platform rules, format, length, and best practices.`,
       creatorData,
-      tone
+      tone,
+      sig
     ))
   }
 

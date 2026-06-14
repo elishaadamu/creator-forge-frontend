@@ -435,8 +435,8 @@ export default function Blueprint() {
 
   useEffect(() => {
     if (hasNoRecs && recsJob.status === 'idle') {
-      startBgJob('onboarding-recs', async () => {
-        const aiRecs = await generateRecommendationsAI(creatorData)
+      startBgJob('onboarding-recs', async (sig) => {
+        const aiRecs = await generateRecommendationsAI(creatorData, sig)
         if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
           return aiRecs
         }

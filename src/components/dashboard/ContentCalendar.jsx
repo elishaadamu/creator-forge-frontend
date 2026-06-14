@@ -365,7 +365,7 @@ export default function ContentCalendar() {
         const normalized = result.map(day => ({
           day: day.day,
           posts: (day.posts || []).map(post => ({
-            id: post.id || idCounter++,
+            id: `post-gen-${idCounter++}`,
             platform: post.platform || 'Instagram',
             type: post.type || 'Post',
             title: post.title || 'Untitled Post',
@@ -442,7 +442,7 @@ export default function ContentCalendar() {
         const normalized = result.map(day => ({
           day: day.day,
           posts: (day.posts || []).map(post => ({
-            id: post.id || idCounter++,
+            id: `post-gen-${idCounter++}`,
             platform: post.platform || 'Instagram',
             type: post.type || 'Post',
             title: post.title || 'Untitled Post',
@@ -502,7 +502,7 @@ export default function ContentCalendar() {
       return
     }
     if (incrementAiActions) incrementAiActions()
-    startBgJob(calJobId, () => generateContentCalendar(creatorData, activeGoal))
+    startBgJob(calJobId, (sig) => generateContentCalendar(creatorData, activeGoal, sig))
   }
 
   const handleGenerateSlot = async (day) => {
@@ -803,9 +803,9 @@ export default function ContentCalendar() {
                   background: isToday ? 'rgba(255,255,255,0.02)' : 'transparent',
                   border: isToday ? '1px solid rgba(255,255,255,0.04)' : '1px solid transparent'
                 }}>
-                {(dayData.posts || []).map(post => (
+                {(dayData.posts || []).map((post, postIdx) => (
                   <PostCard
-                    key={post.id}
+                    key={post.id ? `post-id-${post.id}-${postIdx}` : `post-idx-${dayData.day}-${postIdx}`}
                     post={post}
                     onCopy={handleCopy}
                     onSchedule={handleSchedule}

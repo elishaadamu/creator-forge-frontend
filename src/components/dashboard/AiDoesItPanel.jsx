@@ -643,8 +643,8 @@ export default function AiDoesItPanel({ onClose }) {
     setStepStatus(initial)
 
     // Kick off both background jobs
-    startBgJob(PACK_JOB, () => generateMarketingPack(creatorData))
-    startBgJob(IMAGE_JOB, () => generateProductImage(creatorData))
+    startBgJob(PACK_JOB, (sig) => generateMarketingPack(creatorData, sig))
+    startBgJob(IMAGE_JOB, (sig) => generateProductImage(creatorData, sig))
 
     // Animate step indicators while waiting (they'll resolve via useEffect above)
     const textSteps = STEPS.slice(0, 5)

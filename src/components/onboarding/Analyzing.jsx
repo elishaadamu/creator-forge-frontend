@@ -197,8 +197,8 @@ export default function Analyzing() {
     
     if (!promise) {
       if (recsJob.status === 'idle') {
-        startBgJob('onboarding-recs', async () => {
-          const aiRecs = await generateRecommendationsAI(creatorData)
+        startBgJob('onboarding-recs', async (sig) => {
+          const aiRecs = await generateRecommendationsAI(creatorData, sig)
           if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
             return aiRecs
           }
@@ -215,7 +215,7 @@ export default function Analyzing() {
         
         // Start onboarding-recs job
         if (recsJob.status === 'idle') {
-          startBgJob('onboarding-recs', async () => {
+          startBgJob('onboarding-recs', async (sig) => {
             let finalRecs = null
             try {
               const res = await saveCreator({
@@ -241,7 +241,7 @@ export default function Analyzing() {
             const isPlaceholder = finalRecs && finalRecs.length === 1 && (finalRecs[0].product_name?.includes('[Placeholder]') || finalRecs[0].product_name?.includes('Placeholder'))
             if ((!finalRecs || finalRecs.length === 0 || isPlaceholder) && hasTextKey()) {
               console.log('[Forge] Backend returned placeholder or empty, generating custom recommendations in frontend...')
-              finalRecs = await generateRecommendationsAI(data)
+              finalRecs = await generateRecommendationsAI(data, sig)
             }
 
             if (finalRecs && Array.isArray(finalRecs) && finalRecs.length > 0) {
@@ -263,8 +263,8 @@ export default function Analyzing() {
         }
         
         if (recsJob.status === 'idle') {
-          startBgJob('onboarding-recs', async () => {
-            const aiRecs = await generateRecommendationsAI(creatorData)
+          startBgJob('onboarding-recs', async (sig) => {
+            const aiRecs = await generateRecommendationsAI(creatorData, sig)
             if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
               return aiRecs
             }
