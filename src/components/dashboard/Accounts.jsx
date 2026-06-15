@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Youtube, Instagram, Twitter, Check, Plus, ExternalLink, AlertCircle, Clock, Radio, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useForge } from '../../App'
+import { Youtube, Instagram, Twitter, Check, Plus, ExternalLink, AlertCircle, Clock, Radio, ChevronRight, Edit3 } from 'lucide-react'
 
 const PLATFORMS = [
   {
@@ -54,9 +55,47 @@ const STATUS_STYLES = {
 }
 
 export default function Accounts() {
-  const [platforms, setPlatforms] = useState(
-    PLATFORMS.map(p => ({ ...p, connected: false, audience: null, autoPost: false, approveBeforePost: true }))
-  )
+  const { creatorData, setActiveTab, setPreloadStudioType, triggerToast } = useForge()
+
+  const [platforms, setPlatforms] = useState(() => {
+    try {
+      const stored = localStorage.getItem('forge_accounts_platforms')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        return PLATFORMS.map(p => {
+          const match = parsed.find(x => x.id === p.id)
+          return match ? { ...p, ...match } : { ...p, connected: false, audience: null, autoPost: false, approveBeforePost: true }
+        })
+      }
+    } catch (e) {
+      console.error(e)
+    }
+    
+    // Default: Pre-connect primary platform based on creatorData
+    return PLATFORMS.map(p => {
+      const isPrimary = p.id === creatorData.platform?.toLowerCase()
+      const followersText = creatorData.followers 
+        ? `${(creatorData.followers / 1000).toFixed(0)}K followers` 
+        : '12.5K followers'
+      
+      return {
+        ...p,
+        connected: isPrimary,
+        audience: isPrimary ? followersText : null,
+        autoPost: false,
+        approveBeforePost: true
+      }
+    })
+  })
+
+  useEffect(() => {
+    // Strip function components before saving
+    const serialized = platforms.map(({ id, connected, audience, autoPost, approveBeforePost }) => ({
+      id, connected, audience, autoPost, approveBeforePost
+    }))
+    localStorage.setItem('forge_accounts_platforms', JSON.stringify(serialized))
+  }, [platforms])
+
   const [connecting, setConnecting] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
 
@@ -65,10 +104,17 @@ export default function Accounts() {
     setTimeout(() => {
       setPlatforms(prev => prev.map(p =>
         p.id === id
-          ? { ...p, connected: true, audience: `${Math.floor(Math.random() * 800 + 100)}K followers` }
+          ? { 
+              ...p, 
+              connected: true, 
+              audience: creatorData?.followers && p.id === creatorData.platform?.toLowerCase()
+                ? `${(creatorData.followers / 1000).toFixed(0)}K followers`
+                : `${Math.floor(Math.random() * 80 + 10)}K followers` 
+            }
           : p
       ))
       setConnecting(null)
+      if (triggerToast) triggerToast(`${id.toUpperCase()} connected successfully!`, 'success')
     }, 1400)
   }
 
@@ -76,6 +122,7 @@ export default function Accounts() {
     setPlatforms(prev => prev.map(p =>
       p.id === id ? { ...p, connected: false, audience: null, autoPost: false } : p
     ))
+    if (triggerToast) triggerToast(`${id.toUpperCase()} disconnected.`, 'info')
   }
 
   const toggleAutoPost = (id) => {
@@ -88,6 +135,23 @@ export default function Accounts() {
     setPlatforms(prev => prev.map(p =>
       p.id === id ? { ...p, approveBeforePost: !p.approveBeforePost } : p
     ))
+  }
+
+  const handleEditQueuePost = (platform) => {
+    const typeMap = {
+      'Instagram': 'ig-caption',
+      'Twitter': 'x-post',
+      'Email': 'email-announce',
+      'YouTube': 'yt-community'
+    }
+    const typeId = typeMap[platform] || 'ig-caption'
+    if (setPreloadStudioType) {
+      setPreloadStudioType(typeId)
+    }
+    if (setActiveTab) {
+      setActiveTab('studio')
+    }
+    if (triggerToast) triggerToast(`Opening Studio to edit ${platform} draft...`, 'info')
   }
 
   const connectedCount = platforms.filter(p => p.connected).length
@@ -106,11 +170,18 @@ export default function Accounts() {
       </div>
 
       {/* Status banner */}
-      {connectedCount === 0 && (
-        <div className="flex items-center gap-3 p-4 rounded-xl border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
+      {connectedCount === 0 ? (
+        <div className="flex items-center gap-3 p-4 rounded-xl border animate-pulse" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
           <AlertCircle size={15} className="text-white/40 flex-shrink-0" />
           <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
             Connect at least one account to enable scheduling and auto-posting.
+          </p>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/20" style={{ background: 'rgba(16,185,129,0.04)' }}>
+          <Check size={15} className="text-emerald-400 flex-shrink-0" />
+          <p className="text-[13px] text-emerald-300">
+            Connections active. Auto-post features available for {connectedCount} account{connectedCount > 1 ? 's' : ''}.
           </p>
         </div>
       )}
@@ -259,7 +330,7 @@ export default function Accounts() {
           {RECENT_POSTS.map((post, i) => {
             const s = STATUS_STYLES[post.status]
             return (
-              <div key={i} className="flex items-center gap-4 p-3.5 rounded-xl border" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}>
+              <div key={i} className="flex items-center gap-4 p-3.5 rounded-xl border group" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}>
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded w-8 text-center flex-shrink-0"
                   style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
                   {post.platform.slice(0, 2).toUpperCase()}
@@ -273,6 +344,12 @@ export default function Accounts() {
                     </span>
                   )}
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={s}>{s.label}</span>
+                  <button 
+                    onClick={() => handleEditQueuePost(post.platform)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-white/40 hover:text-white"
+                  >
+                    <Edit3 size={12} />
+                  </button>
                 </div>
               </div>
             )

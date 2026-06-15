@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
 import {
-  Sparkles, RefreshCw, Copy, Check, ChevronDown,
+  Sparkles, RefreshCw, Copy, Check, ChevronDown, ChevronRight,
   Instagram, Youtube, Twitter, Mail, FileText, Video,
-  Radio, ArrowRight, X, Calendar, Send, AlertCircle, Volume2
+  Radio, ArrowRight, X, Calendar, Send, AlertCircle, Volume2,
+  Clock, Trash2
 } from 'lucide-react'
 import { generateStudioContent } from '../../services/ai'
 import ApiKeysModal from '../ui/ApiKeysModal'
@@ -201,7 +202,20 @@ const PLATFORM_COLORS = {
 const STUDIO_JOB = 'studio-gen'
 
 export default function Studio() {
-  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, triggerToast } = useForge()
+  const { 
+    creatorData, 
+    startBgJob, 
+    cancelBgJob, 
+    clearBgJob, 
+    incrementAiActions, 
+    triggerToast,
+    aiKeys,
+    setApiModalOpen,
+    setActiveTab,
+    preloadStudioType,
+    setPreloadStudioType,
+    syncSessionToDb
+  } = useForge()
   const accent = getAccent(creatorData.platform)
   const studioJob = useBgJob(STUDIO_JOB)
 
@@ -214,8 +228,84 @@ export default function Studio() {
   const [expandedGroup, setExpandedGroup] = useState('Social')
   const [scheduled, setScheduled] = useState(false)
   const [showKeys, setShowKeys] = useState(false)
+  const [recentOutputs, setRecentOutputs] = useState([])
+  const [expandedOutputId, setExpandedOutputId] = useState(null)
 
   const handle = creatorData?.handle || 'default'
+  const recentKey = `forge_${handle}_studio_recent_outputs`
+
+  // Load recent outputs from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(recentKey)
+      if (saved) setRecentOutputs(JSON.parse(saved))
+    } catch (e) { /* ignore corrupt data */ }
+  }, [recentKey])
+
+  // Save recent outputs to localStorage whenever they change
+  const saveRecentOutputs = useCallback((outputs) => {
+    setRecentOutputs(outputs)
+    try {
+      localStorage.setItem(recentKey, JSON.stringify(outputs))
+    } catch (e) { /* quota exceeded */ }
+  }, [recentKey])
+
+  // Push a new output to the history list
+  const pushToRecent = useCallback((content, type) => {
+    const entry = {
+      id: Date.now(),
+      typeId: type?.id || 'unknown',
+      typeLabel: type?.label || 'Content',
+      platform: type?.platform || 'Multi',
+      content,
+      timestamp: new Date().toISOString(),
+    }
+    setRecentOutputs(prev => {
+      const next = [entry, ...prev].slice(0, 20) // cap at 20
+      try { localStorage.setItem(recentKey, JSON.stringify(next)) } catch(e) {}
+      return next
+    })
+  }, [recentKey])
+
+  const removeFromRecent = useCallback((id) => {
+    setRecentOutputs(prev => {
+      const next = prev.filter(o => o.id !== id)
+      try { localStorage.setItem(recentKey, JSON.stringify(next)) } catch(e) {}
+      return next
+    })
+  }, [recentKey])
+
+  // Dynamic content types reflecting onboarding modifications
+  const productName = creatorData.productName || 'Creator Academy'
+  const features = creatorData.features || []
+  const contentTypes = [
+    ...CONTENT_TYPES,
+    ...(features.includes('Podcast section') ? [{
+      group: 'Podcast',
+      items: [
+        { id: 'podcast-outline', label: 'Podcast episode outline', platform: 'Podcast', icon: Volume2 },
+        { id: 'podcast-intro', label: 'Podcast show intro & hook', platform: 'Podcast', icon: Volume2 },
+      ]
+    }] : [])
+  ]
+
+  // Preload studio type if set in context (e.g. from Revenue/Products tab)
+  useEffect(() => {
+    if (preloadStudioType) {
+      const flatTypes = contentTypes.flatMap(g => g.items)
+      const matchedType = flatTypes.find(t => t.id === preloadStudioType)
+      if (matchedType) {
+        setSelectedType(matchedType)
+        setGenerated(null)
+        // Expand the group if we match
+        const group = contentTypes.find(g => g.items.some(item => item.id === preloadStudioType))
+        if (group) {
+          setExpandedGroup(group.group)
+        }
+      }
+      setPreloadStudioType(null) // clear it so it only runs once
+    }
+  }, [preloadStudioType, contentTypes, setPreloadStudioType])
 
   // Load cached generated text when selectedType changes
   useEffect(() => {
@@ -238,6 +328,7 @@ export default function Studio() {
   useEffect(() => {
     if (studioJob.status === 'done' && studioJob.result !== null) {
       setGenerated(studioJob.result)
+      pushToRecent(studioJob.result, selectedType)
       setIsGenerating(false)
       clearBgJob(STUDIO_JOB)
       if (triggerToast) triggerToast('Script generated successfully!', 'success')
@@ -256,27 +347,36 @@ export default function Studio() {
     if (studioJob.status === 'running') {
       setIsGenerating(true)
     }
-  }, [studioJob.status, studioJob.result, studioJob.error, selectedType, handle, clearBgJob])
-
-  const productName = creatorData.productName || 'Creator Academy'
-  const features = creatorData.features || []
-
-  // Dynamic content types reflecting onboarding modifications
-  const contentTypes = [
-    ...CONTENT_TYPES,
-    ...(features.includes('Podcast section') ? [{
-      group: 'Podcast',
-      items: [
-        { id: 'podcast-outline', label: 'Podcast episode outline', platform: 'Podcast', icon: Volume2 },
-        { id: 'podcast-intro', label: 'Podcast show intro & hook', platform: 'Podcast', icon: Volume2 },
-      ]
-    }] : [])
-  ]
+  }, [studioJob.status, studioJob.result, studioJob.error, selectedType, handle, clearBgJob, pushToRecent])
 
   const handleGenerate = () => {
     if (!selectedType) return
     setIsGenerating(true)
     setGenerated(null)
+
+    const hasKeys = aiKeys && (aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey || aiKeys.togetherKey)
+    if (!hasKeys) {
+      setTimeout(() => {
+        const rawTpl = EXAMPLE_OUTPUTS[selectedType.id] || EXAMPLE_OUTPUTS['default']
+        const nicheVal = creatorData.niche || 'content creation'
+        const productNameVal = creatorData.productName || 'Creator Academy'
+        const nameVal = creatorData.name || 'Creator'
+        
+        const customized = rawTpl
+          .replaceAll('[topic]', nicheVal)
+          .replaceAll('[niche]', nicheVal.toLowerCase().replace(/\s+/g, ''))
+          .replaceAll('[Product Name]', productNameVal)
+          .replaceAll('[product]', productNameVal.toLowerCase().replace(/\s+/g, ''))
+          .replaceAll('[Name]', nameVal)
+        
+        setGenerated(customized)
+        pushToRecent(customized, selectedType)
+        setIsGenerating(false)
+        if (triggerToast) triggerToast(`${selectedType.label} generated (Demo Mode)`, 'success')
+      }, 800)
+      return
+    }
+
     if (incrementAiActions) incrementAiActions()
     startBgJob(STUDIO_JOB, (sig) => generateStudioContent(selectedType, input, creatorData, tone, sig))
   }
@@ -285,6 +385,32 @@ export default function Studio() {
     if (!selectedType) return
     setIsGenerating(true)
     setGenerated(null)
+
+    const hasKeys = aiKeys && (aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey || aiKeys.togetherKey)
+    if (!hasKeys) {
+      setTimeout(() => {
+        const rawTpl = EXAMPLE_OUTPUTS[selectedType.id] || EXAMPLE_OUTPUTS['default']
+        const nicheVal = creatorData.niche || 'content creation'
+        const productNameVal = creatorData.productName || 'Creator Academy'
+        const nameVal = creatorData.name || 'Creator'
+        
+        let customized = rawTpl
+          .replaceAll('[topic]', nicheVal)
+          .replaceAll('[niche]', nicheVal.toLowerCase().replace(/\s+/g, ''))
+          .replaceAll('[Product Name]', productNameVal)
+          .replaceAll('[product]', productNameVal.toLowerCase().replace(/\s+/g, ''))
+          .replaceAll('[Name]', nameVal)
+        
+        customized = `[Refined: ${instruction}]\n\n${customized}`
+        
+        setGenerated(customized)
+        pushToRecent(customized, selectedType)
+        setIsGenerating(false)
+        if (triggerToast) triggerToast(`Refined successfully (Demo Mode)!`, 'success')
+      }, 800)
+      return
+    }
+
     if (incrementAiActions) incrementAiActions()
     startBgJob(STUDIO_JOB, (sig) => generateStudioContent(
       selectedType,
@@ -302,6 +428,30 @@ export default function Studio() {
     const flatTypes = contentTypes.flatMap(g => g.items)
     const matchedType = flatTypes.find(t => t.platform.toLowerCase() === platformName.toLowerCase()) || selectedType
     setSelectedType(matchedType)
+
+    const hasKeys = aiKeys && (aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey || aiKeys.togetherKey)
+    if (!hasKeys) {
+      setTimeout(() => {
+        const rawTpl = EXAMPLE_OUTPUTS[matchedType.id] || EXAMPLE_OUTPUTS['default']
+        const nicheVal = creatorData.niche || 'content creation'
+        const productNameVal = creatorData.productName || 'Creator Academy'
+        const nameVal = creatorData.name || 'Creator'
+        
+        const customized = rawTpl
+          .replaceAll('[topic]', nicheVal)
+          .replaceAll('[niche]', nicheVal.toLowerCase().replace(/\s+/g, ''))
+          .replaceAll('[Product Name]', productNameVal)
+          .replaceAll('[product]', productNameVal.toLowerCase().replace(/\s+/g, ''))
+          .replaceAll('[Name]', nameVal)
+        
+        setGenerated(customized)
+        pushToRecent(customized, matchedType)
+        setIsGenerating(false)
+        if (triggerToast) triggerToast(`Adapted to ${platformName} (Demo Mode)!`, 'success')
+      }, 800)
+      return
+    }
+
     if (incrementAiActions) incrementAiActions()
     startBgJob(STUDIO_JOB, (sig) => generateStudioContent(
       matchedType,
@@ -312,11 +462,111 @@ export default function Studio() {
     ))
   }
 
-  const handleCopy = () => {
-    if (!generated) return
-    navigator.clipboard.writeText(generated)
+  const handleCopy = (text) => {
+    const toCopy = text || generated
+    if (!toCopy) return
+    navigator.clipboard.writeText(toCopy)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  // Schedule a specific output entry to the calendar
+  const handleScheduleEntry = (entry) => {
+    const handleVal = creatorData?.handle || 'default'
+    const activeGoal = localStorage.getItem(`forge_${handleVal}_calendar_active_goal`) || 'launch'
+    const cacheKey = `forge_calendar_${handleVal}_${activeGoal}_w0`
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const todayName = dayNames[new Date().getDay()] || 'Mon'
+
+    let currentCal = null
+    try {
+      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(`forge_calendar_${handleVal.toLowerCase()}_${activeGoal.toLowerCase()}_w0`)
+      if (cached) currentCal = JSON.parse(cached)
+    } catch (e) { console.error(e) }
+
+    if (!currentCal) {
+      currentCal = [
+        { day: 'Mon', posts: [] }, { day: 'Tue', posts: [] },
+        { day: 'Wed', posts: [] }, { day: 'Thu', posts: [] },
+        { day: 'Fri', posts: [] }, { day: 'Sat', posts: [] },
+        { day: 'Sun', posts: [] },
+      ]
+    }
+
+    const newPost = {
+      id: Date.now(),
+      platform: entry.platform === 'Multi' || entry.platform === 'Product' || entry.platform === 'Email' ? 'Instagram' : entry.platform,
+      type: entry.typeLabel,
+      title: entry.content.length > 80 ? entry.content.substring(0, 80) + '...' : entry.content,
+      theme: 'launch',
+      status: 'scheduled',
+    }
+
+    let dayObj = currentCal.find(d => d.day === todayName)
+    if (!dayObj) dayObj = currentCal[0]
+    dayObj.posts = [...(dayObj.posts || []), newPost]
+    localStorage.setItem(cacheKey, JSON.stringify(currentCal))
+
+    if (creatorData?.handle && syncSessionToDb) setTimeout(() => syncSessionToDb(), 100)
+    if (triggerToast) triggerToast(`"${entry.typeLabel}" scheduled to calendar!`, 'success')
+    setTimeout(() => setActiveTab('calendar'), 1000)
+  }
+
+  const handleSchedulePost = () => {
+    if (!generated || !selectedType) return
+    
+    const handleVal = creatorData?.handle || 'default'
+    const activeGoal = localStorage.getItem(`forge_${handleVal}_calendar_active_goal`) || 'launch'
+    const cacheKey = `forge_calendar_${handleVal}_${activeGoal}_w0`
+    
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const todayName = dayNames[new Date().getDay()] || 'Mon'
+    
+    let currentCal = null
+    try {
+      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(`forge_calendar_${handleVal.toLowerCase()}_${activeGoal.toLowerCase()}_w0`)
+      if (cached) currentCal = JSON.parse(cached)
+    } catch (e) {
+      console.error(e)
+    }
+    
+    if (!currentCal) {
+      currentCal = [
+        { day: 'Mon', posts: [] },
+        { day: 'Tue', posts: [] },
+        { day: 'Wed', posts: [] },
+        { day: 'Thu', posts: [] },
+        { day: 'Fri', posts: [] },
+        { day: 'Sat', posts: [] },
+        { day: 'Sun', posts: [] },
+      ]
+    }
+    
+    const newPost = {
+      id: Date.now(),
+      platform: selectedType.platform === 'Multi' || selectedType.platform === 'Product' || selectedType.platform === 'Email' ? 'Instagram' : selectedType.platform,
+      type: selectedType.label,
+      title: generated.length > 80 ? generated.substring(0, 80) + '...' : generated,
+      theme: 'launch',
+      status: 'scheduled'
+    }
+    
+    let dayObj = currentCal.find(d => d.day === todayName)
+    if (!dayObj) dayObj = currentCal[0]
+    dayObj.posts = [...(dayObj.posts || []), newPost]
+    
+    localStorage.setItem(cacheKey, JSON.stringify(currentCal))
+    
+    if (creatorData?.handle && syncSessionToDb) {
+      setTimeout(() => syncSessionToDb(), 100)
+    }
+    
+    setScheduled(true)
+    if (triggerToast) triggerToast('Post scheduled to Content Calendar!', 'success')
+    
+    setTimeout(() => {
+      setActiveTab('calendar')
+    }, 1000)
   }
 
 
@@ -373,6 +623,45 @@ export default function Studio() {
 
       {/* ─── Right: Generator ───────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {(!aiKeys || (!aiKeys.geminiKey && !aiKeys.openaiKey && !aiKeys.anthropicKey && !aiKeys.togetherKey)) && (
+          <div 
+            className="mx-6 mt-4 p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
+              borderColor: 'rgba(239, 68, 68, 0.25)',
+              backdropFilter: 'blur(16px)',
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+            }}
+          >
+            <div className="flex items-center gap-3 relative z-10">
+              <div 
+                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
+                style={{ 
+                  background: 'rgba(239, 68, 68, 0.1)', 
+                  borderColor: 'rgba(239, 68, 68, 0.2)' 
+                }}
+              >
+                <AlertCircle size={15} className="text-red-400 animate-pulse" />
+              </div>
+              <div className="space-y-0.5 text-left">
+                <h4 className="text-[12.5px] font-semibold text-white tracking-tight">
+                  No AI Keys Configured
+                </h4>
+                <p className="text-[11.5px] leading-relaxed" style={{ color: 'var(--theme-text-muted)' }}>
+                  You need to configure an AI API Key to generate real custom copy.
+                </p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => setApiModalOpen(true)} 
+              className="text-[11px] py-1.5 px-3.5 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-all font-medium"
+            >
+              Configure API Keys
+            </button>
+          </div>
+        )}
+
         {!selectedType ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
             {/* Visual platform preview cards */}
@@ -473,7 +762,7 @@ export default function Studio() {
             </div>
 
             {/* Output */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 flex flex-col overflow-y-auto px-6 py-4">
 
 
               {isGenerating ? (
@@ -501,12 +790,17 @@ export default function Studio() {
                 <div>
                   {/* Output card */}
                   <div
-                    className="rounded-2xl border p-5 mb-4 relative group"
+                    className="rounded-2xl border p-5 mb-4 relative group flex flex-col"
                     style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}
                   >
-                    <pre className="text-[13px] whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--theme-text)', fontFamily: 'inherit', opacity: 0.85 }}>
+                    <pre className="text-[13px] whitespace-pre-wrap leading-relaxed flex-1" style={{ color: 'var(--theme-text)', fontFamily: 'inherit', opacity: 0.85 }}>
                       {generated}
                     </pre>
+                    
+                    <div className="mt-4 pt-3 border-t flex items-center justify-between text-[11px]" style={{ borderColor: 'rgba(255,255,255,0.05)', color: 'var(--theme-text-muted)' }}>
+                      <span>Word count: {generated.trim().split(/\s+/).filter(Boolean).length}</span>
+                      <span>Character count: {generated.length}</span>
+                    </div>
                   </div>
 
                   {/* Action bar */}
@@ -525,7 +819,7 @@ export default function Studio() {
 
                     {/* Repurpose */}
                     <div className="ml-auto flex gap-2">
-                      <button onClick={() => setScheduled(true)} className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5">
+                      <button onClick={handleSchedulePost} className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5">
                         <Calendar size={12} />
                         {scheduled ? 'Scheduled ✓' : 'Schedule post'}
                       </button>
@@ -551,24 +845,141 @@ export default function Studio() {
                   </div>
                 </div>
               ) : (
-                <div className="py-8">
-                  <p className="text-[13px] mb-4" style={{ color: 'var(--theme-text-muted)' }}>Recent outputs</p>
-                  {[
-                    { type: 'Instagram caption', preview: 'Just spent 3 days rethinking how I teach this...' },
-                    { type: 'X thread', preview: '1/ I spent 14 months building my creator business the wrong way...' },
-                    { type: 'Launch email', preview: 'Subject: It\'s finally here...' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3.5 rounded-xl mb-2 cursor-pointer transition-all duration-150"
-                      style={{ background: 'var(--theme-card-bg)', border: '1px solid var(--theme-border-color)' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--theme-card-bg)'; e.currentTarget.style.borderColor = 'var(--theme-accent)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--theme-card-bg)'; e.currentTarget.style.borderColor = 'var(--theme-border-color)' }}
-                    >
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded flex-shrink-0 mt-0.5" style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-accent)' }}>
-                        {item.type}
-                      </span>
-                      <p className="text-[12px] truncate" style={{ color: 'var(--theme-text-muted)' }}>{item.preview}</p>
+                <div className="py-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Clock size={13} style={{ color: 'var(--theme-text-muted)' }} />
+                      <p className="text-[13px] font-medium" style={{ color: 'var(--theme-text-muted)' }}>Recent outputs</p>
+                      {recentOutputs.length > 0 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-accent)' }}>
+                          {recentOutputs.length}
+                        </span>
+                      )}
                     </div>
-                  ))}
+                    {recentOutputs.length > 0 && (
+                      <button
+                        onClick={() => { saveRecentOutputs([]); if (triggerToast) triggerToast('History cleared', 'info') }}
+                        className="text-[10px] px-2 py-1 rounded-lg transition-all"
+                        style={{ color: 'var(--theme-text-muted)', border: '1px solid var(--theme-border-color)' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; e.currentTarget.style.color = 'rgba(239,68,68,0.8)' }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--theme-border-color)'; e.currentTarget.style.color = 'var(--theme-text-muted)' }}
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+
+                  {recentOutputs.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ background: 'var(--theme-accent-bg)', border: '1px solid var(--theme-accent-border)' }}>
+                        <Sparkles size={15} style={{ color: 'var(--theme-text-muted)' }} />
+                      </div>
+                      <p className="text-[12px] mb-1" style={{ color: 'var(--theme-text-muted)' }}>No outputs yet</p>
+                      <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>Hit Generate above to create your first piece of content</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {recentOutputs.map(entry => {
+                        const isOpen = expandedOutputId === entry.id
+                        const preview = entry.content.split('\n')[0].substring(0, 90) + (entry.content.length > 90 ? '…' : '')
+                        const timeAgo = (() => {
+                          const diff = Date.now() - new Date(entry.timestamp).getTime()
+                          const mins = Math.floor(diff / 60000)
+                          if (mins < 1) return 'just now'
+                          if (mins < 60) return `${mins}m ago`
+                          const hrs = Math.floor(mins / 60)
+                          if (hrs < 24) return `${hrs}h ago`
+                          return `${Math.floor(hrs / 24)}d ago`
+                        })()
+
+                        return (
+                          <div
+                            key={entry.id}
+                            className="rounded-xl border transition-all duration-200"
+                            style={{
+                              background: isOpen ? 'var(--theme-card-bg)' : 'transparent',
+                              borderColor: isOpen ? 'var(--theme-accent-border)' : 'var(--theme-border-color)',
+                            }}
+                          >
+                            {/* Collapsed header */}
+                            <button
+                              onClick={() => setExpandedOutputId(isOpen ? null : entry.id)}
+                              className="w-full flex items-center gap-3 p-3.5 text-left transition-colors"
+                              onMouseEnter={e => { if (!isOpen) e.currentTarget.parentElement.style.borderColor = 'var(--theme-accent-border)' }}
+                              onMouseLeave={e => { if (!isOpen) e.currentTarget.parentElement.style.borderColor = 'var(--theme-border-color)' }}
+                            >
+                              <ChevronRight
+                                size={12}
+                                style={{
+                                  color: 'var(--theme-text-muted)',
+                                  transition: 'transform 0.2s',
+                                  transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <span
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded flex-shrink-0"
+                                style={{ background: PLATFORM_COLORS[entry.platform] || 'var(--theme-accent-bg)', color: 'var(--theme-text-muted)' }}
+                              >
+                                {entry.typeLabel}
+                              </span>
+                              <p className="text-[12px] flex-1 truncate" style={{ color: isOpen ? 'var(--theme-text)' : 'var(--theme-text-muted)' }}>
+                                {preview}
+                              </p>
+                              <span className="text-[10px] flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                                {timeAgo}
+                              </span>
+                            </button>
+
+                            {/* Expanded content */}
+                            {isOpen && (
+                              <div className="px-4 pb-4 animate-fade-in-down">
+                                <div
+                                  className="rounded-lg p-4 mb-3 max-h-64 overflow-y-auto"
+                                  style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.04)' }}
+                                >
+                                  <pre className="text-[12px] whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--theme-text)', fontFamily: 'inherit', opacity: 0.85 }}>
+                                    {entry.content}
+                                  </pre>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleCopy(entry.content) }}
+                                    className="forge-btn-secondary text-[11px] py-1.5 px-3 gap-1"
+                                  >
+                                    <Copy size={11} /> Copy
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleScheduleEntry(entry) }}
+                                    className="forge-btn-primary text-[11px] py-1.5 px-3 gap-1"
+                                  >
+                                    <Calendar size={11} /> Add to Calendar
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setSelectedType({ id: entry.typeId, label: entry.typeLabel, platform: entry.platform, icon: FileText }); setGenerated(entry.content) }}
+                                    className="forge-btn-secondary text-[11px] py-1.5 px-3 gap-1"
+                                  >
+                                    <RefreshCw size={11} /> Reopen
+                                  </button>
+                                  <div className="ml-auto">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); removeFromRecent(entry.id) }}
+                                      className="text-[11px] p-1.5 rounded-lg transition-all"
+                                      style={{ color: 'var(--theme-text-muted)' }}
+                                      onMouseEnter={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.8)'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)' }}
+                                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--theme-text-muted)'; e.currentTarget.style.background = 'transparent' }}
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

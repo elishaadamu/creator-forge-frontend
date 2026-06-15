@@ -163,22 +163,16 @@ const TAB_LABELS = {
 }
 
 export default function DashboardLayout() {
-  const { creatorData, isRegistered, aiActionsCount, goTo, apiModalOpen, setApiModalOpen } = useForge()
-  const [activeTab, setActiveTab] = useState(() => {
-    try {
-      return localStorage.getItem('forge_dashboard_active_tab') || 'preview'
-    } catch {
-      return 'preview'
-    }
-  })
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('forge_dashboard_active_tab', activeTab)
-    } catch (e) {
-      console.warn('[Forge] Failed to cache active dashboard tab:', e)
-    }
-  }, [activeTab])
+  const { 
+    creatorData, 
+    isRegistered, 
+    aiActionsCount, 
+    goTo, 
+    apiModalOpen, 
+    setApiModalOpen,
+    activeTab,
+    setActiveTab
+  } = useForge()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [chatOpen, setChatOpen] = useState(false)
 

@@ -294,6 +294,25 @@ export default function App() {
     setGlobalToast({ message, type })
   }, [])
 
+  const [activeTab, setActiveTabState] = useState(() => {
+    try {
+      return localStorage.getItem('forge_dashboard_active_tab') || 'preview'
+    } catch {
+      return 'preview'
+    }
+  })
+
+  const setActiveTab = useCallback((tab) => {
+    setActiveTabState(tab)
+    try {
+      localStorage.setItem('forge_dashboard_active_tab', tab)
+    } catch (e) {
+      console.warn('[Forge] Failed to cache active dashboard tab:', e)
+    }
+  }, [])
+
+  const [preloadStudioType, setPreloadStudioType] = useState(null)
+
   /**
    * startBgJob(jobId, asyncFn)
    * Fires an async function in the background and tracks it in bgJobs.
@@ -676,7 +695,11 @@ export default function App() {
     triggerToast,
     aiKeys,
     updateAiKeys,
-    dbLoadedTimestamp
+    dbLoadedTimestamp,
+    activeTab,
+    setActiveTab,
+    preloadStudioType,
+    setPreloadStudioType
   }
 
   // /ops route — internal operator pipeline panel (login-protected)

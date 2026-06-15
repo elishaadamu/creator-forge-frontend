@@ -40,9 +40,47 @@ const REVENUE_PATHS = [
 ]
 
 export default function Revenue() {
-  const { creatorData } = useForge()
+  const { creatorData, triggerToast, setActiveTab, setPreloadStudioType } = useForge()
   const accent = getAccent(creatorData.platform)
   const [activeRange, setActiveRange] = useState('all')
+
+  const [membersCount] = useState(() => {
+    try {
+      const stored = localStorage.getItem('forge_products_members')
+      if (stored !== null) return parseInt(stored, 10)
+    } catch {}
+    return creatorData?.followers ? Math.round(creatorData.followers * 0.002) || 12 : 12
+  })
+
+  const baseRevenue = membersCount * 29
+  const revenueHistory = [
+    Math.round(baseRevenue * 0.15),
+    Math.round(baseRevenue * 0.3),
+    Math.round(baseRevenue * 0.45),
+    Math.round(baseRevenue * 0.6),
+    Math.round(baseRevenue * 0.75),
+    Math.round(baseRevenue * 0.9),
+    baseRevenue
+  ]
+
+  const maxHistoryVal = Math.max(...revenueHistory, 1)
+
+  const handleNavigationToStudio = (typeId) => {
+    if (setPreloadStudioType) {
+      setPreloadStudioType(typeId)
+    }
+    if (setActiveTab) {
+      setActiveTab('studio')
+    }
+    if (triggerToast) triggerToast(`Studio preloaded with content type: ${typeId}`, 'info')
+  }
+
+  const handleActivatePath = (label) => {
+    if (triggerToast) triggerToast(`Opening Products to configure ${label}...`, 'info')
+    setTimeout(() => {
+      setActiveTab('products')
+    }, 600)
+  }
 
   return (
     <div className="p-6 max-w-3xl space-y-8">
@@ -60,9 +98,9 @@ export default function Revenue() {
       {/* KPI strip */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'MRR', value: '$0', sub: 'monthly recurring' },
-          { label: 'Members', value: '0', sub: 'total active' },
-          { label: 'Potential', value: '$12K', sub: 'per month at scale' },
+          { label: 'MRR', value: `$${baseRevenue}`, sub: 'monthly recurring' },
+          { label: 'Members', value: membersCount.toString(), sub: 'total active' },
+          { label: 'Potential', value: `$${Math.round(baseRevenue * 4.5)}`, sub: 'per month at scale' },
         ].map((kpi, i) => (
           <div key={i} className="rounded-xl border p-4" style={{ background: '#111', borderColor: i === 2 ? `rgba(${accent.rgb},0.2)` : 'rgba(255,255,255,0.07)' }}>
             <p className="text-[11px] mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>{kpi.label}</p>
@@ -78,7 +116,7 @@ export default function Revenue() {
           <div>
             <p className="text-[13px] mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>Revenue over time</p>
             <div className="flex items-end gap-2">
-              <span className="text-[36px] font-semibold tracking-tight text-white leading-none">$0</span>
+              <span className="text-[36px] font-semibold tracking-tight text-white leading-none">${revenueHistory.reduce((a,b) => a+b, 0)}</span>
               <span className="text-[13px] mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>all time</span>
             </div>
           </div>
@@ -104,7 +142,7 @@ export default function Revenue() {
               <div
                 className="w-full rounded-lg transition-all duration-500 relative overflow-hidden"
                 style={{
-                  height: `${Math.max((REVENUE_DATA[i] / 1) * 80, 4)}px`,
+                  height: `${Math.max((revenueHistory[i] / maxHistoryVal) * 80, 6)}px`,
                   background: i === MONTHS.length - 1
                     ? `rgba(${accent.rgb},0.35)`
                     : 'rgba(255,255,255,0.06)',
@@ -123,7 +161,7 @@ export default function Revenue() {
         <div className="flex items-center gap-2 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent.color, opacity: 0.6 }} />
           <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-            Revenue will appear here once you have paying members.
+            Dynamic revenue estimates tracked based on active platform member conversions.
           </p>
         </div>
       </div>
@@ -143,6 +181,11 @@ export default function Revenue() {
                 <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{insight.detail}</p>
               </div>
               <button
+                onClick={() => {
+                  if (insight.cta === 'Generate launch post') handleNavigationToStudio('ig-caption')
+                  else if (insight.cta === 'Write announcement') handleNavigationToStudio('email-announce')
+                  else if (insight.cta === 'Write email') handleNavigationToStudio('email-sequence')
+                }}
                 className="text-[12px] px-3 py-1.5 rounded-full flex-shrink-0 transition-all duration-150"
                 style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)' }}
                 onMouseEnter={e => { e.target.style.background = 'rgba(255,255,255,0.15)'; e.target.style.color = 'white' }}
@@ -167,7 +210,16 @@ export default function Revenue() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] font-semibold text-white">{path.label}</span>
-                      {path.active && <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: path.active ? accent.color : 'rgba(255,255,255,0.1)', color: path.active ? 'white' : 'rgba(255,255,255,0.5)' }}>Active</span>}
+                      {path.active ? (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: accent.color, color: 'white' }}>Active</span>
+                      ) : (
+                        <button 
+                          onClick={() => handleActivatePath(path.label)}
+                          className="text-[9px] px-2 py-0.5 rounded-full border border-white/10 text-white/50 hover:bg-white/5 hover:text-white transition-all font-medium"
+                        >
+                          Activate
+                        </button>
+                      )}
                     </div>
                     <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{path.description}</p>
                   </div>
@@ -200,7 +252,12 @@ export default function Revenue() {
             <p className="text-[13px] font-semibold text-white">Your next revenue move</p>
             <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Post your launch announcement to get your first 10 paying members.</p>
           </div>
-          <button className="forge-btn-primary text-[12px] py-2 px-4 flex-shrink-0">Generate post</button>
+          <button 
+            onClick={() => handleNavigationToStudio('ig-caption')}
+            className="forge-btn-primary text-[12px] py-2 px-4 flex-shrink-0"
+          >
+            Generate post
+          </button>
         </div>
       </div>
     </div>

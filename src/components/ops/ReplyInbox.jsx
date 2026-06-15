@@ -24,10 +24,14 @@ const THREAD_STATUS_STYLES = {
 
 function timeSince(iso) {
   if (!iso) return '—'
-  const diff = Date.now() - new Date(iso).getTime()
+  // Backend returns naive UTC datetimes, we must append 'Z' to treat as UTC correctly
+  const parsedIso = iso.endsWith('Z') ? iso : iso + 'Z'
+  const diff = Date.now() - new Date(parsedIso).getTime()
   const days = Math.floor(diff / 86400000)
   const hrs  = Math.floor(diff / 3600000)
   const mins = Math.floor(diff / 60000)
+  
+  if (diff < 60000) return 'just now'
   if (days > 0) return `${days}d ago`
   if (hrs > 0)  return `${hrs}h ago`
   return `${mins}m ago`

@@ -96,6 +96,26 @@ export default function OpsLayout() {
       .catch(() => setBackendOnline(false))
   }, [])
 
+  // Poll for global inbox counts (navbar badges)
+  useEffect(() => {
+    let interval;
+    const fetchCounts = async () => {
+      try {
+        const res = await fetch('/api/outreach/threads?status=replied');
+        if (res.ok) {
+          const data = await res.json();
+          setCounts(p => ({ ...p, inbox: data.length }));
+        }
+      } catch (e) {
+        console.warn('Failed to fetch global thread counts', e);
+      }
+    };
+    
+    fetchCounts();
+    interval = setInterval(fetchCounts, 30000); // Poll every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   const runAgent = async () => {
     setAgentRunning(true)
     try {
