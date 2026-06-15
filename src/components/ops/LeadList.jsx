@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Search, Plus, RefreshCw, ChevronDown, ExternalLink,
   Youtube, Instagram, Smartphone, Twitter, CheckCircle,
@@ -214,193 +214,215 @@ function ScrapeModal({ onClose, onSuccess }) {
   )
 }
 
-function CreatorRow({ creator, onAnalyze, onQualify, onSuppress, onDelete, onViewAnalysis, analyzing, isLast }) {
+const COMMON_NICHES = [
+  'Tech', 'Finance', 'Business', 'Fitness', 'Health', 'Gaming', 'Beauty', 'Fashion', 'Food', 'Cooking', 'Travel', 'Lifestyle', 'Education'
+]
+
+function CreatorCard({ creator, onAnalyze, onQualify, onSuppress, onDelete, onViewAnalysis, analyzing }) {
   const [showMenu, setShowMenu] = useState(false)
+  const isAnalyzing = analyzing === creator.id
   const { Icon, color } = PLATFORM_ICONS[creator.platform] || { Icon: AlertCircle, color: '#fff' }
   const niches = Array.isArray(creator.niche) ? creator.niche : (creator.niche ? [creator.niche] : [])
-  const isAnalyzing = analyzing === creator.id
+
+  const getInitialsGradient = (name) => {
+    const code = (name || 'CF').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    const gradients = [
+      'linear-gradient(135deg, #059669 0%, #10b981 100%)', // Emerald
+      'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)', // Blue
+      'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)', // Purple
+      'linear-gradient(135deg, #b45309 0%, #f59e0b 100%)', // Amber
+      'linear-gradient(135deg, #db2777 0%, #f472b6 100%)', // Pink
+      'linear-gradient(135deg, #475569 0%, #64748b 100%)', // Slate
+      'linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%)', // Sky
+    ]
+    return gradients[code % gradients.length]
+  }
+
+  const initials = (creator.display_name || creator.handle || '?')
+    .replace(/^@/, '')
+    .split(' ')
+    .map(w => w.charAt(0))
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
   return (
-    <tr
-      className="group border-b transition-all duration-300"
+    <div
+      className="group relative rounded-2xl border flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
       style={{
-        borderColor: 'rgba(255,255,255,0.04)',
-        background: isAnalyzing ? 'rgba(139,92,246,0.04)' : 'transparent',
-        position: 'relative',
+        background: '#0e0e0e',
+        borderColor: isAnalyzing ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.06)',
+        boxShadow: isAnalyzing ? '0 0 15px rgba(139,92,246,0.15)' : 'none',
       }}
-      onMouseEnter={e => { if (!isAnalyzing) e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}
-      onMouseLeave={e => { if (!isAnalyzing) e.currentTarget.style.background = 'transparent' }}
+      onMouseEnter={e => {
+        if (!isAnalyzing) {
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
+          e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.5)'
+        }
+      }}
+      onMouseLeave={e => {
+        if (!isAnalyzing) {
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
+          e.currentTarget.style.boxShadow = 'none'
+        }
+      }}
     >
-      {/* Creator */}
-      <td className="px-5 py-3" style={{ borderBottomLeftRadius: isLast ? '16px' : 0 }}>
-        <div className="flex items-center gap-3">
-          {creator.profile_url ? (
-            <a href={creator.profile_url} target="_blank" rel="noopener noreferrer" className="block shrink-0 hover:opacity-80 transition-opacity">
-              <div
-                className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-[13px] font-bold"
-                style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  border: `1px solid ${isAnalyzing ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                  boxShadow: isAnalyzing ? '0 0 8px rgba(139,92,246,0.3)' : 'none',
-                  transition: 'all 0.3s',
-                }}
-              >
-                {creator.avatar_url
-                  ? <img src={creator.avatar_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.currentTarget.style.display = 'none'} />
-                  : (creator.display_name || creator.handle || '?').charAt(0).toUpperCase()}
+      {/* Top Banner (Avatar or colored block) */}
+      <div className="h-40 relative overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
+        {creator.avatar_url ? (
+          <img
+            src={creator.avatar_url}
+            alt=""
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            referrerPolicy="no-referrer"
+            onError={e => {
+              e.currentTarget.style.display = 'none'
+              const placeholder = e.currentTarget.nextSibling
+              if (placeholder) placeholder.style.display = 'flex'
+            }}
+          />
+        ) : null}
+
+        {/* Initials Placeholder */}
+        <div
+          className="absolute inset-0 flex items-center justify-center text-[40px] font-bold text-white tracking-wider"
+          style={{
+            background: getInitialsGradient(creator.display_name || creator.handle),
+            display: creator.avatar_url ? 'none' : 'flex'
+          }}
+        >
+          {initials}
+        </div>
+
+        {/* Top-Left Platform Badge */}
+        <div
+          className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-widest text-white/95 uppercase backdrop-blur-md"
+          style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <Icon size={10} style={{ color }} />
+          <span>{creator.platform}</span>
+        </div>
+
+        {/* Top-Right More Menu */}
+        <div className="absolute top-3 right-3 z-10">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="w-7 h-7 rounded-lg flex items-center justify-center transition-all backdrop-blur-md text-white/60 hover:text-white"
+            style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <MoreHorizontal size={13} />
+          </button>
+
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)}></div>
+              <div className="absolute right-0 top-8 z-50 w-40 rounded-xl py-1 shadow-2xl border overflow-hidden"
+                   style={{ background: '#141414', borderColor: 'rgba(255,255,255,0.09)' }}>
+                
+                <button onClick={() => { setShowMenu(false); onViewAnalysis(creator) }}
+                        className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors text-white">
+                  <Eye size={12} /> Deep Analysis
+                </button>
+
+                <button onClick={() => { setShowMenu(false); onAnalyze(creator.id) }}
+                        className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors text-white font-medium">
+                  <Zap size={12} className="text-yellow-400" /> Analyze with AI
+                </button>
+                
+                <button onClick={() => { setShowMenu(false); onQualify(creator.id, 'qualified') }}
+                        className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors text-[#4ade80]">
+                  <CheckCircle size={12} /> Mark Qualified
+                </button>
+
+                <button onClick={() => { setShowMenu(false); onSuppress(creator.id) }}
+                        className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors" style={{ color: 'rgba(239,68,68,0.8)' }}>
+                  <XCircle size={12} /> Suppress
+                </button>
+
+                <button onClick={() => { setShowMenu(false); onDelete(creator.id) }}
+                        className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors" style={{ color: '#ef4444' }}>
+                  <Trash2 size={12} /> Delete
+                </button>
+                
+                {creator.profile_url && (
+                  <a href={creator.profile_url} target="_blank" rel="noopener noreferrer" onClick={() => setShowMenu(false)}
+                     className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors text-white/70">
+                    <ExternalLink size={12} /> View Profile
+                  </a>
+                )}
               </div>
-            </a>
-          ) : (
-            <div
-              className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-[13px] font-bold"
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: `1px solid ${isAnalyzing ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                boxShadow: isAnalyzing ? '0 0 8px rgba(139,92,246,0.3)' : 'none',
-                transition: 'all 0.3s',
-              }}
-            >
-              {creator.avatar_url
-                ? <img src={creator.avatar_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.currentTarget.style.display = 'none'} />
-                : (creator.display_name || creator.handle || '?').charAt(0).toUpperCase()}
-            </div>
+            </>
           )}
-          <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-white truncate">{creator.display_name || creator.handle}</p>
-            <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>@{creator.handle}</p>
-          </div>
         </div>
-      </td>
 
-      {/* Platform */}
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-1.5">
-          <Icon size={12} style={{ color }} />
-          <span className="text-[11px] capitalize" style={{ color: 'rgba(255,255,255,0.5)' }}>{creator.platform}</span>
-        </div>
-      </td>
-
-      {/* Followers */}
-      <td className="px-4 py-3">
-        <span className="text-[13px] font-semibold text-white">{fmt(creator.follower_count)}</span>
-      </td>
-
-      {/* Score */}
-      <td className="px-4 py-3">
+        {/* Bottom-Right AI Engagement Score Badge */}
         {creator.engagement_score ? (
           <button
             onClick={() => onViewAnalysis(creator)}
-            className="text-[13px] font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 outline-none"
-            style={{ color: creator.engagement_score >= 8 ? '#4ade80' : creator.engagement_score >= 5 ? '#facc15' : 'rgba(255,255,255,0.2)' }}
+            className="absolute bottom-3 right-3 flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold backdrop-blur-md border hover:scale-105 transition-transform"
+            style={{
+              background: 'rgba(0,0,0,0.65)',
+              borderColor: 'rgba(255,255,255,0.08)',
+              color: creator.engagement_score >= 8 ? '#4ade80' : creator.engagement_score >= 5 ? '#facc15' : 'rgba(255,255,255,0.4)'
+            }}
           >
-            {creator.engagement_score}/10
+            <span>Score: {creator.engagement_score}/10</span>
           </button>
-        ) : (
-          <span className="text-[13px] font-semibold" style={{ color: 'rgba(255,255,255,0.2)' }}>
-            Not provided
-          </span>
-        )}
-      </td>
+        ) : null}
+      </div>
 
-      {/* Niche */}
-      <td className="px-4 py-3">
-        <div className="flex flex-wrap gap-1">
-          {niches.length > 0 ? (
-            niches.slice(0, 3).map(n => (
-              <span key={n} className="text-[9px] px-1.5 py-0.5 rounded-full capitalize"
-                style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' }}>
-                {n}
-              </span>
-            ))
+      {/* Card Content Area */}
+      <div className="p-4 flex-1 flex flex-col justify-between">
+        <div>
+          <h3 className="text-[14px] font-bold text-white leading-tight truncate mb-0.5" title={creator.display_name || creator.handle}>
+            {creator.display_name || creator.handle}
+          </h3>
+          <p className="text-[11px] text-white/40 truncate">@{creator.handle}</p>
+
+          <div className="mt-2 text-[12px] font-medium text-white/80">
+            {fmt(creator.follower_count)} followers
+          </div>
+
+          {/* Niches */}
+          <div className="flex flex-wrap gap-1 mt-3">
+            {niches.length > 0 ? (
+              niches.slice(0, 3).map(n => (
+                <span key={n} className="text-[9px] px-1.5 py-0.5 rounded-md capitalize"
+                  style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.03)' }}>
+                  {n}
+                </span>
+              ))
+            ) : (
+              <span className="text-[10px] text-white/20 italic">No tags</span>
+            )}
+          </div>
+        </div>
+
+        {/* Footer info (Status & Email indicator) */}
+        <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+          <StatusBadge status={creator.status} />
+
+          {creator.email_public ? (
+            <div className="w-5 h-5 rounded-md flex items-center justify-center bg-green-500/10 text-green-400 border border-green-500/20" title={creator.email_public}>
+              <Mail size={10} />
+            </div>
           ) : (
-            <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>Not provided</span>
+            <div className="w-5 h-5 rounded-md flex items-center justify-center bg-white/5 text-white/20" title="No public email">
+              <Mail size={10} />
+            </div>
           )}
         </div>
-      </td>
+      </div>
 
-      {/* Email */}
-      <td className="px-4 py-3">
-        <span className="text-[11px]" style={{ color: creator.email_public ? '#4ade80' : 'rgba(255,255,255,0.2)' }}>
-          {creator.email_public || 'Not provided'}
-        </span>
-      </td>
-
-      {/* Status */}
-      <td className="px-4 py-3">
-        {isAnalyzing
-          ? (
-            <span className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-semibold"
-              style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)' }}>
-              <Loader2 size={10} className="animate-spin" />
-              Analyzing…
-            </span>
-          )
-          : <StatusBadge status={creator.status} />
-        }
-      </td>
-
-      {/* Actions */}
-      <td className="px-4 py-3 relative" style={{ borderBottomRightRadius: isLast ? '16px' : 0 }}>
-        {isAnalyzing ? (
-          <div className="w-8 h-8 flex items-center justify-center">
-            <Loader2 size={14} className="animate-spin" style={{ color: '#a78bfa' }} />
-          </div>
-        ) : (
-          <>
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-              style={{ background: showMenu ? 'rgba(255,255,255,0.1)' : 'transparent', color: showMenu ? 'white' : 'rgba(255,255,255,0.5)' }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'white' }}
-              onMouseLeave={e => { if (!showMenu) e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
-            >
-              <MoreHorizontal size={14} />
-            </button>
-
-            {showMenu && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)}></div>
-                <div className="absolute right-4 top-10 z-50 w-40 rounded-xl py-1 shadow-xl border overflow-hidden"
-                     style={{ background: '#1a1a1a', borderColor: 'rgba(255,255,255,0.08)' }}>
-                  
-                  <button onClick={() => { setShowMenu(false); onViewAnalysis(creator) }}
-                          className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors text-white">
-                    <Eye size={12} /> Deep Analysis
-                  </button>
-
-                  <button onClick={() => { setShowMenu(false); onAnalyze(creator.id) }}
-                          className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors text-white">
-                    <Zap size={12} /> Analyze with AI
-                  </button>
-                  
-                  <button onClick={() => { setShowMenu(false); onQualify(creator.id, 'qualified') }}
-                          className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors text-[#4ade80]">
-                    <CheckCircle size={12} /> Mark Qualified
-                  </button>
-
-                  <button onClick={() => { setShowMenu(false); onSuppress(creator.id) }}
-                          className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors" style={{ color: 'rgba(239,68,68,0.8)' }}>
-                    <XCircle size={12} /> Suppress
-                  </button>
-
-                  <button onClick={() => { setShowMenu(false); onDelete(creator.id) }}
-                          className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors" style={{ color: '#ef4444' }}>
-                    <Trash2 size={12} /> Delete
-                  </button>
-                  
-                  {creator.profile_url && (
-                    <a href={creator.profile_url} target="_blank" rel="noopener noreferrer" onClick={() => setShowMenu(false)}
-                       className="w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 hover:bg-white/5 transition-colors text-white/70">
-                      <ExternalLink size={12} /> View Profile
-                    </a>
-                  )}
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </td>
-    </tr>
+      {/* Loader Overlay (for AI analysis) */}
+      {isAnalyzing && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2.5 backdrop-blur-md animate-fade-in"
+             style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <Loader2 size={22} className="animate-spin text-purple-400" />
+          <p className="text-[11px] font-semibold text-purple-300 tracking-wide uppercase">Analyzing Profile…</p>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -463,8 +485,12 @@ function ToastNotification({ toast, onClose }) {
   }, [onClose])
 
   const isSuccess = toast.type === 'success'
+  const isInfo = toast.type === 'info'
+  
   const accent = isSuccess
     ? { rgb: '52,211,153', border: 'rgba(52,211,153,0.15)', bgGlow: 'rgba(52,211,153,0.06)', iconColor: '#34d399' }
+    : isInfo
+    ? { rgb: '139,92,246', border: 'rgba(139,92,246,0.15)', bgGlow: 'rgba(139,92,246,0.06)', iconColor: '#a78bfa' }
     : { rgb: '248,113,113', border: 'rgba(248,113,113,0.15)', bgGlow: 'rgba(248,113,113,0.06)', iconColor: '#f87171' }
 
   return (
@@ -505,10 +531,11 @@ function ToastNotification({ toast, onClose }) {
           boxShadow: `0 4px 12px rgba(${accent.rgb}, 0.05)`
         }}
       >
-        {isSuccess
-          ? <CheckCircle size={15} style={{ color: accent.iconColor }} />
-          : <AlertCircle size={15} style={{ color: accent.iconColor }} />
-        }
+        {isSuccess ? (
+          <CheckCircle size={15} style={{ color: accent.iconColor }} />
+        ) : (
+          <AlertCircle size={15} style={{ color: accent.iconColor }} />
+        )}
       </div>
 
       {/* Text content */}
@@ -562,7 +589,6 @@ function DeepAnalysisView({ analysis, creator, onBack, onReanalyze, analyzing })
   const [showRaw, setShowRaw] = useState(false)
   const { Icon, color } = PLATFORM_ICONS[creator.platform] || { Icon: AlertCircle, color: '#fff' }
 
-  // Safe parsing of demand signals
   const demandSignals = analysis.audience_demand_signals || {}
   const desireSignals = demandSignals.desire_signals || []
   const buyingIntent = demandSignals.buying_intent_indicators || []
@@ -824,6 +850,10 @@ export default function LeadList({ onCountChange }) {
   const [error, setError]       = useState('')
   const [search, setSearch]     = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [platformFilter, setPlatformFilter] = useState('')
+  const [sizeFilter, setSizeFilter]         = useState('')
+  const [nicheFilter, setNicheFilter]       = useState('')
+  const [scrapingInline, setScrapingInline] = useState(false)
   const [analyzing, setAnalyzing] = useState(null)
   const [showScrape, setShowScrape] = useState(false)
   const [toast, setToast] = useState(null)
@@ -838,25 +868,27 @@ export default function LeadList({ onCountChange }) {
     setToast({ message, type })
   }
 
+  const onCountChangeRef = useRef(onCountChange)
+  useEffect(() => {
+    onCountChangeRef.current = onCountChange
+  }, [onCountChange])
+
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const params = {}
-      if (statusFilter) params.status = statusFilter
-      if (search) params.search = search
-      const data = await getCreators(params)
+      const data = await getCreators({ limit: 150 })
       const list = Array.isArray(data) ? data : (data.creators || data.items || [])
-      console.log('Creators list:', list)
+      console.log('Creators list loaded:', list)
       setCreators(list)
-      onCountChange?.(list.length)
+      onCountChangeRef.current?.(list.length)
     } catch (e) {
       setError(e.message)
       setCreators([])
-      onCountChange?.(0)
+      onCountChangeRef.current?.(0)
     }
     setLoading(false)
-  }, [search, statusFilter])
+  }, [])
 
   useEffect(() => { load() }, [load])
 
@@ -899,8 +931,10 @@ export default function LeadList({ onCountChange }) {
       if (selectedCreator && selectedCreator.id === id) {
         setSelectedCreator(prev => ({ ...prev, status }))
       }
+      showToast(`Creator status updated to ${status}.`, 'success')
     } catch (e) { 
       console.warn(e) 
+      showToast(`Failed to update status: ${e.message}`, 'error')
     }
     load()
   }
@@ -954,16 +988,97 @@ export default function LeadList({ onCountChange }) {
     })
   }
 
+  const handleInlineScrape = async () => {
+    if (!search.trim()) return
+    setScrapingInline(true)
+    try {
+      let inputVal = search.trim()
+      let platform = 'youtube'
+      let handle = inputVal
+
+      if (inputVal.includes('instagram.com/')) {
+        platform = 'instagram'
+        const parts = inputVal.split('instagram.com/')
+        handle = parts[1].split(/[/?#]/)[0]
+      } else if (inputVal.includes('tiktok.com/')) {
+        platform = 'tiktok'
+        const parts = inputVal.split('tiktok.com/')
+        handle = parts[1].split(/[/?#]/)[0]
+      } else if (inputVal.includes('youtube.com/')) {
+        platform = 'youtube'
+        const parts = inputVal.split('youtube.com/')
+        handle = parts[1].split(/[/?#]/)[0]
+      } else if (inputVal.includes('twitter.com/') || inputVal.includes('x.com/')) {
+        platform = 'twitter'
+        const parts = inputVal.includes('twitter.com/') ? inputVal.split('twitter.com/') : inputVal.split('x.com/')
+        handle = parts[1].split(/[/?#]/)[0]
+      } else {
+        if (inputVal.startsWith('@')) {
+          handle = inputVal
+        }
+        if (platformFilter) {
+          platform = platformFilter
+        }
+      }
+
+      showToast(`Scraping @${handle} on ${platform}...`, 'info')
+      const r = await scrapeCreator(platform, handle)
+      showToast(`Successfully scraped and saved @${handle}!`, 'success')
+      setSearch('')
+      load()
+    } catch (e) {
+      console.error(e)
+      showToast(`Scrape failed: ${e.message}`, 'error')
+    }
+    setScrapingInline(false)
+  }
+
+  const handleInlineLookup = () => {
+    if (!search.trim()) return
+    const found = creators.find(c =>
+      (c.handle || '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.display_name || '').toLowerCase().includes(search.toLowerCase())
+    )
+    if (found) {
+      showToast(`Found @${found.handle} in database!`, 'success')
+      setPlatformFilter(found.platform)
+      setSearch(found.handle)
+    } else {
+      showToast(`"@${search}" not found in database. Click "⚡ Scrape" to fetch them!`, 'error')
+    }
+  }
+
   const filtered = creators.filter(c => {
-    if (!search) return true
-    const q = search.toLowerCase()
-    return (c.handle || '').toLowerCase().includes(q) ||
-           (c.display_name || '').toLowerCase().includes(q) ||
-           (c.email_public || '').toLowerCase().includes(q)
+    if (search) {
+      const q = search.toLowerCase()
+      const matchesText = (c.handle || '').toLowerCase().includes(q) ||
+                          (c.display_name || '').toLowerCase().includes(q) ||
+                          (c.email_public || '').toLowerCase().includes(q)
+      if (!matchesText) return false
+    }
+    if (platformFilter && c.platform !== platformFilter) {
+      return false
+    }
+    if (statusFilter && c.status !== statusFilter) {
+      return false
+    }
+    if (sizeFilter) {
+      const count = c.follower_count || 0
+      if (sizeFilter === 'under_100k' && count >= 100000) return false
+      if (sizeFilter === '100k_1m' && (count < 100000 || count > 1000000)) return false
+      if (sizeFilter === '1m_10m' && (count < 1000000 || count > 10000000)) return false
+      if (sizeFilter === 'over_10m' && count <= 10000000) return false
+    }
+    if (nicheFilter) {
+      const niches = Array.isArray(c.niche) ? c.niche : (c.niche ? [c.niche] : [])
+      const hasNiche = niches.some(n => n.toLowerCase().includes(nicheFilter.toLowerCase()))
+      if (!hasNiche) return false
+    }
+    return true
   })
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-[#080808]">
       {loadingAnalysis ? (
         <div className="text-center py-24">
           <Loader2 size={24} className="animate-spin mx-auto mb-3" style={{ color: 'rgba(255,255,255,0.4)' }} />
@@ -979,55 +1094,94 @@ export default function LeadList({ onCountChange }) {
         />
       ) : (
         <>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-[18px] font-bold text-white">Creator Leads</h2>
-              <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                {creators.length} creators in database
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={load}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-transparent border-none"
-                style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'white' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
-              >
-                <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-              </button>
-              <button
-                onClick={() => setShowScrape(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold text-black transition-all border-none"
-                style={{ background: 'white' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.9)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'white'}
-              >
-                <Plus size={13} /> Add Creators
-              </button>
-            </div>
-          </div>
+          {/* Mockup-style Toolbar */}
+          <div className="flex flex-wrap items-center gap-3 mb-6 p-3 rounded-2xl"
+               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            
+            {/* Scrape button */}
+            <button
+              onClick={handleInlineScrape}
+              disabled={scrapingInline || !search.trim()}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-white transition-all disabled:opacity-40"
+              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)' }}
+              onMouseEnter={e => { if (search.trim()) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#111' }}
+            >
+              {scrapingInline ? <Loader2 size={13} className="animate-spin text-yellow-400" /> : <Zap size={13} className="text-yellow-400 fill-yellow-400" />}
+              <span>Scrape</span>
+            </button>
 
-          {/* Filters */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl"
-              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)' }}>
+            {/* Input search/scrape url */}
+            <div className="flex-1 min-w-[200px] flex items-center gap-2 px-3 py-2 rounded-xl"
+              style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)' }}>
               <Search size={13} style={{ color: 'rgba(255,255,255,0.3)' }} />
               <input
-                className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                placeholder="Search by handle, name or email…"
+                className="flex-1 bg-transparent text-[12px] text-white outline-none placeholder:text-white/20"
+                placeholder="Or paste a URL — youtube.com/@handle - instagram.com/handle - tiktok.com/@handle"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+
+            {/* Look up button */}
+            <button
+              onClick={handleInlineLookup}
+              disabled={!search.trim()}
+              className="px-4 py-2 rounded-xl text-[12px] font-semibold text-white/80 hover:text-white transition-all disabled:opacity-30 bg-transparent"
+              style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              Look up
+            </button>
+
+            {/* Platform filter dropdown */}
+            <select
+              value={platformFilter}
+              onChange={e => setPlatformFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
+              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
+            >
+              <option value="">All platforms</option>
+              <option value="youtube">YouTube</option>
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="twitter">Twitter</option>
+            </select>
+
+            {/* Size filter dropdown */}
+            <select
+              value={sizeFilter}
+              onChange={e => setSizeFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
+              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
+            >
+              <option value="">Any size</option>
+              <option value="under_100k">&lt; 100K</option>
+              <option value="100k_1m">100K - 1M</option>
+              <option value="1m_10m">1M - 10M</option>
+              <option value="over_10m">&gt; 10M</option>
+            </select>
+
+            {/* Niche filter dropdown */}
+            <select
+              value={nicheFilter}
+              onChange={e => setNicheFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
+              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
+            >
+              <option value="">Any niche</option>
+              {COMMON_NICHES.map(n => (
+                <option key={n} value={n.toLowerCase()}>{n}</option>
+              ))}
+            </select>
+
+            {/* Status filter dropdown */}
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl text-[12px] outline-none"
+              className="px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
               style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
             >
-              <option value="">All statuses</option>
+              <option value="">Any status</option>
               <option value="discovered">Discovered</option>
               <option value="qualified">Qualified</option>
               <option value="in_review">In Review</option>
@@ -1035,6 +1189,32 @@ export default function LeadList({ onCountChange }) {
               <option value="disqualified">Disqualified</option>
               <option value="suppressed">Suppressed</option>
             </select>
+
+            {/* Count and Refresh */}
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] text-white/40 font-medium">
+                {filtered.length} {filtered.length === 1 ? 'creator' : 'creators'}
+              </span>
+              <button
+                onClick={load}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-transparent border-none"
+                style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'white' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+              >
+                <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+              </button>
+            </div>
+
+            {/* Batch Add button */}
+            <button
+              onClick={() => setShowScrape(true)}
+              className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-black transition-all border-none bg-white hover:bg-white/95"
+            >
+              <Plus size={13} />
+              <span>Add</span>
+            </button>
+
           </div>
 
           {/* Error banner */}
@@ -1048,55 +1228,35 @@ export default function LeadList({ onCountChange }) {
             </div>
           )}
 
-          {/* Table */}
-          <div className="rounded-2xl" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
-            <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-              <thead>
-                <tr style={{ background: '#0e0e0e' }}>
-                  {['Creator', 'Platform', 'Followers', 'Score', 'Niche', 'Email', 'Status', 'Actions'].map((h, i, arr) => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest"
-                      style={{ 
-                        color: 'rgba(255,255,255,0.3)',
-                        borderBottom: '1px solid rgba(255,255,255,0.06)',
-                        borderTopLeftRadius: i === 0 ? '16px' : 0,
-                        borderTopRightRadius: i === arr.length - 1 ? '16px' : 0,
-                      }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody style={{ background: '#0a0a0a' }}>
-                {loading ? (
-                  <tr><td colSpan={8} className="text-center py-12">
-                    <Loader2 size={20} className="animate-spin mx-auto mb-2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                    <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.3)' }}>Loading leads…</p>
-                  </td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center py-12">
-                    <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.3)' }}>No creators found.</p>
-                    <button onClick={() => setShowScrape(true)} className="mt-3 text-[12px] underline bg-transparent border-none cursor-pointer" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                      Add your first creator →
-                    </button>
-                  </td></tr>
-                ) : (
-                  filtered.map((c, i) => (
-                    <CreatorRow
-                      key={c.id}
-                      creator={c}
-                      onAnalyze={handleAnalyze}
-                      onQualify={handleQualify}
-                      onSuppress={handleSuppress}
-                      onDelete={handleDelete}
-                      onViewAnalysis={handleViewAnalysis}
-                      analyzing={analyzing}
-                      isLast={i === filtered.length - 1}
-                    />
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          {/* Cards Grid */}
+          {loading ? (
+            <div className="text-center py-24">
+              <Loader2 size={24} className="animate-spin mx-auto mb-3 text-white/30" />
+              <p className="text-[13px] text-white/30">Loading leads…</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-24 rounded-2xl border border-dashed border-white/10" style={{ background: 'rgba(255,255,255,0.01)' }}>
+              <p className="text-[14px] text-white/40">No creators match your filters.</p>
+              <button onClick={() => setShowScrape(true)} className="mt-3 text-[12px] underline text-white/50 hover:text-white bg-transparent border-none cursor-pointer">
+                Scrape a new profile →
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {filtered.map((c) => (
+                <CreatorCard
+                  key={c.id}
+                  creator={c}
+                  onAnalyze={handleAnalyze}
+                  onQualify={handleQualify}
+                  onSuppress={handleSuppress}
+                  onDelete={handleDelete}
+                  onViewAnalysis={handleViewAnalysis}
+                  analyzing={analyzing}
+                />
+              ))}
+            </div>
+          )}
         </>
       )}
 

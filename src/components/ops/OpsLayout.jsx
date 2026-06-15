@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Users, Mail, MessageSquare, BarChart2, Settings,
   Zap, ChevronRight, Activity, Search, Bell, Shield, LogOut
@@ -106,55 +106,125 @@ export default function OpsLayout() {
     setTimeout(() => setAgentRunning(false), 4000)
   }
 
+  const handleLeadsCountChange = useCallback((n) => {
+    setCounts(p => p.leads === n ? p : { ...p, leads: n })
+  }, [])
+
+  const handleQueueCountChange = useCallback((n) => {
+    setCounts(p => p.queue === n ? p : { ...p, queue: n })
+  }, [])
+
+  const handleInboxCountChange = useCallback((n) => {
+    setCounts(p => p.inbox === n ? p : { ...p, inbox: n })
+  }, [])
+
   const COMPONENTS = {
-    leads: <LeadList onCountChange={n => setCounts(p => ({ ...p, leads: n }))} />,
-    queue: <OutreachQueue onCountChange={n => setCounts(p => ({ ...p, queue: n }))} />,
-    inbox: <ReplyInbox onCountChange={n => setCounts(p => ({ ...p, inbox: n }))} />,
+    leads: <LeadList onCountChange={handleLeadsCountChange} />,
+    queue: <OutreachQueue onCountChange={handleQueueCountChange} />,
+    inbox: <ReplyInbox onCountChange={handleInboxCountChange} />,
     stats: <CampaignStats />,
     admin: <AdminControl />,
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#080808' }}>
-      {/* Sidebar */}
-      <div
-        className="w-56 flex-shrink-0 flex flex-col border-r"
+    <div className="flex flex-col h-screen overflow-hidden bg-black text-white" style={{ background: '#080808' }}>
+      {/* Top Header Navbar */}
+      <header
+        className="flex items-center justify-between px-6 py-3 border-b flex-shrink-0"
         style={{ borderColor: 'rgba(255,255,255,0.06)', background: '#090909' }}
       >
         {/* Logo */}
-        <div className="px-4 py-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              <Shield size={13} className="text-white" />
-            </div>
-            <div>
-              <p className="text-[12px] font-bold text-white tracking-tight">Forge Ops</p>
-              <p className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>Internal Pipeline</p>
-            </div>
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <Shield size={13} className="text-white" />
+          </div>
+          <div>
+            <p className="text-[13px] font-bold text-white tracking-wider uppercase">Creator Forge</p>
+            <p className="text-[8px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Internal Ops</p>
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV.map(item => (
-            <NavItem
-              key={item.id}
-              item={item}
-              active={activeTab === item.id}
-              onClick={() => setActiveTab(item.id)}
-              counts={counts}
-            />
-          ))}
+        {/* Center Pill Navigation */}
+        <nav className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
+          {NAV.filter(item => item.id !== 'admin').map(item => {
+            const active = activeTab === item.id
+            const count = counts[item.id]
+            const label = item.id === 'leads' ? 'Creators' : item.label
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className="relative px-3.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all duration-150 flex items-center gap-1.5"
+                style={{
+                  background: active ? 'white' : 'transparent',
+                  color: active ? 'black' : 'rgba(255,255,255,0.45)',
+                }}
+              >
+                {label}
+                {count > 0 && (
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{
+                      background: active ? 'rgba(0,0,0,0.1)' : item.badge === 'review' ? 'rgba(255,180,0,0.2)' : 'rgba(255,255,255,0.1)',
+                      color: active ? 'black' : item.badge === 'review' ? 'rgba(255,200,50,1)' : 'rgba(255,255,255,0.7)',
+                    }}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </nav>
 
-        {/* Agent status */}
-        <div className="px-3 pb-4 space-y-2">
+        {/* Right side controls */}
+        <div className="flex items-center gap-3">
+          {/* Agent status badge */}
           <AgentStatusBadge running={agentRunning} onRun={runAgent} />
-          {/* Backend connectivity dot */}
-          <div className="flex items-center gap-1.5 px-1">
+
+          {/* Admin Control Link */}
+          <button
+            onClick={() => setActiveTab('admin')}
+            className="px-3.5 py-1.5 rounded-lg text-[12px] font-semibold flex items-center gap-1.5 transition-all"
+            style={{
+              background: activeTab === 'admin' ? 'white' : 'transparent',
+              color: activeTab === 'admin' ? 'black' : 'rgba(255,255,255,0.45)',
+            }}
+          >
+            <Settings size={12} />
+            <span>Admin</span>
+          </button>
+
+          <div className="h-4 w-px bg-white/10" />
+
+          {/* Sign out */}
+          <button
+            onClick={opsSignOut}
+            title="Sign out"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-white/40 hover:text-red-400 hover:bg-red-500/10"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
+          >
+            <LogOut size={13} />
+          </button>
+
+          {/* Operator Initial Avatar */}
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[12px] font-bold text-white/80"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            OP
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Extra subbar with connectivity indicator */}
+        <div className="flex items-center justify-between px-6 py-1.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.04)', background: '#080808' }}>
+          <div className="flex items-center gap-1.5">
             <span
               className="w-1.5 h-1.5 rounded-full flex-shrink-0"
               style={{
@@ -169,52 +239,12 @@ export default function OpsLayout() {
                : 'Demo mode — start backend'}
             </span>
           </div>
-          <p className="text-[9px] px-1" style={{ color: 'rgba(255,255,255,0.14)' }}>
-            Cron runs daily 9am UTC
-          </p>
+          <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.15)' }}>
+            Pipeline Active · Auto-runs daily 9am UTC
+          </span>
         </div>
 
-      </div>
-
-      {/* Main */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar */}
-        <div
-          className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0"
-          style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(8,8,8,0.97)' }}
-        >
-          <h1 className="text-[15px] font-semibold text-white">
-            {NAV.find(n => n.id === activeTab)?.label}
-          </h1>
-          <div className="flex items-center gap-2">
-            <button
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-              style={{ color: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.04)' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'white'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
-            >
-              <Bell size={14} />
-            </button>
-            <button
-              onClick={opsSignOut}
-              title="Sign out"
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-              style={{ color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.04)' }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.8)'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-            >
-              <LogOut size={14} />
-            </button>
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-[12px] font-bold text-white cursor-pointer"
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              O
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
+        {/* Inner Content */}
         <div className="flex-1 overflow-y-auto">
           {COMPONENTS[activeTab]}
         </div>

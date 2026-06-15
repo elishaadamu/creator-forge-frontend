@@ -40,6 +40,19 @@ async function req(method, path, body) {
 
 // ── Creators / Leads ─────────────────────────────────────────────────────────
 
+function getActiveUsername() {
+  try {
+    const cached = localStorage.getItem('forge_user_profile')
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      return parsed.username || 'internal'
+    }
+  } catch (e) {
+    console.warn('[opsApi] Failed to parse forge_user_profile:', e)
+  }
+  return 'internal'
+}
+
 export const getCreators = (params = {}) => {
   const q = new URLSearchParams(params).toString()
   return req('GET', `/creators${q ? '?' + q : ''}`)
@@ -48,14 +61,18 @@ export const getCreators = (params = {}) => {
 export const saveCreator = (data) => 
   req('POST', '/creators', data)
 
-export const recommendCreator = (id) =>
-  req('POST', `/creators/${id}/recommend`)
+export const recommendCreator = (id) => {
+  const actor = getActiveUsername()
+  return req('POST', `/creators/${id}/recommend?actor=${encodeURIComponent(actor)}`)
+}
 
 export const scrapeCreator = (platform, handle) =>
   req('POST', '/creators/scrape', { platform, handle })
 
-export const analyzeCreator = (id) =>
-  req('POST', `/creators/${id}/analyze`)
+export const analyzeCreator = (id) => {
+  const actor = getActiveUsername()
+  return req('POST', `/creators/${id}/analyze?actor=${encodeURIComponent(actor)}`)
+}
 
 export const getCreatorAnalysis = (id) =>
   req('GET', `/creators/${id}/analysis`)
