@@ -91,7 +91,29 @@ function ThreadCard({ thread, onClick }) {
   )
 }
 
-function ThreadDetail({ thread, onClose }) {
+function ThreadDetail({ thread, onClose, onReload }) {
+  const [replyBody, setReplyBody] = useState('')
+  const [isSending, setIsSending] = useState(false)
+  const [sendError, setSendError] = useState('')
+
+  const handleSend = async () => {
+    if (!replyBody.trim()) return
+    setIsSending(true)
+    setSendError('')
+    try {
+      // Need to import sendThreadReply at the top of the file! 
+      // We will add it to the import statement.
+      const { sendThreadReply } = await import('../../services/opsApi')
+      await sendThreadReply(thread.id, replyBody)
+      setReplyBody('')
+      onReload?.()
+    } catch (e) {
+      setSendError(e.message)
+    } finally {
+      setIsSending(false)
+    }
+  }
+
   const lastReply = thread.replies?.[thread.replies.length - 1]
   const clf = lastReply ? (CLASSIFICATION_STYLES[lastReply.classification] || CLASSIFICATION_STYLES.other) : null
 
@@ -159,6 +181,31 @@ function ThreadDetail({ thread, onClose }) {
             <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.3)' }}>Awaiting reply…</p>
           </div>
         )}
+      </div>
+
+      {/* Reply Box */}
+      <div className="p-4 border-t flex-shrink-0" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}>
+        {sendError && (
+          <p className="text-[11px] text-red-400 mb-2">{sendError}</p>
+        )}
+        <textarea
+          value={replyBody}
+          onChange={e => setReplyBody(e.target.value)}
+          placeholder="Type your reply..."
+          className="w-full bg-transparent border rounded-xl p-3 text-[13px] text-white placeholder-white/30 outline-none focus:border-white/20 transition-colors resize-none"
+          style={{ borderColor: 'rgba(255,255,255,0.1)', minHeight: '80px' }}
+        />
+        <div className="flex justify-end mt-2">
+          <button
+            onClick={handleSend}
+            disabled={!replyBody.trim() || isSending}
+            className="px-4 py-1.5 rounded-lg text-[12px] font-semibold flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: '#fff', color: '#000' }}
+          >
+            {isSending ? <Loader2 size={14} className="animate-spin" /> : null}
+            Send Reply
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -281,7 +328,7 @@ export default function ReplyInbox({ onCountChange }) {
       {/* Thread detail panel */}
       {selectedThread && (
         <div className="flex-1 overflow-hidden">
-          <ThreadDetail thread={selectedThread} onClose={() => setSelected(null)} />
+          <ThreadDetail thread={selectedThread} onClose={() => setSelected(null)} onReload={load} />
         </div>
       )}
     </div>

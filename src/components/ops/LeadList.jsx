@@ -3,7 +3,8 @@ import {
   Search, Plus, RefreshCw, ChevronDown, ExternalLink,
   Youtube, Instagram, Smartphone, Twitter, CheckCircle,
   XCircle, AlertCircle, Loader2, Zap, Mail, Eye, Trash2, MoreHorizontal,
-  ArrowLeft, Calendar, Cpu, ShieldCheck, Activity, Copy, Check, ChevronUp
+  ArrowLeft, Calendar, Cpu, ShieldCheck, Activity, Copy, Check, ChevronUp,
+  Grid, List, LayoutGrid
 } from 'lucide-react'
 import { getCreators, scrapeCreator, analyzeCreator, qualifyCreator, suppressCreator, deleteCreator, getCreatorAnalysis } from '../../services/opsApi'
 
@@ -420,6 +421,252 @@ function CreatorCard({ creator, onAnalyze, onQualify, onSuppress, onDelete, onVi
              style={{ background: 'rgba(0,0,0,0.7)' }}>
           <Loader2 size={22} className="animate-spin text-purple-400" />
           <p className="text-[11px] font-semibold text-purple-300 tracking-wide uppercase">Analyzing Profile…</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CreatorRow({ creator, onAnalyze, onQualify, onSuppress, onDelete, onViewAnalysis, analyzing }) {
+  const isAnalyzing = analyzing === creator.id
+  const { Icon, color } = PLATFORM_ICONS[creator.platform] || { Icon: AlertCircle, color: '#fff' }
+  const niches = Array.isArray(creator.niche) ? creator.niche : (creator.niche ? [creator.niche] : [])
+  const initials = (creator.display_name || creator.handle || '?')
+    .replace(/^@/, '')
+    .split(' ')
+    .map(w => w.charAt(0))
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+
+  const getInitialsGradient = (name) => {
+    const code = (name || 'CF').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    const gradients = [
+      'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+      'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
+      'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
+      'linear-gradient(135deg, #b45309 0%, #f59e0b 100%)',
+      'linear-gradient(135deg, #db2777 0%, #f472b6 100%)',
+    ]
+    return gradients[code % gradients.length]
+  }
+
+  return (
+    <div
+      className="group relative flex items-center justify-between p-3.5 rounded-xl border transition-all duration-200"
+      style={{
+        background: '#0e0e0e',
+        borderColor: isAnalyzing ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.06)',
+      }}
+      onMouseEnter={e => {
+        if (!isAnalyzing) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+      }}
+      onMouseLeave={e => {
+        if (!isAnalyzing) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
+      }}
+    >
+      <div className="flex items-center gap-4 flex-1 min-w-0">
+        {/* Avatar with Platform overlay */}
+        <div className="w-10 h-10 rounded-lg overflow-hidden relative bg-white/5 flex-shrink-0 flex items-center justify-center">
+          {creator.avatar_url ? (
+            <img src={creator.avatar_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.currentTarget.style.display = 'none'} />
+          ) : null}
+          <div className="absolute inset-0 flex items-center justify-center text-[13px] font-bold text-white uppercase"
+               style={{ background: getInitialsGradient(creator.display_name || creator.handle), display: creator.avatar_url ? 'none' : 'flex' }}>
+            {initials}
+          </div>
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#0e0e0e' }}>
+            <Icon size={9} style={{ color }} />
+          </div>
+        </div>
+
+        {/* Name / Handle */}
+        <div className="min-w-0 flex-shrink-0 w-48">
+          <h4 className="text-[13px] font-bold text-white truncate leading-snug">{creator.display_name || creator.handle}</h4>
+          <p className="text-[11px] text-white/40 truncate">@{creator.handle}</p>
+        </div>
+
+        {/* Followers */}
+        <div className="w-28 text-[12px] text-white/70 font-semibold flex-shrink-0">
+          {fmt(creator.follower_count)} followers
+        </div>
+
+        {/* Niches */}
+        <div className="flex-1 min-w-0 flex flex-wrap gap-1.5 overflow-hidden max-h-8">
+          {niches.slice(0, 4).map(n => (
+            <span key={n} className="text-[9px] px-1.5 py-0.5 rounded-md capitalize"
+                  style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.02)' }}>
+              {n}
+            </span>
+          ))}
+          {niches.length === 0 && <span className="text-[10px] text-white/20 italic">No tags</span>}
+        </div>
+
+        {/* Score */}
+        <div className="w-28 flex-shrink-0">
+          {creator.engagement_score ? (
+            <button
+              onClick={() => onViewAnalysis(creator)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border backdrop-blur-md"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                borderColor: 'rgba(255,255,255,0.06)',
+                color: creator.engagement_score >= 8 ? '#4ade80' : creator.engagement_score >= 5 ? '#facc15' : 'rgba(255,255,255,0.4)'
+              }}
+            >
+              <span>Score: {creator.engagement_score}/10</span>
+            </button>
+          ) : (
+            <span className="text-[10px] text-white/25 italic">Not analyzed</span>
+          )}
+        </div>
+
+        {/* Status */}
+        <div className="w-24 flex-shrink-0">
+          <StatusBadge status={creator.status} />
+        </div>
+      </div>
+
+      {/* Row actions */}
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={() => onAnalyze(creator.id)}
+          title="Analyze with AI"
+          className="p-1.5 rounded-lg hover:bg-yellow-500/10 text-yellow-400 transition-all border-none bg-transparent cursor-pointer"
+        >
+          <Zap size={12} className="fill-yellow-400/20" />
+        </button>
+        <button
+          onClick={() => onViewAnalysis(creator)}
+          title="Deep Analysis"
+          className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-white transition-all border-none bg-transparent cursor-pointer"
+        >
+          <Eye size={12} />
+        </button>
+        <button
+          onClick={() => onSuppress(creator.id)}
+          title="Suppress"
+          className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition-all border-none bg-transparent cursor-pointer"
+        >
+          <XCircle size={12} />
+        </button>
+        <button
+          onClick={() => onDelete(creator.id)}
+          title="Delete"
+          className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-500 transition-all border-none bg-transparent cursor-pointer"
+        >
+          <Trash2 size={12} />
+        </button>
+      </div>
+
+      {/* Loader Overlay (for AI analysis) */}
+      {isAnalyzing && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center gap-3 backdrop-blur-sm rounded-xl"
+             style={{ background: 'rgba(0,0,0,0.6)' }}>
+          <Loader2 size={13} className="animate-spin text-purple-400" />
+          <p className="text-[10px] font-bold text-purple-300 tracking-wider uppercase">Analyzing Profile…</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CreatorCompactCard({ creator, onAnalyze, onQualify, onSuppress, onDelete, onViewAnalysis, analyzing }) {
+  const isAnalyzing = analyzing === creator.id
+  const { Icon, color } = PLATFORM_ICONS[creator.platform] || { Icon: AlertCircle, color: '#fff' }
+  const initials = (creator.display_name || creator.handle || '?')
+    .replace(/^@/, '')
+    .split(' ')
+    .map(w => w.charAt(0))
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+
+  const getInitialsGradient = (name) => {
+    const code = (name || 'CF').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    const gradients = [
+      'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+      'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
+      'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
+      'linear-gradient(135deg, #b45309 0%, #f59e0b 100%)',
+      'linear-gradient(135deg, #db2777 0%, #f472b6 100%)',
+    ]
+    return gradients[code % gradients.length]
+  }
+
+  return (
+    <div
+      className="group relative rounded-xl border p-2.5 flex flex-col items-center text-center justify-between min-h-[140px] transition-all duration-200"
+      style={{
+        background: '#0c0c0c',
+        borderColor: isAnalyzing ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.05)',
+      }}
+      onMouseEnter={e => {
+        if (!isAnalyzing) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+      }}
+      onMouseLeave={e => {
+        if (!isAnalyzing) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
+      }}
+    >
+      <div className="flex flex-col items-center gap-1.5 w-full">
+        {/* Avatar */}
+        <div className="w-10 h-10 rounded-full overflow-hidden relative bg-white/5 flex-shrink-0 flex items-center justify-center">
+          {creator.avatar_url ? (
+            <img src={creator.avatar_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.currentTarget.style.display = 'none'} />
+          ) : null}
+          <div className="absolute inset-0 flex items-center justify-center text-[12px] font-bold text-white uppercase"
+               style={{ background: getInitialsGradient(creator.display_name || creator.handle), display: creator.avatar_url ? 'none' : 'flex' }}>
+            {initials}
+          </div>
+          {/* Platform icon corner */}
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center bg-black">
+            <Icon size={7} style={{ color }} />
+          </div>
+        </div>
+
+        {/* Display name & handle */}
+        <div className="w-full">
+          <h4 className="text-[11px] font-bold text-white truncate leading-tight mb-0.5">{creator.display_name || creator.handle}</h4>
+          <p className="text-[9px] text-white/30 truncate">@{creator.handle}</p>
+        </div>
+
+        {/* Followers */}
+        <p className="text-[10px] text-white/50">{fmt(creator.follower_count)}</p>
+      </div>
+
+      {/* Action shortcuts / Score */}
+      <div className="mt-2 w-full flex items-center justify-center gap-1">
+        {creator.engagement_score ? (
+          <button
+            onClick={() => onViewAnalysis(creator)}
+            className="px-1.5 py-0.5 rounded bg-white/5 text-[9px] font-bold border border-white/5 text-[#a78bfa]"
+          >
+            S: {creator.engagement_score}
+          </button>
+        ) : (
+          <button
+            onClick={() => onAnalyze(creator.id)}
+            className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 text-[8px] font-bold border border-yellow-500/10 transition-colors flex items-center gap-0.5 border-none cursor-pointer"
+          >
+            <Zap size={7} /> Analyze
+          </button>
+        )}
+        
+        {/* Quick view button */}
+        <button
+          onClick={() => onViewAnalysis(creator)}
+          className="p-1 rounded bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors border-none cursor-pointer"
+        >
+          <Eye size={8} />
+        </button>
+      </div>
+
+      {/* Loader Overlay */}
+      {isAnalyzing && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-1 backdrop-blur-sm rounded-xl"
+             style={{ background: 'rgba(0,0,0,0.6)' }}>
+          <Loader2 size={12} className="animate-spin text-purple-400" />
+          <p className="text-[8px] font-bold text-purple-300 tracking-wider uppercase">Analyzing…</p>
         </div>
       )}
     </div>
@@ -846,6 +1093,7 @@ function DeepAnalysisView({ analysis, creator, onBack, onReanalyze, analyzing })
 
 export default function LeadList({ onCountChange }) {
   const [creators, setCreators] = useState([])
+  const [viewLayout, setViewLayout] = useState('grid') // 'grid' | 'list' | 'compact'
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
   const [search, setSearch]     = useState('')
@@ -1093,171 +1341,274 @@ export default function LeadList({ onCountChange }) {
           analyzing={analyzing === selectedCreator.id}
         />
       ) : (
-        <>
-          {/* Mockup-style Toolbar */}
-          <div className="flex flex-wrap items-center gap-3 mb-6 p-3 rounded-2xl"
-               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex gap-6 items-stretch">
+          {/* Left Sidebar */}
+          <div className="w-60 shrink-0 flex flex-col gap-6 p-5 rounded-2xl border"
+               style={{ background: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.06)' }}>
             
-            {/* Scrape button */}
-            <button
-              onClick={handleInlineScrape}
-              disabled={scrapingInline || !search.trim()}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-white transition-all disabled:opacity-40"
-              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)' }}
-              onMouseEnter={e => { if (search.trim()) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#111' }}
-            >
-              {scrapingInline ? <Loader2 size={13} className="animate-spin text-yellow-400" /> : <Zap size={13} className="text-yellow-400 fill-yellow-400" />}
-              <span>Scrape</span>
-            </button>
+            {/* View layout selectors */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">Layout View</p>
+              <div className="flex flex-col gap-1.5">
+                <button
+                  onClick={() => setViewLayout('grid')}
+                  className="w-full px-3.5 py-2 rounded-xl text-[12px] font-semibold flex items-center gap-2.5 transition-all text-left border-none cursor-pointer"
+                  style={{
+                    background: viewLayout === 'grid' ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    color: viewLayout === 'grid' ? 'white' : 'rgba(255,255,255,0.5)',
+                    border: `1px solid ${viewLayout === 'grid' ? 'rgba(255,255,255,0.1)' : 'transparent'}`
+                  }}
+                >
+                  <Grid size={13} className={viewLayout === 'grid' ? 'text-white' : 'text-white/40'} />
+                  <span>Grid View</span>
+                </button>
 
-            {/* Input search/scrape url */}
-            <div className="flex-1 min-w-[200px] flex items-center gap-2 px-3 py-2 rounded-xl"
-              style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <Search size={13} style={{ color: 'rgba(255,255,255,0.3)' }} />
-              <input
-                className="flex-1 bg-transparent text-[12px] text-white outline-none placeholder:text-white/20"
-                placeholder="Or paste a URL — youtube.com/@handle - instagram.com/handle - tiktok.com/@handle"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+                <button
+                  onClick={() => setViewLayout('list')}
+                  className="w-full px-3.5 py-2 rounded-xl text-[12px] font-semibold flex items-center gap-2.5 transition-all text-left border-none cursor-pointer"
+                  style={{
+                    background: viewLayout === 'list' ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    color: viewLayout === 'list' ? 'white' : 'rgba(255,255,255,0.5)',
+                    border: `1px solid ${viewLayout === 'list' ? 'rgba(255,255,255,0.1)' : 'transparent'}`
+                  }}
+                >
+                  <List size={13} className={viewLayout === 'list' ? 'text-white' : 'text-white/40'} />
+                  <span>List View</span>
+                </button>
+
+                <button
+                  onClick={() => setViewLayout('compact')}
+                  className="w-full px-3.5 py-2 rounded-xl text-[12px] font-semibold flex items-center gap-2.5 transition-all text-left border-none cursor-pointer"
+                  style={{
+                    background: viewLayout === 'compact' ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    color: viewLayout === 'compact' ? 'white' : 'rgba(255,255,255,0.5)',
+                    border: `1px solid ${viewLayout === 'compact' ? 'rgba(255,255,255,0.1)' : 'transparent'}`
+                  }}
+                >
+                  <LayoutGrid size={13} className={viewLayout === 'compact' ? 'text-white' : 'text-white/40'} />
+                  <span>Compact View</span>
+                </button>
+              </div>
             </div>
 
-            {/* Look up button */}
-            <button
-              onClick={handleInlineLookup}
-              disabled={!search.trim()}
-              className="px-4 py-2 rounded-xl text-[12px] font-semibold text-white/80 hover:text-white transition-all disabled:opacity-30 bg-transparent"
-              style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-            >
-              Look up
-            </button>
+            <hr style={{ borderColor: 'rgba(255,255,255,0.05)' }} />
 
-            {/* Platform filter dropdown */}
-            <select
-              value={platformFilter}
-              onChange={e => setPlatformFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
-              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
-            >
-              <option value="">All platforms</option>
-              <option value="youtube">YouTube</option>
-              <option value="instagram">Instagram</option>
-              <option value="tiktok">TikTok</option>
-              <option value="twitter">Twitter</option>
-            </select>
+            {/* Filter controls */}
+            <div className="space-y-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">Discovery Filters</p>
+              
+              {/* Platform selector */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] text-white/40 font-medium">Platform</label>
+                <select
+                  value={platformFilter}
+                  onChange={e => setPlatformFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
+                  style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}
+                >
+                  <option value="">All platforms</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="twitter">Twitter</option>
+                </select>
+              </div>
 
-            {/* Size filter dropdown */}
-            <select
-              value={sizeFilter}
-              onChange={e => setSizeFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
-              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
-            >
-              <option value="">Any size</option>
-              <option value="under_100k">&lt; 100K</option>
-              <option value="100k_1m">100K - 1M</option>
-              <option value="1m_10m">1M - 10M</option>
-              <option value="over_10m">&gt; 10M</option>
-            </select>
+              {/* Creator size selector */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] text-white/40 font-medium">Follower Size</label>
+                <select
+                  value={sizeFilter}
+                  onChange={e => setSizeFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
+                  style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}
+                >
+                  <option value="">Any size</option>
+                  <option value="under_100k">&lt; 100K</option>
+                  <option value="100k_1m">100K - 1M</option>
+                  <option value="1m_10m">1M - 10M</option>
+                  <option value="over_10m">&gt; 10M</option>
+                </select>
+              </div>
 
-            {/* Niche filter dropdown */}
-            <select
-              value={nicheFilter}
-              onChange={e => setNicheFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
-              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
-            >
-              <option value="">Any niche</option>
-              {COMMON_NICHES.map(n => (
-                <option key={n} value={n.toLowerCase()}>{n}</option>
-              ))}
-            </select>
+              {/* Niche selector */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] text-white/40 font-medium">Niche Segment</label>
+                <select
+                  value={nicheFilter}
+                  onChange={e => setNicheFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
+                  style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}
+                >
+                  <option value="">Any niche</option>
+                  {COMMON_NICHES.map(n => (
+                    <option key={n} value={n.toLowerCase()}>{n}</option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Status filter dropdown */}
-            <select
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
-              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
-            >
-              <option value="">Any status</option>
-              <option value="discovered">Discovered</option>
-              <option value="qualified">Qualified</option>
-              <option value="in_review">In Review</option>
-              <option value="approved">Approved</option>
-              <option value="disqualified">Disqualified</option>
-              <option value="suppressed">Suppressed</option>
-            </select>
-
-            {/* Count and Refresh */}
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] text-white/40 font-medium">
-                {filtered.length} {filtered.length === 1 ? 'creator' : 'creators'}
-              </span>
-              <button
-                onClick={load}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-transparent border-none"
-                style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'white' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
-              >
-                <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-              </button>
+              {/* Status selector */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] text-white/40 font-medium">Campaign Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-[12px] outline-none cursor-pointer"
+                  style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}
+                >
+                  <option value="">Any status</option>
+                  <option value="discovered">Discovered</option>
+                  <option value="qualified">Qualified</option>
+                  <option value="in_review">In Review</option>
+                  <option value="approved">Approved</option>
+                  <option value="disqualified">Disqualified</option>
+                  <option value="suppressed">Suppressed</option>
+                </select>
+              </div>
             </div>
-
-            {/* Batch Add button */}
-            <button
-              onClick={() => setShowScrape(true)}
-              className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-black transition-all border-none bg-white hover:bg-white/95"
-            >
-              <Plus size={13} />
-              <span>Add</span>
-            </button>
 
           </div>
 
-          {/* Error banner */}
-          {error && (
-            <div className="mb-4 px-4 py-3 rounded-xl flex items-center gap-2"
-              style={{ background: 'rgba(255,180,0,0.08)', border: '1px solid rgba(255,180,0,0.2)' }}>
-              <AlertCircle size={13} style={{ color: 'rgba(255,200,50,0.9)' }} />
-              <p className="text-[11px]" style={{ color: 'rgba(255,200,50,0.8)' }}>
-                Backend offline — showing demo data. {error}
-              </p>
-            </div>
-          )}
-
-          {/* Cards Grid */}
-          {loading ? (
-            <div className="text-center py-24">
-              <Loader2 size={24} className="animate-spin mx-auto mb-3 text-white/30" />
-              <p className="text-[13px] text-white/30">Loading leads…</p>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-24 rounded-2xl border border-dashed border-white/10" style={{ background: 'rgba(255,255,255,0.01)' }}>
-              <p className="text-[14px] text-white/40">No creators match your filters.</p>
-              <button onClick={() => setShowScrape(true)} className="mt-3 text-[12px] underline text-white/50 hover:text-white bg-transparent border-none cursor-pointer">
-                Scrape a new profile →
+          {/* Right main area */}
+          <div className="flex-1 min-w-0">
+            {/* Mockup-style Toolbar */}
+            <div className="flex flex-wrap items-center gap-3 mb-6 p-3 rounded-2xl"
+                 style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              
+              {/* Scrape button */}
+              <button
+                onClick={handleInlineScrape}
+                disabled={scrapingInline || !search.trim()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-white transition-all disabled:opacity-40 border-none cursor-pointer"
+                style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)' }}
+                onMouseEnter={e => { if (search.trim()) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#111' }}
+              >
+                {scrapingInline ? <Loader2 size={13} className="animate-spin text-yellow-400" /> : <Zap size={13} className="text-yellow-400 fill-yellow-400" />}
+                <span>Scrape</span>
               </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {filtered.map((c) => (
-                <CreatorCard
-                  key={c.id}
-                  creator={c}
-                  onAnalyze={handleAnalyze}
-                  onQualify={handleQualify}
-                  onSuppress={handleSuppress}
-                  onDelete={handleDelete}
-                  onViewAnalysis={handleViewAnalysis}
-                  analyzing={analyzing}
+
+              {/* Input search/scrape url */}
+              <div className="flex-1 min-w-[200px] flex items-center gap-2 px-3 py-2 rounded-xl"
+                style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <Search size={13} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                <input
+                  className="flex-1 bg-transparent text-[12px] text-white outline-none placeholder:text-white/20"
+                  placeholder="Or paste a URL — youtube.com/@handle - instagram.com/handle - tiktok.com/@handle"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
                 />
-              ))}
+              </div>
+
+              {/* Look up button */}
+              <button
+                onClick={handleInlineLookup}
+                disabled={!search.trim()}
+                className="px-4 py-2 rounded-xl text-[12px] font-semibold text-white/80 hover:text-white transition-all disabled:opacity-30 bg-transparent border-none cursor-pointer"
+                style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                Look up
+              </button>
+
+              {/* Count and Refresh */}
+              <div className="flex items-center gap-2 px-2">
+                <span className="text-[12px] text-white/40 font-medium whitespace-nowrap">
+                  {filtered.length} {filtered.length === 1 ? 'creator' : 'creators'}
+                </span>
+                <button
+                  onClick={load}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-transparent border-none cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'white' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+                >
+                  <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                </button>
+              </div>
+
+              {/* Batch Add button */}
+              <button
+                onClick={() => setShowScrape(true)}
+                className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-black transition-all border-none bg-white hover:bg-white/95 cursor-pointer"
+              >
+                <Plus size={13} />
+                <span>Add</span>
+              </button>
+
             </div>
-          )}
-        </>
+
+            {/* Error banner */}
+            {error && (
+              <div className="mb-4 px-4 py-3 rounded-xl flex items-center gap-2"
+                style={{ background: 'rgba(255,180,0,0.08)', border: '1px solid rgba(255,180,0,0.2)' }}>
+                <AlertCircle size={13} style={{ color: 'rgba(255,200,50,0.9)' }} />
+                <p className="text-[11px]" style={{ color: 'rgba(255,200,50,0.8)' }}>
+                  Backend offline — showing demo data. {error}
+                </p>
+              </div>
+            )}
+
+            {/* Representation Render: Grid, List or Compact */}
+            {loading ? (
+              <div className="text-center py-24">
+                <Loader2 size={24} className="animate-spin mx-auto mb-3 text-white/30" />
+                <p className="text-[13px] text-white/30">Loading leads…</p>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-24 rounded-2xl border border-dashed border-white/10" style={{ background: 'rgba(255,255,255,0.01)' }}>
+                <p className="text-[14px] text-white/40">No creators match your filters.</p>
+                <button onClick={() => setShowScrape(true)} className="mt-3 text-[12px] underline text-white/50 hover:text-white bg-transparent border-none cursor-pointer">
+                  Scrape a new profile →
+                </button>
+              </div>
+            ) : viewLayout === 'list' ? (
+              <div className="space-y-3">
+                {filtered.map((c) => (
+                  <CreatorRow
+                    key={c.id}
+                    creator={c}
+                    onAnalyze={handleAnalyze}
+                    onQualify={handleQualify}
+                    onSuppress={handleSuppress}
+                    onDelete={handleDelete}
+                    onViewAnalysis={handleViewAnalysis}
+                    analyzing={analyzing}
+                  />
+                ))}
+              </div>
+            ) : viewLayout === 'compact' ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                {filtered.map((c) => (
+                  <CreatorCompactCard
+                    key={c.id}
+                    creator={c}
+                    onAnalyze={handleAnalyze}
+                    onQualify={handleQualify}
+                    onSuppress={handleSuppress}
+                    onDelete={handleDelete}
+                    onViewAnalysis={handleViewAnalysis}
+                    analyzing={analyzing}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {filtered.map((c) => (
+                  <CreatorCard
+                    key={c.id}
+                    creator={c}
+                    onAnalyze={handleAnalyze}
+                    onQualify={handleQualify}
+                    onSuppress={handleSuppress}
+                    onDelete={handleDelete}
+                    onViewAnalysis={handleViewAnalysis}
+                    analyzing={analyzing}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Scrape modal */}

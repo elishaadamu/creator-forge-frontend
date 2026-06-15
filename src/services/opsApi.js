@@ -89,6 +89,9 @@ export const deleteCreator = (id) =>
 export const getCreator = (id) =>
   req('GET', `/creators/${id}`)
 
+export const addCreatorContact = (creatorId, contactType, value) =>
+  req('POST', `/creators/${creatorId}/contacts`, { contact_type: contactType, value, source: 'manual' })
+
 // ── Outreach / Queue ─────────────────────────────────────────────────────────
 
 export const getOutreachMessages = (params = {}) => {
@@ -111,6 +114,9 @@ export const sendOutreach = (id) =>
 export const updateOutreachDraft = (id, subject, body) =>
   req('PATCH', `/outreach/${id}`, { subject, body })
 
+export const submitOutreachDraft = (id) =>
+  req('POST', `/outreach/drafts/${id}/submit`)
+
 // ── Reply Inbox ──────────────────────────────────────────────────────────────
 
 export const getThreads = (params = {}) => {
@@ -120,6 +126,9 @@ export const getThreads = (params = {}) => {
 
 export const getThread = (id) =>
   req('GET', `/outreach/threads/${id}`)
+
+export const sendThreadReply = (threadId, body) =>
+  req('POST', `/outreach/threads/${threadId}/reply`, { body })
 
 // ── Campaigns ────────────────────────────────────────────────────────────────
 

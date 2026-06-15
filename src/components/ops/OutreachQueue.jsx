@@ -3,7 +3,7 @@ import {
   CheckCircle, XCircle, Edit3, Send, Loader2,
   AlertCircle, RefreshCw, Mail, ChevronDown, ChevronUp, Copy, Check
 } from 'lucide-react'
-import { getOutreachMessages, approveOutreach, rejectOutreach, sendOutreach, updateOutreachDraft } from '../../services/opsApi'
+import { getOutreachMessages, approveOutreach, rejectOutreach, sendOutreach, updateOutreachDraft, submitOutreachDraft, addCreatorContact } from '../../services/opsApi'
 
 const STATUS_STYLES = {
   draft:          { bg: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)', label: 'Draft' },
@@ -28,9 +28,11 @@ function CopyBtn({ text }) {
   )
 }
 
-function MessageCard({ msg, onApprove, onReject, onSend, working }) {
+function MessageCard({ msg, onApprove, onReject, onSend, onSubmit, onUpdate, onAddEmailAndSend, working }) {
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [addingEmail, setAddingEmail] = useState(false)
+  const [emailInput, setEmailInput] = useState('')
   const [subject, setSubject] = useState(msg.subject || '')
   const [body, setBody] = useState(msg.body || '')
   const s = STATUS_STYLES[msg.status] || STATUS_STYLES.draft
@@ -97,9 +99,28 @@ function MessageCard({ msg, onApprove, onReject, onSend, working }) {
               </button>
             </>
           )}
+          {['draft', 'rejected', 'failed'].includes(msg.status) && (
+            <button
+              onClick={e => { e.stopPropagation(); onSubmit(msg.id) }}
+              disabled={working === msg.id}
+              className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-semibold transition-all disabled:opacity-40 flex items-center gap-1"
+              style={{ background: 'rgba(250,204,21,0.15)', color: '#facc15', border: '1px solid rgba(250,204,21,0.25)' }}
+            >
+              {working === msg.id ? <Loader2 size={10} className="animate-spin" /> : <CheckCircle size={10} />}
+              Submit
+            </button>
+          )}
           {msg.status === 'approved' && (
             <button
-              onClick={e => { e.stopPropagation(); onSend(msg.id) }}
+              onClick={e => { 
+                e.stopPropagation(); 
+                if (!msg.contact_id) {
+                  setExpanded(true)
+                  setAddingEmail(true)
+                } else {
+                  onSend(msg.id) 
+                }
+              }}
               disabled={working === msg.id}
               className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-semibold transition-all disabled:opacity-40"
               style={{ background: 'rgba(96,165,250,0.15)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.25)' }}
@@ -117,6 +138,50 @@ function MessageCard({ msg, onApprove, onReject, onSend, working }) {
       {/* Expanded body */}
       {expanded && (
         <div className="p-5 space-y-4">
+          {msg.status === 'approved' && !msg.contact_id && addingEmail && (
+             <div className="px-4 py-3 rounded-xl border" style={{ background: 'rgba(96,165,250,0.08)', borderColor: 'rgba(96,165,250,0.18)' }}>
+                <p className="text-[12px] font-semibold text-blue-400 mb-2">No email address on file. Please add one to send:</p>
+                <div className="flex gap-2">
+                   <input 
+                     type="email" 
+                     placeholder="creator@example.com" 
+                     value={emailInput} 
+                     onChange={e => setEmailInput(e.target.value)}
+                     className="px-3 py-1.5 text-[12px] rounded-lg flex-1 outline-none"
+                     style={{ background: '#111', color: 'white', border: '1px solid rgba(255,255,255,0.12)' }}
+                   />
+                   <button
+                     onClick={() => {
+                       if (emailInput.includes('@')) {
+                         onAddEmailAndSend(msg.id, msg.creator_id, emailInput)
+                         setAddingEmail(false)
+                       }
+                     }}
+                     disabled={working === msg.id || !emailInput.includes('@')}
+                     className="flex items-center gap-1.5 text-[11px] px-4 py-1.5 rounded-lg font-semibold transition-all disabled:opacity-40"
+                     style={{ background: 'rgba(96,165,250,0.2)', color: '#60a5fa' }}
+                   >
+                     {working === msg.id ? <Loader2 size={10} className="animate-spin" /> : <Send size={10} />}
+                     Save Email & Send
+                   </button>
+                   <button
+                     onClick={() => setAddingEmail(false)}
+                     className="text-[11px] px-3"
+                     style={{ color: 'rgba(255,255,255,0.4)' }}
+                   >Cancel</button>
+                </div>
+             </div>
+          )}
+          {msg.status === 'failed' && msg.send_error && (
+            <div className="px-4 py-2.5 rounded-xl text-[11px] flex items-center gap-2 border"
+              style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.18)', color: '#f87171' }}>
+              <AlertCircle size={12} className="flex-shrink-0" />
+              <div>
+                <span className="font-semibold">Send Failure:</span> {msg.send_error}
+              </div>
+            </div>
+          )}
+
           {editing ? (
             <div className="space-y-3">
               <div>
@@ -140,12 +205,20 @@ function MessageCard({ msg, onApprove, onReject, onSend, working }) {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setEditing(false)}
-                  className="text-[12px] px-4 py-2 rounded-xl font-semibold text-black"
+                  onClick={async () => {
+                    await onUpdate(msg.id, subject, body)
+                    setEditing(false)
+                  }}
+                  disabled={working === msg.id}
+                  className="text-[12px] px-4 py-2 rounded-xl font-semibold text-black flex items-center gap-1.5 disabled:opacity-50"
                   style={{ background: 'white' }}
-                >Save</button>
+                >
+                  {working === msg.id && <Loader2 size={10} className="animate-spin" />}
+                  Save
+                </button>
                 <button
                   onClick={() => { setSubject(msg.subject || ''); setBody(msg.body || ''); setEditing(false) }}
+                  disabled={working === msg.id}
                   className="text-[12px] px-4 py-2 rounded-xl"
                   style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' }}
                 >Cancel</button>
@@ -160,7 +233,7 @@ function MessageCard({ msg, onApprove, onReject, onSend, working }) {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <CopyBtn text={`Subject: ${subject}\n\n${body}`} />
-                  {['draft', 'review_pending'].includes(msg.status) && (
+                  {['draft', 'review_pending', 'rejected', 'failed'].includes(msg.status) && (
                     <button
                       onClick={() => setEditing(true)}
                       className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg transition-all"
@@ -281,9 +354,10 @@ export default function OutreachQueue({ onCountChange }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
-  const [statusFilter, setStatusFilter] = useState('review_pending')
+  const [statusFilter, setStatusFilter] = useState('review_pending,approved')
   const [working, setWorking]   = useState(null)
   const [toast, setToast]       = useState(null)
+  const [pendingCount, setPendingCount] = useState(0)
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -298,7 +372,13 @@ export default function OutreachQueue({ onCountChange }) {
       const data = await getOutreachMessages(params)
       const list = Array.isArray(data) ? data : (data.messages || data.items || [])
       setMessages(list)
-      onCountChange?.(list.filter(m => m.status === 'review_pending').length)
+
+      // Get all pending count regardless of active filter to update badges
+      const pendingData = await getOutreachMessages({ status: 'review_pending' })
+      const pendingList = Array.isArray(pendingData) ? pendingData : (pendingData.messages || pendingData.items || [])
+      const count = pendingList.length
+      setPendingCount(count)
+      onCountChange?.(count)
     } catch (e) {
       setError(e.message)
       // Demo data
@@ -318,7 +398,9 @@ export default function OutreachQueue({ onCountChange }) {
       ]
       const filtered = statusFilter ? mock.filter(m => m.status === statusFilter) : mock
       setMessages(filtered)
-      onCountChange?.(filtered.filter(m => m.status === 'review_pending').length)
+      const count = filtered.filter(m => m.status === 'review_pending').length
+      setPendingCount(count)
+      onCountChange?.(count)
     }
     setLoading(false)
   }, [statusFilter])
@@ -366,7 +448,46 @@ export default function OutreachQueue({ onCountChange }) {
     load()
   }
 
-  const pendingCount = messages.filter(m => m.status === 'review_pending').length
+  const handleUpdate = async (id, subject, body) => {
+    setWorking(id)
+    try {
+      await updateOutreachDraft(id, subject, body)
+      showToast('Outreach draft updated successfully!', 'success')
+    } catch (e) {
+      console.warn(e)
+      showToast(e.message || 'Failed to update draft.', 'error')
+    }
+    setWorking(null)
+    load()
+  }
+
+  const handleSubmit = async (id) => {
+    setWorking(id)
+    try {
+      await submitOutreachDraft(id)
+      showToast('Outreach draft submitted for review!', 'success')
+    } catch (e) {
+      console.warn(e)
+      showToast(e.message || 'Failed to submit draft.', 'error')
+    }
+    setWorking(null)
+    load()
+  }
+
+  const handleAddEmailAndSend = async (id, creatorId, email) => {
+    setWorking(id)
+    try {
+      await addCreatorContact(creatorId, 'email', email)
+      showToast('Email address added!', 'success')
+      await sendOutreach(id)
+      showToast('Outreach email sent successfully!', 'success')
+    } catch (e) {
+      console.warn(e)
+      showToast(e.message || 'Failed to add email and send.', 'error')
+    }
+    setWorking(null)
+    load()
+  }
 
   return (
     <div className="p-6">
@@ -386,10 +507,13 @@ export default function OutreachQueue({ onCountChange }) {
             className="px-3 py-2 rounded-xl text-[12px] outline-none"
             style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
           >
+            <option value="review_pending,approved">Needs Review & Approved</option>
             <option value="review_pending">Needs Review</option>
             <option value="draft">Drafts</option>
             <option value="approved">Approved</option>
             <option value="sent">Sent</option>
+            <option value="failed">Failed</option>
+            <option value="rejected">Rejected</option>
             <option value="">All</option>
           </select>
           <button
@@ -441,6 +565,9 @@ export default function OutreachQueue({ onCountChange }) {
               onApprove={handleApprove}
               onReject={handleReject}
               onSend={handleSend}
+              onSubmit={handleSubmit}
+              onUpdate={handleUpdate}
+              onAddEmailAndSend={handleAddEmailAndSend}
               working={working}
             />
           ))}
