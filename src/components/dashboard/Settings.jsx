@@ -200,11 +200,16 @@ export default function Settings() {
   const [profileHandle, setProfileHandle] = useState(creatorData.handle || '')
   const [profileEmail, setProfileEmail] = useState(userProfile?.email || '')
   const [profileNiche, setProfileNiche] = useState(creatorData.niche || '')
+  const [metaClientId, setMetaClientId] = useState(creatorData.meta_client_id || '')
+  const [metaClientSecret, setMetaClientSecret] = useState(creatorData.meta_client_secret || '')
+  const [showMetaSecret, setShowMetaSecret] = useState(false)
 
   useEffect(() => {
     setProfileName(creatorData.name || '')
     setProfileHandle(creatorData.handle || '')
     setProfileNiche(creatorData.niche || '')
+    setMetaClientId(creatorData.meta_client_id || '')
+    setMetaClientSecret(creatorData.meta_client_secret || '')
   }, [creatorData])
 
   useEffect(() => {
@@ -306,6 +311,16 @@ export default function Settings() {
   const handleSaveApiKeys = async () => {
     updateAiKeys({ geminiKey: gemKey, togetherKey, openaiKey: openaiKey, anthropicKey })
 
+    const updatedCreator = {
+      ...creatorData,
+      meta_client_id: metaClientId,
+      meta_client_secret: metaClientSecret
+    }
+    updateCreator({
+      meta_client_id: metaClientId,
+      meta_client_secret: metaClientSecret
+    })
+
     if (userProfile?.username) {
       const hasAnyAiKey = !!(gemKey.trim() || togetherKey.trim() || openaiKey.trim() || anthropicKey.trim())
       if (consentSave) {
@@ -320,6 +335,13 @@ export default function Settings() {
         setAiKeysConsent(false)
         await deleteAiKeysFromDb(userProfile.username)
       }
+
+      // Sync updated creatorData to DB
+      setTimeout(() => {
+        if (syncSessionToDb) {
+          syncSessionToDb(userProfile.username, updatedCreator)
+        }
+      }, 100)
     }
 
     setKeysSaved(true)
@@ -686,6 +708,81 @@ export default function Settings() {
                     <button
                       onClick={() => handleDeleteIndividualKey('together')}
                       title="Delete key"
+                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Meta Client ID */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[12px] font-semibold text-white">Meta App ID (Client ID)</p>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>OAuth</span>
+                    <span className="text-[11px] text-white/40 font-normal">(optional)</span>
+                  </div>
+                  {metaClientId.trim() && (
+                    <div className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(100,220,100,0.8)' }}>
+                      <Check size={10} /> Connected
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
+                  style={{ background: '#111', borderColor: metaClientId.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
+                    placeholder="Enter Meta App ID..."
+                    value={metaClientId}
+                    onChange={e => setMetaClientId(e.target.value)}
+                  />
+                  {metaClientId && (
+                    <button
+                      onClick={() => setMetaClientId('')}
+                      title="Clear"
+                      className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Meta Client Secret */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[12px] font-semibold text-white">Meta App Secret (Client Secret)</p>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>OAuth</span>
+                    <span className="text-[11px] text-white/40 font-normal">(optional)</span>
+                  </div>
+                  {metaClientSecret.trim() && (
+                    <div className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(100,220,100,0.8)' }}>
+                      <Check size={10} /> Connected
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
+                  style={{ background: '#111', borderColor: metaClientSecret.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                  <input
+                    type={showMetaSecret ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20 font-mono"
+                    placeholder="Enter Meta App Secret..."
+                    value={metaClientSecret}
+                    onChange={e => setMetaClientSecret(e.target.value)}
+                  />
+                  <button onClick={() => setShowMetaSecret(v => !v)} className="text-white/25 hover:text-white/60 transition-colors mr-1">
+                    {showMetaSecret ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                  {metaClientSecret && (
+                    <button
+                      onClick={() => setMetaClientSecret('')}
+                      title="Clear"
                       className="text-white/25 hover:text-red-400 transition-colors flex-shrink-0"
                     >
                       <Trash2 size={14} />
