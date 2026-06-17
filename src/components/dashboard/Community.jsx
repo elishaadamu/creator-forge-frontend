@@ -53,17 +53,8 @@ const COMMUNITY_CONTENT_TYPES = [
 const DAYS_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-function MiniCalendar({ onSelect, onClose }) {
+function MiniCalendar({ onSelect, scheduledPosts = [] }) {
   const [viewDate, setViewDate] = useState(new Date())
-  const ref = useRef(null)
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) onClose()
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [onClose])
 
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
@@ -80,37 +71,27 @@ function MiniCalendar({ onSelect, onClose }) {
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1))
 
   return (
-    <div
-      ref={ref}
-      className="absolute z-50 mt-1 rounded-xl border shadow-2xl p-3"
-      style={{
-        background: '#0e0e0e',
-        borderColor: 'rgba(255,255,255,0.1)',
-        width: 260,
-        right: 0,
-        top: '100%',
-      }}
-    >
+    <div className="w-full text-white">
       {/* Month nav */}
-      <div className="flex items-center justify-between mb-2 px-1">
-        <button onClick={prevMonth} className="w-6 h-6 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
+      <div className="flex items-center justify-between mb-3 px-1">
+        <button onClick={prevMonth} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all border border-white/5">
           <ChevronRight size={13} className="rotate-180" />
         </button>
-        <span className="text-[12px] font-semibold text-white">{MONTHS[month]} {year}</span>
-        <button onClick={nextMonth} className="w-6 h-6 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
+        <span className="text-[12px] font-semibold text-white tracking-wide">{MONTHS[month]} {year}</span>
+        <button onClick={nextMonth} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all border border-white/5">
           <ChevronRight size={13} />
         </button>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7 gap-0.5 mb-1">
+      <div className="grid grid-cols-7 gap-1 mb-1">
         {DAYS_SHORT.map(d => (
-          <div key={d} className="text-center text-[9px] font-semibold text-white/25 py-1">{d}</div>
+          <div key={d} className="text-center text-[10px] font-bold text-white/20 py-1">{d}</div>
         ))}
       </div>
 
       {/* Day grid */}
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-1">
         {cells.map((day, i) => {
           if (!day) return <div key={`empty-${i}`} />
           const dateObj = new Date(year, month, day)
@@ -118,34 +99,48 @@ function MiniCalendar({ onSelect, onClose }) {
           const isPast = dateObj < today
           const isToday = dateObj.getTime() === today.getTime()
 
+          // Check if this date has scheduled posts
+          const postsForDay = scheduledPosts.filter(p => {
+            const d = new Date(p.date)
+            d.setHours(0, 0, 0, 0)
+            return d.getTime() === dateObj.getTime()
+          })
+          const hasPost = postsForDay.length > 0
+
           return (
             <button
               key={day}
               disabled={isPast}
-              onClick={() => {
-                onSelect(dateObj)
-                onClose()
-              }}
-              className="w-full aspect-square rounded-lg flex items-center justify-center text-[11px] font-medium transition-all duration-100"
+              onClick={() => onSelect(dateObj)}
+              className="relative w-full aspect-square rounded-lg flex flex-col items-center justify-center text-[11px] font-semibold transition-all duration-100"
               style={{
-                color: isPast ? 'rgba(255,255,255,0.15)' : isToday ? 'white' : 'rgba(255,255,255,0.6)',
-                background: isToday ? 'rgba(255,255,255,0.12)' : 'transparent',
+                color: isPast ? 'rgba(255,255,255,0.15)' : isToday ? 'white' : 'rgba(255,255,255,0.7)',
+                background: isToday ? 'rgba(255,255,255,0.08)' : 'transparent',
+                border: isToday ? '1px solid rgba(255,255,255,0.15)' : '1px solid transparent',
                 cursor: isPast ? 'not-allowed' : 'pointer',
               }}
               onMouseEnter={e => {
                 if (!isPast) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
                   e.currentTarget.style.color = 'white'
                 }
               }}
               onMouseLeave={e => {
                 if (!isPast) {
-                  e.currentTarget.style.background = isToday ? 'rgba(255,255,255,0.12)' : 'transparent'
-                  e.currentTarget.style.color = isToday ? 'white' : 'rgba(255,255,255,0.6)'
+                  e.currentTarget.style.background = isToday ? 'rgba(255,255,255,0.08)' : 'transparent'
+                  e.currentTarget.style.borderColor = isToday ? 'rgba(255,255,255,0.15)' : 'transparent'
+                  e.currentTarget.style.color = isToday ? 'white' : 'rgba(255,255,255,0.7)'
                 }
               }}
             >
-              {day}
+              <span>{day}</span>
+              {hasPost && (
+                <span 
+                  className="absolute bottom-1 w-1 h-1 rounded-full bg-purple-400"
+                  title={`${postsForDay.length} post(s) scheduled`}
+                />
+              )}
             </button>
           )
         })}
@@ -163,8 +158,10 @@ export default function Community() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
-  const [showCalendar, setShowCalendar] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
+  const [highlightCalendar, setHighlightCalendar] = useState(false)
+  const [expandedPostId, setExpandedPostId] = useState(null)
+  const calendarRef = useRef(null)
 
   const handle = creatorData?.handle || '@creator'
   const productName = creatorData.productName || 'Creator Academy'
@@ -220,7 +217,6 @@ export default function Community() {
   const handleGenerate = async (type) => {
     setSelectedType(type)
     setGenerated(null)
-    setShowCalendar(false)
 
     if (!hasTextKey()) {
       if (setApiModalOpen) setApiModalOpen(true)
@@ -244,6 +240,11 @@ export default function Community() {
     }
   }
 
+  const handleScheduleClick = () => {
+    const today = new Date()
+    handleScheduleDate(today)
+  }
+
   const handleCopy = () => {
     if (!generated) return
     navigator.clipboard.writeText(generated)
@@ -252,9 +253,13 @@ export default function Community() {
   }
 
   const handleScheduleDate = (date) => {
-    if (!generated || !selectedType) return
+    if (!generated || !selectedType) {
+      if (triggerToast) triggerToast('Generate a post first, then select a date to schedule', 'info')
+      return
+    }
+    const postId = Date.now().toString()
     const post = {
-      id: Date.now().toString(),
+      id: postId,
       type: selectedType.label,
       typeId: selectedType.id,
       content: generated.slice(0, 120) + (generated.length > 120 ? '…' : ''),
@@ -264,6 +269,7 @@ export default function Community() {
     }
     const updated = [...scheduledPosts, post].sort((a, b) => new Date(a.date) - new Date(b.date))
     saveScheduledPosts(updated)
+    setExpandedPostId(postId)
     if (triggerToast) triggerToast(`Scheduled "${selectedType.label}" for ${post.dateLabel}`, 'success')
   }
 
@@ -380,31 +386,57 @@ export default function Community() {
       </div>
 
       <div className="grid lg:grid-cols-[280px_1fr] gap-5">
-        {/* Left: Content type grid */}
-        <div>
-          <p className="forge-label mb-3">Generate</p>
-          <div className="space-y-2">
-            {COMMUNITY_CONTENT_TYPES.map(type => (
-              <button
-                key={type.id}
-                onClick={() => handleGenerate(type)}
-                className="w-full text-left flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-150"
-                style={{
-                  background: selectedType?.id === type.id ? 'rgba(255,255,255,0.07)' : '#111',
-                  borderColor: selectedType?.id === type.id ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.07)',
-                }}
-                onMouseEnter={e => { if (selectedType?.id !== type.id) { e.currentTarget.style.background = '#161616'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' } }}
-                onMouseLeave={e => { if (selectedType?.id !== type.id) { e.currentTarget.style.background = '#111'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' } }}
-              >
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                  <type.icon size={13} className="text-white/50" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-white">{type.label}</p>
-                  <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{type.description}</p>
-                </div>
-              </button>
-            ))}
+        {/* Left: Sidebar (Generate Categories + Calendar) */}
+        <div className="space-y-5">
+          <div>
+            <p className="forge-label mb-3">Generate</p>
+            <div className="space-y-2">
+              {COMMUNITY_CONTENT_TYPES.map(type => (
+                <button
+                  key={type.id}
+                  onClick={() => handleGenerate(type)}
+                  className="w-full text-left flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-150"
+                  style={{
+                    background: selectedType?.id === type.id ? 'rgba(255,255,255,0.07)' : '#111',
+                    borderColor: selectedType?.id === type.id ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.07)',
+                  }}
+                  onMouseEnter={e => { if (selectedType?.id !== type.id) { e.currentTarget.style.background = '#161616'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' } }}
+                  onMouseLeave={e => { if (selectedType?.id !== type.id) { e.currentTarget.style.background = '#111'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' } }}
+                >
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                    <type.icon size={13} className="text-white/50" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-white">{type.label}</p>
+                    <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{type.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Calendar Widget */}
+          <div
+            ref={calendarRef}
+            className="rounded-xl border p-4 transition-all duration-300"
+            style={{
+              background: '#111',
+              borderColor: highlightCalendar ? 'rgba(168,85,247,0.6)' : 'rgba(255,255,255,0.07)',
+              boxShadow: highlightCalendar ? '0 0 15px rgba(168,85,247,0.15)' : 'none',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3 pb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <p className="text-[11px] font-bold text-white/40 uppercase tracking-wider m-0">Content Calendar</p>
+              {generated && (
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 animate-pulse font-medium">
+                  Select date to schedule
+                </span>
+              )}
+            </div>
+            <MiniCalendar
+              onSelect={handleScheduleDate}
+              scheduledPosts={scheduledPosts}
+            />
           </div>
         </div>
 
@@ -446,26 +478,18 @@ export default function Community() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 px-5 py-3 border-t relative" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+              <div className="flex items-center gap-2 px-5 py-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
                 <button onClick={() => handleGenerate(selectedType)} className="forge-btn-secondary text-[12px] py-2 px-4 gap-1.5">
                   <RefreshCw size={11} />
                   Regenerate
                 </button>
-                <div className="ml-auto relative">
-                  <button
-                    onClick={() => setShowCalendar(o => !o)}
-                    className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5"
-                  >
-                    <Calendar size={11} />
-                    Schedule
-                  </button>
-                  {showCalendar && (
-                    <MiniCalendar
-                      onSelect={handleScheduleDate}
-                      onClose={() => setShowCalendar(false)}
-                    />
-                  )}
-                </div>
+                <button
+                  onClick={handleScheduleClick}
+                  className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5 ml-auto"
+                >
+                  <Calendar size={11} />
+                  Schedule Post
+                </button>
               </div>
             </div>
           ) : (
@@ -486,30 +510,77 @@ export default function Community() {
                 {scheduledPosts.map(post => (
                   <div
                     key={post.id}
-                    className="flex items-start gap-3 p-3.5 rounded-xl border group"
+                    onClick={() => setExpandedPostId(prev => prev === post.id ? null : post.id)}
+                    className="flex flex-col p-3.5 rounded-xl border group cursor-pointer transition-all duration-150"
                     style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}
                   >
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                      <Clock size={13} className="text-white/40" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[12px] font-semibold text-white">{post.type}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(139,92,246,0.12)', color: '#c084fc' }}>
-                          {post.dateLabel}
-                        </span>
+                    <div className="flex items-start gap-3 w-full">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                        <Clock size={13} className="text-white/40" />
                       </div>
-                      <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{post.content}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[12px] font-semibold text-white">{post.type}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(139,92,246,0.12)', color: '#c084fc' }}>
+                            {post.dateLabel}
+                          </span>
+                        </div>
+                        {expandedPostId !== post.id && (
+                          <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{post.content}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0 self-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteScheduled(post.id)
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ color: 'rgba(255,255,255,0.3)' }}
+                          onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)' }}
+                          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                        <ChevronDown
+                          size={14}
+                          className={`text-white/30 transition-transform duration-200 ${expandedPostId === post.id ? 'rotate-180' : ''}`}
+                        />
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleDeleteScheduled(post.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ color: 'rgba(255,255,255,0.3)' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
+
+                    {/* Accordion content */}
+                    {expandedPostId === post.id && (
+                      <div
+                        className="mt-3 pt-3 w-full border-t border-white/5"
+                        style={{
+                          animation: 'slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) both',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <style>{`
+                          @keyframes slideDown {
+                            from { opacity: 0; transform: translateY(-4px); }
+                            to { opacity: 1; transform: translateY(0); }
+                          }
+                        `}</style>
+                        <pre className="text-[12px] whitespace-pre-wrap leading-relaxed text-white/70 font-mono bg-black/35 p-3 rounded-lg overflow-x-auto border border-white/5">
+                          {post.fullContent || post.content}
+                        </pre>
+                        <div className="flex gap-2 justify-end mt-2">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(post.fullContent || post.content)
+                              if (triggerToast) triggerToast('Copied content to clipboard', 'success')
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all border border-white/5"
+                          >
+                            <Copy size={11} />
+                            Copy content
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
