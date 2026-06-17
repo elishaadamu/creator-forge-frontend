@@ -113,6 +113,58 @@ function SkeletonCard() {
   )
 }
 
+const PLATFORM_COLORS = {
+  Instagram: {
+    bg: 'rgba(225, 48, 108, 0.07)',
+    border: 'rgba(225, 48, 108, 0.22)',
+    hoverBorder: 'rgba(225, 48, 108, 0.45)',
+    badgeBg: 'rgba(225, 48, 108, 0.16)',
+    badgeColor: '#ff8bb5'
+  },
+  Twitter: {
+    bg: 'rgba(96, 165, 250, 0.06)',
+    border: 'rgba(96, 165, 250, 0.2)',
+    hoverBorder: 'rgba(96, 165, 250, 0.4)',
+    badgeBg: 'rgba(96, 165, 250, 0.12)',
+    badgeColor: '#93c5fd'
+  },
+  YouTube: {
+    bg: 'rgba(255, 59, 48, 0.06)',
+    border: 'rgba(255, 59, 48, 0.2)',
+    hoverBorder: 'rgba(255, 59, 48, 0.4)',
+    badgeBg: 'rgba(255, 59, 48, 0.12)',
+    badgeColor: '#fca5a5'
+  },
+  TikTok: {
+    bg: 'rgba(0, 242, 234, 0.05)',
+    border: 'rgba(0, 242, 234, 0.18)',
+    hoverBorder: 'rgba(0, 242, 234, 0.38)',
+    badgeBg: 'rgba(0, 242, 234, 0.1)',
+    badgeColor: '#67e8f9'
+  },
+  LinkedIn: {
+    bg: 'rgba(10, 102, 194, 0.06)',
+    border: 'rgba(10, 102, 194, 0.2)',
+    hoverBorder: 'rgba(10, 102, 194, 0.4)',
+    badgeBg: 'rgba(10, 102, 194, 0.12)',
+    badgeColor: '#93c5fd'
+  },
+  Email: {
+    bg: 'rgba(255, 255, 255, 0.04)',
+    border: 'rgba(255, 255, 255, 0.12)',
+    hoverBorder: 'rgba(255, 255, 255, 0.25)',
+    badgeBg: 'rgba(255, 255, 255, 0.07)',
+    badgeColor: 'rgba(255, 255, 255, 0.7)'
+  },
+  Podcast: {
+    bg: 'rgba(139, 92, 246, 0.06)',
+    border: 'rgba(139, 92, 246, 0.2)',
+    hoverBorder: 'rgba(139, 92, 246, 0.45)',
+    badgeBg: 'rgba(139, 92, 246, 0.12)',
+    badgeColor: '#c084fc'
+  }
+}
+
 function PostCard({ post, onCopy, onSchedule, onRegenerate, isRegenerating, copiedId, onOpen, onDelete }) {
   const [showWhy, setShowWhy] = useState(false)
   const theme = THEMES[post.theme]
@@ -122,20 +174,34 @@ function PostCard({ post, onCopy, onSchedule, onRegenerate, isRegenerating, copi
     return <SkeletonCard />
   }
 
+  const colors = PLATFORM_COLORS[post.platform] || {
+    bg: 'var(--theme-card-bg)',
+    border: 'var(--theme-border-color)',
+    hoverBorder: 'var(--theme-accent)',
+    badgeBg: 'rgba(255, 255, 255, 0.08)',
+    badgeColor: 'rgba(255, 255, 255, 0.5)'
+  }
+
   return (
     <div
       className="rounded-xl border p-2.5 group cursor-pointer transition-all duration-150 relative"
-      style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}
+      style={{ background: colors.bg, borderColor: colors.border }}
       onClick={() => onOpen && onOpen(post)}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--theme-accent)'; e.currentTarget.style.background = 'var(--theme-card-bg)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--theme-border-color)'; e.currentTarget.style.background = 'var(--theme-card-bg)' }}
+      onMouseEnter={e => { 
+        e.currentTarget.style.borderColor = colors.hoverBorder
+        e.currentTarget.style.filter = 'brightness(1.15)'
+      }}
+      onMouseLeave={e => { 
+        e.currentTarget.style.borderColor = colors.border
+        e.currentTarget.style.filter = 'none'
+      }}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           <span
             className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-            style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
+            style={{ background: colors.badgeBg, color: colors.badgeColor }}
           >
             {PLATFORM_ABBR[post.platform]}
           </span>
@@ -840,7 +906,6 @@ export default function ContentCalendar() {
                 style={{
                   background: isToday ? 'rgba(255,255,255,0.02)' : 'transparent',
                   border: isToday ? '1px solid rgba(255,255,255,0.04)' : '1px solid transparent',
-                  borderLeft: isToday ? '2px solid var(--theme-accent)' : undefined,
                 }}>
                 {/* Mobile inline day label */}
                 <div className="sm:hidden flex items-center justify-between pb-1.5 mb-1 border-b" style={{ borderColor: isToday ? 'var(--theme-accent)' : 'rgba(255,255,255,0.07)' }}>
