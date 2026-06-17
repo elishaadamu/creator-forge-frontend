@@ -446,43 +446,43 @@ export default function Settings() {
   const sections = ['profile', 'api-keys', 'automations', 'notifications', 'billing']
 
   return (
-    <div className="flex h-full">
+    <div className="flex flex-col md:flex-row h-full overflow-hidden w-full">
       {/* Left nav */}
       <div
-        className="w-44 border-r py-6 flex-shrink-0"
-        style={{ borderColor: 'rgba(255,255,255,0.07)' }}
+        className="w-full md:w-44 border-b md:border-b-0 md:border-r py-3 md:py-6 flex-shrink-0 flex md:flex-col overflow-x-auto md:overflow-x-visible gap-1 custom-scrollbar"
+        style={{ borderColor: 'rgba(255,255,255,0.07)', scrollbarWidth: 'none' }}
       >
-        <p className="forge-label px-4 mb-3">Settings</p>
-        <div className="space-y-0.5 px-2">
-          {sections.map(s => (
-            <button
-              key={s}
-              onClick={() => setActiveSection(s)}
-              className="w-full text-left px-3 py-2 rounded-xl text-[13px] font-medium capitalize transition-all duration-150"
-              style={{
-                background: activeSection === s ? 'rgba(255,255,255,0.08)' : 'transparent',
-                color: activeSection === s ? 'white' : 'rgba(255,255,255,0.4)',
-                borderLeft: activeSection === s ? '2px solid white' : '2px solid transparent',
-              }}
-              onMouseEnter={e => { if (activeSection !== s) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-              onMouseLeave={e => { if (activeSection !== s) e.currentTarget.style.background = 'transparent' }}
-            >
-              {s}
-              {s === 'automations' && activeAutomationCount > 0 && (
-                <span
-                  className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                  style={{ background: 'white', color: 'black' }}
-                >
-                  {activeAutomationCount}
-                </span>
-              )}
-            </button>
-          ))}
+        <p className="forge-label px-4 mb-3 hidden md:block">Settings</p>
+        <div className="flex md:flex-col px-2 gap-1.5 min-w-max md:min-w-0 w-full">
+          {sections.map(s => {
+            const isActive = activeSection === s
+            return (
+              <button
+                key={s}
+                onClick={() => setActiveSection(s)}
+                className={`px-3.5 py-2 rounded-lg md:rounded-xl text-[13px] font-medium capitalize transition-all duration-150 whitespace-nowrap text-center md:text-left flex-shrink-0 flex items-center justify-center md:justify-start border-b-2 md:border-b-0 md:border-l-2 ${
+                  isActive 
+                    ? 'border-white bg-white/[0.08] text-white' 
+                    : 'border-transparent text-white/40 hover:text-white/60 hover:bg-white/[0.04]'
+                }`}
+              >
+                {s}
+                {s === 'automations' && activeAutomationCount > 0 && (
+                  <span
+                    className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                    style={{ background: 'white', color: 'black' }}
+                  >
+                    {activeAutomationCount}
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
       </div>
 
       {/* Right content */}
-      <div className="flex-1 overflow-y-auto p-6 max-w-xl">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-xl">
 
         {/* ─── PROFILE ─────────────────────────────────────────── */}
         {activeSection === 'profile' && (

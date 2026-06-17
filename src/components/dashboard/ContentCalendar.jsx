@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useForge, useBgJob } from '../../App'
-import { RefreshCw, Copy, Check, Plus, Sparkles, ChevronLeft, ChevronRight, Info, Calendar, AlertCircle, X, Pencil } from 'lucide-react'
+import { RefreshCw, Copy, Check, Plus, Sparkles, ChevronLeft, ChevronRight, Info, Calendar, AlertCircle, X, Pencil, Trash2 } from 'lucide-react'
 import { generateContentCalendar, generateSingleCalendarPost, hasTextKey, generateStudioContent } from '../../services/ai'
 
 
@@ -113,7 +113,7 @@ function SkeletonCard() {
   )
 }
 
-function PostCard({ post, onCopy, onSchedule, onRegenerate, isRegenerating, copiedId, onOpen }) {
+function PostCard({ post, onCopy, onSchedule, onRegenerate, isRegenerating, copiedId, onOpen, onDelete }) {
   const [showWhy, setShowWhy] = useState(false)
   const theme = THEMES[post.theme]
   const status = STATUS_STYLES[post.status]
@@ -184,8 +184,8 @@ function PostCard({ post, onCopy, onSchedule, onRegenerate, isRegenerating, copi
             title={copiedId === post.id ? "Copied!" : "Copy post text"}
             className="p-1 rounded transition-colors"
             style={{ color: 'rgba(255,255,255,0.4)' }}
-            onMouseEnter={e => { e.target.style.color = 'white' }}
-            onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'white' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
           >
             {copiedId === post.id ? <Check size={10} /> : <Copy size={10} />}
           </button>
@@ -195,8 +195,8 @@ function PostCard({ post, onCopy, onSchedule, onRegenerate, isRegenerating, copi
             title="Regenerate this specific post draft"
             className="p-1 rounded transition-colors disabled:opacity-40"
             style={{ color: 'rgba(255,255,255,0.4)' }}
-            onMouseEnter={e => { if (!isRegenerating) e.target.style.color = 'white' }}
-            onMouseLeave={e => { if (!isRegenerating) e.target.style.color = 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={e => { if (!isRegenerating) e.currentTarget.style.color = 'white' }}
+            onMouseLeave={e => { if (!isRegenerating) e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
           >
             {isRegenerating ? (
               <RefreshCw size={10} className="animate-spin text-white" />
@@ -209,10 +209,25 @@ function PostCard({ post, onCopy, onSchedule, onRegenerate, isRegenerating, copi
             title="Queue/schedule post draft"
             className="p-1 rounded transition-colors"
             style={{ color: 'rgba(255,255,255,0.4)' }}
-            onMouseEnter={e => { e.target.style.color = 'white' }}
-            onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'white' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
           >
             <Calendar size={10} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (window.confirm('Delete this post?')) {
+                onDelete(post.id)
+              }
+            }}
+            title="Delete post"
+            className="p-1 rounded transition-colors"
+            style={{ color: 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'rgba(248,113,113,1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
+          >
+            <Trash2 size={10} />
           </button>
         </div>
       </div>
@@ -659,25 +674,43 @@ export default function ContentCalendar() {
     setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
   }
 
+  const handleDeletePost = (postId) => {
+    setCalendar(prev => {
+      if (!prev) return null
+      const updated = prev.map(d => ({
+        ...d,
+        posts: d.posts.filter(p => p.id !== postId)
+      }))
+      const h = creatorData?.handle || 'default'
+      const cacheKey = `forge_calendar_${h}_${activeGoal}_w${week}`
+      localStorage.setItem(cacheKey, JSON.stringify(updated))
+      if (triggerToast) triggerToast('Post deleted from calendar', 'success')
+      return updated
+    })
+    setSelectedPost(null)
+    setSelectedDay(null)
+    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+  }
+
   const totalPosts = calendar ? calendar.reduce((s, d) => s + (d.posts ? d.posts.length : 0), 0) : 0
   const scheduled = calendar ? calendar.reduce((s, d) => s + (d.posts ? d.posts.filter(p => p.status === 'scheduled').length : 0), 0) : 0
   const drafts = calendar ? calendar.reduce((s, d) => s + (d.posts ? d.posts.filter(p => p.status === 'draft').length : 0), 0) : 0
 
 
   return (
-    <div className="p-6 max-w-6xl">
+    <div className="p-3 sm:p-6 max-w-6xl">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6 gap-3">
         <div>
-          <p className="forge-label mb-3">Content Calendar</p>
-          <h2 className="forge-heading mb-1.5" style={{ fontSize: 'clamp(22px, 3vw, 30px)', letterSpacing: '-0.03em' }}>
+          <p className="forge-label mb-2 sm:mb-3">Content Calendar</p>
+          <h2 className="forge-heading mb-1 sm:mb-1.5" style={{ fontSize: 'clamp(20px, 3vw, 30px)', letterSpacing: '-0.03em' }}>
             This week's content plan
           </h2>
-          <p className="text-[14px]" style={{ color: 'rgba(255,255,255,0.38)' }}>
+          <p className="text-[13px] sm:text-[14px]" style={{ color: 'rgba(255,255,255,0.38)' }}>
             Forge built a full week around your launch goal. Click any slot to edit.
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
           {calJob.status === 'running' && (
             <div className="flex items-center gap-2">
               <span className="text-[10px] flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
@@ -695,12 +728,12 @@ export default function ContentCalendar() {
           <button
             onClick={handleRegenerateWeek}
             disabled={calJob.status === 'running' || isLoading}
-            className="forge-btn-secondary text-[13px] py-2.5 gap-2"
+            className="forge-btn-secondary text-[12px] sm:text-[13px] py-2 sm:py-2.5 gap-2"
           >
             <RefreshCw size={13} className={calJob.status === 'running' || isLoading ? 'animate-spin' : ''} />
             {calJob.status === 'running' ? 'AI working…' : 'Regenerate'}
           </button>
-          <button onClick={handleAddPost} className="forge-btn-primary text-[13px] py-2.5 gap-2">
+          <button onClick={handleAddPost} className="forge-btn-primary text-[12px] sm:text-[13px] py-2 sm:py-2.5 gap-2">
             <Plus size={13} />
             Add post
           </button>
@@ -708,7 +741,7 @@ export default function ContentCalendar() {
       </div>
 
       {!hasTextKey() && (
-        <div className="mb-6 p-4 rounded-xl border flex items-center justify-between gap-4" style={{ background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.15)' }}>
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl border flex items-center justify-between gap-3 sm:gap-4" style={{ background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.15)' }}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
               <AlertCircle size={16} className="text-red-400" />
@@ -722,11 +755,11 @@ export default function ContentCalendar() {
       )}
 
       {/* Controls */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-5 gap-3">
         {/* Goal remix */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[12px]" style={{ color: 'rgba(255,255,255,0.3)' }}>Goal:</span>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             {goals.map(g => (
               <button key={g} onClick={() => setActiveGoal(g)}
                 disabled={isLoading}
@@ -760,7 +793,7 @@ export default function ContentCalendar() {
       </div>
 
       {/* Theme legend */}
-      <div className="flex items-center gap-3 mb-5 flex-wrap">
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-5 flex-wrap">
         <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>Themes:</span>
         {Object.entries(THEMES).map(([key, t]) => (
           <div key={key} className="flex items-center gap-1">
@@ -770,15 +803,15 @@ export default function ContentCalendar() {
         ))}
       </div>
 
-      {/* 7-day grid */}
-      <div className="grid grid-cols-7 gap-2">
-        {/* Day headers */}
+      {/* 7-day grid — responsive via CSS */}
+      <div className="calendar-grid grid grid-cols-7 gap-2">
+        {/* Day headers (hidden on mobile via CSS) */}
         {DAYS.map((day, i) => {
           const dateObj = weekDates[i]
           const dateStr = dateObj ? dateObj.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }) : ''
           const isToday = week === 0 && dateObj && dateObj.toDateString() === new Date().toDateString()
           return (
-            <div key={day} className="pb-2 border-b text-center" style={{ borderColor: isToday ? 'var(--theme-accent)' : 'rgba(255,255,255,0.07)' }}>
+            <div key={day} className="calendar-day-header pb-2 border-b text-center" style={{ borderColor: isToday ? 'var(--theme-accent)' : 'rgba(255,255,255,0.07)' }}>
               <span className="text-[12px] font-semibold block" style={{ color: isToday ? 'var(--theme-accent)' : 'white' }}>
                 {day}
               </span>
@@ -801,12 +834,30 @@ export default function ContentCalendar() {
           calendar.map((dayData, dayIdx) => {
             const dateObj = weekDates[dayIdx]
             const isToday = week === 0 && dateObj && dateObj.toDateString() === new Date().toDateString()
+            const dateStr = dateObj ? dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : dayData.day
             return (
               <div key={dayData.day} className="space-y-2 pt-2 px-1 rounded-xl transition-all duration-150"
                 style={{
                   background: isToday ? 'rgba(255,255,255,0.02)' : 'transparent',
-                  border: isToday ? '1px solid rgba(255,255,255,0.04)' : '1px solid transparent'
+                  border: isToday ? '1px solid rgba(255,255,255,0.04)' : '1px solid transparent',
+                  borderLeft: isToday ? '2px solid var(--theme-accent)' : undefined,
                 }}>
+                {/* Mobile inline day label */}
+                <div className="sm:hidden flex items-center justify-between pb-1.5 mb-1 border-b" style={{ borderColor: isToday ? 'var(--theme-accent)' : 'rgba(255,255,255,0.07)' }}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-bold" style={{ color: isToday ? 'var(--theme-accent)' : 'white' }}>
+                      {dateStr}
+                    </span>
+                    {isToday && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-accent)' }}>
+                        Today
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    {(dayData.posts || []).length} {(dayData.posts || []).length === 1 ? 'post' : 'posts'}
+                  </span>
+                </div>
                 {(dayData.posts || []).map((post, postIdx) => (
                   <PostCard
                     key={post.id ? `post-id-${post.id}-${postIdx}` : `post-idx-${dayData.day}-${postIdx}`}
@@ -817,6 +868,7 @@ export default function ContentCalendar() {
                     isRegenerating={regeneratingPostId === post.id}
                     copiedId={copiedId}
                     onOpen={(p) => { setSelectedPost(p); setSelectedDay(dayData.day) }}
+                    onDelete={handleDeletePost}
                   />
                 ))}
                 <EmptySlot
@@ -830,8 +882,8 @@ export default function ContentCalendar() {
         )}
       </div>
 
-      {/* Stats bar */}
-      <div className="mt-6 flex items-center gap-6 p-4 rounded-xl border" style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}>
+      {/* Stats bar — responsive grid on mobile */}
+      <div className="mt-4 sm:mt-6 grid grid-cols-2 sm:flex sm:items-center gap-3 sm:gap-6 p-3 sm:p-4 rounded-xl border" style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}>
         {[
           { label: 'Total posts', value: totalPosts },
           { label: 'Scheduled', value: scheduled },
@@ -839,12 +891,12 @@ export default function ContentCalendar() {
           { label: 'Posted', value: calendar ? calendar.reduce((s, d) => s + (d.posts ? d.posts.filter(p => p.status === 'posted').length : 0), 0) : 0 },
         ].map(stat => (
           <div key={stat.label} className="flex items-center gap-2">
-            <span className="text-[18px] font-semibold text-white">{stat.value}</span>
-            <span className="text-[12px]" style={{ color: 'var(--theme-text-muted)' }}>{stat.label}</span>
+            <span className="text-[16px] sm:text-[18px] font-semibold text-white">{stat.value}</span>
+            <span className="text-[11px] sm:text-[12px]" style={{ color: 'var(--theme-text-muted)' }}>{stat.label}</span>
           </div>
         ))}
-        <div className="ml-auto">
-          <button onClick={handleScheduleAllDrafts} className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5">
+        <div className="col-span-2 sm:ml-auto">
+          <button onClick={handleScheduleAllDrafts} className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5 w-full sm:w-auto">
             <Calendar size={11} />
             Schedule all drafts
           </button>
@@ -998,6 +1050,7 @@ export default function ContentCalendar() {
           day={selectedDay}
           onClose={() => { setSelectedPost(null); setSelectedDay(null) }}
           onSave={handleSaveEditedPost}
+          onDelete={handleDeletePost}
         />
       )}
     </div>
@@ -1013,7 +1066,7 @@ const STATUS_COLORS = {
   failed:    { background: 'rgba(255,59,48,0.15)',    color: 'rgba(255,80,80,0.9)'   },
 }
 
-function PostDetailsModal({ post, day, onClose, onSave }) {
+function PostDetailsModal({ post, day, onClose, onSave, onDelete }) {
   const { creatorData, incrementAiActions, setApiModalOpen, triggerToast } = useForge()
   const [edited, setEdited] = useState({ ...post })
   const [activeTab, setActiveTab] = useState('details')
@@ -1245,15 +1298,30 @@ function PostDetailsModal({ post, day, onClose, onSave }) {
           className="flex items-center justify-between gap-3 px-5 py-4 border-t"
           style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.3)' }}
         >
-          <button onClick={onClose} className="forge-btn-secondary py-2 px-4 text-[13px]">Discard</button>
-          <button
-            onClick={() => onSave(edited)}
-            disabled={!(edited.title || '').trim()}
-            className="forge-btn-primary py-2 px-5 text-[13px] disabled:opacity-50 gap-1.5"
-          >
-            <Check size={12} />
-            Save Changes
-          </button>
+          {onDelete && (
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete this post?')) {
+                  onDelete(edited.id)
+                }
+              }}
+              className="text-[12px] text-red-400 hover:text-red-300 font-semibold flex items-center gap-1.5 py-2 px-3 border border-red-500/20 hover:border-red-500/40 rounded-xl bg-red-500/5 transition-all"
+            >
+              <Trash2 size={12} />
+              Delete Post
+            </button>
+          )}
+          <div className="flex items-center gap-3 ml-auto">
+            <button onClick={onClose} className="forge-btn-secondary py-2 px-4 text-[13px]">Discard</button>
+            <button
+              onClick={() => onSave(edited)}
+              disabled={!(edited.title || '').trim()}
+              className="forge-btn-primary py-2 px-5 text-[13px] disabled:opacity-50 gap-1.5"
+            >
+              <Check size={12} />
+              Save Changes
+            </button>
+          </div>
         </div>
       </div>
     </div>

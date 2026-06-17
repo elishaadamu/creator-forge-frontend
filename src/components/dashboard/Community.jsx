@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useForge } from '../../App'
-import { Sparkles, RefreshCw, Copy, Check, Calendar, Plus, Users, MessageSquare, Radio, ChevronRight, ChevronDown, Link2, X, Trash2, Clock } from 'lucide-react'
+import { Sparkles, RefreshCw, Copy, Check, Calendar, Plus, Users, MessageSquare, Radio, ChevronRight, ChevronDown, Link2, X, Trash2, Clock, Edit, Mail, Send } from 'lucide-react'
 import { generateStudioContent, hasTextKey } from '../../services/ai'
 
 const COMMUNITY_CONTENT_TYPES = [
@@ -149,6 +149,177 @@ function MiniCalendar({ onSelect, scheduledPosts = [] }) {
   )
 }
 
+// ─── Broadcast Email Modal Component ──────────────────────────────────────────
+
+function BroadcastModal({ members, onClose, triggerToast, creatorData, productName, handle }) {
+  const [subject, setSubject] = useState('')
+  const [message, setMessage] = useState('')
+  const [isSending, setIsSending] = useState(false)
+  const [isDrafting, setIsDrafting] = useState(false)
+
+  const handleDraftWithAi = async () => {
+    setIsDrafting(true)
+    try {
+      const type = { label: 'Community Update Email', platform: 'Email' }
+      const inputContext = `Write an email update to my community "${productName}". Niche: ${creatorData.niche || 'creation'}. Warm, personal, engaging tone.`
+      const draft = await generateStudioContent(type, inputContext, creatorData, 'Confident')
+      
+      // Separate subject if AI returned one
+      if (draft.includes('Subject:')) {
+        const lines = draft.split('\n')
+        const subjLine = lines.find(l => l.toLowerCase().startsWith('subject:'))
+        if (subjLine) {
+          setSubject(subjLine.replace(/subject:\s*/i, ''))
+          setMessage(lines.filter(l => !l.toLowerCase().startsWith('subject:')).join('\n').trim())
+        } else {
+          setMessage(draft)
+        }
+      } else {
+        setMessage(draft)
+      }
+      if (triggerToast) triggerToast('AI drafted your broadcast email!', 'success')
+    } catch (e) {
+      if (triggerToast) triggerToast('Failed to draft with AI, showing template', 'error')
+      setSubject(`Quick update from ${creatorData.name || 'creator'}`)
+      setMessage(`Hey everyone,\n\nHope you're doing great! Here is a quick update...\n\nBest,\n${creatorData.name || 'creator'}`)
+    } finally {
+      setIsDrafting(false)
+    }
+  }
+
+  const handleSend = () => {
+    if (!subject.trim() || !message.trim()) return
+    setIsSending(true)
+    setTimeout(() => {
+      setIsSending(false)
+      if (triggerToast) triggerToast(`Broadcast sent to ${members.length} member(s)!`, 'success')
+      onClose()
+    }, 1800)
+  }
+
+  const mailtoLink = `mailto:?bcc=${members.map(m => m.email).filter(Boolean).join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+      <div 
+        className="w-full max-w-lg rounded-2xl border p-4 sm:p-6 flex flex-col shadow-2xl relative max-h-[92vh]"
+        style={{
+          background: 'rgba(13,13,13,0.95)',
+          borderColor: 'rgba(255,255,255,0.08)',
+          animation: 'modalSlideUp 0.3s cubic-bezier(0.16,1,0.3,1) both',
+        }}
+      >
+        <style>{`
+          @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+        
+        {/* Close Button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 text-white/40 hover:text-white transition-all w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/5"
+        >
+          <X size={14} />
+        </button>
+
+        {/* Title */}
+        <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-white/5">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ background: 'rgba(139,92,246,0.12)', borderColor: 'rgba(139,92,246,0.25)' }}>
+            <Send size={14} className="text-purple-400" />
+          </div>
+          <div>
+            <h3 className="text-[16px] font-bold text-white">Send Email Broadcast</h3>
+            <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              Reaching out to all <span className="text-white font-medium">{members.length} members</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-4 flex-1 overflow-y-auto pr-1 py-1 custom-scrollbar">
+          <div>
+            <label className="text-[11px] font-bold text-white/40 uppercase tracking-wider block mb-1.5">Subject</label>
+            <input 
+              type="text" 
+              required
+              placeholder="e.g. Big news about our next challenge!"
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg text-[13px] outline-none transition-all duration-150"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'white',
+              }}
+              onFocus={e => e.target.style.borderColor = 'rgba(139,92,246,0.4)'}
+              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="text-[11px] font-bold text-white/40 uppercase tracking-wider block m-0">Message Body</label>
+              <button 
+                onClick={handleDraftWithAi}
+                disabled={isDrafting}
+                className="flex items-center gap-1 text-[10px] font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 hover:bg-purple-500/20 transition-all"
+              >
+                {isDrafting ? <RefreshCw size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                Draft with AI
+              </button>
+            </div>
+            <textarea
+              required
+              rows={6}
+              placeholder="Write your email update..."
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg text-[13px] outline-none transition-all duration-150 resize-none font-mono"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'white',
+              }}
+              onFocus={e => e.target.style.borderColor = 'rgba(139,92,246,0.4)'}
+              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+            />
+          </div>
+        </div>
+
+        {/* Footer actions */}
+        <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between gap-3">
+          <a
+            href={mailtoLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/80 transition-colors"
+          >
+            <ExternalLink size={12} />
+            Use my email client
+          </a>
+          <div className="flex gap-2">
+            <button 
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all border border-white/5"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSend}
+              disabled={isSending || !subject.trim() || !message.trim()}
+              className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-white text-black hover:bg-white/90 disabled:bg-white/10 disabled:text-white/30 disabled:cursor-not-allowed transition-all"
+            >
+              {isSending ? 'Sending...' : 'Send Broadcast'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Community Component ─────────────────────────────────────────────────
 
 export default function Community() {
@@ -161,7 +332,11 @@ export default function Community() {
   const [showMembers, setShowMembers] = useState(false)
   const [highlightCalendar, setHighlightCalendar] = useState(false)
   const [expandedPostId, setExpandedPostId] = useState(null)
+  const [editingPostId, setEditingPostId] = useState(null)
+  const [editingText, setEditingText] = useState('')
+  const [broadcastOpen, setBroadcastOpen] = useState(false)
   const calendarRef = useRef(null)
+  const outputRef = useRef(null)
 
   const handle = creatorData?.handle || '@creator'
   const productName = creatorData.productName || 'Creator Academy'
@@ -212,6 +387,14 @@ export default function Community() {
     setTimeout(() => setLinkCopied(false), 2000)
     if (triggerToast) triggerToast('Invite link copied!', 'success')
   }
+
+  useEffect(() => {
+    if (generated && window.innerWidth < 1024) {
+      setTimeout(() => {
+        outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }, 100)
+    }
+  }, [generated])
 
   // ── AI Generation ──
   const handleGenerate = async (type) => {
@@ -275,6 +458,23 @@ export default function Community() {
 
   const handleDeleteScheduled = (id) => {
     saveScheduledPosts(scheduledPosts.filter(p => p.id !== id))
+    if (editingPostId === id) setEditingPostId(null)
+  }
+
+  const handleSaveEdit = (id) => {
+    const updated = scheduledPosts.map(p => {
+      if (p.id === id) {
+        return {
+          ...p,
+          content: editingText.slice(0, 120) + (editingText.length > 120 ? '…' : ''),
+          fullContent: editingText
+        }
+      }
+      return p
+    })
+    saveScheduledPosts(updated)
+    setEditingPostId(null)
+    if (triggerToast) triggerToast('Scheduled post updated successfully', 'success')
   }
 
   const memberStats = [
@@ -289,7 +489,7 @@ export default function Community() {
   ]
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-3 sm:p-6 max-w-4xl">
       {/* Header */}
       <p className="forge-label mb-3">Community</p>
       <h2 className="forge-heading mb-2" style={{ fontSize: 'clamp(22px, 3vw, 30px)', letterSpacing: '-0.03em' }}>
@@ -341,31 +541,53 @@ export default function Community() {
         {/* Member count + toggle */}
         {members.length > 0 && (
           <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <button
-              onClick={() => setShowMembers(o => !o)}
-              className="flex items-center gap-2 text-[12px] font-medium transition-colors"
-              style={{ color: 'rgba(255,255,255,0.45)' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'white'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.45)'}
-            >
-              <Users size={12} />
-              {members.length} member{members.length !== 1 ? 's' : ''} joined
-              <ChevronDown size={11} className={`transition-transform duration-200 ${showMembers ? 'rotate-180' : ''}`} />
-            </button>
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowMembers(o => !o)}
+                className="flex items-center gap-2 text-[12px] font-medium transition-colors"
+                style={{ color: 'rgba(255,255,255,0.45)' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'white'}
+                onMouseLeave={e => { if (!showMembers) e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
+              >
+                <Users size={12} />
+                {members.length} member{members.length !== 1 ? 's' : ''} joined
+                <ChevronDown size={11} className={`transition-transform duration-200 ${showMembers ? 'rotate-180' : ''}`} />
+              </button>
+              
+              <button
+                onClick={() => setBroadcastOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 transition-all"
+              >
+                <Send size={10} />
+                Broadcast Email
+              </button>
+            </div>
             {showMembers && (
-              <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
+              <div className="mt-3 space-y-1.5 max-h-40 overflow-y-auto">
                 {members.map((m, i) => (
-                  <div key={i} className="flex items-center gap-3 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(139,92,246,0.2)', color: '#c084fc' }}>
-                      {(m.name || m.email || '?').charAt(0).toUpperCase()}
+                  <div key={i} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-white/[0.02] group" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'rgba(139,92,246,0.2)', color: '#c084fc' }}>
+                        {(m.name || m.email || '?').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[12px] font-medium text-white truncate">{m.name || 'Anonymous'}</p>
+                        <p className="text-[10px] truncate" style={{ color: 'rgba(255,255,255,0.3)' }}>{m.email}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-medium text-white truncate">{m.name || 'Anonymous'}</p>
-                      <p className="text-[10px] truncate" style={{ color: 'rgba(255,255,255,0.3)' }}>{m.email}</p>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                        {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                      </span>
+                      <a
+                        href={`mailto:${m.email}`}
+                        onClick={e => e.stopPropagation()}
+                        className="w-6 h-6 rounded-lg flex items-center justify-center bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 text-white/40 hover:text-white transition-all"
+                        title={`Email ${m.name || 'member'}`}
+                      >
+                        <Mail size={11} />
+                      </a>
                     </div>
-                    <span className="text-[9px] flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                      {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                    </span>
                   </div>
                 ))}
               </div>
@@ -375,7 +597,7 @@ export default function Community() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
         {memberStats.map(s => (
           <div key={s.label} className="rounded-xl border p-4" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}>
             <p className="text-[12px] mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.label}</p>
@@ -385,17 +607,17 @@ export default function Community() {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-[280px_1fr] gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 w-full max-w-full overflow-hidden">
         {/* Left: Sidebar (Generate Categories + Calendar) */}
-        <div className="space-y-5">
-          <div>
+        <div className="flex flex-col gap-5 lg:flex-shrink-0 w-full">
+          <div className="w-full min-w-0">
             <p className="forge-label mb-3">Generate</p>
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 w-full">
               {COMMUNITY_CONTENT_TYPES.map(type => (
                 <button
                   key={type.id}
                   onClick={() => handleGenerate(type)}
-                  className="w-full text-left flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-150"
+                  className="w-full text-left flex flex-col lg:flex-row items-start lg:items-center gap-2.5 lg:gap-3 p-3 lg:p-3.5 rounded-xl border transition-all duration-150"
                   style={{
                     background: selectedType?.id === type.id ? 'rgba(255,255,255,0.07)' : '#111',
                     borderColor: selectedType?.id === type.id ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.07)',
@@ -407,8 +629,8 @@ export default function Community() {
                     <type.icon size={13} className="text-white/50" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-white">{type.label}</p>
-                    <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{type.description}</p>
+                    <p className="text-[12px] lg:text-[13px] font-semibold text-white truncate">{type.label}</p>
+                    <p className="text-[10px] lg:text-[11px] hidden lg:block" style={{ color: 'rgba(255,255,255,0.35)' }}>{type.description}</p>
                   </div>
                 </button>
               ))}
@@ -418,11 +640,12 @@ export default function Community() {
           {/* Calendar Widget */}
           <div
             ref={calendarRef}
-            className="rounded-xl border p-4 transition-all duration-300"
+            className="rounded-xl border p-4 transition-all duration-300 w-full lg:w-full mx-auto lg:mx-0"
             style={{
               background: '#111',
               borderColor: highlightCalendar ? 'rgba(168,85,247,0.6)' : 'rgba(255,255,255,0.07)',
               boxShadow: highlightCalendar ? '0 0 15px rgba(168,85,247,0.15)' : 'none',
+              maxWidth: '320px'
             }}
           >
             <div className="flex items-center justify-between mb-3 pb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -441,7 +664,7 @@ export default function Community() {
         </div>
 
         {/* Right: Output */}
-        <div>
+        <div ref={outputRef}>
           {isGenerating ? (
             <div className="rounded-2xl border p-6 flex items-center gap-3" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.08)' }}>
               <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center">
@@ -471,10 +694,14 @@ export default function Community() {
               </div>
 
               {/* Body */}
-              <div className="p-5 max-h-80 overflow-y-auto">
-                <pre className="text-[13px] whitespace-pre-wrap leading-relaxed" style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'inherit' }}>
-                  {generated}
-                </pre>
+              <div className="p-5 max-h-80 overflow-y-auto border border-transparent rounded-xl focus-within:border-white/5 transition-all">
+                <textarea
+                  value={generated}
+                  onChange={e => setGenerated(e.target.value)}
+                  className="w-full text-[13px] whitespace-pre-wrap leading-relaxed bg-transparent outline-none border-none resize-none text-white/80"
+                  style={{ fontFamily: 'inherit', minHeight: '160px', height: 'auto' }}
+                  placeholder="Edit your generated content post here..."
+                />
               </div>
 
               {/* Actions */}
@@ -564,20 +791,60 @@ export default function Community() {
                             to { opacity: 1; transform: translateY(0); }
                           }
                         `}</style>
-                        <pre className="text-[12px] whitespace-pre-wrap leading-relaxed text-white/70 font-mono bg-black/35 p-3 rounded-lg overflow-x-auto border border-white/5">
-                          {post.fullContent || post.content}
-                        </pre>
+                        {editingPostId === post.id ? (
+                          <textarea
+                            value={editingText}
+                            onChange={e => setEditingText(e.target.value)}
+                            className="w-full text-[12px] whitespace-pre-wrap leading-relaxed bg-black/45 p-3 rounded-lg overflow-x-auto border border-white/10 outline-none focus:border-purple-500/30 text-white/80 font-mono"
+                            style={{ minHeight: '120px' }}
+                            placeholder="Edit post content..."
+                          />
+                        ) : (
+                          <pre className="text-[12px] whitespace-pre-wrap leading-relaxed text-white/70 font-mono bg-black/35 p-3 rounded-lg overflow-x-auto border border-white/5">
+                            {post.fullContent || post.content}
+                          </pre>
+                        )}
                         <div className="flex gap-2 justify-end mt-2">
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(post.fullContent || post.content)
-                              if (triggerToast) triggerToast('Copied content to clipboard', 'success')
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all border border-white/5"
-                          >
-                            <Copy size={11} />
-                            Copy content
-                          </button>
+                          {editingPostId === post.id ? (
+                            <>
+                              <button
+                                onClick={() => handleSaveEdit(post.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all"
+                              >
+                                <Check size={11} />
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingPostId(null)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-white/50 border border-white/5 transition-all"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditingPostId(post.id)
+                                  setEditingText(post.fullContent || post.content)
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all border border-white/5"
+                              >
+                                <Edit size={11} />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(post.fullContent || post.content)
+                                  if (triggerToast) triggerToast('Copied content to clipboard', 'success')
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all border border-white/5"
+                              >
+                                <Copy size={11} />
+                                Copy content
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     )}
@@ -616,6 +883,18 @@ export default function Community() {
           </div>
         </div>
       </div>
+
+      {/* Broadcast Modal Overlay */}
+      {broadcastOpen && (
+        <BroadcastModal
+          members={members}
+          onClose={() => setBroadcastOpen(false)}
+          triggerToast={triggerToast}
+          creatorData={creatorData}
+          productName={productName}
+          handle={handle}
+        />
+      )}
     </div>
   )
 }

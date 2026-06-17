@@ -10,7 +10,7 @@ import Accounts from './Accounts'
 import Settings from './Settings'
 import ForgeChat from './ForgeChat'
 import { useForge } from '../../App'
-import { Sparkles, Laptop, Smartphone } from 'lucide-react'
+import { Sparkles, Laptop, Smartphone, Menu } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { AppMockup } from '../onboarding/Preview'
 import ApiKeysModal from '../ui/ApiKeysModal'
@@ -173,7 +173,7 @@ export default function DashboardLayout() {
     activeTab,
     setActiveTab
   } = useForge()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024)
   const [chatOpen, setChatOpen] = useState(false)
 
   const TabComponent = TAB_COMPONENTS[activeTab] || Marketing
@@ -193,24 +193,22 @@ export default function DashboardLayout() {
       <main className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
         {/* Top bar */}
         <div
-          className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0"
+          className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0"
           style={{
             borderColor: 'var(--theme-border-color)',
             background: 'var(--theme-sidebar-bg)',
             backdropFilter: 'blur(12px)',
           }}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setSidebarOpen(o => !o)}
-              className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg"
+              className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-colors"
               style={{ color: 'var(--theme-text-muted)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--theme-accent-bg)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
-              <div className="space-y-1">
-                <div className="w-4 h-px bg-current" />
-                <div className="w-3 h-px bg-current" />
-                <div className="w-4 h-px bg-current" />
-              </div>
+              <Menu size={18} />
             </button>
             <div>
               <h1 className="text-[15px] font-semibold tracking-tight" style={{ color: 'var(--theme-text)' }}>
@@ -279,7 +277,7 @@ export default function DashboardLayout() {
         {/* Guest Action Suggestion Banner */}
         {!isRegistered && aiActionsCount >= 3 && (
           <div 
-            className="mx-6 mt-4 p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
+            className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3 sm:p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
             style={{
               background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
               borderColor: 'rgba(139, 92, 246, 0.25)',

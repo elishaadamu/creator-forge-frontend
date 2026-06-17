@@ -208,7 +208,7 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
 
   if (isLoading || !week || week.length === 0) {
     return (
-      <div className="grid grid-cols-7 gap-1.5 animate-pulse">
+      <div className="calendar-grid grid grid-cols-7 gap-1.5 animate-pulse">
         {DAYS.map((day, i) => {
           const dateStr = weekDates[i].toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
           return (
@@ -242,7 +242,7 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
   }
 
   return (
-    <div className="grid grid-cols-7 gap-1.5">
+    <div className="calendar-grid grid grid-cols-7 gap-1.5">
       {week.map((dayData, i) => {
         const isToday = i === TODAY_IDX
         const dateStr = weekDates[i].toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
@@ -278,12 +278,12 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
                   {/* Platform badge + edit icon row */}
                   <div className="flex items-center justify-between px-1.5 pt-1 pb-0.5">
                     <span
-                      className="text-[7.5px] font-bold uppercase tracking-widest"
+                      className="text-[9px] sm:text-[7.5px] font-bold uppercase tracking-widest"
                       style={{ color: 'rgba(255,255,255,0.55)' }}
                     >{post.platform}</span>
                     <button
                       onClick={e => { e.stopPropagation(); onCardClick && onCardClick(post, dayData.day) }}
-                      className="opacity-0 group-hover/card:opacity-100 transition-opacity w-3.5 h-3.5 flex items-center justify-center rounded-sm flex-shrink-0"
+                      className="opacity-0 group-hover/card:opacity-100 post-card-actions transition-opacity w-3.5 h-3.5 flex items-center justify-center rounded-sm flex-shrink-0"
                       style={{ background: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.8)' }}
                       title="Edit post"
                     >
@@ -292,7 +292,7 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
                   </div>
                   {/* Post label */}
                   <p
-                    className="px-1.5 pb-0.5 text-[8.5px] font-semibold leading-snug"
+                    className="px-1.5 pb-0.5 text-[10px] sm:text-[8.5px] font-semibold leading-snug"
                     style={{ color: 'rgba(255,255,255,0.82)' }}
                   >{post.label}</p>
                   {/* Type pill at bottom */}
@@ -1381,81 +1381,83 @@ export default function Marketing() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-5xl">
 
       {/* ─── CREATOR PROFILE CARD ────────────────────────────────── */}
       <div className="rounded-2xl border overflow-hidden"
         style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}>
         {/* Top strip: avatar + name + stats */}
-        <div className="flex items-center gap-4 px-5 py-4 border-b"
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 border-b"
           style={{ borderColor: 'var(--theme-border-color)' }}>
-          {/* Avatar */}
-          <div className="relative flex-shrink-0">
-            <div className="w-14 h-14 rounded-full overflow-hidden border-2 flex items-center justify-center"
-              style={{
-                borderColor: 'var(--theme-accent-border)',
-                background: 'var(--theme-accent-bg)',
-              }}>
-              {creatorData.avatarUrl ? (
-                <img src={creatorData.avatarUrl} alt={displayName}
-                  className="w-full h-full object-cover"
-                  onError={e => { e.currentTarget.style.display = 'none' }} />
-              ) : (
-                <span className="text-xl font-bold text-white/60">
-                  {displayName.charAt(0).toUpperCase()}
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 flex items-center justify-center"
+                style={{
+                  borderColor: 'var(--theme-accent-border)',
+                  background: 'var(--theme-accent-bg)',
+                }}>
+                {creatorData.avatarUrl ? (
+                  <img src={creatorData.avatarUrl} alt={displayName}
+                    className="w-full h-full object-cover"
+                    onError={e => { e.currentTarget.style.display = 'none' }} />
+                ) : (
+                  <span className="text-lg sm:text-xl font-bold text-white/60">
+                    {displayName.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border flex items-center justify-center"
+                style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-accent-border)' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--theme-accent)' }} />
+              </div>
+            </div>
+
+            {/* Name + handle + niche */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[15px] sm:text-[16px] font-bold text-white truncate">{displayName}</p>
+                <p className="text-[11px] sm:text-[12px] truncate" style={{ color: 'var(--theme-text-muted)' }}>{handle}</p>
+                <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full capitalize"
+                  style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-accent)' }}>
+                  {creatorData.platform || 'creator'}
                 </span>
+              </div>
+              {niche && niche !== 'your niche' && (
+                <p className="text-[11px] sm:text-[12px] mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.3)' }}>{niche}</p>
               )}
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border flex items-center justify-center"
-              style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-accent-border)' }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--theme-accent)' }} />
-            </div>
-          </div>
-
-          {/* Name + handle + niche */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-[16px] font-bold text-white">{displayName}</p>
-              <p className="text-[12px]" style={{ color: 'var(--theme-text-muted)' }}>{handle}</p>
-              <span className="text-[10px] px-2 py-0.5 rounded-full capitalize"
-                style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-accent)' }}>
-                {creatorData.platform || 'creator'}
-              </span>
-            </div>
-            {niche && niche !== 'your niche' && (
-              <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{niche}</p>
-            )}
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-6 flex-shrink-0">
+          <div className="flex items-center gap-5 sm:gap-6 flex-shrink-0 self-start sm:self-center">
             {creatorData.followers > 0 && (
               <div className="text-right">
-                <p className="text-[16px] font-bold text-white">
+                <p className="text-[15px] sm:text-[16px] font-bold text-white">
                   {creatorData.followers >= 1_000_000
                     ? `${(creatorData.followers/1_000_000).toFixed(1)}M`
                     : creatorData.followers >= 1_000
                       ? `${Math.round(creatorData.followers/1_000)}K`
                       : creatorData.followers}
                 </p>
-                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>followers</p>
+                <p className="text-[9px] sm:text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>followers</p>
               </div>
             )}
             {creatorData.engagementRate > 0 && (
-              <div className="text-right hidden sm:block">
-                <p className="text-[16px] font-bold text-white">{creatorData.engagementRate}%</p>
-                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>engagement</p>
+              <div className="text-right">
+                <p className="text-[15px] sm:text-[16px] font-bold text-white">{creatorData.engagementRate}%</p>
+                <p className="text-[9px] sm:text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>engagement</p>
               </div>
             )}
             {creatorData.followers > 0 && creatorData.engagementRate > 0 && (
-              <div className="text-right hidden md:block">
-                <p className="text-[16px] font-bold text-white">
+              <div className="text-right hidden xs:block">
+                <p className="text-[15px] sm:text-[16px] font-bold text-white">
                   {(() => {
                     const r = Math.round(creatorData.followers * creatorData.engagementRate / 100)
                     return r >= 1_000 ? `${Math.round(r/1_000)}K` : r
                   })()}
                 </p>
-                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>avg reach</p>
+                <p className="text-[9px] sm:text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>avg reach</p>
               </div>
             )}
           </div>
@@ -1638,32 +1640,34 @@ export default function Marketing() {
           {visibleActions.map(action => (
             <div key={action.id}>
               <div
-                className="group flex items-center gap-4 p-4 rounded-2xl border transition-all duration-150"
+                className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl border transition-all duration-150"
                 style={{ background: '#111', borderColor: openOutputId === action.id ? `rgba(${accent.rgb},0.3)` : 'rgba(255,255,255,0.07)' }}
                 onMouseEnter={e => { if (openOutputId !== action.id) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = '#161616' }}}
                 onMouseLeave={e => { if (openOutputId !== action.id) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.background = '#111' }}}
               >
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: openOutputId === action.id ? `rgba(${accent.rgb},0.15)` : 'rgba(255,255,255,0.07)' }}>
-                  <action.icon size={14} style={{ color: openOutputId === action.id ? accent.color : 'rgba(255,255,255,0.5)' }} />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[13px] font-semibold text-white">{action.label}</span>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                      style={PRIORITY_STYLES[action.priority]}>
-                      {action.priority}
-                    </span>
+                <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0"
+                    style={{ background: openOutputId === action.id ? `rgba(${accent.rgb},0.15)` : 'rgba(255,255,255,0.07)' }}>
+                    <action.icon size={14} style={{ color: openOutputId === action.id ? accent.color : 'rgba(255,255,255,0.5)' }} />
                   </div>
-                  <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{action.rationale}</p>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <span className="text-[13px] font-semibold text-white">{action.label}</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                        style={PRIORITY_STYLES[action.priority]}>
+                        {action.priority}
+                      </span>
+                    </div>
+                    <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{action.rationale}</p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0 w-full sm:w-auto justify-end sm:justify-start">
                   <button
                     onClick={() => openOutputId === action.id ? setOpenOutputId(null) : handleGenerate(action.id)}
                     disabled={generating === action.id}
-                    className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5"
+                    className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5 flex-1 sm:flex-initial text-center justify-center"
                     style={openOutputId === action.id ? { background: `rgba(${accent.rgb},0.2)`, borderColor: `rgba(${accent.rgb},0.4)`, color: 'white' } : {}}
                   >
                     {generating === action.id

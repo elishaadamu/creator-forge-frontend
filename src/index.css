@@ -320,4 +320,49 @@
   }
 }
 
+/* Sidebar slide-in / slide-out */
+@keyframes sidebar-slide-in {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes sidebar-slide-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
 
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.sidebar-mobile-open {
+  animation: sidebar-slide-in 0.25s ease-out forwards;
+}
+
+.sidebar-overlay {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+/* Mobile-first calendar grid */
+@media (max-width: 639px) {
+  .calendar-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+  .calendar-day-header {
+    display: none !important;
+  }
+  /* Always show post card actions on touch */
+  .post-card-actions {
+    opacity: 1 !important;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .calendar-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .calendar-day-header:nth-child(n+4) {
+    display: none !important;
+  }
+}

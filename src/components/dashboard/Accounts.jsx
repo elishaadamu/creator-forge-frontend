@@ -214,7 +214,7 @@ export default function Accounts() {
   const connectedCount = platforms.filter(p => p.connected).length
 
   return (
-    <div className="p-6 max-w-2xl space-y-8">
+    <div className="p-3 sm:p-6 max-w-2xl space-y-6 sm:space-y-8">
       {/* Header */}
       <div>
         <p className="forge-label mb-3">Accounts</p>
@@ -260,34 +260,36 @@ export default function Accounts() {
                 }}
               >
                 {/* Main row */}
-                <div className="flex items-center gap-4 p-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>
-                    <platform.icon size={18} />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[14px] font-semibold text-white">{platform.name}</span>
-                      {platform.connected && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}>
-                          <Check size={9} strokeWidth={3} />
-                          Connected
-                        </div>
-                      )}
-                      {platform.connected && platform.autoPost && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }}>
-                          <Radio size={9} />
-                          Auto-posting
-                        </div>
-                      )}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3.5 sm:p-4">
+                  <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>
+                      <platform.icon size={18} />
                     </div>
-                    <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                      {platform.connected ? platform.audience : platform.description}
-                    </p>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        <span className="text-[14px] font-semibold text-white">{platform.name}</span>
+                        {platform.connected && (
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}>
+                            <Check size={9} strokeWidth={3} />
+                            Connected
+                          </div>
+                        )}
+                        {platform.connected && platform.autoPost && (
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }}>
+                            <Radio size={9} />
+                            Auto-posting
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                        {platform.connected ? platform.audience : platform.description}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
                     {platform.connected ? (
                       <>
                         <button
@@ -425,13 +427,15 @@ export default function Accounts() {
           {RECENT_POSTS.map((post, i) => {
             const s = STATUS_STYLES[post.status]
             return (
-              <div key={i} className="flex items-center gap-4 p-3.5 rounded-xl border group" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded w-8 text-center flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
-                  {post.platform.slice(0, 2).toUpperCase()}
-                </span>
-                <span className="text-[13px] flex-1 truncate" style={{ color: 'rgba(255,255,255,0.65)' }}>{post.content}</span>
-                <div className="flex items-center gap-2 flex-shrink-0">
+              <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 sm:p-3.5 rounded-xl border group" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}>
+                <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded w-8 text-center flex-shrink-0"
+                    style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
+                    {post.platform.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="text-[13px] flex-1 truncate" style={{ color: 'rgba(255,255,255,0.65)' }}>{post.content}</span>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
                   {post.time !== '-' && (
                     <span className="text-[11px] flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
                       <Clock size={10} />
@@ -441,7 +445,7 @@ export default function Accounts() {
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={s}>{s.label}</span>
                   <button 
                     onClick={() => handleEditQueuePost(post.platform)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-white/40 hover:text-white"
+                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1 text-white/40 hover:text-white"
                   >
                     <Edit3 size={12} />
                   </button>

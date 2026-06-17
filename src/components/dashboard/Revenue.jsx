@@ -83,7 +83,7 @@ export default function Revenue() {
   }
 
   return (
-    <div className="p-6 max-w-3xl space-y-8">
+    <div className="p-3 sm:p-6 max-w-3xl space-y-6 sm:space-y-8">
       {/* Header */}
       <div>
         <p className="forge-label mb-3">Revenue</p>
@@ -96,11 +96,11 @@ export default function Revenue() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { label: 'MRR', value: `$${baseRevenue}`, sub: 'monthly recurring' },
-          { label: 'Members', value: membersCount.toString(), sub: 'total active' },
-          { label: 'Potential', value: `$${Math.round(baseRevenue * 4.5)}`, sub: 'per month at scale' },
+          { label: 'Monthly Recurring', value: `$${baseRevenue.toLocaleString('en-US')}`, sub: 'monthly recurring' },
+          { label: 'Members', value: membersCount.toLocaleString('en-US'), sub: 'total active' },
+          { label: 'Potential', value: `$${Math.round(baseRevenue * 4.5).toLocaleString('en-US')}`, sub: 'per month at scale' },
         ].map((kpi, i) => (
           <div key={i} className="rounded-xl border p-4" style={{ background: '#111', borderColor: i === 2 ? `rgba(${accent.rgb},0.2)` : 'rgba(255,255,255,0.07)' }}>
             <p className="text-[11px] mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>{kpi.label}</p>
@@ -116,7 +116,7 @@ export default function Revenue() {
           <div>
             <p className="text-[13px] mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>Revenue over time</p>
             <div className="flex items-end gap-2">
-              <span className="text-[36px] font-semibold tracking-tight text-white leading-none">${revenueHistory.reduce((a,b) => a+b, 0)}</span>
+              <span className="text-[36px] font-semibold tracking-tight text-white leading-none">${revenueHistory.reduce((a,b) => a+b, 0).toLocaleString('en-US')}</span>
               <span className="text-[13px] mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>all time</span>
             </div>
           </div>
@@ -174,11 +174,13 @@ export default function Revenue() {
         </div>
         <div className="space-y-2">
           {INSIGHTS.map((insight, i) => (
-            <div key={i} className="flex items-start gap-4 p-4 rounded-xl border" style={{ background: insight.color, borderColor: 'rgba(255,255,255,0.07)' }}>
-              <insight.icon size={15} className="text-white/40 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-[13px] font-semibold text-white mb-0.5">{insight.label}</p>
-                <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{insight.detail}</p>
+            <div key={i} className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-xl border" style={{ background: insight.color, borderColor: 'rgba(255,255,255,0.07)' }}>
+              <div className="flex items-start gap-3 flex-1">
+                <insight.icon size={15} className="text-white/40 flex-shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-white mb-0.5">{insight.label}</p>
+                  <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{insight.detail}</p>
+                </div>
               </div>
               <button
                 onClick={() => {
@@ -186,7 +188,7 @@ export default function Revenue() {
                   else if (insight.cta === 'Write announcement') handleNavigationToStudio('email-announce')
                   else if (insight.cta === 'Write email') handleNavigationToStudio('email-sequence')
                 }}
-                className="text-[12px] px-3 py-1.5 rounded-full flex-shrink-0 transition-all duration-150"
+                className="text-[12px] px-3 py-1.5 rounded-full self-end sm:self-center transition-all duration-150"
                 style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)' }}
                 onMouseEnter={e => { e.target.style.background = 'rgba(255,255,255,0.15)'; e.target.style.color = 'white' }}
                 onMouseLeave={e => { e.target.style.background = 'rgba(255,255,255,0.08)'; e.target.style.color = 'rgba(255,255,255,0.55)' }}
@@ -245,16 +247,18 @@ export default function Revenue() {
       </section>
 
       {/* Next revenue action */}
-      <div className="rounded-2xl border p-5" style={{ background: `rgba(${accent.rgb},0.05)`, borderColor: `rgba(${accent.rgb},0.15)` }}>
-        <div className="flex items-center gap-3">
-          <ArrowUpRight size={16} style={{ color: accent.color }} />
-          <div className="flex-1">
-            <p className="text-[13px] font-semibold text-white">Your next revenue move</p>
-            <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Post your launch announcement to get your first 10 paying members.</p>
+      <div className="rounded-2xl border p-4 sm:p-5" style={{ background: `rgba(${accent.rgb},0.05)`, borderColor: `rgba(${accent.rgb},0.15)` }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1">
+            <ArrowUpRight size={16} className="mt-0.5 flex-shrink-0" style={{ color: accent.color }} />
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-white">Your next revenue move</p>
+              <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Post your launch announcement to get your first 10 paying members.</p>
+            </div>
           </div>
           <button 
             onClick={() => handleNavigationToStudio('ig-caption')}
-            className="forge-btn-primary text-[12px] py-2 px-4 flex-shrink-0"
+            className="forge-btn-primary text-[12px] py-2 px-4 self-end sm:self-center flex-shrink-0"
           >
             Generate post
           </button>

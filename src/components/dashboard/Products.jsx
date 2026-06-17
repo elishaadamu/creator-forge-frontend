@@ -222,12 +222,12 @@ Inside, you'll find step-by-step video courses, downloadable resource guides, an
   }
 
   return (
-    <div className="p-6 max-w-3xl space-y-8">
+    <div className="p-3 sm:p-6 max-w-3xl space-y-6 sm:space-y-8">
 
       {/* Header */}
       <div>
         <p className="forge-label mb-3">Products</p>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <h2
               className="forge-heading mb-1.5"
@@ -238,14 +238,14 @@ Inside, you'll find step-by-step video courses, downloadable resource guides, an
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               <span className="text-[13px]" style={{ color: 'var(--theme-text-muted)' }}>
-                Live · {blueprint.type} · {membersCount} members
+                Live · {blueprint.type} · {membersCount.toLocaleString('en-US')} members
               </span>
             </div>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
             <button 
               onClick={() => handleModuleCTA('offer-page')} 
-              className="forge-btn-secondary text-[13px] py-2.5 gap-1.5"
+              className="forge-btn-secondary text-[12.5px] sm:text-[13px] py-2 sm:py-2.5 gap-1.5 flex-1 sm:flex-initial justify-center"
             >
               <ExternalLink size={13} />
               View live
@@ -254,7 +254,7 @@ Inside, you'll find step-by-step video courses, downloadable resource guides, an
               onClick={() => {
                 if (triggerToast) triggerToast('Select a slot below to add a new custom module.', 'info')
               }} 
-              className="forge-btn-primary text-[13px] py-2.5 gap-1.5"
+              className="forge-btn-primary text-[12.5px] sm:text-[13px] py-2 sm:py-2.5 gap-1.5 flex-1 sm:flex-initial justify-center"
             >
               <Plus size={13} />
               Add module
@@ -264,10 +264,10 @@ Inside, you'll find step-by-step video courses, downloadable resource guides, an
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { icon: Users, label: 'Members', value: membersCount.toString(), sub: 'Invite your first 10' },
-          { icon: DollarSign, label: 'Revenue', value: `$${membersCount * 29}`, sub: 'Share your launch link' },
+          { icon: Users, label: 'Members', value: membersCount.toLocaleString('en-US'), sub: 'Invite your first 10' },
+          { icon: DollarSign, label: 'Revenue', value: `$${(membersCount * 29).toLocaleString('en-US')}`, sub: 'Share your launch link' },
           { icon: BarChart2, label: 'Conversion', value: '3.4%', sub: 'Healthy engagement' },
         ].map(({ icon: Icon, label, value, sub }) => (
           <div key={label} className="rounded-xl border p-4" style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}>
@@ -286,35 +286,37 @@ Inside, you'll find step-by-step video courses, downloadable resource guides, an
           {activeModules.map(({ id, icon: Icon, label, description, status, members, cta }) => (
             <div
               key={id}
-              className="flex items-center gap-4 p-4 rounded-xl border transition-all duration-150 group"
+              className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border transition-all duration-150 group"
               style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--theme-card-bg)'; e.currentTarget.style.borderColor = 'var(--theme-accent)' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'var(--theme-card-bg)'; e.currentTarget.style.borderColor = 'var(--theme-border-color)' }}
             >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(255,255,255,0.07)' }}
-              >
-                <Icon size={16} className="text-white/50" />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-[13px] font-semibold text-white">{label}</span>
-                  <span
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-accent)' }}
-                  >
-                    {status}
-                  </span>
+              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0"
+                  style={{ background: 'rgba(255,255,255,0.07)' }}
+                >
+                  <Icon size={16} className="text-white/50" />
                 </div>
-                <p className="text-[12px]" style={{ color: 'var(--theme-text-muted)' }}>{description}</p>
-                {members !== null && (
-                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--theme-text-muted)', opacity: 0.7 }}>{members} active users</p>
-                )}
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <span className="text-[13px] font-semibold text-white">{label}</span>
+                    <span
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                      style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-accent)' }}
+                    >
+                      {status}
+                    </span>
+                  </div>
+                  <p className="text-[12px]" style={{ color: 'var(--theme-text-muted)' }}>{description}</p>
+                  {members !== null && (
+                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--theme-text-muted)', opacity: 0.7 }}>{members.toLocaleString('en-US')} active users</p>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity self-end sm:self-center">
                 <button
                   onClick={() => handleModuleCTA(id, label)}
                   className="text-[12px] px-3 py-1.5 rounded-full transition-all duration-150"
@@ -359,7 +361,7 @@ Inside, you'll find step-by-step video courses, downloadable resource guides, an
           <p className="forge-label">Generate product copy</p>
           <span className="text-[12px]" style={{ color: 'var(--theme-text-muted)' }}>AI-written, edit before publishing</span>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {FORGE_SUGGESTIONS.map(({ label, icon: Icon }) => (
             <button
               key={label}

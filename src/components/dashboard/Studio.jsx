@@ -220,6 +220,7 @@ export default function Studio() {
   const studioJob = useBgJob(STUDIO_JOB)
 
   const [selectedType, setSelectedType] = useState(null)
+  const [showTypeSelectorMobile, setShowTypeSelectorMobile] = useState(false)
   const [input, setInput] = useState('')
   const [generated, setGenerated] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -230,6 +231,7 @@ export default function Studio() {
   const [showKeys, setShowKeys] = useState(false)
   const [recentOutputs, setRecentOutputs] = useState([])
   const [expandedOutputId, setExpandedOutputId] = useState(null)
+  const [currentGeneratedId, setCurrentGeneratedId] = useState(null)
 
   const handle = creatorData?.handle || 'default'
   const recentKey = `forge_${handle}_studio_recent_outputs`
@@ -265,6 +267,7 @@ export default function Studio() {
       try { localStorage.setItem(recentKey, JSON.stringify(next)) } catch(e) {}
       return next
     })
+    return entry.id
   }, [recentKey])
 
   const removeFromRecent = useCallback((id) => {
@@ -328,7 +331,8 @@ export default function Studio() {
   useEffect(() => {
     if (studioJob.status === 'done' && studioJob.result !== null) {
       setGenerated(studioJob.result)
-      pushToRecent(studioJob.result, selectedType)
+      const newId = pushToRecent(studioJob.result, selectedType)
+      setCurrentGeneratedId(newId)
       setIsGenerating(false)
       clearBgJob(STUDIO_JOB)
       if (triggerToast) triggerToast('Script generated successfully!', 'success')
@@ -370,7 +374,8 @@ export default function Studio() {
           .replaceAll('[Name]', nameVal)
         
         setGenerated(customized)
-        pushToRecent(customized, selectedType)
+        const newId = pushToRecent(customized, selectedType)
+        setCurrentGeneratedId(newId)
         setIsGenerating(false)
         if (triggerToast) triggerToast(`${selectedType.label} generated (Demo Mode)`, 'success')
       }, 800)
@@ -404,7 +409,8 @@ export default function Studio() {
         customized = `[Refined: ${instruction}]\n\n${customized}`
         
         setGenerated(customized)
-        pushToRecent(customized, selectedType)
+        const newId = pushToRecent(customized, selectedType)
+        setCurrentGeneratedId(newId)
         setIsGenerating(false)
         if (triggerToast) triggerToast(`Refined successfully (Demo Mode)!`, 'success')
       }, 800)
@@ -445,7 +451,8 @@ export default function Studio() {
           .replaceAll('[Name]', nameVal)
         
         setGenerated(customized)
-        pushToRecent(customized, matchedType)
+        const newId = pushToRecent(customized, matchedType)
+        setCurrentGeneratedId(newId)
         setIsGenerating(false)
         if (triggerToast) triggerToast(`Adapted to ${platformName} (Demo Mode)!`, 'success')
       }, 800)
@@ -493,17 +500,31 @@ export default function Studio() {
       ]
     }
 
+    let dayObj = currentCal.find(d => d.day === todayName)
+    if (!dayObj) dayObj = currentCal[0]
+
+    const titleVal = entry.content.length > 80 ? entry.content.substring(0, 80) + '...' : entry.content
+
+    // Filter out duplicate scheduling of the same post
+    const isAlreadyScheduled = dayObj.posts && dayObj.posts.some(p => 
+      p.originalId === entry.id || p.title === titleVal
+    )
+    if (isAlreadyScheduled) {
+      if (triggerToast) triggerToast('This post is already scheduled to your calendar today.', 'warning')
+      return
+    }
+
     const newPost = {
       id: Date.now(),
+      originalId: entry.id,
       platform: entry.platform === 'Multi' || entry.platform === 'Product' || entry.platform === 'Email' ? 'Instagram' : entry.platform,
       type: entry.typeLabel,
-      title: entry.content.length > 80 ? entry.content.substring(0, 80) + '...' : entry.content,
+      title: titleVal,
+      body: entry.content,
       theme: 'launch',
       status: 'scheduled',
     }
 
-    let dayObj = currentCal.find(d => d.day === todayName)
-    if (!dayObj) dayObj = currentCal[0]
     dayObj.posts = [...(dayObj.posts || []), newPost]
     localStorage.setItem(cacheKey, JSON.stringify(currentCal))
 
@@ -541,18 +562,32 @@ export default function Studio() {
         { day: 'Sun', posts: [] },
       ]
     }
+
+    let dayObj = currentCal.find(d => d.day === todayName)
+    if (!dayObj) dayObj = currentCal[0]
+
+    const titleVal = generated.length > 80 ? generated.substring(0, 80) + '...' : generated
+
+    // Filter out duplicate scheduling of the same post
+    const isAlreadyScheduled = dayObj.posts && dayObj.posts.some(p => 
+      (currentGeneratedId && p.originalId === currentGeneratedId) || p.title === titleVal
+    )
+    if (isAlreadyScheduled) {
+      if (triggerToast) triggerToast('This post is already scheduled to your calendar today.', 'warning')
+      return
+    }
     
     const newPost = {
       id: Date.now(),
+      originalId: currentGeneratedId,
       platform: selectedType.platform === 'Multi' || selectedType.platform === 'Product' || selectedType.platform === 'Email' ? 'Instagram' : selectedType.platform,
       type: selectedType.label,
-      title: generated.length > 80 ? generated.substring(0, 80) + '...' : generated,
+      title: titleVal,
+      body: generated,
       theme: 'launch',
       status: 'scheduled'
     }
     
-    let dayObj = currentCal.find(d => d.day === todayName)
-    if (!dayObj) dayObj = currentCal[0]
     dayObj.posts = [...(dayObj.posts || []), newPost]
     
     localStorage.setItem(cacheKey, JSON.stringify(currentCal))
@@ -570,56 +605,117 @@ export default function Studio() {
   }
 
 
+  const renderSelectorItems = () => (
+    <>
+      <p className="forge-label px-4 mb-3 hidden md:block">Content type</p>
+
+      {contentTypes.map(group => (
+        <div key={group.group}>
+          <button
+            onClick={() => setExpandedGroup(g => g === group.group ? null : group.group)}
+            className="w-full flex items-center justify-between px-4 py-2 transition-colors"
+            style={{ color: 'var(--theme-text-muted)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--theme-text)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--theme-text-muted)' }}
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-wider">{group.group}</span>
+            <ChevronDown
+              size={12}
+              style={{
+                transition: 'transform 0.2s',
+                transform: expandedGroup === group.group ? 'rotate(180deg)' : 'rotate(0deg)',
+              }}
+            />
+          </button>
+
+          {expandedGroup === group.group && (
+            <div className="pb-2">
+              {group.items.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => { setSelectedType(item); setGenerated(null); setShowTypeSelectorMobile(false) }}
+                  className="w-full text-left px-4 py-2 flex items-center gap-2.5 transition-all duration-150"
+                  style={{
+                    background: selectedType?.id === item.id ? 'var(--theme-accent-bg)' : 'transparent',
+                    borderLeft: selectedType?.id === item.id ? '2px solid var(--theme-accent)' : '2px solid transparent',
+                  }}
+                  onMouseEnter={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'var(--theme-accent-bg)' }}
+                  onMouseLeave={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <item.icon size={12} style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)', flexShrink: 0 }} />
+                  <span className="text-[12px] leading-tight" style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)' }}>
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </>
+  )
+
   return (
-    <div className="flex h-full">
-      {/* ─── Left: Type selector ────────────────────────────────── */}
-      <div className="w-56 border-r flex-shrink-0 overflow-y-auto py-4" style={{ borderColor: 'var(--theme-border-color)' }}>
-        <p className="forge-label px-4 mb-3">Content type</p>
-
-        {contentTypes.map(group => (
-          <div key={group.group}>
-            <button
-              onClick={() => setExpandedGroup(g => g === group.group ? null : group.group)}
-              className="w-full flex items-center justify-between px-4 py-2 transition-colors"
-              style={{ color: 'var(--theme-text-muted)' }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--theme-text)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--theme-text-muted)' }}
-            >
-              <span className="text-[11px] font-semibold uppercase tracking-wider">{group.group}</span>
-              <ChevronDown
-                size={12}
-                style={{
-                  transition: 'transform 0.2s',
-                  transform: expandedGroup === group.group ? 'rotate(180deg)' : 'rotate(0deg)',
-                }}
-              />
-            </button>
-
-            {expandedGroup === group.group && (
-              <div className="pb-2">
-                {group.items.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => { setSelectedType(item); setGenerated(null) }}
-                    className="w-full text-left px-4 py-2 flex items-center gap-2.5 transition-all duration-150"
-                    style={{
-                      background: selectedType?.id === item.id ? 'var(--theme-accent-bg)' : 'transparent',
-                      borderLeft: selectedType?.id === item.id ? '2px solid var(--theme-accent)' : '2px solid transparent',
-                    }}
-                    onMouseEnter={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'var(--theme-accent-bg)' }}
-                    onMouseLeave={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'transparent' }}
-                  >
-                    <item.icon size={12} style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)', flexShrink: 0 }} />
-                    <span className="text-[12px] leading-tight" style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)' }}>
-                      {item.label}
-                    </span>
-                  </button>
-                ))}
+    <div className="flex flex-col md:flex-row h-full overflow-hidden w-full">
+      {/* Mobile Selector Header/Toggle */}
+      <div className="md:hidden flex items-center justify-between p-3 border-b flex-shrink-0" style={{ borderColor: 'var(--theme-border-color)', background: 'var(--theme-sidebar-bg)' }}>
+        <div className="flex items-center gap-2">
+          {selectedType ? (
+            <>
+              <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: PLATFORM_COLORS[selectedType.platform] || 'rgba(255,255,255,0.08)' }}>
+                <selectedType.icon size={11} className="text-white/70" />
               </div>
-            )}
-          </div>
-        ))}
+              <span className="text-[13px] font-semibold text-white">{selectedType.label}</span>
+            </>
+          ) : (
+            <span className="text-[13px] text-white/40">Select a content type...</span>
+          )}
+        </div>
+        <button
+          onClick={() => setShowTypeSelectorMobile(true)}
+          className="text-[12px] font-semibold text-purple-400 bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20"
+        >
+          Change Type
+        </button>
       </div>
+
+      {/* ─── Left: Type selector ────────────────────────────────── */}
+      <div className="hidden md:block w-56 border-r flex-shrink-0 overflow-y-auto py-4" style={{ borderColor: 'var(--theme-border-color)' }}>
+        {renderSelectorItems()}
+      </div>
+
+      {/* Mobile Type Selector Drawer/Bottom Sheet */}
+      {showTypeSelectorMobile && (
+        <>
+          <div
+            className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm md:hidden"
+            onClick={() => setShowTypeSelectorMobile(false)}
+          />
+          <div
+            className="fixed bottom-0 left-0 right-0 z-[1001] max-h-[80vh] rounded-t-2xl border-t p-4 flex flex-col md:hidden animate-slide-up"
+            style={{
+              background: 'var(--theme-sidebar-bg)',
+              borderColor: 'var(--theme-border-color)',
+              animation: 'slideUpMobile 0.25s ease-out forwards',
+            }}
+          >
+            <style>{`
+              @keyframes slideUpMobile {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+              }
+            `}</style>
+            <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-4" />
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[14px] font-bold text-white">Choose Content Type</span>
+              <button onClick={() => setShowTypeSelectorMobile(false)} className="text-[12px] text-white/40 hover:text-white">Close</button>
+            </div>
+            <div className="flex-1 overflow-y-auto pb-6">
+              {renderSelectorItems()}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ─── Right: Generator ───────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -704,24 +800,24 @@ export default function Studio() {
         ) : (
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Top bar */}
-            <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--theme-border-color)' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0 gap-3" style={{ borderColor: 'var(--theme-border-color)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: PLATFORM_COLORS[selectedType.platform] || 'rgba(255,255,255,0.08)' }}>
                   <selectedType.icon size={13} className="text-white/70" />
                 </div>
                 <div>
-                  <p className="text-[14px] font-semibold text-white">{selectedType.label}</p>
-                  <p className="text-[11px]" style={{ color: 'var(--theme-text-muted)' }}>{selectedType.platform}</p>
+                  <p className="text-[13px] sm:text-[14px] font-semibold text-white">{selectedType.label}</p>
+                  <p className="text-[10px] sm:text-[11px]" style={{ color: 'var(--theme-text-muted)' }}>{selectedType.platform}</p>
                 </div>
               </div>
 
               {/* Tone selector */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[11px]" style={{ color: 'var(--theme-text-muted)' }}>Tone:</span>
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-wrap">
                   {TONE_OPTIONS.map(t => (
                     <button key={t} onClick={() => setTone(t)}
-                      className="text-[11px] px-2.5 py-1 rounded-full transition-all duration-150"
+                      className="text-[10px] sm:text-[11px] px-2.5 py-1 rounded-full transition-all duration-150"
                       style={{
                         background: tone === t ? 'var(--theme-accent-bg)' : 'rgba(255,255,255,0.05)',
                         color: tone === t ? 'var(--theme-text)' : 'var(--theme-text-muted)',
@@ -735,15 +831,15 @@ export default function Studio() {
             </div>
 
             {/* Input area */}
-            <div className="px-6 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--theme-border-color)' }}>
-              <p className="text-[12px] mb-2" style={{ color: 'var(--theme-text-muted)' }}>Context (optional)</p>
-              <div className="flex gap-3">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--theme-border-color)' }}>
+              <p className="text-[11px] sm:text-[12px] mb-2" style={{ color: 'var(--theme-text-muted)' }}>Context (optional)</p>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <div
-                  className="flex-1 rounded-xl border px-4 py-2.5 transition-all duration-200 focus-within:border-white/20"
+                  className="flex-1 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all duration-200 focus-within:border-white/20"
                   style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}
                 >
                   <input
-                    className="forge-input text-[13px] w-full"
+                    className="forge-input text-[12px] sm:text-[13px] w-full"
                     placeholder={`e.g. "focus on the community angle" or paste your idea here...`}
                     value={input}
                     onChange={e => setInput(e.target.value)}
@@ -753,7 +849,7 @@ export default function Studio() {
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating}
-                  className="forge-btn-primary text-[13px] py-2.5 px-5 gap-2 flex-shrink-0"
+                  className="forge-btn-primary text-[12.5px] sm:text-[13px] py-2 sm:py-2.5 px-4 sm:px-5 gap-2 flex-shrink-0 justify-center animate-pulse-once"
                 >
                   {isGenerating ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
                   Generate
