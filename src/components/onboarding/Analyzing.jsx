@@ -139,7 +139,7 @@ function IdentityPalette({ hue, visible }) {
 }
 
 export default function Analyzing() {
-  const { next, creatorData, updateCreator, startBgJob } = useForge()
+  const { next, creatorData, updateCreator, startBgJob, prev } = useForge()
   const accent = getAccent(creatorData.platform)
   const recsJob = useBgJob('onboarding-recs')
 
@@ -224,7 +224,9 @@ export default function Analyzing() {
                 display_name: data.name,
                 bio: data.description,
                 follower_count: data.followers,
-                niche: [data.niche],
+                niche: Array.isArray(data.niche)
+                  ? data.niche.filter(Boolean).map(String)
+                  : (data.niche ? [String(data.niche)] : []),
                 profile_url: `https://${data.platform}.com/${data.handle.replace('@', '')}`,
                 discovery_source: 'onboarding_flow'
               })
@@ -335,9 +337,22 @@ export default function Analyzing() {
       <div className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2.5">
-            <WingLogo size={22} />
-            <span className="text-white/50 font-semibold text-[13px] tracking-tight">Creator Forge</span>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={prev}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-150"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'rgba(255,255,255,0.5)',
+              }}
+            >
+              ← Back
+            </button>
+            <div className="flex items-center gap-2.5">
+              <WingLogo size={22} />
+              <span className="text-white/50 font-semibold text-[13px] tracking-tight">Creator Forge</span>
+            </div>
           </div>
           {scrapeError && (
             <div className="flex flex-col items-end gap-1">

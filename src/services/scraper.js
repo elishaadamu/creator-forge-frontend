@@ -68,14 +68,11 @@ export function clearInMemoryKeys() {
  * YouTube API key also works as an alternative for YouTube only.
  */
 export function hasKey(platform) {
-  const { youtubeApiKey, apifyToken } = loadKeys()
-  if (platform === 'youtube') return !!(apifyToken || youtubeApiKey)
-  return !!apifyToken
+  return true
 }
 
 export function hasAnyKey() {
-  const { youtubeApiKey, apifyToken } = loadKeys()
-  return !!(youtubeApiKey || apifyToken)
+  return true
 }
 
 /** Test an Apify token by calling the /users/me endpoint.
@@ -148,12 +145,43 @@ export function clearScrapePromise() {
 }
 
 async function _doScrape(url, platform) {
-  switch (platform) {
-    case 'youtube':   return scrapeYouTube(url)
-    case 'instagram': return scrapeInstagram(url)
-    case 'tiktok':    return scrapeTikTok(url)
-    case 'twitter':   return scrapeTwitter(url)
-    default:          throw new Error('Unsupported platform')
+  const handle = extractHandle(url)
+  const res = await fetch('/api/creators/scrape', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ platform, handle, save: false })
+  })
+  if (!res.ok) {
+    const txt = await res.text()
+    throw new Error(`Scrape failed: ${res.status} ${txt.slice(0, 150)}`)
+  }
+  const data = await res.json()
+  if (data.error || !data.scraped) {
+    throw new Error(data.error || 'Failed to retrieve scraped data from backend.')
+  }
+  const scraped = data.scraped
+  return {
+    platform: scraped.platform,
+    handle: scraped.handle,
+    name: scraped.display_name || scraped.handle?.replace('@', ''),
+    followers: scraped.follower_count || 0,
+    description: scraped.bio || '',
+    avatarUrl: scraped.avatar_url || '',
+    videoCount: scraped.videoCount || scraped.video_count || 0,
+    postCount: scraped.postCount || scraped.post_count || 0,
+    totalViews: scraped.totalViews || scraped.total_views || 0,
+    following: scraped.following || 0,
+    heartCount: scraped.heartCount || scraped.heart_count || 0,
+    recentPosts: (scraped.recent_posts || []).map(p => ({
+      title: p.title || '',
+      thumbnail: p.thumbnail || '',
+      videoId: p.videoId || '',
+      url: p.url || '',
+      views: typeof p.views === 'number' ? fmt(p.views) : String(p.views || ''),
+      likes: typeof p.likes === 'number' ? fmt(p.likes) : String(p.likes || ''),
+      comments: typeof p.comments === 'number' ? fmt(p.comments) : String(p.comments || ''),
+      hue: platform === 'youtube' ? 0 : platform === 'instagram' ? 330 : platform === 'tiktok' ? 180 : 210
+    }))
   }
 }
 
@@ -575,7 +603,10 @@ function extractHandle(url) {
     if (parts.length) {
       if (parts[0] === 'user' || parts[0] === 'c' || parts[0] === 'channel') {
         const h = parts[1]
-        if (h) return h.replace('@', '')
+        if (h) {
+          if (parts[0] === 'channel') return `channel/${h}`
+          return h.replace('@', '')
+        }
       }
       const last = parts[parts.length - 1]
       const h = (last === 'videos' || last === 'shorts' || last === 'featured') && parts.length > 1

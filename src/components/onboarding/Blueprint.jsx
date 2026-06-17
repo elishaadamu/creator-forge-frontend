@@ -399,7 +399,7 @@ function getReasonsCategoryKey(selectedBlueprint) {
 }
 
 export default function Blueprint() {
-  const { next, creatorData, updateCreator, startBgJob } = useForge()
+  const { next, creatorData, updateCreator, startBgJob, prev } = useForge()
   const accent  = getAccent(creatorData.platform)
   
   const recsJob = useBgJob('onboarding-recs')
@@ -486,9 +486,22 @@ export default function Blueprint() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="flex items-center justify-between px-8 py-6">
-        <div className="flex items-center gap-2.5">
-          <WingLogo size={26} />
-          <span className="text-white font-semibold text-[15px] tracking-tight">Creator Forge</span>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={prev}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-150"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.5)',
+            }}
+          >
+            ← Back
+          </button>
+          <div className="flex items-center gap-2.5">
+            <WingLogo size={26} />
+            <span className="text-white font-semibold text-[15px] tracking-tight">Creator Forge</span>
+          </div>
         </div>
         <div className="flex items-center gap-1.5">
           {[1,2,3,4,5,6,7,8].map(i => (

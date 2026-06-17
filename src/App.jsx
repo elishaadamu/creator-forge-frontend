@@ -12,8 +12,8 @@ import Login from './components/onboarding/Login'
 import DashboardLayout from './components/dashboard/DashboardLayout'
 import OpsLayout from './components/ops/OpsLayout'
 import OpsAuth from './components/ops/OpsAuth'
-import { clearInMemoryKeys, loadKeys } from './services/scraper'
-import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys } from './services/ai'
+import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
+import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys } from './services/ai'
 import { CheckCircle, AlertCircle, X } from 'lucide-react'
 
 export const ForgeContext = createContext(null)
@@ -47,6 +47,7 @@ const PLATFORM_ACCENTS = {
 export function getAccent(platform) {
   return PLATFORM_ACCENTS[platform] || PLATFORM_ACCENTS.other
 }
+
 
 function GlobalToast({ toast, onClose }) {
   const [progress, setProgress] = useState(100)
@@ -279,6 +280,7 @@ export default function App() {
 
   const updateAiKeys = useCallback((newKeys) => {
     if (newKeys) {
+      saveAiKeys(newKeys)
       restoreAiKeysFromLoginData(newKeys)
       setAiKeysState({
         geminiKey: newKeys.geminiKey || '',
@@ -288,6 +290,45 @@ export default function App() {
       })
     }
   }, [])
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => {
+        if (res.ok) return res.json()
+      })
+      .then(data => {
+        if (data) {
+          console.log('[Forge] Syncing backend settings to localStorage:', {
+            apify_api_key: data.apify_api_key ? 'FOUND (length: ' + data.apify_api_key.length + ')' : 'MISSING',
+            openai_api_key: data.openai_api_key ? 'FOUND' : 'MISSING',
+            gemini_api_key: data.gemini_api_key ? 'FOUND' : 'MISSING',
+            anthropic_api_key: data.anthropic_api_key ? 'FOUND' : 'MISSING',
+          })
+          if (data.apify_api_key) {
+            localStorage.setItem('forge_apify_token', data.apify_api_key)
+            saveKeys({ apifyToken: data.apify_api_key })
+            console.log('[Forge] apify_api_key synced to forge_apify_token in localStorage.')
+          }
+          if (data.gemini_api_key && !localStorage.getItem('forge_gemini_api_key')) {
+            localStorage.setItem('forge_gemini_api_key', data.gemini_api_key)
+          }
+          if (data.openai_api_key && !localStorage.getItem('forge_openai_api_key')) {
+            localStorage.setItem('forge_openai_api_key', data.openai_api_key)
+          }
+          if (data.anthropic_api_key && !localStorage.getItem('forge_anthropic_api_key')) {
+            localStorage.setItem('forge_anthropic_api_key', data.anthropic_api_key)
+          }
+          updateAiKeys({
+            geminiKey: localStorage.getItem('forge_gemini_api_key') || data.gemini_api_key || '',
+            openaiKey: localStorage.getItem('forge_openai_api_key') || data.openai_api_key || '',
+            anthropicKey: localStorage.getItem('forge_anthropic_api_key') || data.anthropic_api_key || '',
+          })
+        }
+      })
+      .catch(err => {
+        console.warn('[Forge] Failed to sync settings keys on mount:', err)
+      })
+  }, [updateAiKeys])
 
   const [globalToast, setGlobalToast] = useState(null)
   const triggerToast = useCallback((message, type = 'success') => {
@@ -479,6 +520,15 @@ export default function App() {
       if (idx < STEPS.length - 1) navigate(STEPS[idx + 1])
     }
   }
+
+  const prev = useCallback(() => {
+    if (step === 'signup' || step === 'login') {
+      navigate('celebration')
+    } else {
+      const idx = STEPS.indexOf(step)
+      if (idx > 0) navigate(STEPS[idx - 1])
+    }
+  }, [step, navigate])
 
   const goTo = (s) => navigate(s)
 
@@ -675,6 +725,7 @@ export default function App() {
   const ctx = {
     step,
     next,
+    prev,
     goTo,
     creatorData,
     updateCreator,

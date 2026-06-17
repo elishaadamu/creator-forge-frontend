@@ -721,7 +721,6 @@ export default function Settings() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleSaveApiKeys}
-                  disabled={!(gemKey.trim() || togetherKey.trim() || openaiKey.trim())}
                   className="forge-btn-primary flex-1 text-[14px] py-3 gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   {keysSaved ? <><Check size={14} /> Saved!</> : 'Save API Keys'}

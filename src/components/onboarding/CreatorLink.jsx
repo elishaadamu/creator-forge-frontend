@@ -4,6 +4,7 @@ import { ArrowRight, Youtube, Instagram, Twitter, Globe, X, Settings, AlertCircl
 import WingLogo from '../ui/WingLogo'
 import ApiKeysModal from '../ui/ApiKeysModal'
 import { startScrape, hasKey, loadKeys } from '../../services/scraper'
+import { loadAiKeys } from '../../services/ai'
 
 const PLATFORMS = [
   { id: 'youtube',   label: 'YouTube',     icon: Youtube,   patterns: ['youtube.com','youtu.be'] },
@@ -31,7 +32,10 @@ function extractHandle(url) {
       // Handle youtube.com/user/handle, youtube.com/c/handle, etc.
       if (parts[0] === 'user' || parts[0] === 'c' || parts[0] === 'channel') {
         const h = parts[1]
-        if (h) return h.startsWith('@') ? h : `@${h}`
+        if (h) {
+          if (parts[0] === 'channel') return `channel/${h}`
+          return h.startsWith('@') ? h : `@${h}`
+        }
       }
       // General fallback, ignore trailing /videos or /shorts
       const last = parts[parts.length - 1]
@@ -52,7 +56,7 @@ const EXAMPLES = [
 ]
 
 export default function CreatorLink() {
-  const { next, updateCreator } = useForge()
+  const { next, updateCreator, prev } = useForge()
   const [url, setUrl]               = useState('')
   const [platform, setPlatform]     = useState(null)
   const [handle, setHandle]         = useState('')
@@ -76,13 +80,23 @@ export default function CreatorLink() {
   // Refresh key status whenever modal closes; auto-continue if pending
   useEffect(() => {
     const keys = loadKeys()
-    const configured = !!(keys.youtubeApiKey || keys.apifyToken)
-    setKeysConfigured(configured)
+    const aiKeys = loadAiKeys()
+    const scrapingConfigured = !!(keys.youtubeApiKey || keys.apifyToken)
+    const aiConfigured = !!(aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey)
+    setKeysConfigured(scrapingConfigured || aiConfigured)
 
     // If user just added a key after being blocked, continue automatically
-    if (pendingContinue.current && configured) {
-      pendingContinue.current = false
-      _doNavigate()
+    if (pendingContinue.current) {
+      const platformId = platform?.id || 'other'
+      const scrapingRequired = platform && !hasKey(platformId)
+      
+      const scrapingOk = !scrapingRequired || scrapingConfigured
+      const aiOk = aiConfigured
+
+      if (scrapingOk && aiOk) {
+        pendingContinue.current = false
+        _doNavigate()
+      }
     }
   }, [showKeysModal])
 
@@ -134,6 +148,15 @@ export default function CreatorLink() {
       return
     }
 
+    // Prompt user to add AI API key next if none is set
+    const aiKeys = loadAiKeys()
+    const hasAiKey = !!(aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey)
+    if (!hasAiKey) {
+      pendingContinue.current = true
+      setShowKeysModal(true)
+      return
+    }
+
     _doNavigate()
   }
 
@@ -143,9 +166,22 @@ export default function CreatorLink() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="flex items-center justify-between px-8 py-6">
-        <div className="flex items-center gap-2.5">
-          <WingLogo size={26} />
-          <span className="text-white font-semibold text-[15px] tracking-tight">Creator Forge</span>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={prev}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-150"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.5)',
+            }}
+          >
+            ← Back
+          </button>
+          <div className="flex items-center gap-2.5">
+            <WingLogo size={26} />
+            <span className="text-white font-semibold text-[15px] tracking-tight">Creator Forge</span>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button
