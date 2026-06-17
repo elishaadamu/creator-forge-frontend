@@ -83,7 +83,7 @@ export default function CreatorLink() {
     const aiKeys = loadAiKeys()
     const scrapingConfigured = !!(keys.youtubeApiKey || keys.apifyToken)
     const aiConfigured = !!(aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey)
-    setKeysConfigured(scrapingConfigured || aiConfigured)
+    setKeysConfigured(aiConfigured)
 
     // If user just added a key after being blocked, continue automatically
     if (pendingContinue.current) {
@@ -316,12 +316,42 @@ export default function CreatorLink() {
             </div>
           )}
 
+          {platform && !keysConfigured && (
+            <div
+              className="mb-5 rounded-xl p-4"
+              style={{ background: 'rgba(255,180,0,0.06)', border: '1px solid rgba(255,180,0,0.2)' }}
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle size={14} style={{ color: 'rgba(255,180,0,0.8)', flexShrink: 0, marginTop: 1 }} />
+                <div className="flex-1">
+                  <p className="text-[13px] font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                    AI API key required for onboarding
+                  </p>
+                  <p className="text-[12px] leading-relaxed mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    A Google Gemini or OpenAI API key is required to run audience analysis, suggest products, and generate marketing copy.
+                  </p>
+                  <button
+                    onClick={() => setShowKeysModal(true)}
+                    className="text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.09)',
+                      color: 'rgba(255,255,255,0.75)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                    }}
+                  >
+                    Add AI key now
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {platform && platformHasKey && (
             <div className="mb-5 flex items-center gap-2 px-3 py-2 rounded-lg"
               style={{ background: 'rgba(100,220,100,0.06)', border: '1px solid rgba(100,220,100,0.15)' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
               <p className="text-[12px]" style={{ color: 'rgba(100,220,100,0.8)' }}>
-                API connected. Real data will be scraped from {platform.label}.
+                Scraping active. Real data will be scraped from {platform.label}.
               </p>
             </div>
           )}
@@ -330,7 +360,7 @@ export default function CreatorLink() {
 
           <button onClick={handleContinue} disabled={!url.trim()}
             className="forge-btn-primary w-full text-[15px] py-3.5 group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:transform-none">
-            {platform && !platformHasKey ? 'Connect API + Analyze' : 'Analyze my audience'}
+            {!keysConfigured ? 'Connect AI Key' : (platform && !platformHasKey ? 'Connect API + Analyze' : 'Analyze my audience')}
             <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
           </button>
 

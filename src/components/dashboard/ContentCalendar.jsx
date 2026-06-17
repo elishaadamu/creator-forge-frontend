@@ -248,7 +248,7 @@ function EmptySlot({ day, onGenerate, isGenerating }) {
 }
 
 export default function ContentCalendar() {
-  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dbLoadedTimestamp } = useForge()
+  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dbLoadedTimestamp, userProfile } = useForge()
   const handle = creatorData?.handle || 'default'
 
   const [activeGoal, setActiveGoal] = useState(() => {
@@ -396,13 +396,17 @@ export default function ContentCalendar() {
   }
 
   useEffect(() => {
+    // Wait for DB profile and AI keys to finish restoring if logged in
+    if (userProfile?.username && dbLoadedTimestamp === 0) {
+      return
+    }
     const handle = creatorData?.handle
     if (!handle || handle === 'default') {
       setCalendar(INITIAL_CALENDAR)
       return
     }
     loadOrGenerateCalendar(activeGoal, false)
-  }, [activeGoal, week, creatorData?.handle, dbLoadedTimestamp])
+  }, [activeGoal, week, creatorData?.handle, dbLoadedTimestamp, userProfile?.username])
 
   // Reload activeGoal when database loads
   useEffect(() => {

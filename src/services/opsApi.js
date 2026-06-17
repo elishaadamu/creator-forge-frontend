@@ -1,7 +1,4 @@
-/**
- * Ops API client — talks to the FastAPI backend
- * Base URL: /api (proxied via Vite dev server, Vercel rewrites in prod)
- */
+import { loadAiKeys } from './ai'
 
 const BASE = '/api'
 
@@ -24,9 +21,16 @@ function proxyAvatars(obj) {
 }
 
 async function req(method, path, body) {
+  const aiKeys = loadAiKeys()
   const opts = {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Gemini-Key': aiKeys?.geminiKey || '',
+      'X-OpenAI-Key': aiKeys?.openaiKey || '',
+      'X-Anthropic-Key': aiKeys?.anthropicKey || '',
+      'X-Together-Key': aiKeys?.togetherKey || '',
+    },
   }
   if (body) opts.body = JSON.stringify(body)
   const res = await fetch(BASE + path, opts)

@@ -839,7 +839,7 @@ function mapCalendarResult(result) {
 }
 
 export default function Marketing() {
-  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dbLoadedTimestamp } = useForge()
+  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dbLoadedTimestamp, userProfile } = useForge()
   const accent = getAccent(creatorData.platform)
   const autofillJob = useBgJob(AUTOFILL_JOB)
 
@@ -1001,6 +1001,10 @@ export default function Marketing() {
 
   // ── Load cache or trigger autofill on mount
   useEffect(() => {
+    // Wait for DB profile and AI keys to finish restoring if logged in
+    if (userProfile?.username && dbLoadedTimestamp === 0) {
+      return
+    }
     const h = creatorData?.handle
     if (!h || h === 'default') return
 
@@ -1024,7 +1028,7 @@ export default function Marketing() {
         setWeek(INITIAL_WEEK)
       }
     }
-  }, [creatorData?.handle, week, autofillJob.status])
+  }, [creatorData?.handle, week, autofillJob.status, dbLoadedTimestamp, userProfile?.username])
 
   // ── Apply result when autofill job finishes (even if user was on another tab)
   useEffect(() => {
