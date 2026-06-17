@@ -523,10 +523,19 @@ export default function Accounts() {
                   <div className="p-4 rounded-xl border border-white/5 bg-white/[0.02] space-y-2">
                     <h4 className="font-semibold text-white/80">Permissions requested:</h4>
                     <ul className="list-disc pl-4 text-white/40 space-y-1 text-[12px]">
-                      <li>Access your Instagram Business Profile Info</li>
-                      <li>Publish media, posts, and Reels to your profile</li>
-                      <li>Manage your linked pages & accounts list</li>
+                      <li>Access your Instagram Business Profile Info (`instagram_business_basic`)</li>
+                      <li>Publish media, posts, and Reels to your profile (`instagram_business_content_publish`)</li>
+                      <li>Manage your linked pages & accounts list (`pages_show_list`, `pages_read_engagement`)</li>
                     </ul>
+                  </div>
+                  <div className="p-3.5 rounded-xl border border-purple-500/10 bg-purple-500/[0.02] space-y-1">
+                    <p className="text-purple-400 font-bold text-[12px] flex items-center gap-1.5">
+                      <Radio size={13} className="animate-pulse" />
+                      Auto-Publishing Flow
+                    </p>
+                    <p className="text-white/50 text-[11px] leading-normal">
+                      Once connected, schedule any post in the **Content Calendar** tab, then toggle **Auto-post** to **ON** in your connected account settings to publish automatically!
+                    </p>
                   </div>
                   <button
                     onClick={() => {
@@ -554,7 +563,7 @@ export default function Accounts() {
                   </div>
 
                   <div className="space-y-2.5">
-                    <p className="font-bold text-white/80">Follow these steps to connect:</p>
+                    <p className="font-bold text-white/80">Follow these steps to connect & auto-post:</p>
                     <ol className="list-decimal pl-4 space-y-2 text-white/60 text-[12px]">
                       <li>
                         Ensure your Instagram is a <strong className="text-white">Business or Creator</strong> account and linked to a Facebook Page.
@@ -568,17 +577,20 @@ export default function Accounts() {
                       <li>
                         Open the <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="text-white underline inline-flex items-center gap-0.5 hover:text-white/80">Graph API Explorer <ExternalLink size={10} /></a>. Select your App, and add these scopes:
                         <div className="mt-1 font-mono bg-white/5 p-2 rounded text-white/80 text-[10px] select-all border border-white/5 break-all">
-                          instagram_basic, instagram_content_publish, pages_read_engagement, pages_show_list
+                          instagram_business_basic, instagram_business_content_publish, pages_read_engagement, pages_show_list
                         </div>
                       </li>
                       <li>
-                        Click **Generate Access Token** and approve permissions in the popup.
+                        Click **Generate Access Token** and approve permissions in the popup to authorize your Page.
                       </li>
                       <li>
                         Find your **Instagram Business Account ID** by making this query:
                         <div className="mt-1 font-mono bg-white/5 p-2 rounded text-white/80 text-[10px] border border-white/5">
                           GET /me/accounts?fields=instagram_business_account,name
                         </div>
+                      </li>
+                      <li>
+                        Enter your ID and Token below. To post automatically, schedule any draft in the **Content Calendar** tab, then toggle **Auto-post** to **ON** in this **Accounts** tab.
                       </li>
                     </ol>
                   </div>
