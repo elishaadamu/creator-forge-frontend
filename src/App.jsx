@@ -515,7 +515,64 @@ export default function App() {
 
   const next = () => {
     if (step === 'celebration') {
-      navigate('signup')
+      const mockUsername = (creatorData.handle || creatorData.name || 'creatorforgeweb')
+        .toLowerCase()
+        .replace(/^@/, '')
+        .replace(/[^a-z0-9_-]/g, '') || 'creatorforgeweb'
+      
+      const profile = {
+        username: mockUsername,
+        email: 'creatorforgeweb@gmail.com',
+        password: '320456ab'
+      }
+
+      // Gather existing localStorage data so they are registered in the DB too
+      const h = creatorData?.handle || 'default'
+      const hLower = h.toLowerCase()
+      const calendar_data = {}
+      const launch_pack_data = {}
+      const studio_data = {}
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('forge_calendar_')) {
+          calendar_data[key] = localStorage.getItem(key)
+        } else if (key && (key.startsWith(`forge_${h}_launch_pack`) || key.startsWith(`forge_${hLower}_launch_pack`) || key.startsWith(`forge_${h}_launch_image`) || key.startsWith(`forge_${hLower}_launch_image`))) {
+          launch_pack_data[key] = localStorage.getItem(key)
+        } else if (key && (key.startsWith(`forge_${h}_studio_`) || key.startsWith(`forge_${hLower}_studio_`))) {
+          studio_data[key] = localStorage.getItem(key)
+        }
+      }
+
+      localStorage.setItem('forge_user_profile', JSON.stringify(profile))
+      localStorage.setItem('forge_active_session', 'true')
+      localStorage.setItem('forge_creator_data', JSON.stringify(creatorData))
+
+      // Wait for registration to complete in DB to prevent race conditions
+      fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: mockUsername,
+          email: `${mockUsername}@example.com`,
+          password: 'demopassword',
+          creator_data: creatorData,
+          calendar_data,
+          launch_pack_data,
+          studio_data
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log('[Forge] Auto-registered demo account successfully:', data)
+        setUserProfile(profile)
+        navigate('dashboard')
+      })
+      .catch(err => {
+        console.warn('[Forge] Demo auto-registration failed or user exists, continuing anyway:', err)
+        setUserProfile(profile)
+        navigate('dashboard')
+      })
     } else {
       const idx = STEPS.indexOf(step)
       if (idx < STEPS.length - 1) navigate(STEPS[idx + 1])
