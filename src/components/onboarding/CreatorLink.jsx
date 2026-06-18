@@ -56,7 +56,7 @@ const EXAMPLES = [
 ]
 
 export default function CreatorLink() {
-  const { next, updateCreator, prev } = useForge()
+  const { next, updateCreator, prev, aiKeys } = useForge()
   const [url, setUrl]               = useState('')
   const [platform, setPlatform]     = useState(null)
   const [handle, setHandle]         = useState('')
@@ -66,25 +66,24 @@ export default function CreatorLink() {
   const [keysConfigured, setKeysConfigured] = useState(false)
   // After modal saves a key, auto-continue if we were blocked
   const pendingContinue = useRef(false)
-
+ 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80)
     return () => clearTimeout(t)
   }, [])
-
+ 
   useEffect(() => {
     const interval = setInterval(() => setExampleIdx(i => (i + 1) % EXAMPLES.length), 2800)
     return () => clearInterval(interval)
   }, [])
-
-  // Refresh key status whenever modal closes; auto-continue if pending
+ 
+  // Refresh key status whenever modal closes or context keys change; auto-continue if pending
   useEffect(() => {
     const keys = loadKeys()
-    const aiKeys = loadAiKeys()
     const scrapingConfigured = !!(keys.youtubeApiKey || keys.apifyToken)
-    const aiConfigured = !!(aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey)
+    const aiConfigured = !!(aiKeys?.geminiKey || aiKeys?.openaiKey || aiKeys?.anthropicKey)
     setKeysConfigured(aiConfigured)
-
+ 
     // If user just added a key after being blocked, continue automatically
     if (pendingContinue.current) {
       const platformId = platform?.id || 'other'
@@ -92,13 +91,13 @@ export default function CreatorLink() {
       
       const scrapingOk = !scrapingRequired || scrapingConfigured
       const aiOk = aiConfigured
-
+ 
       if (scrapingOk && aiOk) {
         pendingContinue.current = false
         _doNavigate()
       }
     }
-  }, [showKeysModal])
+  }, [showKeysModal, aiKeys, platform])
 
   const handleChange = (e) => {
     const val = e.target.value
@@ -149,8 +148,7 @@ export default function CreatorLink() {
     }
 
     // Prompt user to add AI API key next if none is set
-    const aiKeys = loadAiKeys()
-    const hasAiKey = !!(aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey)
+    const hasAiKey = !!(aiKeys?.geminiKey || aiKeys?.openaiKey || aiKeys?.anthropicKey)
     if (!hasAiKey) {
       pendingContinue.current = true
       setShowKeysModal(true)
@@ -316,35 +314,6 @@ export default function CreatorLink() {
             </div>
           )}
 
-          {platform && !keysConfigured && (
-            <div
-              className="mb-5 rounded-xl p-4"
-              style={{ background: 'rgba(255,180,0,0.06)', border: '1px solid rgba(255,180,0,0.2)' }}
-            >
-              <div className="flex items-start gap-3">
-                <AlertCircle size={14} style={{ color: 'rgba(255,180,0,0.8)', flexShrink: 0, marginTop: 1 }} />
-                <div className="flex-1">
-                  <p className="text-[13px] font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.75)' }}>
-                    AI API key required for onboarding
-                  </p>
-                  <p className="text-[12px] leading-relaxed mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                    A Google Gemini or OpenAI API key is required to run audience analysis, suggest products, and generate marketing copy.
-                  </p>
-                  <button
-                    onClick={() => setShowKeysModal(true)}
-                    className="text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all"
-                    style={{
-                      background: 'rgba(255,255,255,0.09)',
-                      color: 'rgba(255,255,255,0.75)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                    }}
-                  >
-                    Add AI key now
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {platform && platformHasKey && (
             <div className="mb-5 flex items-center gap-2 px-3 py-2 rounded-lg"
