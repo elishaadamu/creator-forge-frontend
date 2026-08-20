@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   CheckCircle, XCircle, Edit3, Send, Loader2,
-  AlertCircle, RefreshCw, Mail, ChevronDown, ChevronUp, Copy, Check
+  AlertCircle, RefreshCw, Mail, ChevronDown, ChevronUp, Copy, Check, Trash2
 } from 'lucide-react'
 import { getOutreachMessages, approveOutreach, rejectOutreach, sendOutreach, updateOutreachDraft, submitOutreachDraft, addCreatorContact } from '../../services/opsApi'
 
@@ -28,7 +28,7 @@ function CopyBtn({ text }) {
   )
 }
 
-function MessageCard({ msg, onApprove, onReject, onSend, onSubmit, onUpdate, onAddEmailAndSend, working }) {
+function MessageCard({ msg, onApprove, onReject, onSend, onSubmit, onUpdate, onDelete, onAddEmailAndSend, working }) {
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [addingEmail, setAddingEmail] = useState(false)
@@ -129,6 +129,19 @@ function MessageCard({ msg, onApprove, onReject, onSend, onSubmit, onUpdate, onA
               {msg.status === 'failed' ? 'Retry Send' : 'Send Now'}
             </button>
           )}
+          <button
+            onClick={e => {
+              e.stopPropagation()
+              if (confirm('Are you sure you want to delete this message?')) {
+                onDelete?.(msg.id)
+              }
+            }}
+            disabled={working === msg.id}
+            title="Delete Message"
+            className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+          >
+            <Trash2 size={13} />
+          </button>
           <div style={{ color: 'rgba(255,255,255,0.25)' }}>
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </div>
@@ -489,6 +502,20 @@ export default function OutreachQueue({ onCountChange }) {
     load()
   }
 
+  const handleDelete = async (id) => {
+    setWorking(id)
+    try {
+      const { deleteOutreachMessage } = await import('../../services/opsApi')
+      await deleteOutreachMessage(id)
+      showToast('Outreach message deleted.', 'success')
+    } catch (e) {
+      console.warn(e)
+      showToast(e.message || 'Failed to delete message.', 'error')
+    }
+    setWorking(null)
+    load()
+  }
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-5">
@@ -568,6 +595,7 @@ export default function OutreachQueue({ onCountChange }) {
               onSend={handleSend}
               onSubmit={handleSubmit}
               onUpdate={handleUpdate}
+              onDelete={handleDelete}
               onAddEmailAndSend={handleAddEmailAndSend}
               working={working}
             />

@@ -121,6 +121,9 @@ export const updateOutreachDraft = (id, subject, body) =>
 export const submitOutreachDraft = (id) =>
   req('POST', `/outreach/drafts/${id}/submit`)
 
+export const deleteOutreachMessage = (id) =>
+  req('DELETE', `/outreach/messages/${id}`)
+
 // ── Reply Inbox ──────────────────────────────────────────────────────────────
 
 export const getThreads = (params = {}) => {
@@ -133,6 +136,12 @@ export const getThread = (id) =>
 
 export const sendThreadReply = (threadId, body, toEmail = null) =>
   req('POST', `/outreach/threads/${threadId}/reply`, { body, to_email: toEmail })
+
+export const deleteThread = (id) =>
+  req('DELETE', `/outreach/threads/${id}`)
+
+export const deleteReply = (id) =>
+  req('DELETE', `/outreach/replies/${id}`)
 
 // ── Campaigns ────────────────────────────────────────────────────────────────
 
@@ -167,4 +176,5 @@ export const deleteAutonomousCampaign = (id) => req('DELETE', `/autonomous/campa
 export const runAutonomousBatch = (id, limit) => req('POST', `/autonomous/campaigns/${id}/run${limit ? '?limit=' + limit : ''}`)
 export const runAutonomousFollowups = (id) => req('POST', `/autonomous/run-followups${id ? '?campaign_id=' + id : ''}`)
 export const previewAutonomousTemplate = (data) => req('POST', '/autonomous/preview', data)
+export const discoverAutonomousCreators = (data) => req('POST', '/autonomous/discover-creators', data || {})
 

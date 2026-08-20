@@ -13,6 +13,7 @@ import DashboardLayout from './components/dashboard/DashboardLayout'
 import OpsLayout from './components/ops/OpsLayout'
 import OpsAuth from './components/ops/OpsAuth'
 import CommunityJoin from './components/public/CommunityJoin'
+import CreatorLaunchLayout from './components/launch/CreatorLaunchLayout'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys } from './services/ai'
 import { CheckCircle, AlertCircle, X } from 'lucide-react'
@@ -815,6 +816,11 @@ export default function App() {
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/join/')) {
     const joinHandle = window.location.pathname.replace('/join/', '').replace(/\/$/, '')
     return <CommunityJoin handle={joinHandle} />
+  }
+
+  // /launch or /creator-launch route — standalone Creator Launch OS
+  if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/launch') || window.location.pathname.startsWith('/creator-launch'))) {
+    return <CreatorLaunchLayout />
   }
 
   // /ops route — internal operator pipeline panel (login-protected)

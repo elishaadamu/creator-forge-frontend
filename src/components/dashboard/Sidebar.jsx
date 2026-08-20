@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Megaphone, Calendar, Layers, Package, DollarSign, Link, Settings, ChevronLeft, ChevronRight, Users, Laptop, LogOut, UserPlus, ShieldAlert, X } from 'lucide-react'
+import { Megaphone, Calendar, Layers, Package, DollarSign, Link, Settings, ChevronLeft, ChevronRight, Users, Laptop, LogOut, UserPlus, ShieldAlert, X, Rocket } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { useForge } from '../../App'
 
@@ -222,6 +222,30 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
         {/* Navigation */}
         <nav className="flex-1 py-3 overflow-hidden">
           <div className="space-y-0.5 px-2">
+            <button
+              onClick={() => window.location.href = '/launch'}
+              title={!isOpen ? 'Creator Launch OS' : undefined}
+              className="w-full flex items-center rounded-xl transition-all duration-200 group overflow-hidden mb-2"
+              style={{
+                padding: isOpen ? '9px 10px' : '9px 0',
+                justifyContent: isOpen ? 'flex-start' : 'center',
+                gap: isOpen ? '10px' : '0',
+                background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(79, 70, 229, 0.25))',
+                border: '1px solid rgba(168, 85, 247, 0.4)',
+              }}
+            >
+              <Rocket size={16} className="flex-shrink-0 text-purple-400 animate-pulse" />
+              {isOpen && (
+                <>
+                  <span className="text-[13px] font-bold flex-1 text-left whitespace-nowrap text-white">
+                    Creator Launch
+                  </span>
+                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40">
+                    OS
+                  </span>
+                </>
+              )}
+            </button>
             {NAV_ITEMS.map(({ id, icon: Icon, label, badge }) => {
               const isActive = activeTab === id
               return (
