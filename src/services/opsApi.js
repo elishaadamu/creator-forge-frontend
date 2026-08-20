@@ -131,8 +131,8 @@ export const getThreads = (params = {}) => {
 export const getThread = (id) =>
   req('GET', `/outreach/threads/${id}`)
 
-export const sendThreadReply = (threadId, body) =>
-  req('POST', `/outreach/threads/${threadId}/reply`, { body })
+export const sendThreadReply = (threadId, body, toEmail = null) =>
+  req('POST', `/outreach/threads/${threadId}/reply`, { body, to_email: toEmail })
 
 // ── Campaigns ────────────────────────────────────────────────────────────────
 
@@ -156,3 +156,15 @@ export const getAgentStatus = () =>
 // ── Analytics ────────────────────────────────────────────────────────────────
 
 export const getAnalytics = () => req('GET', '/analytics/summary')
+
+// ── Autonomous Outreach Campaigns ───────────────────────────────────────────
+
+export const getAutonomousCampaigns = () => req('GET', '/autonomous/campaigns')
+export const createAutonomousCampaign = (data) => req('POST', '/autonomous/campaigns', data)
+export const getAutonomousCampaign = (id) => req('GET', `/autonomous/campaigns/${id}`)
+export const updateAutonomousCampaign = (id, data) => req('PUT', `/autonomous/campaigns/${id}`, data)
+export const deleteAutonomousCampaign = (id) => req('DELETE', `/autonomous/campaigns/${id}`)
+export const runAutonomousBatch = (id, limit) => req('POST', `/autonomous/campaigns/${id}/run${limit ? '?limit=' + limit : ''}`)
+export const runAutonomousFollowups = (id) => req('POST', `/autonomous/run-followups${id ? '?campaign_id=' + id : ''}`)
+export const previewAutonomousTemplate = (data) => req('POST', '/autonomous/preview', data)
+

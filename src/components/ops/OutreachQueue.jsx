@@ -110,11 +110,11 @@ function MessageCard({ msg, onApprove, onReject, onSend, onSubmit, onUpdate, onA
               Submit
             </button>
           )}
-          {msg.status === 'approved' && (
+          {['approved', 'queued', 'failed'].includes(msg.status) && (
             <button
               onClick={e => { 
                 e.stopPropagation(); 
-                if (!msg.contact_id) {
+                if (!msg.creator_email && !msg.contact_id) {
                   setExpanded(true)
                   setAddingEmail(true)
                 } else {
@@ -123,10 +123,10 @@ function MessageCard({ msg, onApprove, onReject, onSend, onSubmit, onUpdate, onA
               }}
               disabled={working === msg.id}
               className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-semibold transition-all disabled:opacity-40"
-              style={{ background: 'rgba(96,165,250,0.15)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.25)' }}
+              style={{ background: msg.status === 'failed' ? 'rgba(239,68,68,0.15)' : 'rgba(96,165,250,0.15)', color: msg.status === 'failed' ? '#f87171' : '#60a5fa', border: msg.status === 'failed' ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(96,165,250,0.25)' }}
             >
               {working === msg.id ? <Loader2 size={10} className="animate-spin" /> : <Send size={10} />}
-              Send Now
+              {msg.status === 'failed' ? 'Retry Send' : 'Send Now'}
             </button>
           )}
           <div style={{ color: 'rgba(255,255,255,0.25)' }}>
@@ -138,9 +138,9 @@ function MessageCard({ msg, onApprove, onReject, onSend, onSubmit, onUpdate, onA
       {/* Expanded body */}
       {expanded && (
         <div className="p-5 space-y-4">
-          {msg.status === 'approved' && !msg.contact_id && addingEmail && (
+          {addingEmail && (
              <div className="px-4 py-3 rounded-xl border" style={{ background: 'rgba(96,165,250,0.08)', borderColor: 'rgba(96,165,250,0.18)' }}>
-                <p className="text-[12px] font-semibold text-blue-400 mb-2">No email address on file. Please add one to send:</p>
+                <p className="text-[12px] font-semibold text-blue-400 mb-2">No valid recipient email address on file. Please enter one to send:</p>
                 <div className="flex gap-2">
                    <input 
                      type="email" 
@@ -354,7 +354,7 @@ export default function OutreachQueue({ onCountChange }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
-  const [statusFilter, setStatusFilter] = useState('review_pending,approved')
+  const [statusFilter, setStatusFilter] = useState('review_pending,approved,queued,failed')
   const [working, setWorking]   = useState(null)
   const [toast, setToast]       = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
@@ -507,10 +507,11 @@ export default function OutreachQueue({ onCountChange }) {
             className="px-3 py-2 rounded-xl text-[12px] outline-none"
             style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
           >
-            <option value="review_pending,approved">Needs Review & Approved</option>
+            <option value="review_pending,approved,queued,failed">Active Queue (Review / Approved / Failed)</option>
             <option value="review_pending">Needs Review</option>
             <option value="draft">Drafts</option>
             <option value="approved">Approved</option>
+            <option value="queued">Queued</option>
             <option value="sent">Sent</option>
             <option value="failed">Failed</option>
             <option value="rejected">Rejected</option>

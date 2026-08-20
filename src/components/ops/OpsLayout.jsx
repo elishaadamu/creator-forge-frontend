@@ -8,15 +8,18 @@ import OutreachQueue from './OutreachQueue'
 import ReplyInbox from './ReplyInbox'
 import CampaignStats from './CampaignStats'
 import AdminControl from './AdminControl'
+import AutonomousOutreach from './AutonomousOutreach'
 import { opsSignOut } from './OpsAuth'
 
 const NAV = [
-  { id: 'leads',    label: 'Lead Discovery',    icon: Users,       badge: null },
-  { id: 'queue',    label: 'Outreach Queue',    icon: Mail,        badge: 'review' },
-  { id: 'inbox',    label: 'Reply Inbox',       icon: MessageSquare, badge: 'new' },
-  { id: 'stats',    label: 'Campaign Stats',    icon: BarChart2,   badge: null },
-  { id: 'admin',    label: 'Admin Control',     icon: Settings,    badge: null },
+  { id: 'leads',      label: 'Lead Discovery',     icon: Users,         badge: null },
+  { id: 'autonomous', label: 'Autonomous Engine',  icon: Zap,           badge: 'auto' },
+  { id: 'queue',      label: 'Outreach Queue',     icon: Mail,          badge: 'review' },
+  { id: 'inbox',      label: 'Reply Inbox',        icon: MessageSquare, badge: 'new' },
+  { id: 'stats',      label: 'Campaign Stats',     icon: BarChart2,     badge: null },
+  { id: 'admin',      label: 'Admin Control',      icon: Settings,      badge: null },
 ]
+
 
 function NavItem({ item, active, onClick, counts }) {
   const Icon = item.icon
@@ -140,11 +143,13 @@ export default function OpsLayout() {
 
   const COMPONENTS = {
     leads: <LeadList onCountChange={handleLeadsCountChange} />,
+    autonomous: <AutonomousOutreach />,
     queue: <OutreachQueue onCountChange={handleQueueCountChange} />,
     inbox: <ReplyInbox onCountChange={handleInboxCountChange} />,
     stats: <CampaignStats />,
     admin: <AdminControl />,
   }
+
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-black text-white" style={{ background: '#080808' }}>

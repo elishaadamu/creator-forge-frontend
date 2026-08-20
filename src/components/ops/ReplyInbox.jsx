@@ -64,6 +64,11 @@ function ThreadCard({ thread, onClick }) {
           <p className="text-[13px] font-semibold text-white truncate">
             {thread.creator_name || `Creator ${thread.creator_id?.slice(0, 8)}`}
           </p>
+          {(thread.recipient_email || thread.creator_email) && (
+            <span className="text-[10px] text-white/40 truncate font-mono">
+              &lt;{thread.recipient_email || thread.creator_email}&gt;
+            </span>
+          )}
           {clf && (
             <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0"
               style={{ background: clf.bg, color: clf.color }}>
@@ -97,18 +102,22 @@ function ThreadCard({ thread, onClick }) {
 
 function ThreadDetail({ thread, onClose, onReload }) {
   const [replyBody, setReplyBody] = useState('')
+  const [recipientEmail, setRecipientEmail] = useState(thread.recipient_email || thread.creator_email || '')
+  const [editingEmail, setEditingEmail] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [sendError, setSendError] = useState('')
+
+  useEffect(() => {
+    setRecipientEmail(thread.recipient_email || thread.creator_email || '')
+  }, [thread])
 
   const handleSend = async () => {
     if (!replyBody.trim()) return
     setIsSending(true)
     setSendError('')
     try {
-      // Need to import sendThreadReply at the top of the file! 
-      // We will add it to the import statement.
       const { sendThreadReply } = await import('../../services/opsApi')
-      await sendThreadReply(thread.id, replyBody)
+      await sendThreadReply(thread.id, replyBody, recipientEmail)
       setReplyBody('')
       onReload?.()
     } catch (e) {
@@ -129,12 +138,31 @@ function ThreadDetail({ thread, onClose, onReload }) {
           <p className="text-[14px] font-semibold text-white">
             {thread.creator_name || `Creator ${thread.creator_id?.slice(0, 8)}`}
           </p>
-          <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-            Thread · {(thread.replies?.length || 0)} reply
-          </p>
+          <div className="flex items-center gap-2 mt-0.5 text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <span>To: <strong className="text-white/80">{recipientEmail || 'No email specified'}</strong></span>
+            <button
+              onClick={() => setEditingEmail(v => !v)}
+              className="text-[10px] text-blue-400 hover:underline ml-1"
+            >
+              {editingEmail ? 'Done' : 'Edit email'}
+            </button>
+          </div>
         </div>
         <button onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors text-[16px]">✕</button>
       </div>
+
+      {editingEmail && (
+        <div className="px-5 py-2.5 bg-zinc-900 border-b border-white/10 flex items-center gap-2">
+          <span className="text-[11px] text-white/50">Recipient:</span>
+          <input
+            type="email"
+            value={recipientEmail}
+            onChange={e => setRecipientEmail(e.target.value)}
+            placeholder="enter recipient email..."
+            className="flex-1 bg-black/50 border border-white/15 px-2.5 py-1 rounded text-[12px] text-white outline-none focus:border-blue-400"
+          />
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
         {/* Original outreach */}
@@ -157,7 +185,7 @@ function ThreadDetail({ thread, onClose, onReload }) {
             <div className="flex items-center gap-2 mb-2">
               <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
               <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                Creator replied {timeSince(reply.received_at)}
+                {reply.from_address?.includes('@') ? reply.from_address : 'Creator'} replied {timeSince(reply.received_at)}
               </span>
               <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
             </div>
@@ -199,7 +227,10 @@ function ThreadDetail({ thread, onClose, onReload }) {
           className="w-full bg-transparent border rounded-xl p-3 text-[13px] text-white placeholder-white/30 outline-none focus:border-white/20 transition-colors resize-none"
           style={{ borderColor: 'rgba(255,255,255,0.1)', minHeight: '80px' }}
         />
-        <div className="flex justify-end mt-2">
+        <div className="flex justify-between items-center mt-2">
+          <div className="text-[11px] text-white/40 truncate max-w-[200px]">
+            Sending to: <span className="text-white/70 font-mono">{recipientEmail || 'no email'}</span>
+          </div>
           <button
             onClick={handleSend}
             disabled={!replyBody.trim() || isSending}
