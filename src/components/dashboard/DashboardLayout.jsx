@@ -14,6 +14,7 @@ import { Sparkles, Laptop, Smartphone, Menu } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { AppMockup } from '../onboarding/Preview'
 import ApiKeysModal from '../ui/ApiKeysModal'
+import { trackVisit } from '../../services/tracker'
 
 function DashboardAppPreview() {
   const { creatorData } = useForge()
@@ -176,6 +177,10 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024)
   const [chatOpen, setChatOpen] = useState(false)
 
+  useEffect(() => {
+    trackVisit('/dashboard')
+  }, [])
+
   const TabComponent = TAB_COMPONENTS[activeTab] || Marketing
   const theme = creatorData.theme || 'dark'
 
@@ -323,7 +328,7 @@ export default function DashboardLayout() {
         {/* Content row */}
         <div className="flex-1 flex overflow-hidden">
           {/* Tab content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full">
             <TabComponent />
           </div>
 

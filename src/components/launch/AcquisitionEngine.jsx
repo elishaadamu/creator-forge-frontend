@@ -329,12 +329,15 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
     setSelectedConceptId(null)
     setRealThreads([])
     setPositiveAdvanceNotice(null)
-    setPitchSentNotice(null)
+    setPitchSentMap({})
+    setAiDetectedChoiceMap({})
     setAutoAdvancedIds(new Set())
     setDiscoveryLog('')
     try {
       localStorage.removeItem('forge_launch_discovered_creators')
       localStorage.removeItem('forge_launch_real_threads')
+      localStorage.removeItem('forge_launch_pitch_sent_map')
+      localStorage.removeItem('forge_launch_ai_choice_map')
       localStorage.removeItem('forge_launch_active_step')
       localStorage.removeItem('forge_launch_acquisition_step')
     } catch (e) {}
@@ -349,11 +352,14 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
     setSelectedConceptId(null)
     setRealThreads([])
     setPositiveAdvanceNotice(null)
-    setPitchSentNotice(null)
+    setPitchSentMap({})
+    setAiDetectedChoiceMap({})
     setAutoAdvancedIds(new Set())
     try {
       localStorage.removeItem('forge_launch_discovered_creators')
       localStorage.removeItem('forge_launch_real_threads')
+      localStorage.removeItem('forge_launch_pitch_sent_map')
+      localStorage.removeItem('forge_launch_ai_choice_map')
       localStorage.removeItem('forge_launch_active_step')
       localStorage.removeItem('forge_launch_acquisition_step')
     } catch (e) {}
@@ -657,6 +663,8 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
   // ── Step 6: Opportunity Pitch State & Human-In-The-Loop Handlers ─────────
   const [isEditingPitch, setIsEditingPitch] = useState(false)
   const [customPitchSubject, setCustomPitchSubject] = useState('')
+  const [customPitchBody, setCustomPitchBody] = useState('')
+  const [isSendingPitch, setIsSendingPitch] = useState(false)
   const [pitchSentMap, setPitchSentMap] = useState(() => {
     try {
       const saved = localStorage.getItem('forge_launch_pitch_sent_map')
@@ -976,13 +984,15 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
   // Watch for creator concept choice replies in Step 6
   useEffect(() => {
     if (activeStep === 6 && realThreads.length > 0) {
-      for (const c of interestedCreators) {
+      for (const c of creators) {
+        const creatorEmail = (c.email || c.email_public || '').toLowerCase().trim()
+        const creatorHandle = (c.handle || '').toLowerCase().replace(/^@/, '').trim()
+        const creatorName = (c.name || c.display_name || '').toLowerCase().trim()
         const thread = realThreads.find(t => 
           t.creator_id === c.id || 
-          (c.email && t.creator_email?.toLowerCase() === c.email.toLowerCase()) ||
-          (c.email_public && t.creator_email?.toLowerCase() === c.email_public.toLowerCase()) || 
-          (c.handle && (t.creator_handle === c.handle || t.subject?.includes(c.handle))) ||
-          (c.name && t.subject?.toLowerCase().includes(c.name.toLowerCase()))
+          (creatorEmail && [t.creator_email, t.recipient_email].some(email => email?.toLowerCase().trim() === creatorEmail)) ||
+          (creatorHandle && t.creator_handle?.toLowerCase().replace(/^@/, '').trim() === creatorHandle) ||
+          (creatorName && [t.creator_name, t.original_subject, t.subject].some(value => value?.toLowerCase().includes(creatorName)))
         )
 
         const incoming = (thread?.replies || []).filter(r => {
@@ -1024,7 +1034,7 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
         }
       }
     }
-  }, [realThreads, activeStep, interestedCreators, selectedCreatorId])
+  }, [realThreads, activeStep, creators, selectedCreatorId])
 
   const handleSimulateReply = (creatorId, classification) => {
     const creator = creators.find(c => c.id === creatorId)

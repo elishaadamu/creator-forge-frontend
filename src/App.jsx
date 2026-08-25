@@ -14,6 +14,9 @@ import OpsLayout from './components/ops/OpsLayout'
 import OpsAuth from './components/ops/OpsAuth'
 import CommunityJoin from './components/public/CommunityJoin'
 import CreatorLaunchLayout from './components/launch/CreatorLaunchLayout'
+import CreatorPortal from './components/launch/CreatorPortal'
+import PreorderLandingPage from './components/launch/PreorderLandingPage'
+import PublicSurveyPage from './components/launch/PublicSurveyPage'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys } from './services/ai'
 import { CheckCircle, AlertCircle, X } from 'lucide-react'
@@ -792,7 +795,25 @@ export default function App() {
     return <CommunityJoin handle={joinHandle} />
   }
 
-  // /launch or /creator-launch route — standalone Creator Launch OS
+  // /portal/:portalId route — dedicated Creator Co-Founder Portal (magic link)
+  if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/portal') || window.location.pathname.startsWith('/co-launch/'))) {
+    const portalId = window.location.pathname.replace('/portal/', '').replace('/portal', '').replace('/co-launch/', '').replace(/\/$/, '')
+    return <CreatorPortal portalId={portalId} />
+  }
+
+  // /preorder/:slug route — live dynamic pre-order landing page & checkout
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/preorder')) {
+    const slug = window.location.pathname.replace('/preorder/', '').replace('/preorder', '').replace(/\/$/, '')
+    return <PreorderLandingPage slug={slug} />
+  }
+
+  // /survey/:slug or /research/:slug route — live shareable audience discovery survey
+  if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/survey') || window.location.pathname.startsWith('/research'))) {
+    const slug = window.location.pathname.replace('/survey/', '').replace('/survey', '').replace('/research/', '').replace('/research', '').replace(/\/$/, '')
+    return <PublicSurveyPage slug={slug} />
+  }
+
+  // /launch or /creator-launch route — standalone Creator Launch OS (Operator Master Command Center)
   if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/launch') || window.location.pathname.startsWith('/creator-launch'))) {
     return <CreatorLaunchLayout />
   }
