@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Rocket, Target, Layers, ExternalLink } from 'lucide-react'
 import AcquisitionEngine from './AcquisitionEngine'
 import ProjectOS from './ProjectOS'
@@ -8,8 +8,32 @@ export default function CreatorLaunchLayout({
   initialCreators = [],
   api = null
 }) {
-  const [activeSection, setActiveSection] = useState('section1')
-  const [activeProject, setActiveProject] = useState(initialProject)
+  const [activeSection, setActiveSection] = useState(() => {
+    try {
+      return localStorage.getItem('forge_launch_active_section') || 'section1'
+    } catch {
+      return 'section1'
+    }
+  })
+  const [activeProject, setActiveProject] = useState(() => {
+    try {
+      const savedProject = localStorage.getItem('forge_launch_active_project')
+      return savedProject ? JSON.parse(savedProject) : initialProject
+    } catch {
+      return initialProject
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('forge_launch_active_section', activeSection)
+      if (activeProject) {
+        localStorage.setItem('forge_launch_active_project', JSON.stringify(activeProject))
+      }
+    } catch (error) {
+      console.warn('[CreatorLaunch] Failed to persist launch state:', error)
+    }
+  }, [activeSection, activeProject])
 
   const handleCreateProjectFromConcept = (newProjData) => {
     setActiveProject(prev => ({

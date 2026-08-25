@@ -64,80 +64,31 @@ function ScrapeModal({ onClose, onSuccess }) {
       console.warn('Scraper module import failed:', e)
     }
 
-    for (const handle of list.slice(0, 20)) {
-      let scrapedOk = false
-      let creatorData = null
-      let errMsg = ''
+    for (const rawInput of list.slice(0, 20)) {
+      try {
+        let platform = selectedPlatform || 'youtube'
+        let handle = rawInput.trim()
 
-      // Try frontend Apify first if keys are configured in frontend local memory
-      if (scraper && scraper.hasKey(platform)) {
-        try {
-          const scraped = await scraper.startScrape(handle, platform)
-          if (scraped && !scraped.error) {
-            const payload = {
-              handle: scraped.handle,
-              platform: scraped.platform,
-              display_name: scraped.display_name,
-              bio: scraped.bio,
-              profile_url: scraped.profile_url,
-              avatar_url: scraped.avatarUrl || scraped.avatar_url,
-              follower_count: scraped.follower_count || 0,
-              niche: scraped.niche || [],
-              website: scraped.website,
-              email_public: scraped.email_public,
-              discovery_source: 'scrape'
-            }
-            const saveRes = await saveCreator(payload)
-            if (saveRes && (saveRes.creator || saveRes.created)) {
-              scrapedOk = true
-              creatorData = saveRes.creator
-              
-              if (scraped.email_public && saveRes.creator?.id) {
-                await fetch(`/api/creators/${saveRes.creator.id}/contacts`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    contact_type: 'email',
-                    value: scraped.email_public,
-                    source: 'scraped_bio'
-                  })
-                }).catch(err => console.warn('Failed to save email contact:', err))
-              }
-              if (scraped.social_links && scraped.social_links.length > 0 && saveRes.creator?.id) {
-                for (const link of scraped.social_links.slice(0, 3)) {
-                  await fetch(`/api/creators/${saveRes.creator.id}/contacts`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      contact_type: 'business_inquiry_form',
-                      value: link,
-                      source: 'scraped_profile'
-                    })
-                  }).catch(err => console.warn('Failed to save social link:', err))
-                }
-              }
-            } else {
-              errMsg = 'Failed to save creator profile to database'
-            }
-          } else {
-            errMsg = scraped?.error || 'Scraper did not return data'
-          }
-        } catch (e) {
-          console.warn(`Frontend scrape failed for ${handle}, falling back to backend:`, e)
-          errMsg = e.message
+        if (rawInput.includes('instagram.com/')) {
+          platform = 'instagram'
+          handle = rawInput.split('instagram.com/')[1].split(/[/?#]/)[0]
+        } else if (rawInput.includes('tiktok.com/')) {
+          platform = 'tiktok'
+          handle = rawInput.split('tiktok.com/')[1].split(/[/?#]/)[0]
+        } else if (rawInput.includes('youtube.com/')) {
+          platform = 'youtube'
+          const ytMatch = rawInput.match(/youtube\.com\/(@[a-zA-Z0-9_\-\.]+)/i) || rawInput.match(/youtube\.com\/(channel\/[a-zA-Z0-9_\-]+)/i) || rawInput.match(/youtube\.com\/(c\/[a-zA-Z0-9_\-\.]+)/i)
+          handle = ytMatch ? ytMatch[1] : rawInput.split('youtube.com/')[1].split(/[/?#]/)[0]
+        } else if (rawInput.includes('twitter.com/') || rawInput.includes('x.com/')) {
+          platform = 'twitter'
+          handle = (rawInput.includes('twitter.com/') ? rawInput.split('twitter.com/')[1] : rawInput.split('x.com/')[1]).split(/[/?#]/)[0]
         }
-      }
 
-      // Fallback to backend scraper
-      if (!scrapedOk) {
-        try {
-          const r = await scrapeCreator(platform, handle)
-          out.push({ handle, ok: true, data: r.creator || r })
-        } catch (e) {
-          out.push({ handle, ok: false, error: errMsg || e.message })
-        }
-      } else {
-        out.push({ handle, ok: true, data: creatorData })
+        const r = await scrapeCreator(platform, handle)
+        const creatorData = r.creator || r.scraped || r
+        out.push({ handle: creatorData?.handle || handle, ok: true, data: creatorData })
+      } catch (e) {
+        out.push({ handle: rawInput, ok: false, error: e.message })
       }
     }
     setResults(out)
@@ -1244,26 +1195,26 @@ export default function LeadList({ onCountChange }) {
       let platform = 'youtube'
       let handle = inputVal
 
-      if (inputVal.includes('instagram.com/')) {
+      if (/instagram\.com/i.test(inputVal)) {
         platform = 'instagram'
-        const parts = inputVal.split('instagram.com/')
-        handle = parts[1].split(/[/?#]/)[0]
-      } else if (inputVal.includes('tiktok.com/')) {
+        const m = inputVal.match(/instagram\.com\/([a-zA-Z0-9_\.\-]+)/i)
+        handle = m ? m[1] : inputVal.split('instagram.com/')[1]?.split(/[/?#]/)[0] || inputVal
+      } else if (/tiktok\.com/i.test(inputVal)) {
         platform = 'tiktok'
-        const parts = inputVal.split('tiktok.com/')
-        handle = parts[1].split(/[/?#]/)[0]
-      } else if (inputVal.includes('youtube.com/')) {
+        const m = inputVal.match(/tiktok\.com\/@?([a-zA-Z0-9_\.\-]+)/i)
+        handle = m ? m[1] : inputVal.split('tiktok.com/')[1]?.split(/[/?#]/)[0] || inputVal
+      } else if (/youtube\.com|youtu\.be/i.test(inputVal)) {
         platform = 'youtube'
-        const parts = inputVal.split('youtube.com/')
-        handle = parts[1].split(/[/?#]/)[0]
-      } else if (inputVal.includes('twitter.com/') || inputVal.includes('x.com/')) {
+        const ytMatch = inputVal.match(/youtube\.com\/(@[a-zA-Z0-9_\-\.]+)/i) ||
+                        inputVal.match(/youtube\.com\/(channel\/[a-zA-Z0-9_\-]+)/i) ||
+                        inputVal.match(/youtube\.com\/(c\/[a-zA-Z0-9_\-\.]+)/i) ||
+                        inputVal.match(/youtube\.com\/(user\/[a-zA-Z0-9_\-\.]+)/i)
+        handle = ytMatch ? ytMatch[1] : inputVal.split('youtube.com/')[1]?.split(/[/?#]/)[0] || inputVal
+      } else if (/twitter\.com|x\.com/i.test(inputVal)) {
         platform = 'twitter'
-        const parts = inputVal.includes('twitter.com/') ? inputVal.split('twitter.com/') : inputVal.split('x.com/')
-        handle = parts[1].split(/[/?#]/)[0]
+        const m = inputVal.match(/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/i)
+        handle = m ? m[1] : inputVal.split('.com/')[1]?.split(/[/?#]/)[0] || inputVal
       } else {
-        if (inputVal.startsWith('@')) {
-          handle = inputVal
-        }
         if (platformFilter) {
           platform = platformFilter
         }
@@ -1271,9 +1222,17 @@ export default function LeadList({ onCountChange }) {
 
       showToast(`Scraping @${handle} on ${platform}...`, 'info')
       const r = await scrapeCreator(platform, handle)
-      showToast(`Successfully scraped and saved @${handle}!`, 'success')
+      const creatorData = r.creator || r.scraped || r
+      if (creatorData && (creatorData.id || creatorData.handle)) {
+        setCreators(prev => [creatorData, ...prev.filter(c => c.id !== creatorData.id && c.handle !== creatorData.handle)])
+      }
+      showToast(`Successfully scraped and saved @${creatorData?.handle || handle}!`, 'success')
       setSearch('')
-      load()
+      setStatusFilter('')
+      setPlatformFilter('')
+      setSizeFilter('')
+      setNicheFilter('')
+      await load()
     } catch (e) {
       console.error(e)
       showToast(`Scrape failed: ${e.message}`, 'error')
@@ -1298,7 +1257,13 @@ export default function LeadList({ onCountChange }) {
 
   const filtered = creators.filter(c => {
     if (search) {
-      const q = search.toLowerCase()
+      let q = search.toLowerCase().trim()
+      if (q.includes('youtube.com/') || q.includes('instagram.com/') || q.includes('tiktok.com/') || q.includes('twitter.com/') || q.includes('x.com/')) {
+        const parts = q.split('.com/')
+        if (parts[1]) q = parts[1].split(/[/?#]/)[0].replace(/^@/, '')
+      } else {
+        q = q.replace(/^@/, '')
+      }
       const matchesText = (c.handle || '').toLowerCase().includes(q) ||
                           (c.display_name || '').toLowerCase().includes(q) ||
                           (c.email_public || '').toLowerCase().includes(q)
@@ -1497,6 +1462,11 @@ export default function LeadList({ onCountChange }) {
                   placeholder="Or paste a URL — youtube.com/@handle - instagram.com/handle - tiktok.com/@handle"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && search.trim() && !scrapingInline) {
+                      handleInlineScrape()
+                    }
+                  }}
                 />
               </div>
 
@@ -1617,8 +1587,11 @@ export default function LeadList({ onCountChange }) {
           onClose={() => setShowScrape(false)}
           onSuccess={() => {
             setShowScrape(false)
+            setStatusFilter('')
+            setPlatformFilter('')
+            setSearch('')
             load()
-            showToast('Creators added successfully!', 'success')
+            showToast('Creators scraped and added successfully!', 'success')
           }}
         />
       )}

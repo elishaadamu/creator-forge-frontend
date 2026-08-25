@@ -9,7 +9,9 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 3001,
+      strictPort: true,
       open: true,
+
       proxy: {
         // Google Gemini — text generation
         '/api/gemini': {
@@ -40,12 +42,15 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: backendTarget,
           changeOrigin: true,
+          timeout: 60000,
+          proxyTimeout: 60000,
           configure: (proxy) => {
             proxy.on('error', (err) => {
               console.warn(`[Vite proxy] FastAPI backend not running at ${backendTarget}:`, err.message)
             })
           },
         },
+
       },
     },
   }

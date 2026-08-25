@@ -16,11 +16,6 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 let supabaseClient = null
 if (SUPABASE_URL && SUPABASE_ANON_KEY) {
   supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-} else {
-  console.warn(
-    '[Creator Forge] Supabase env vars missing.\n' +
-    'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local'
-  )
 }
 
 export const supabase = supabaseClient

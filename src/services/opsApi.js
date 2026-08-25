@@ -1,4 +1,5 @@
 import { loadAiKeys } from './ai'
+import { loadKeys } from './scraper'
 
 const BASE = '/api'
 
@@ -22,6 +23,7 @@ function proxyAvatars(obj) {
 
 async function req(method, path, body) {
   const aiKeys = loadAiKeys()
+  const scrapeKeys = loadKeys()
   const opts = {
     method,
     headers: {
@@ -30,6 +32,7 @@ async function req(method, path, body) {
       'X-OpenAI-Key': aiKeys?.openaiKey || '',
       'X-Anthropic-Key': aiKeys?.anthropicKey || '',
       'X-Together-Key': aiKeys?.togetherKey || '',
+      'X-Apify-Token': scrapeKeys?.apifyToken || localStorage.getItem('forge_apify_token') || '',
     },
   }
   if (body) opts.body = JSON.stringify(body)
@@ -62,8 +65,14 @@ export const getCreators = (params = {}) => {
   return req('GET', `/creators${q ? '?' + q : ''}`)
 }
 
+export const scrapeWithScrapeCreators = (platform, handle, apiKey) =>
+  req('POST', '/creators/scrapecreators', { platform, handle, api_key: apiKey })
+
 export const saveCreator = (data) => 
   req('POST', '/creators', data)
+
+export const updateCreatorDetails = (creatorId, data) =>
+  req('PATCH', `/creators/${creatorId}`, data)
 
 export const recommendCreator = (id) => {
   const actor = getActiveUsername()
@@ -115,6 +124,9 @@ export const rejectOutreach = (id, notes = '') =>
 export const sendOutreach = (id) =>
   req('POST', `/outreach/${id}/send`)
 
+export const sendDirectEmail = (toEmail, subject, body, creatorId = null) =>
+  req('POST', '/outreach/send-direct', { to_email: toEmail, subject, body, creator_id: creatorId })
+
 export const updateOutreachDraft = (id, subject, body) =>
   req('PATCH', `/outreach/${id}`, { subject, body })
 
@@ -130,6 +142,8 @@ export const getThreads = (params = {}) => {
   const q = new URLSearchParams(params).toString()
   return req('GET', `/outreach/threads${q ? '?' + q : ''}`)
 }
+
+export const pollInboxReplies = () => req('POST', '/outreach/poll-inbox')
 
 export const getThread = (id) =>
   req('GET', `/outreach/threads/${id}`)
@@ -173,8 +187,15 @@ export const createAutonomousCampaign = (data) => req('POST', '/autonomous/campa
 export const getAutonomousCampaign = (id) => req('GET', `/autonomous/campaigns/${id}`)
 export const updateAutonomousCampaign = (id, data) => req('PUT', `/autonomous/campaigns/${id}`, data)
 export const deleteAutonomousCampaign = (id) => req('DELETE', `/autonomous/campaigns/${id}`)
-export const runAutonomousBatch = (id, limit) => req('POST', `/autonomous/campaigns/${id}/run${limit ? '?limit=' + limit : ''}`)
+export const runAutonomousBatch = (id, limit, payload = {}) => {
+  const q = limit ? `?limit=${limit}` : ''
+  return req('POST', `/autonomous/campaigns/${id}/run${q}`, payload)
+}
 export const runAutonomousFollowups = (id) => req('POST', `/autonomous/run-followups${id ? '?campaign_id=' + id : ''}`)
 export const previewAutonomousTemplate = (data) => req('POST', '/autonomous/preview', data)
 export const discoverAutonomousCreators = (data) => req('POST', '/autonomous/discover-creators', data || {})
+
+// ── Hunter.io Email Finder & Verifier ─────────────────────────────────────────
+export const findEmailWithHunter = (params) => req('POST', '/creators/hunter/find-email', params)
+export const verifyEmailWithHunter = (email) => req('POST', '/creators/hunter/verify-email', { email })
 

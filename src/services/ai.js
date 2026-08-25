@@ -28,11 +28,9 @@ try {
   // Self-healing: if cached key is the incorrect default ending in 'jwwA' or matches the old default key, clear it
   if (storedOpenai.endsWith('jwwA') || storedOpenai.startsWith('sk-proj-TgQRZCNfkAhOJo-UOtqAITJq2F1PyAJrDUOb_qk1fq1IQ2v1kM6eWOVNMNwKUU76QfM_vm')) {
     if (envOpenai && !envOpenai.endsWith('jwwA') && !envOpenai.startsWith('sk-proj-TgQRZCNfkAhOJo-UOtqAITJq2F1PyAJrDUOb_qk1fq1IQ2v1kM6eWOVNMNwKUU76QfM_vm')) {
-      console.log('[Forge] Detected obsolete default OpenAI API key in localStorage. Resetting to VITE_OPENAI_API_KEY...');
       storedOpenai = envOpenai;
       localStorage.setItem('forge_openai_api_key', envOpenai);
     } else {
-      console.log('[Forge] Detected obsolete default OpenAI API key in localStorage. Clearing it...');
       storedOpenai = '';
       localStorage.removeItem('forge_openai_api_key');
     }

@@ -300,16 +300,9 @@ export default function App() {
       })
       .then(data => {
         if (data) {
-          console.log('[Forge] Syncing backend settings to localStorage:', {
-            apify_api_key: data.apify_api_key ? 'FOUND (length: ' + data.apify_api_key.length + ')' : 'MISSING',
-            openai_api_key: data.openai_api_key ? 'FOUND' : 'MISSING',
-            gemini_api_key: data.gemini_api_key ? 'FOUND' : 'MISSING',
-            anthropic_api_key: data.anthropic_api_key ? 'FOUND' : 'MISSING',
-          })
           if (data.apify_api_key) {
             localStorage.setItem('forge_apify_token', data.apify_api_key)
             saveKeys({ apifyToken: data.apify_api_key })
-            console.log('[Forge] apify_api_key synced to forge_apify_token in localStorage.')
           }
           if (data.gemini_api_key && !localStorage.getItem('forge_gemini_api_key')) {
             localStorage.setItem('forge_gemini_api_key', data.gemini_api_key)
@@ -477,13 +470,6 @@ export default function App() {
       body: JSON.stringify(payload)
     })
       .then(res => res.json())
-      .then(data => {
-        console.log('[Forge] Database session synced successfully. Payload:', {
-          calendar_data,
-          launch_pack_data,
-          studio_data
-        }, 'Response:', data)
-      })
       .catch(err => {
         console.error('[Forge] Session sync failed:', err)
       })
@@ -653,18 +639,6 @@ export default function App() {
         if (!localStorage.getItem('forge_onboarding_timestamp')) {
           localStorage.setItem('forge_onboarding_timestamp', Date.now().toString())
         }
-        
-        // Log all localStorage contents to developer console during onboarding
-        const store = {}
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i)
-          store[key] = localStorage.getItem(key)
-        }
-        console.log(`[Forge] Onboarding active step: "${step}". Current localStorage:`, store)
-        console.log('[Forge] Current in-memory Scraper & AI API keys:', {
-          scraping: loadKeys(),
-          ai: loadAiKeys()
-        })
       } else if (step === 'dashboard' || step === 'login' || step === 'signup') {
         localStorage.removeItem('forge_onboarding_step')
         localStorage.removeItem('forge_onboarding_timestamp')
