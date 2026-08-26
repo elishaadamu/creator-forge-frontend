@@ -319,14 +319,14 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
     })
   }, [])
 
-  // ── 2-Minute Review & Editing Interval Timer ──────────────────────────────
-  const [countdownSeconds, setCountdownSeconds] = useState(120) // 2 minutes = 120s
+  // ── 3-Minute Review & Autonomous Interval Timer ───────────────────────────
+  const [countdownSeconds, setCountdownSeconds] = useState(180) // 3 minutes = 180s
   const [timerPaused, setTimerPaused] = useState(false)
 
   // Reset countdown whenever entering Step 2
   useEffect(() => {
     if (activeStep === 2) {
-      setCountdownSeconds(120)
+      setCountdownSeconds(180)
     }
   }, [activeStep])
 
@@ -1436,15 +1436,21 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
       }
     }
 
-    // 2. Strict matching against ALL real IMAP threads from Gmail
+    // 2. Strict matching against ALL real IMAP threads from Gmail with creator isolation
     const matchingThreads = (threads || []).filter(t => {
-      if (t.creator_id && t.creator_id === cId) return true
-      if (cEmail && cEmail.includes('@')) {
+      // Direct Creator ID match (highest precision)
+      if (t.creator_id && cId) {
+        return t.creator_id === cId
+      }
+      // If thread has NO creator_id assigned, match by handle
+      if (!t.creator_id && cHandle && t.creator_handle) {
+        const cleanThreadHandle = t.creator_handle.toLowerCase().replace(/^@/, '').trim()
+        if (cleanThreadHandle === cHandle) return true
+      }
+      // If thread has NO creator_id assigned, match by email
+      if (!t.creator_id && cEmail && cEmail.includes('@')) {
         if (t.creator_email && t.creator_email.toLowerCase().trim() === cEmail) return true
         if (t.recipient_email && t.recipient_email.toLowerCase().trim() === cEmail) return true
-      }
-      if (cHandle && t.creator_handle) {
-        if (t.creator_handle.toLowerCase().replace(/^@/, '').trim() === cHandle) return true
       }
       return false
     })
@@ -1453,7 +1459,19 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
     const incomingReplies = matchingThreads.flatMap(t => t.replies || []).filter(r => {
       const fromAddr = (r.from_address || '').toLowerCase().trim()
       if (fromAddr === 'hello@apify.com' || fromAddr.includes('mailer-daemon') || fromAddr.includes('no-reply')) return false
-      return Boolean(r.body && r.body.trim().length > 0 && r.ai_summary !== 'Outgoing reply from you')
+      if (!r.body || !r.body.trim() || r.ai_summary === 'Outgoing reply from you') return false
+
+      // Check for embedded tracking token: if it explicitly belongs to another creator, isolate it
+      const bodyLower = r.body.toLowerCase()
+      const subjLower = (r.subject || '').toLowerCase()
+      if (bodyLower.includes('cf-cid:') && !bodyLower.includes(`cf-cid:${cId.toLowerCase()}`)) {
+        return false
+      }
+      if (subjLower.includes('[#') && cHandle && !subjLower.includes(`[#${cHandle}]`)) {
+        return false
+      }
+
+      return true
     }).sort((a, b) => new Date(a.received_at || 0) - new Date(b.received_at || 0))
 
     const latestReply = incomingReplies.length > 0 ? incomingReplies[incomingReplies.length - 1] : null
@@ -1968,13 +1986,12 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
         const repliedThreads = threads.filter(t => t.replies && t.replies.length > 0)
         setImapSyncLog(`✅ IMAP Sync Complete: ${repliedThreads.length} active reply threads fetched from Gmail and classified.`)
         
-        // Check for positive replies to auto-advance ONLY if currently on Step 4
-        if (autoAdvanceOnPositive && activeStep === 4) {
+        // Check for positive replies across ALL creators (Step 4, 5, or 6)
+        if (autoAdvanceOnPositive && activeStep >= 4) {
           for (const c of creators) {
             const reply = getCreatorReply(c, threads)
             if (reply && reply.hasRealReply && (reply.classification === 'interested' || reply.sentiment?.toLowerCase() === 'positive') && !autoAdvancedIds.has(c.id)) {
               triggerAutoAdvance(c, reply)
-              break
             }
           }
         }
@@ -1992,9 +2009,9 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
     syncImapReplies()
   }, [])
 
-  // Poll regularly while on Step 4 or Step 6
+  // Poll regularly while on Step 4, Step 5, or Step 6
   useEffect(() => {
-    if (activeStep === 4 || activeStep === 6) {
+    if (activeStep >= 4) {
       syncImapReplies()
       const pollTimer = setInterval(() => {
         syncImapReplies()
@@ -2003,14 +2020,13 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
     }
   }, [activeStep])
 
-  // Watch for any positive replies coming in while on step 4
+  // Watch for any positive replies coming in across all creators
   useEffect(() => {
-    if (activeStep === 4 && autoAdvanceOnPositive && realThreads.length > 0) {
+    if (activeStep >= 4 && autoAdvanceOnPositive && realThreads.length > 0) {
       for (const c of creators) {
         const reply = getCreatorReply(c, realThreads)
         if (reply && reply.hasRealReply && (reply.classification === 'interested' || reply.sentiment?.toLowerCase() === 'positive') && !autoAdvancedIds.has(c.id)) {
           triggerAutoAdvance(c, reply)
-          break
         }
       }
     }
@@ -2032,14 +2048,13 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
       if (seenThreadIds.has(tid)) return false
 
       let isMatch = false
-      // 1. Direct creator ID match
+      // 1. Direct creator ID match (highest priority)
       if (t.creator_id && cId && t.creator_id === cId) {
         isMatch = true
       } else if (!t.creator_id) {
         // Fallback matching ONLY if thread has no creator_id assigned
-        if (cEmail && cEmail.includes('@') && t.creator_email?.toLowerCase().trim() === cEmail) isMatch = true
-        else if (cHandle && t.creator_handle?.toLowerCase().replace(/^@/, '').trim() === cHandle) isMatch = true
-        else if (cName && t.creator_name?.toLowerCase().trim() === cName) isMatch = true
+        if (cHandle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, '').trim() === cHandle) isMatch = true
+        else if (cEmail && cEmail.includes('@') && t.creator_email?.toLowerCase().trim() === cEmail) isMatch = true
       }
 
       if (isMatch) {
@@ -2049,15 +2064,23 @@ export default function AcquisitionEngine({ initialCreators = [], api, onCreateP
       return false
     })
 
-    // Collect raw replies, strictly filtering by this creator's email address and valid non-daemon origin
+    // Collect raw replies, strictly filtering by this creator's email address, token, and valid non-daemon origin
     const rawReplies = matching.flatMap(t => t.replies || []).filter(r => {
       const fromAddr = (r.from_address || '').toLowerCase().trim()
       if (!fromAddr || fromAddr.includes('no-reply') || fromAddr.includes('hello@apify.com') || fromAddr.includes('mailer-daemon')) return false
+      if (!r.body || !r.body.trim()) return false
 
-      // Strict email isolation: If the creator has a known email, only include messages from that email address
-      if (cEmail && cEmail.includes('@') && fromAddr !== cEmail) return false
+      // Check for embedded tracking token: if it explicitly belongs to another creator, isolate it
+      const bodyLower = r.body.toLowerCase()
+      const subjLower = (r.subject || '').toLowerCase()
+      if (bodyLower.includes('cf-cid:') && !bodyLower.includes(`cf-cid:${cId.toLowerCase()}`)) {
+        return false
+      }
+      if (subjLower.includes('[#') && cHandle && !subjLower.includes(`[#${cHandle}]`)) {
+        return false
+      }
 
-      return Boolean(r.body && r.body.trim())
+      return true
     })
 
     // DEDUPLICATE REPLIES strictly by ID and unique message body content
