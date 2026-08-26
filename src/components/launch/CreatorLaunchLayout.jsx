@@ -36,12 +36,44 @@ export default function CreatorLaunchLayout({
   }, [activeSection, activeProject])
 
   const handleCreateProjectFromConcept = (newProjData) => {
-    setActiveProject(prev => ({
-      ...prev,
-      ...newProjData,
+    const cleanProject = {
+      id: `proj_${Date.now()}`,
+      createdAt: new Date().toISOString(),
       currentPhase: 1,
-    }))
+      ...newProjData,
+      // Fresh metrics
+      currentPresales: 0,
+      presaleTarget: 5000,
+      visitors: 0,
+      conversionRate: 0,
+      reservations: [],
+      experiments: [],
+      // Clear all legacy specs from former creators so the new creator starts fresh
+      mvpBuildPlan: null,
+      engineeringTasks: null,
+      betaFeedback: null,
+      feedbackClusters: null,
+      readinessReport: null,
+      campaignKit: null,
+      surveyData: null,
+      surveyResponses: [],
+      launchStrategy: null,
+      creatorAssets: null,
+      launchTelemetry: null,
+    }
+    setActiveProject(cleanProject)
+    try {
+      localStorage.setItem('forge_launch_active_project', JSON.stringify(cleanProject))
+    } catch (e) {}
     setActiveSection('section2')
+  }
+
+  const handleResetProject = () => {
+    try {
+      localStorage.removeItem('forge_launch_active_project')
+    } catch (e) {}
+    setActiveProject(null)
+    setActiveSection('section1')
   }
 
   return (
@@ -142,6 +174,7 @@ export default function CreatorLaunchLayout({
             api={api}
             onUpdateProject={setActiveProject}
             onGoToAcquisition={() => setActiveSection('section1')}
+            onResetProject={handleResetProject}
           />
         )}
       </main>

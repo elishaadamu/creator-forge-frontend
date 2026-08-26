@@ -99,6 +99,9 @@ export const suppressCreator = (id, reason = 'do_not_contact') =>
 export const deleteCreator = (id) =>
   req('DELETE', `/creators/${id}`)
 
+export const deleteAllCreators = () =>
+  req('DELETE', '/creators/all')
+
 export const getCreator = (id) =>
   req('GET', `/creators/${id}`)
 

@@ -5,20 +5,30 @@ import {
   FileText, Layout, Megaphone, TrendingUp, Flag, Bot, User, UserCheck,
   Calendar, Clock, CheckCircle, AlertCircle, MessageSquare, Folder,
   DollarSign, PieChart, Users, ChevronRight, Play, Eye, Smartphone, Monitor, Tablet,
-  Code, Terminal, Laptop
+  Code, Terminal, Laptop, RotateCcw, Loader2
 } from 'lucide-react'
 import Phase1Validate from './Phase1Validate'
 import Phase2BuildMVP from './Phase2BuildMVP'
 import Phase3Launch from './Phase3Launch'
 import { trackVisit } from '../../services/tracker'
+import { sendDirectEmail } from '../../services/opsApi'
 
-export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisition }) {
+export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisition, onResetProject }) {
   const [sidebarTab, setSidebarTab] = useState('overview')
   const [selectedPhaseStep, setSelectedPhaseStep] = useState('plan')
   const [showShareModal, setShowShareModal] = useState(false)
   const [showPhaseExecutionModal, setShowPhaseExecutionModal] = useState(false)
   const [copiedKey, setCopiedKey] = useState(null)
   const [shareNotice, setShareNotice] = useState('')
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [portalSentStatus, setPortalSentStatus] = useState(() => project?.portalLinkSent ? 'Delivered via Email' : '')
+  const targetEmail = (project?.creatorEmail || project?.email_public || project?.email || '').trim()
+
+  useEffect(() => {
+    if (project?.portalLinkSent) {
+      setPortalSentStatus('Delivered via Email')
+    }
+  }, [project?.portalLinkSent])
 
   useEffect(() => {
     trackVisit('/dashboard', onUpdateProject)
@@ -71,6 +81,67 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
     }, 2500)
   }
 
+  // Automatically dispatch portal link to creator upon project creation
+  useEffect(() => {
+    if (!project) return
+    const autoEmail = (project.creatorEmail || project.email_public || project.email || '').trim()
+    if (
+      autoEmail.includes('@') &&
+      !project.portalLinkSent &&
+      !isSendingEmail
+    ) {
+      setIsSendingEmail(true)
+      sendDirectEmail(
+        autoEmail,
+        `Private Co-Founder Portal: ${project.productName || 'Your Product'}`,
+        kickoffMessage,
+        project.creatorId || null
+      ).then(() => {
+        setPortalSentStatus(`Auto-sent to ${autoEmail}`)
+        onUpdateProject?.(prev => ({
+          ...(prev || {}),
+          portalLinkSent: true,
+          portalLinkSentTo: autoEmail,
+          portalLinkSentAt: new Date().toISOString()
+        }))
+      }).catch(err => {
+        console.warn('[ProjectOS] Auto-send portal link failed:', err)
+      }).finally(() => {
+        setIsSendingEmail(false)
+      })
+    }
+  }, [project?.id, project?.creatorEmail])
+
+  const handleSendPortalEmail = async () => {
+    if (!targetEmail || !targetEmail.includes('@')) {
+      alert(`No valid email address found for ${project?.creatorName || 'this creator'}. Please ensure their email is configured.`)
+      return
+    }
+    setIsSendingEmail(true)
+    try {
+      await sendDirectEmail(
+        targetEmail,
+        `Private Co-Founder Portal: ${project?.productName || 'Your Product'}`,
+        kickoffMessage,
+        project?.creatorId || null
+      )
+      setPortalSentStatus(`Sent to ${targetEmail}`)
+      setShareNotice(`Portal details successfully emailed to ${targetEmail}!`)
+      onUpdateProject?.(prev => ({
+        ...(prev || {}),
+        portalLinkSent: true,
+        portalLinkSentTo: targetEmail,
+        portalLinkSentAt: new Date().toISOString()
+      }))
+      setTimeout(() => setShareNotice(''), 4000)
+    } catch (err) {
+      console.error('Failed to send portal email:', err)
+      alert(`Email delivery failed: ${err.message || 'SMTP connection error'}`)
+    } finally {
+      setIsSendingEmail(false)
+    }
+  }
+
   const handleAdvancePhase = (nextPhase) => {
     onUpdateProject?.(prev => ({
       ...prev,
@@ -98,19 +169,66 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
             <span className="text-xs font-extrabold uppercase tracking-widest text-emerald-400">
               SECTION 2
             </span>
+            <span className="text-xs text-slate-500">•</span>
+            <span className="text-xs font-bold text-white bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/10">
+              {project?.productName || 'Active Project'}
+            </span>
           </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl font-extrabold text-white tracking-tight mt-0.5">
             CO-LAUNCH PROJECT OS
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Turn the product opportunity into a real software company.
+          <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+            <span>Co-Founding Partner:</span>
+            <strong className="text-emerald-400 font-bold">{project?.creatorName || 'Creator'}</strong>
+            <span className="text-slate-500">({project?.creatorHandle || project?.niche || 'Partner'})</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-slate-300 italic">"{project?.productTagline || ''}"</span>
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {onResetProject && (
+            <button
+              onClick={onResetProject}
+              className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-white border border-red-500/20 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Clear old cached project and start fresh"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Project</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => handleSendPortalEmail()}
+            disabled={isSendingEmail || !targetEmail?.includes('@')}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              portalSentStatus
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+                : 'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:text-white'
+            }`}
+            title={targetEmail ? `Directly email Co-Founder Portal Magic Link to ${targetEmail}` : 'Send to Creator'}
+          >
+            {isSendingEmail ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Emailing...</span>
+              </>
+            ) : portalSentStatus ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Portal Emailed</span>
+              </>
+            ) : (
+              <>
+                <Send className="w-3.5 h-3.5" />
+                <span>Email Portal to Creator</span>
+              </>
+            )}
+          </button>
+
           <button
             onClick={() => setShowShareModal(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm shadow-purple-900/40"
+            className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm shadow-purple-900/40 cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>Share Portal</span>
@@ -850,9 +968,43 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
             <div className="flex items-center justify-between pt-3 border-t border-white/[0.08]">
               <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
                 <ShieldCheck className="w-4 h-4" />
-                <span>Token verified for live portal session</span>
+                <span>
+                  Token verified for live portal session
+                  {portalSentStatus && (
+                    <span className="text-slate-400 font-normal ml-1">
+                      • <strong className="text-emerald-400 font-medium">{portalSentStatus}</strong>
+                    </span>
+                  )}
+                </span>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleSendPortalEmail()}
+                  disabled={isSendingEmail}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    portalSentStatus
+                      ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+                      : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-md shadow-purple-900/30'
+                  }`}
+                  title={targetEmail ? `Email portal details directly to ${targetEmail}` : 'Send to Creator'}
+                >
+                  {isSendingEmail ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sending...</span>
+                    </>
+                  ) : portalSentStatus ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Sent to Creator</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send to Creator</span>
+                    </>
+                  )}
+                </button>
                 <a
                   href={magicPortalUrl}
                   target="_blank"
@@ -864,7 +1016,7 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
                 </a>
                 <button
                   onClick={() => setShowShareModal(false)}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors"
+                  className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-bold transition-colors cursor-pointer"
                 >
                   Done
                 </button>

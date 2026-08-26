@@ -110,29 +110,51 @@ export default function Phase1Validate({
   const [feedbackNotice, setFeedbackNotice] = useState('')
   const [copiedKey, setCopiedKey] = useState(null)
 
+  // Synchronize all Phase 1 states when project changes to prevent former creator data leakage
   useEffect(() => {
-    if (project?.validationPlan) setPlan(project.validationPlan)
-  }, [project?.validationPlan])
-
-  useEffect(() => {
-    if (project?.campaignKit) setCampaignKit(project.campaignKit)
-  }, [project?.campaignKit])
-
-  useEffect(() => {
-    if (project?.surveyData) setSurveyData(project.surveyData)
-  }, [project?.surveyData])
-
-  useEffect(() => {
-    if (project?.surveyResponses) setSurveyResponses(project.surveyResponses)
-  }, [project?.surveyResponses])
-
-  useEffect(() => {
-    if (project?.surveyAnalysis) setSurveyAnalysis(project.surveyAnalysis)
-  }, [project?.surveyAnalysis])
-
-  useEffect(() => {
-    if (project?.mockupImage) setMockupImage(project.mockupImage)
-  }, [project?.mockupImage])
+    if (!project) return
+    setPresalesRevenue(Number(project.currentPresales || 0))
+    setReservations(Array.isArray(project.reservations) ? project.reservations : [])
+    if (project.validationPlan) {
+      setPlan(project.validationPlan)
+    } else {
+      setPlan({
+        customer: project.customer || project.targetAudience || '',
+        problem: project.problem || '',
+        offer: `${project.productName || 'Product'} Founding Access: ${project.productTagline || ''}`,
+        pricing: project.pricing || '$29/mo Starter • $79/mo Pro',
+        testMethod: '1) Co-founder video announcement, 2) 10 user interviews, 3) 48-hour Founding Pre-Order sprint',
+        period: '14 days',
+        threshold: '$5,000 in pre-sales or 50 paid founding reservations'
+      })
+    }
+    if (project.campaignKit) {
+      setCampaignKit(project.campaignKit)
+    } else {
+      setCampaignKit({
+        announcementPost: '',
+        storySequence: '',
+        videoScript: '',
+        newsletterDraft: '',
+        directMessageScript: '',
+        postingSchedule: [],
+        landingPageCopy: null
+      })
+    }
+    if (project.surveyData) {
+      setSurveyData(project.surveyData)
+    } else {
+      setSurveyData({
+        summary: '',
+        keyTakeaways: [],
+        questions: []
+      })
+    }
+    setSurveyResponses(Array.isArray(project.surveyResponses) ? project.surveyResponses : [])
+    setSurveyAnalysis(project.surveyAnalysis || null)
+    setMockupImage(project.mockupImage || null)
+    setExperiments(Array.isArray(project.experiments) ? project.experiments : [])
+  }, [project?.id, project?.creatorId, project?.productName])
 
   useEffect(() => {
     if (project?.reservations) setReservations(project.reservations)

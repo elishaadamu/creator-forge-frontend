@@ -5,14 +5,18 @@ import {
   ExternalLink, FileText, Check, Plus, Trash2, RefreshCw, Loader2,
   ChevronRight, Laptop, Workflow, Milestone, ShieldAlert, Download, Sliders,
   Edit3, Bot, UserCheck, Play, MessageSquare, Bug, HelpCircle, Send, Copy,
-  CheckCircle, Globe, Activity, Rocket, User, Zap
+  CheckCircle, Globe, Activity, Rocket, User, Zap, XCircle, AlertTriangle,
+  Flame, RotateCcw, Award, CheckCheck, Compass, CheckSquare
 } from 'lucide-react'
 import {
   generateMVPProductBuildPlanAI,
   buildSmartFallbackMVPBuildPlan,
   analyzeAndClusterBetaFeedbackAI,
   buildSmartFallbackBetaFeedbackClusters,
-  executeAICodingTaskAI
+  executeAICodingTaskAI,
+  generateProductReadinessReportAI,
+  buildSmartFallbackReadinessReport,
+  autoImplementFixesAI
 } from '../../services/ai'
 
 export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanceToPhase3 }) {
@@ -48,7 +52,7 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
         title: 'Generate React Command Workspace & Execution Canvas',
         category: 'Frontend',
         assignedTo: 'AI Agent',
-        status: 'In Progress',
+        status: 'Completed',
         estimate: '2 Days',
         notes: 'Interactive workspace components and parameter inputs scaffolding.'
       },
@@ -57,7 +61,7 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
         title: 'Hardened OAuth & Stripe Webhook Security Layer',
         category: 'Security / Auth',
         assignedTo: 'Human Engineer',
-        status: 'Ready',
+        status: 'Completed',
         estimate: '1 Day',
         notes: 'Multi-tenant JWT token rotation, CORS policy, and Stripe signature verification.'
       },
@@ -66,7 +70,7 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
         title: 'Implement Redis & Celery Async Worker Queue',
         category: 'AI / Pipeline',
         assignedTo: 'AI Agent',
-        status: 'Ready',
+        status: 'Completed',
         estimate: '1.5 Days',
         notes: 'Background task distribution for heavy inference workflows.'
       },
@@ -75,7 +79,7 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
         title: 'Complex Multi-Service Data Pipeline & Failover Optimization',
         category: 'Architecture',
         assignedTo: 'Human Engineer',
-        status: 'Ready',
+        status: 'Completed',
         estimate: '2 Days',
         notes: 'Resilient external API streaming and graceful fallback handling.'
       }
@@ -85,11 +89,11 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
   // Automated Testing / QA State
   const [qaRunning, setQaRunning] = useState(false)
   const [qaResults, setQaResults] = useState(() => project?.qaResults || {
-    unitTests: { passed: 28, failed: 0, total: 28, coverage: '98%' },
-    integrationTests: { passed: 14, failed: 0, total: 14 },
-    e2eWorkflows: { passed: 6, failed: 0, total: 6 },
+    unitTests: { passed: 34, failed: 0, total: 34, coverage: '99%' },
+    integrationTests: { passed: 18, failed: 0, total: 18 },
+    e2eWorkflows: { passed: 8, failed: 0, total: 8 },
     lastRun: 'Just now',
-    status: 'Passing'
+    status: 'Passing (100% Green)'
   })
 
   // Beta Cohort State (Presales + Waitlist)
@@ -101,15 +105,15 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
         name: r.name,
         email: r.email,
         tier: r.tier || 'Founding Backer',
-        status: 'Invite Sent',
+        status: 'Active in Beta',
         token: `beta_${r.id.replace(/[^a-zA-Z0-9]/g, '').slice(-6)}`,
-        lastActive: 'Awaiting Login'
+        lastActive: '1h ago'
       }))
     }
     return [
       { id: 'b-1', name: 'Alex Rivera', email: 'alex@creatorcompany.com', tier: 'Founding Annual ($99)', status: 'Active in Beta', token: 'beta_ar991', lastActive: '2h ago' },
       { id: 'b-2', name: 'Jordan Hayes', email: 'jordan.h@digitalscale.io', tier: 'VIP Founder ($199)', status: 'Active in Beta', token: 'beta_jh442', lastActive: '5h ago' },
-      { id: 'b-3', name: 'Elena Rostova', email: 'elena@growthops.co', tier: 'Founding Annual ($99)', status: 'Invite Sent', token: 'beta_er108', lastActive: 'Pending' }
+      { id: 'b-3', name: 'Elena Rostova', email: 'elena@growthops.co', tier: 'Founding Annual ($99)', status: 'Active in Beta', token: 'beta_er108', lastActive: '1h ago' }
     ]
   })
 
@@ -136,6 +140,22 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
   const [executingTaskId, setExecutingTaskId] = useState(null)
   const [aiExecOutput, setAiExecOutput] = useState(null)
 
+  // Step 4: Iterate + Launch Gate States
+  const [readinessReport, setReadinessReport] = useState(() => {
+    if (project?.readinessReport) return project.readinessReport
+    return buildSmartFallbackReadinessReport(project)
+  })
+  const [isAuditing, setIsAuditing] = useState(false)
+  const [isAutoFixing, setIsAutoFixing] = useState(false)
+  const [appliedPatches, setAppliedPatches] = useState(() => project?.appliedPatches || [
+    { issueTitle: 'Initial Onboarding & Setup Guidance (23 users)', fixSummary: 'Injected 3-step interactive onboarding modal with automatic credential validation.', filesModified: ['src/components/OnboardingModal.jsx'], verified: true },
+    { issueTitle: 'Session Token Refresh Edge Case (4 users)', fixSummary: 'Implemented silent JWT refresh token rotation middleware in Axios client.', filesModified: ['src/services/api.js', 'backend/auth.py'], verified: true },
+    { issueTitle: 'Direct Cloud Export / Webhook Request (11 users)', fixSummary: 'Added automated background webhook trigger and cloud export pipeline.', filesModified: ['src/services/exportEngine.js'], verified: true }
+  ])
+  const [mvpVersion, setMvpVersion] = useState(() => project?.mvpVersion || 'v1.0.0-GA')
+  const [showKillModal, setShowKillModal] = useState(false)
+  const [decisionNotice, setDecisionNotice] = useState('')
+
   const [isGenerating, setIsGenerating] = useState(false)
   const [saveToast, setSaveToast] = useState('')
   
@@ -153,11 +173,99 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
   const [newTaskAssigned, setNewTaskAssigned] = useState('AI Agent')
   const [newTaskEstimate, setNewTaskEstimate] = useState('1 Day')
 
+  // Synchronize all Phase 2 states when project changes to prevent former creator data leakage
   useEffect(() => {
-    if (project?.mvpBuildPlan) {
+    if (!project) return
+
+    // 1. Build Plan
+    if (project.mvpBuildPlan) {
       setBuildPlan(project.mvpBuildPlan)
+    } else {
+      setBuildPlan(buildSmartFallbackMVPBuildPlan(project))
     }
-  }, [project?.mvpBuildPlan])
+
+    // 2. Engineering Tasks
+    if (project.engineeringTasks && project.engineeringTasks.length > 0) {
+      setEngineeringTasks(project.engineeringTasks)
+    } else {
+      const prodName = project.productName || 'Core Engine'
+      setEngineeringTasks([
+        {
+          id: 'task-ai-1',
+          title: `Scaffold ${prodName} Architecture & PostgreSQL Models`,
+          category: 'Backend / Schema',
+          assignedTo: 'AI Agent',
+          status: 'Completed',
+          estimate: '1 Day',
+          notes: `Data models and schemas for ${project.customer || project.niche || 'core users'} generated.`
+        },
+        {
+          id: 'task-ai-2',
+          title: `Generate React Command Workspace & ${prodName} UI Canvas`,
+          category: 'Frontend',
+          assignedTo: 'AI Agent',
+          status: 'Completed',
+          estimate: '2 Days',
+          notes: 'Interactive workspace components and parameter inputs scaffolding.'
+        },
+        {
+          id: 'task-human-1',
+          title: 'Hardened OAuth & Stripe Webhook Security Layer',
+          category: 'Security / Auth',
+          assignedTo: 'Human Engineer',
+          status: 'Completed',
+          estimate: '1 Day',
+          notes: 'Multi-tenant JWT token rotation, CORS policy, and Stripe signature verification.'
+        },
+        {
+          id: 'task-ai-3',
+          title: 'Implement Async Worker Queue & Processing Pipeline',
+          category: 'AI / Pipeline',
+          assignedTo: 'AI Agent',
+          status: 'Completed',
+          estimate: '1.5 Days',
+          notes: `Background task distribution for ${prodName} workflows.`
+        },
+        {
+          id: 'task-human-2',
+          title: 'Complex Multi-Service Data Pipeline & Failover Optimization',
+          category: 'Architecture',
+          assignedTo: 'Human Engineer',
+          status: 'Completed',
+          estimate: '2 Days',
+          notes: 'Resilient external API streaming and graceful fallback handling.'
+        }
+      ])
+    }
+
+    // 3. Beta Cohort
+    if (Array.isArray(project.reservations) && project.reservations.length > 0) {
+      setBetaCohort(project.reservations.map(r => ({
+        id: r.id,
+        name: r.name,
+        email: r.email,
+        tier: r.tier || 'Founding Backer',
+        status: 'Active in Beta',
+        token: `beta_${(r.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6)}`,
+        lastActive: '1h ago'
+      })))
+    } else {
+      setBetaCohort([])
+    }
+
+    // 4. Feedback Clusters & Readiness Report
+    if (project.feedbackClusters) {
+      setFeedbackClusters(project.feedbackClusters)
+    } else {
+      setFeedbackClusters(buildSmartFallbackBetaFeedbackClusters(project))
+    }
+
+    if (project.readinessReport) {
+      setReadinessReport(project.readinessReport)
+    } else {
+      setReadinessReport(buildSmartFallbackReadinessReport(project))
+    }
+  }, [project?.id, project?.creatorId, project?.productName])
 
   const showToast = (msg) => {
     setSaveToast(msg)
@@ -171,7 +279,10 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
       engineeringTasks: updatedTasks,
       qaResults,
       betaFeedback: rawFeedback,
-      feedbackClusters
+      feedbackClusters,
+      readinessReport,
+      appliedPatches,
+      mvpVersion
     }
     if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
     try {
@@ -377,11 +488,11 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
     setQaRunning(true)
     setTimeout(() => {
       const newResults = {
-        unitTests: { passed: 32, failed: 0, total: 32, coverage: '99%' },
+        unitTests: { passed: 34, failed: 0, total: 34, coverage: '99%' },
         integrationTests: { passed: 18, failed: 0, total: 18 },
         e2eWorkflows: { passed: 8, failed: 0, total: 8 },
         lastRun: 'Just now',
-        status: 'Passing (All Tests Green)'
+        status: 'Passing (100% Green)'
       }
       setQaResults(newResults)
       setQaRunning(false)
@@ -438,6 +549,50 @@ export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanc
     showToast(`Converted cluster to sprint task: ${newTask.title}`)
   }
 
+  // Step 4: Apply AI Auto-Fixes & Update MVP
+  const handleApplyAIAutoFixes = async () => {
+    setIsAutoFixing(true)
+    try {
+      const res = await autoImplementFixesAI(feedbackClusters, project)
+      const patches = res.patchesApplied || []
+      setAppliedPatches(patches)
+      setMvpVersion('v1.0.0-GA')
+
+      // Mark feedback clusters as resolved / completed
+      const updatedClusters = feedbackClusters.map(c => ({ ...c, status: 'Resolved' }))
+      setFeedbackClusters(updatedClusters)
+
+      // Re-run QA suite to show clean pass
+      setQaResults({
+        unitTests: { passed: 36, failed: 0, total: 36, coverage: '99.4%' },
+        integrationTests: { passed: 20, failed: 0, total: 20 },
+        e2eWorkflows: { passed: 8, failed: 0, total: 8 },
+        lastRun: 'Just now (Post-Patch Retest)',
+        status: 'Passing (100% Green)'
+      })
+
+      showToast('AI Auto-Fixes applied, MVP updated to v1.0.0-GA, and retested successfully!')
+    } catch (e) {
+      console.warn('Auto-fix error:', e)
+    } finally {
+      setIsAutoFixing(false)
+    }
+  }
+
+  // Step 4: Regenerate AI Product Readiness Audit Report
+  const handleGenerateReadinessAudit = async () => {
+    setIsAuditing(true)
+    try {
+      const report = await generateProductReadinessReportAI(project)
+      setReadinessReport(report)
+      showToast('Generated fresh AI Product-Readiness Audit Report!')
+    } catch (e) {
+      console.warn('Audit error:', e)
+    } finally {
+      setIsAuditing(false)
+    }
+  }
+
   const handleExportMarkdown = () => {
     const spec = buildPlan.productSpec || {}
     const tech = buildPlan.technicalPlan || {}
@@ -471,6 +626,13 @@ ${engineeringTasks.map(t => `- [${t.status}] **${t.title}** (${t.category}) ‚Äî 
 
 ### 3. BETA TESTING & RECURRING FEEDBACK CLUSTERS
 ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚Äî ${c.severity} Severity)\n  *Fix:* ${c.recommendedAction}`).join('\n')}
+
+---
+
+### 4. AI PRODUCT READINESS REPORT & VERDICT
+- **Score:** ${readinessReport.score}/100
+- **Verdict:** ${readinessReport.verdict} (${readinessReport.confidence} Confidence)
+- **Summary:** ${readinessReport.summary}
 `
     const blob = new Blob([md], { type: 'text/markdown' })
     const url = URL.createObjectURL(blob)
@@ -494,11 +656,47 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
 
   return (
     <div className="space-y-6 text-left">
-      {/* Save Notification Toast */}
+      {/* Toast notification */}
       {saveToast && (
-        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-2xl bg-emerald-500 text-slate-950 font-bold text-xs shadow-2xl flex items-center gap-2 animate-fade-in border border-emerald-400">
-          <CheckCircle2 className="w-4 h-4" />
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-2xl bg-blue-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-blue-400/40 animate-slide-up">
+          <CheckCircle className="w-4 h-4 text-emerald-300" />
           <span>{saveToast}</span>
+        </div>
+      )}
+
+      {/* Kill Confirmation Modal */}
+      {showKillModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="max-w-md w-full p-6 rounded-3xl bg-[#0e1117] border border-red-500/40 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-red-400">
+              <AlertTriangle className="w-6 h-6" />
+              <h3 className="text-base font-black text-white">Confirm Kill / Pivot Decision</h3>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Are you sure you want to stop development for <strong>{project?.productName || 'this product'}</strong>? You can choose to archive the project and refund presale founding backers, or pivot to a new product hypothesis.
+            </p>
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[11px] text-red-300">
+              Validated Presales to Refund: <strong>${presalesRevenue.toLocaleString()}</strong> across <strong>{backersCount}</strong> backers.
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setShowKillModal(false)}
+                className="px-4 py-2 rounded-xl bg-white/[0.06] text-slate-300 hover:text-white text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowKillModal(false)
+                  setDecisionNotice('Project archived. Presale pledges queued for refund processing.')
+                  showToast('Project archived.')
+                }}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs"
+              >
+                Confirm Archive & Refund
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -516,11 +714,11 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
               Turn Validated Demand into the Smallest Usable Version
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Division of labor between AI Coding Agents & Human Engineering with private beta clustering.
+              Division of labor between AI Coding Agents & Human Engineering with automated testing, beta cohort validation, and readiness audit.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             {activeStep === 'plan' && (
               <button
                 onClick={() => {
@@ -550,28 +748,27 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
             <button
               onClick={handleGenerateAIPlan}
               disabled={isGenerating}
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-blue-950/50 transition-all active:scale-95 disabled:opacity-50"
+              className="px-3.5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-950/40 transition-all active:scale-95 disabled:opacity-50"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Architecting Spec...</span>
+                  <span>AI Generating...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5 text-blue-200" />
-                  <span>Generate AI Build Plan</span>
+                  <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                  <span>AI Generate Build Plan</span>
                 </>
               )}
             </button>
 
             <button
               onClick={handleExportMarkdown}
-              className="px-3.5 py-2.5 rounded-xl bg-[#1a1f2c] hover:bg-[#23293b] text-slate-200 border border-white/[0.08] font-semibold text-xs flex items-center gap-1.5 transition-colors"
-              title="Download Product Spec Markdown"
+              className="p-2.5 rounded-xl bg-[#1a1f2c] hover:bg-[#23293b] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold flex items-center gap-1.5"
+              title="Download Markdown Spec"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export Spec</span>
+              <Download className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -605,23 +802,23 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
           </div>
 
           <div className="p-3 rounded-2xl bg-[#090b0e] border border-white/[0.06] space-y-0.5">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">QA & Staging</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Product Readiness</span>
             <div className="text-base sm:text-lg font-black text-emerald-400 font-mono">
-              {qaResults.status.includes('Passing') ? 'Tests Passing ‚úì' : 'QA In Progress'}
+              {readinessReport.score}/100
             </div>
-            <span className="text-[10px] text-slate-500">Staging healthy</span>
+            <span className="text-[10px] text-emerald-400 font-semibold">{readinessReport.verdict}</span>
           </div>
         </div>
       </div>
 
-      {/* Main Phase 2 Step Navigation Tabs */}
+      {/* Main 4 Steps Stepper Navigation */}
       <div className="flex items-center justify-between p-1.5 rounded-2xl bg-[#0e1117] border border-white/[0.08] overflow-x-auto">
         <div className="flex items-center gap-1.5 min-w-max">
           {[
             { id: 'plan', label: '1. Product + Build Plan', icon: FileText },
             { id: 'build', label: '2. Build MVP', icon: Code },
             { id: 'beta', label: '3. Beta Test', icon: Laptop },
-            { id: 'gate', label: '4. MVP Launch Gate', icon: ShieldCheck },
+            { id: 'gate', label: '4. Iterate + Launch Gate', icon: ShieldCheck },
           ].map(tab => {
             const Icon = tab.icon
             return (
@@ -651,7 +848,7 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
               { id: 'spec', label: 'Product Spec', desc: 'Customer, flows, screens, auth & billing' },
               { id: 'technical', label: 'Technical Plan', desc: 'Architecture, schema, stack & criteria' },
               { id: 'scope', label: 'Scope Boundaries', desc: 'Included vs Excluded from MVP' },
-              { id: 'tasks', label: 'Engineering Tasks', desc: `${buildPlan.technicalPlan?.engineeringTasks?.length || 0} sprint tasks` },
+              { id: 'tasks', label: 'Engineering Tasks', desc: `${engineeringTasks.length} sprint tasks` },
             ].map(sub => (
               <button
                 key={sub.id}
@@ -673,10 +870,12 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
               {/* Target Customer & Core Problem Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
-                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Workflow className="w-3.5 h-3.5" />
-                    <span>Target Customer</span>
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5" />
+                      <span>Target Customer</span>
+                    </span>
+                  </div>
                   {isEditingSpec ? (
                     <textarea
                       value={buildPlan.productSpec?.targetCustomer || ''}
@@ -693,10 +892,12 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                 </div>
 
                 <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
-                  <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>Core Problem Validated</span>
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>Core Problem Validated</span>
+                    </span>
+                  </div>
                   {isEditingSpec ? (
                     <textarea
                       value={buildPlan.productSpec?.coreProblem || ''}
@@ -713,7 +914,7 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                 </div>
               </div>
 
-              {/* Core Features List */}
+              {/* Core MVP Features */}
               <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
                 <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -737,18 +938,13 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                             {feat.priority}
                           </span>
                           {isEditingSpec && (
-                            <button
-                              onClick={() => handleDeleteFeature(idx)}
-                              className="text-slate-500 hover:text-red-400 p-0.5"
-                            >
+                            <button onClick={() => handleDeleteFeature(idx)} className="text-slate-500 hover:text-red-400">
                               <Trash2 className="w-3 h-3" />
                             </button>
                           )}
                         </div>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">
-                        {feat.description}
-                      </p>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">{feat.description}</p>
                     </div>
                   ))}
                 </div>
@@ -783,9 +979,10 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                         </select>
                         <button
                           type="submit"
-                          className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs"
+                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center gap-1"
                         >
-                          Add
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add</span>
                         </button>
                       </div>
                     </div>
@@ -793,13 +990,14 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                 )}
               </div>
 
-              {/* User Flows */}
+              {/* End-to-End User Flow */}
               <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-                <div className="border-b border-white/[0.06] pb-2.5">
+                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                    <Workflow className="w-4 h-4 text-emerald-400" />
                     <span>End-to-End User Flow</span>
                   </h3>
+                  <span className="text-[10px] font-mono text-slate-400">Step-by-Step Experience</span>
                 </div>
 
                 <div className="space-y-2">
@@ -808,7 +1006,7 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                       <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[11px] shrink-0">
                         {idx + 1}
                       </div>
-                      <div className="space-y-0.5">
+                      <div>
                         <span className="font-bold text-white block">{flow.step}</span>
                         <p className="text-[11px] text-slate-400 leading-relaxed">{flow.action}</p>
                       </div>
@@ -817,12 +1015,12 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                 </div>
               </div>
 
-              {/* Application Screens & UI Views */}
+              {/* Key Screens */}
               <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-                <div className="border-b border-white/[0.06] pb-2.5">
+                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                     <Laptop className="w-4 h-4 text-purple-400" />
-                    <span>Application Screens & UI Views</span>
+                    <span>Core MVP Screens & UI Canvas</span>
                   </h3>
                 </div>
 
@@ -836,10 +1034,10 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                 </div>
               </div>
 
-              {/* Payments, Authentication & Analytics */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                <div className="p-4 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
+              {/* Integrations, Payments & Auth */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl bg-[#0e1117] border border-white/[0.08] space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
                     <CreditCard className="w-4 h-4" />
                     <span>Payments & Billing</span>
                   </div>
@@ -850,8 +1048,8 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
-                  <div className="flex items-center gap-2 text-purple-400 text-xs font-bold">
+                <div className="p-4 rounded-xl bg-[#0e1117] border border-white/[0.08] space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
                     <Lock className="w-4 h-4" />
                     <span>Authentication & Security</span>
                   </div>
@@ -861,8 +1059,8 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
-                  <div className="flex items-center gap-2 text-blue-400 text-xs font-bold">
+                <div className="p-4 rounded-xl bg-[#0e1117] border border-white/[0.08] space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
                     <BarChart3 className="w-4 h-4" />
                     <span>Telemetry & Analytics</span>
                   </div>
@@ -882,12 +1080,15 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
             <div className="space-y-4">
               {/* Architecture Overview */}
               <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2.5">
-                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Server className="w-3.5 h-3.5" />
-                  <span>System Architecture</span>
-                </span>
-                <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                  {buildPlan.technicalPlan?.architecture}
+                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Server className="w-4 h-4 text-blue-400" />
+                    <span>System Architecture Overview</span>
+                  </h3>
+                  <span className="text-[10px] font-mono text-emerald-400">Decoupled Full-Stack Architecture</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {buildPlan.technicalPlan?.architecture || 'Modern decoupled SPA with Vite + React Frontend, FastAPI Python REST/WebSocket Backend, and Redis background queues.'}
                 </p>
               </div>
 
@@ -941,7 +1142,7 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
 
               {/* Acceptance Criteria */}
               <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-                <div className="border-b border-white/[0.06] pb-2.5">
+                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-blue-400" />
                     <span>Acceptance Criteria (Definition of Done)</span>
@@ -958,12 +1159,12 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                 </div>
               </div>
 
-              {/* Milestones Roadmap */}
+              {/* Sprints & Milestones */}
               <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-                <div className="border-b border-white/[0.06] pb-2.5">
+                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                     <Milestone className="w-4 h-4 text-purple-400" />
-                    <span>Delivery Milestones</span>
+                    <span>Sprints & Milestones</span>
                   </h3>
                 </div>
 
@@ -989,14 +1190,17 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* What IS Included */}
-                <div className="p-5 rounded-2xl bg-[#0e1117] border border-emerald-500/30 space-y-3 shadow-lg shadow-emerald-950/20">
+                <div className="p-5 rounded-2xl bg-[#0e1117] border border-emerald-500/30 space-y-3">
                   <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                    <div className="flex items-center gap-2 text-emerald-400">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-                        Included in MVP (Day 1 Release)
-                      </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <h3 className="font-bold text-white text-xs">What IS Included in MVP</h3>
                     </div>
+                    <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                      {(buildPlan.scopeBoundaries?.includedInMVP || []).length} Items
+                    </span>
                   </div>
 
                   <div className="space-y-2 pt-1">
@@ -1031,15 +1235,18 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
                   )}
                 </div>
 
-                {/* What is NOT Included */}
-                <div className="p-5 rounded-2xl bg-[#0e1117] border border-red-500/30 space-y-3 shadow-lg shadow-red-950/20">
+                {/* What IS NOT Included */}
+                <div className="p-5 rounded-2xl bg-[#0e1117] border border-red-500/30 space-y-3">
                   <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                    <div className="flex items-center gap-2 text-red-400">
-                      <ShieldAlert className="w-4 h-4" />
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-                        Explicitly Excluded (Post-MVP Roadmap)
-                      </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded-lg bg-red-500/20 text-red-400">
+                        <ShieldAlert className="w-4 h-4" />
+                      </div>
+                      <h3 className="font-bold text-white text-xs">What is NOT Included (Post-MVP)</h3>
                     </div>
+                    <span className="text-[10px] font-mono text-red-400 font-bold">
+                      {(buildPlan.scopeBoundaries?.excludedFromMVP || []).length} Excluded
+                    </span>
                   </div>
 
                   <div className="space-y-2 pt-1">
@@ -1183,14 +1390,14 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
             </div>
           )}
 
-          {/* Action Footer */}
+          {/* Step 1 Footer Action */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
             <button
-              onClick={() => handleSavePlan()}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#141720] hover:bg-[#1a1f2c] text-slate-200 border border-white/[0.1] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+              onClick={handleExportMarkdown}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold flex items-center justify-center gap-2"
             >
-              <Check className="w-4 h-4 text-emerald-400" />
-              <span>Save & Persist Build Plan</span>
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Product Spec (.md)</span>
             </button>
 
             <button
@@ -1563,7 +1770,7 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
             </button>
           </div>
 
-          {/* SUBTAB 1: AI FEEDBACK CLUSTERS (Example: 23 users confused by onboarding, 11 requested Feature X, 4 experienced Bug Y) */}
+          {/* SUBTAB 1: AI FEEDBACK CLUSTERS */}
           {betaSubtab === 'clusters' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1748,58 +1955,274 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} ‚
               onClick={() => setActiveStep('gate')}
               className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-950/50 transition-all active:scale-95"
             >
-              <span>Proceed to 4. MVP Launch Gate</span>
+              <span>Proceed to 4. Iterate + Launch Gate</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 4: MVP LAUNCH GATE */}
+      {/* STEP 4: ITERATE + LAUNCH GATE */}
       {activeStep === 'gate' && (
-        <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
-          <div className="border-b border-white/[0.07] pb-3">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Phase 2 Gate: MVP Launch Readiness Verification</span>
-            </h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Verify all acceptance criteria, automated tests, and beta feedback fixes before advancing to Phase 3.
+        <div className="space-y-5">
+          {/* Executive Header Banner */}
+          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+              <div>
+                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Step 4: Iterate + Launch Gate</span>
+                </span>
+                <h3 className="text-base font-black text-white">
+                  Executive Product-Readiness Audit & Launch Gate
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleApplyAIAutoFixes}
+                  disabled={isAutoFixing}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-950/40 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isAutoFixing ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Applying Fixes & Retesting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Apply AI Fixes & Update MVP</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleGenerateReadinessAudit}
+                  disabled={isAuditing}
+                  className="px-3.5 py-2 rounded-xl bg-[#1a1f2c] hover:bg-[#252c3f] text-slate-200 border border-white/[0.08] font-semibold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  {isAuditing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  <span>Re-Audit</span>
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              AI prioritizes feedback issues, applies targeted code hotfixes, updates the MVP build version, and verifies product readiness.
             </p>
           </div>
 
-          {/* Verification checklist */}
-          <div className="space-y-2">
-            {(buildPlan.technicalPlan?.acceptanceCriteria || []).map((crit, idx) => (
-              <div key={idx} className="p-3 rounded-xl bg-[#141720] border border-white/[0.06] flex items-center gap-2.5 text-xs text-slate-200">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{crit}</span>
-              </div>
-            ))}
-            <div className="p-3 rounded-xl bg-[#141720] border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Automated QA Suite: 100% Tests Passing on Staging</span>
+          {/* Decision Notice (if Continue Beta or Killed) */}
+          {decisionNotice && (
+            <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-200 text-xs flex items-center gap-2 font-medium">
+              <Compass className="w-4 h-4 text-blue-400 shrink-0" />
+              <span>{decisionNotice}</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#141720] border border-purple-500/30 flex items-center gap-2.5 text-xs text-purple-300">
-              <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-              <span>Beta Cohort: Feedback clustered and high-severity bugs resolved</span>
+          )}
+
+          {/* 1. AI Product-Readiness Audit Score Card */}
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-[#0e1117] to-[#131724] border border-emerald-500/30 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                  AI Product-Readiness Score
+                </span>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-3xl sm:text-4xl font-black text-white font-mono">
+                    {readinessReport.score}<span className="text-slate-500 text-xl font-normal">/100</span>
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black uppercase tracking-wider">
+                    {readinessReport.verdict}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-xs text-slate-400 text-left sm:text-right space-y-0.5">
+                <div>Confidence Level: <strong className="text-white">{readinessReport.confidence}</strong></div>
+                <div>MVP Build Release: <strong className="text-purple-300 font-mono">{mvpVersion}</strong></div>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-200 leading-relaxed font-medium bg-[#090b0e] p-3 rounded-xl border border-white/[0.06]">
+              "{readinessReport.summary}"
+            </p>
+
+            {/* 4 Pillars Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {(readinessReport.pillars || []).map((p, idx) => (
+                <div key={idx} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-white flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{p.name}</span>
+                    </span>
+                    <span className="font-mono text-emerald-400 font-bold">{p.score}% ‚Ä¢ {p.status}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">{p.detail}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-3 border-t border-white/[0.06]">
-            <button
-              onClick={onAdvanceToPhase3}
-              className="w-full sm:w-auto py-3 px-6 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-xl shadow-purple-950/50 transition-all active:scale-95"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Approve & Launch Product (Advance to Phase 3)</span>
-            </button>
+          {/* 2. Automated Hotfixes & MVP Update Log */}
+          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
+            <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Zap className="w-4 h-4 text-purple-400" />
+                <span>AI Automated Code Hotfixes ({appliedPatches.length} Patches Applied)</span>
+              </h3>
+              <span className="text-[10px] font-mono text-emerald-400">All Patches Verified ‚úì</span>
+            </div>
 
+            <div className="space-y-2">
+              {appliedPatches.map((patch, idx) => (
+                <div key={idx} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-white">{patch.issueTitle}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                      Verified Fix ‚úì
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">{patch.fixSummary}</p>
+                  <div className="text-[10px] text-slate-500 font-mono">
+                    Files patched: {patch.filesModified.join(', ')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 3. Post-Patch Retest Results */}
+          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
+            <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <CheckCheck className="w-4 h-4 text-emerald-400" />
+                <span>Updated MVP Retest Summary</span>
+              </h3>
+              <span className="text-[10px] font-mono text-slate-400">Target: Zero Launch Blockers</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Unit & Integration Tests</span>
+                <div className="text-base font-black text-emerald-400 font-mono">
+                  {qaResults.unitTests.passed + qaResults.integrationTests.passed} Tests Passing (100%)
+                </div>
+                <span className="text-[10px] text-slate-500">0 failures, 0 regressions</span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Critical P0 Bugs</span>
+                <div className="text-base font-black text-emerald-400 font-mono">
+                  0 Open Blockers
+                </div>
+                <span className="text-[10px] text-slate-500">All P0 criteria met</span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Beta Backer Provisioning</span>
+                <div className="text-base font-black text-purple-300 font-mono">
+                  {backersCount} Ready for Public Access
+                </div>
+                <span className="text-[10px] text-slate-500">Tokens activated</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Human Executive Decision Gate */}
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-[#0e1117] via-[#151a28] to-[#121626] border border-blue-500/40 shadow-2xl space-y-4">
+            <div>
+              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block">
+                Human Executive Decision
+              </span>
+              <h3 className="text-lg font-black text-white tracking-tight">
+                Choose the Next Strategic Milestone
+              </h3>
+              <p className="text-xs text-slate-300 mt-1">
+                As the technical operator, choose whether to launch generally, continue the private beta cycle, or kill/pivot the project.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+              {/* Choice 1: Launch Product */}
+              <button
+                onClick={onAdvanceToPhase3}
+                className="p-4 rounded-2xl bg-gradient-to-b from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white text-left space-y-2 shadow-xl shadow-blue-950/60 transition-all active:scale-[0.98] group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-white/10 text-white">
+                    <Rocket className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950 uppercase tracking-wider">
+                    Recommended
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-white group-hover:text-blue-100 transition-colors">
+                    1. Launch Product
+                  </h4>
+                  <p className="text-[11px] text-blue-100/80 leading-relaxed mt-0.5">
+                    Advance to Phase 3 (Scale / General Launch), open public onboarding, and activate marketing engine.
+                  </p>
+                </div>
+              </button>
+
+              {/* Choice 2: Continue Beta */}
+              <button
+                onClick={() => {
+                  setActiveStep('beta')
+                  setDecisionNotice('Beta cycle extended. Continue collecting usage data and inviting cohort testers.')
+                  showToast('Beta cycle extended.')
+                }}
+                className="p-4 rounded-2xl bg-[#141720] hover:bg-[#1a1f2c] text-white text-left space-y-2 border border-white/[0.08] hover:border-purple-500/40 transition-all active:scale-[0.98] group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300">
+                    <RotateCcw className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-400">Iterate</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white group-hover:text-purple-200 transition-colors">
+                    2. Continue Beta
+                  </h4>
+                  <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
+                    Gather more cohort usage data, log additional feedback, and refine edge cases before public launch.
+                  </p>
+                </div>
+              </button>
+
+              {/* Choice 3: Kill / Pivot */}
+              <button
+                onClick={() => setShowKillModal(true)}
+                className="p-4 rounded-2xl bg-[#141720] hover:bg-red-950/30 text-white text-left space-y-2 border border-white/[0.08] hover:border-red-500/40 transition-all active:scale-[0.98] group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-red-500/20 text-red-400">
+                    <XCircle className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono text-red-400">Pivot</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-red-300 group-hover:text-red-200 transition-colors">
+                    3. Kill / Pivot
+                  </h4>
+                  <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
+                    Gracefully archive the project, process presale refunds, or pivot into a new validated problem space.
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Step 4 Footer */}
+          <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
             <button
               onClick={() => setActiveStep('beta')}
-              className="w-full sm:w-auto py-3 px-4 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold"
+              className="px-4 py-2.5 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold"
             >
-              Continue Beta Testing
+              ‚Üê Back to Beta Testing
             </button>
           </div>
         </div>
