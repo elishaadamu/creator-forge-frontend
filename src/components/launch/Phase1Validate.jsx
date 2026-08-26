@@ -17,6 +17,12 @@ import {
 import ProductMockupCanvas from './ProductMockupCanvas'
 import ProductMockupDisplay from './ProductMockupDisplay'
 import { simulateUniqueDeviceVisit } from '../../services/tracker'
+import {
+  updateValidationPlan,
+  updateValidationCampaign,
+  addProjectReservation,
+  recordGateDecision
+} from '../../services/opsApi'
 
 export default function Phase1Validate({
   project,
@@ -239,6 +245,31 @@ export default function Phase1Validate({
     try {
       localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
     } catch (e) {}
+
+    // Persist to backend database tables in SQLite
+    if (project?.id) {
+      updateValidationPlan(project.id, {
+        customer: plan.customer,
+        problem: plan.problem,
+        offer: plan.offer,
+        pricing: plan.pricing,
+        test_method: plan.testMethod,
+        period: plan.period,
+        threshold: plan.threshold,
+        target_revenue: presaleTarget
+      }).catch(e => console.warn('[Phase1] DB plan sync warning:', e))
+
+      updateValidationCampaign(project.id, {
+        product_assets: campaignKit,
+        infrastructure: {
+          landingPageUrl: `/p/${productSlug}`,
+          checkoutUrl: `/p/${productSlug}/checkout`,
+          waitlistCount: 240,
+          attributionTracking: true
+        },
+        research_survey: surveyData
+      }).catch(e => console.warn('[Phase1] DB campaign sync warning:', e))
+    }
 
     setTimeout(() => {
       setSaveStatus('saved')
@@ -592,6 +623,17 @@ export default function Phase1Validate({
       localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
       window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
     } catch (e) {}
+
+    // Persist pre-order reservation to SQLite database
+    if (project?.id) {
+      addProjectReservation(project.id, {
+        name,
+        email,
+        amount,
+        tier: amount === 99 ? 'Founding Annual ($99)' : amount === 199 ? 'VIP Founder Pass ($199)' : 'Refundable Deposit ($19)',
+        channel: 'creator_campaign'
+      }).catch(e => console.warn('[Phase1] DB reservation sync warning:', e))
+    }
 
     showNotification(`Recorded $${amount} presale pledge from ${name}!`)
   }
@@ -1369,10 +1411,23 @@ export default function Phase1Validate({
             </div>
             <button
               onClick={() => {
-                showNotification('Validation assets approved!')
+                if (project?.id) {
+                  updateValidationCampaign(project.id, {
+                    product_assets: campaignKit,
+                    infrastructure: {
+                      landingPageUrl: `/p/${productSlug}`,
+                      checkoutUrl: `/p/${productSlug}/checkout`,
+                      waitlistCount: 240,
+                      attributionTracking: true
+                    },
+                    research_survey: surveyData,
+                    review_status: 'approved'
+                  }).catch(e => console.warn('[Phase1] DB campaign approval warning:', e))
+                }
+                showNotification('Validation assets approved & locked in database!')
                 handleStepChange('campaign')
               }}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-2 transition-all shadow-md shadow-emerald-950/40 active:scale-95"
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-2 transition-all shadow-md shadow-emerald-950/40 active:scale-95 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Approve & Launch Validation Campaign</span>
@@ -2251,24 +2306,51 @@ export default function Phase1Validate({
             <span className="text-xs font-bold text-white block">Executive Validation Decision</span>
             <div className="flex flex-wrap items-center gap-2.5">
               <button
-                onClick={onAdvanceToPhase2}
-                className="py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-950/50 transition-all active:scale-95"
+                onClick={async () => {
+                  if (project?.id) {
+                    try {
+                      await recordGateDecision(project.id, {
+                        decision: 'pass_to_phase2',
+                        notes: `Validation target passed with $${presalesRevenue.toLocaleString()} presales and ${reservations.length} backers.`
+                      })
+                    } catch (e) {
+                      console.warn('[Phase1] DB gate decision warning:', e)
+                    }
+                  }
+                  showNotification('Validation Gate Passed! Advancing to Phase 2: Build MVP.')
+                  onAdvanceToPhase2?.()
+                }}
+                className="py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-950/50 transition-all active:scale-95 cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>PASS → Build MVP</span>
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
+                  if (project?.id) {
+                    recordGateDecision(project.id, {
+                      decision: 'iterate_validation',
+                      notes: 'Resetting validation sprint for new optimization iteration.'
+                    }).catch(e => console.warn(e))
+                  }
                   showNotification('Validation sprint reset for new iteration.')
-                  handleStepChange('campaign')
+                  handleStepChange('optimize')
                 }}
-                className="py-2.5 px-4 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold transition-colors"
+                className="py-2.5 px-4 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold transition-colors cursor-pointer"
               >
                 TEST AGAIN
               </button>
               <button
-                onClick={() => showNotification('Project archived.')}
-                className="py-2.5 px-4 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 text-xs font-bold transition-colors"
+                onClick={async () => {
+                  if (project?.id) {
+                    recordGateDecision(project.id, {
+                      decision: 'kill_project',
+                      notes: 'Project failed validation gate threshold.'
+                    }).catch(e => console.warn(e))
+                  }
+                  showNotification('Project archived.')
+                }}
+                className="py-2.5 px-4 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 text-xs font-bold transition-colors cursor-pointer"
               >
                 FAIL → Kill
               </button>

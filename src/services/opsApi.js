@@ -202,3 +202,15 @@ export const discoverAutonomousCreators = (data) => req('POST', '/autonomous/dis
 export const findEmailWithHunter = (params) => req('POST', '/creators/hunter/find-email', params)
 export const verifyEmailWithHunter = (email) => req('POST', '/creators/hunter/verify-email', { email })
 
+// ── Co-Launch Projects & 5-Step Validation Workflow ─────────────────────────
+export const getCoLaunchProjects = () => req('GET', '/projects')
+export const getCoLaunchProject = (id) => req('GET', `/projects/${id}`)
+export const createCoLaunchProject = (data) => req('POST', '/projects', data)
+export const updateValidationPlan = (id, plan) => req('PUT', `/projects/${id}/plan`, plan)
+export const updateValidationCampaign = (id, campaign) => req('PUT', `/projects/${id}/campaign`, campaign)
+export const getCreatorCampaignTasks = (id) => req('GET', `/projects/${id}/creator-tasks`)
+export const updateCreatorCampaignTask = (id, taskId, updates) => req('PATCH', `/projects/${id}/creator-tasks/${taskId}`, updates)
+export const addProjectReservation = (id, reservation) => req('POST', `/projects/${id}/reservations`, reservation)
+export const recordGateDecision = (id, decisionData) => req('POST', `/projects/${id}/gate-decision`, decisionData)
+export const deleteCoLaunchProject = (id) => req('DELETE', `/projects/${id}`)
+

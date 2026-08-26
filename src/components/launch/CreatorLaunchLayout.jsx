@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Rocket, Target, Layers, ExternalLink } from 'lucide-react'
 import AcquisitionEngine from './AcquisitionEngine'
 import ProjectOS from './ProjectOS'
+import { createCoLaunchProject, getCoLaunchProject } from '../../services/opsApi'
 
 export default function CreatorLaunchLayout({
   initialProject = null,
@@ -24,20 +25,22 @@ export default function CreatorLaunchLayout({
     }
   })
 
+  // Keep section & project in localStorage
   useEffect(() => {
     try {
       localStorage.setItem('forge_launch_active_section', activeSection)
       if (activeProject) {
         localStorage.setItem('forge_launch_active_project', JSON.stringify(activeProject))
       }
-    } catch (error) {
-      console.warn('[CreatorLaunch] Failed to persist launch state:', error)
+    } catch (e) {
+      console.warn('Failed to sync creator launch state to localStorage', e)
     }
   }, [activeSection, activeProject])
 
-  const handleCreateProjectFromConcept = (newProjData) => {
+  const handleCreateProjectFromConcept = async (newProjData) => {
+    const projId = `proj_${Date.now()}`
     const cleanProject = {
-      id: `proj_${Date.now()}`,
+      id: projId,
       createdAt: new Date().toISOString(),
       currentPhase: 1,
       ...newProjData,
@@ -66,6 +69,22 @@ export default function CreatorLaunchLayout({
       localStorage.setItem('forge_launch_active_project', JSON.stringify(cleanProject))
     } catch (e) {}
     setActiveSection('section2')
+
+    // Persist to backend database tables in SQLite
+    try {
+      const dbProj = await createCoLaunchProject({ ...newProjData, id: projId })
+      if (dbProj && dbProj.id) {
+        setActiveProject(prev => {
+          const merged = { ...(prev || {}), ...dbProj }
+          try {
+            localStorage.setItem('forge_launch_active_project', JSON.stringify(merged))
+          } catch {}
+          return merged
+        })
+      }
+    } catch (err) {
+      console.warn('[CreatorLaunchLayout] Project DB sync warning:', err)
+    }
   }
 
   const handleResetProject = () => {
