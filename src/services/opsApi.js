@@ -24,8 +24,12 @@ function proxyAvatars(obj) {
 async function req(method, path, body) {
   const aiKeys = loadAiKeys()
   const scrapeKeys = loadKeys()
+  // 5-minute timeout for heavy endpoints (discover-creators with 50 creators, Hunter.io, Apify)
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 300000)
   const opts = {
     method,
+    signal: controller.signal,
     headers: {
       'Content-Type': 'application/json',
       'X-Gemini-Key': aiKeys?.geminiKey || '',
@@ -36,13 +40,22 @@ async function req(method, path, body) {
     },
   }
   if (body) opts.body = JSON.stringify(body)
-  const res = await fetch(BASE + path, opts)
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`${res.status}: ${err.slice(0, 200)}`)
+  try {
+    const res = await fetch(BASE + path, opts)
+    clearTimeout(timeoutId)
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`${res.status}: ${err.slice(0, 200)}`)
+    }
+    const data = await res.json()
+    return proxyAvatars(data)
+  } catch (e) {
+    clearTimeout(timeoutId)
+    if (e.name === 'AbortError') {
+      throw new Error('Request timed out — the backend is still processing. Please try again with fewer creators.')
+    }
+    throw e
   }
-  const data = await res.json()
-  return proxyAvatars(data)
 }
 
 // ── Creators / Leads ─────────────────────────────────────────────────────────

@@ -42,6 +42,9 @@ export default function AcquisitionEngine({
 }) {
   const [activeStep, setActiveStep] = useState(() => {
     try {
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const stepParam = Number(searchParams?.get('step'));
+      if (stepParam >= 1 && stepParam <= 6) return stepParam;
       const savedCreators = JSON.parse(
         localStorage.getItem("forge_launch_discovered_creators") || "[]",
       );
@@ -87,10 +90,10 @@ export default function AcquisitionEngine({
     "twitter",
   ]);
   const [templateSubject, setTemplateSubject] = useState(
-    "Co-founder partnership inquiry for {{display_name}}",
+    "[STEP 3: INITIAL INQUIRY] Co-founder partnership inquiry for {{display_name}}",
   );
   const [templateBody, setTemplateBody] = useState(
-    `Hi {{first_name}},\n\nI've been following your {{niche}} content on {{platform}} and love how engaged your community is.\n\nWe're building {{product_name}} — a high-growth product tailored for creators in {{niche}}. Given your audience scale ({{follower_count}} followers) and strong engagement, we'd love to discuss a co-founder partnership with a 50/50 revenue split.\n\nAre you open to a quick 15-minute sync this week?\n\nBest,\nCreator Forge Team`,
+    `Hi {{first_name}},\n\nI've been following your {{niche}} content on {{platform}} and love how engaged your community is.\n\nWe're building {{product_name}} — a high-growth product tailored for creators in {{niche}}. Given your audience scale ({{follower_count}} followers) and strong engagement, we'd love to discuss a co-founder partnership with a 50/50 revenue split.\n\nAre you open to a quick 15-minute sync this week?\n\nBest,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP3_INQUIRY | CF-CID:{{creator_id}} | Handle:@{{handle}}]`,
   );
 
   // Discovered Creators State (Dynamic AI + Apify + Hunter.io Pipeline)
@@ -2140,6 +2143,14 @@ export default function AcquisitionEngine({
       return {};
     }
   });
+  const [answerSentMap, setAnswerSentMap] = useState(() => {
+    try {
+      const saved = localStorage.getItem("forge_launch_answer_sent_map");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
   const [aiDetectedChoiceMap, setAiDetectedChoiceMap] = useState(() => {
     try {
       const saved = localStorage.getItem("forge_launch_ai_choice_map");
@@ -2288,44 +2299,102 @@ export default function AcquisitionEngine({
     return hasSolidNo;
   };
 
+  // Safe UTC Millisecond Parser: Ensures SQLite UTC ISO strings without 'Z' are parsed accurately in UTC
+  const parseUtcMs = (dateStr) => {
+    if (!dateStr) return 0;
+    let s = String(dateStr).trim();
+    if (!s.endsWith("Z") && !/[+\-]\d{2}:\d{2}$/.test(s)) {
+      s += "Z";
+    }
+    const parsed = new Date(s).getTime();
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  // Distinctive Step Message Classifier: Distinguishes Step 4 (Initial Inquiry Reply) from Step 6 (Pitch & Dialog Reply)
+  const isStep6Message = (msg, latestOutboundMs = 0) => {
+    if (!msg) return false;
+    const subj = (msg.subject || "").toLowerCase();
+    const body = (msg.body || "").toLowerCase();
+    const allText = `${subj} ${body}`;
+
+    // 1. Explicit Step Tag Match (Highest Priority & 100% Distinctive)
+    if (allText.includes("step 6") || allText.includes("step6") || allText.includes("cf-stage:step6")) {
+      return true;
+    }
+    if (allText.includes("step 3") || allText.includes("step3") || allText.includes("cf-stage:step3")) {
+      // If it mentions Step 3 inquiry and does NOT discuss product concepts, it's definitely Step 4
+      if (!/concept|opportunity|deck|option 1|option 2|option 3|pricing/i.test(allText)) {
+        return false;
+      }
+    }
+
+    // 2. Distinctive Subject Line Match
+    if (
+      /opportunity pitch|opportunity deck|software concepts|concept pitch|concepts for|top 3 software|top 3 concepts|answers to your questions|co-founding questions|simplifying our co-founder|zero-effort co-founder/i.test(
+        subj,
+      )
+    ) {
+      return true;
+    }
+    if (subj.includes("partnership inquiry") || subj.includes("initial inquiry")) {
+      if (!/concept|opportunity|deck|option 1|option 2|option 3/i.test(body)) {
+        return false;
+      }
+    }
+
+    // 3. Normalized UTC Timestamp Match
+    if (latestOutboundMs > 0 && msg.received_at) {
+      const msgTime = parseUtcMs(msg.received_at);
+      if (msgTime > latestOutboundMs - 15000) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   // Filter creators that are qualified for Step 5/6:
-  // As long as the creator is in dialogue (asking questions, expressing hesitation, discussing terms),
-  // they remain in Step 6 until they explicitly agree (to advance) or give a solid no.
+  // A creator MUST have an explicit qualification signal to appear here.
+  // They must have replied positively to Step 4 outreach, been manually qualified,
+  // or already have a pitch sent/thread. Outgoing-only threads do NOT qualify.
   const isCreatorQualifiedForPitch = (c) => {
     if (!c || !hasValidEmail(c)) return false;
     if (isCreatorDeclined(c)) return false;
 
-    // 1. Creator was explicitly qualified or approved
-    if (c.status === "approved" || c.status === "qualified") return true;
-
-    // 2. Creator already has an Opportunity Pitch sent or recorded
+    // 1. Creator already has an Opportunity Pitch sent or recorded
     if (pitchSentMap[c.id]) return true;
 
-    // 3. Creator's thread contains a pitch message or pitch reply
+    // 2. Creator's thread contains a Step 6 pitch message (blueprint / opportunity deck)
     const msgs = getCreatorThreadMessages(c, realThreads);
     const hasPitchThread = msgs.some((m) => {
       const s = (m.subject || "").toLowerCase();
-      return /blueprint|opportunity deck|software concepts|concept pitch|concepts for/i.test(s);
+      return /blueprint|opportunity pitch|opportunity deck|software concepts|concept pitch|concepts for|answers to your questions|zero upfront cost|preview/i.test(s);
     });
     if (hasPitchThread) return true;
 
-    // 4. Creator had a positive Step 4 reply
+    // 3. Creator was explicitly approved by operator
+    if (c.status === "approved") return true;
+
+    // 4. Creator had an explicit positive Step 4 reply (MUST have actually replied)
+    if (c.hasReplied && (c.replyClassification === "qualified" || c.replyClassification === "interested")) {
+      return true;
+    }
+    if (c.replyClassification === "interested" || c.reply_classification === "interested") {
+      return true;
+    }
+
+    // 5. Creator has a real IMAP incoming reply that is positive / interested
     const r = getCreatorReply(c);
     if (
-      c.replyClassification === "interested" ||
-      c.reply_classification === "interested" ||
-      c.replyClassification === "qualified" ||
-      c.reply_classification === "qualified" ||
-      r.classification === "interested" ||
-      r.classification === "qualified" ||
-      (r.isRealImap && r.sentiment === "positive")
+      r.hasRealReply &&
+      (r.classification === "interested" ||
+        r.classification === "qualified" ||
+        r.sentiment === "positive")
     ) {
       return true;
     }
 
-    // 5. If creator is actively replying and hasn't given a solid no, keep them engaged in dialogue
-    if (msgs.length > 0) return true;
-
+    // Creators who have NOT replied to Step 4 outreach do NOT qualify!
     return false;
   };
 
@@ -2335,7 +2404,7 @@ export default function AcquisitionEngine({
       ? creators.filter((c) => hasValidEmail(c) && !isCreatorDeclined(c))
       : creators;
 
-  // Qualified creators = those who qualified or are actively communicating in Step 5/6
+  // Qualified creators = strictly those who replied positively to Step 4 outreach
   const interestedCreators = eligibleCreators.filter((c) =>
     isCreatorQualifiedForPitch(c),
   );
@@ -2344,14 +2413,11 @@ export default function AcquisitionEngine({
     (c) => !isCreatorQualifiedForPitch(c),
   );
 
-  // In Step 5 and 6, pick selected creator from interestedCreators, fallback to eligibleCreators
+  // In Step 5 and 6, pick selected creator ONLY from interestedCreators (never fall back to unreplied creators)
   const rawSelectedCreator =
     activeStep >= 5
       ? interestedCreators.find((c) => c.id === selectedCreatorId) ||
         interestedCreators[0] ||
-        eligibleCreators.find((c) => c.id === selectedCreatorId) ||
-        eligibleCreators[0] ||
-        creators[0] ||
         null
       : creators.find((c) => c.id === selectedCreatorId) || creators[0] || null;
 
@@ -2431,6 +2497,15 @@ export default function AcquisitionEngine({
   useEffect(() => {
     try {
       localStorage.setItem(
+        "forge_launch_answer_sent_map",
+        JSON.stringify(answerSentMap),
+      );
+    } catch {}
+  }, [answerSentMap]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
         "forge_launch_ai_choice_map",
         JSON.stringify(aiDetectedChoiceMap),
       );
@@ -2488,31 +2563,34 @@ export default function AcquisitionEngine({
   };
 
   // Send Opportunity Pitch via SMTP & Activate AI Response Monitor
-  const handleSendOpportunityPitch = async () => {
-    if (!selectedCreator || isSendingPitch) return;
+  // Accepts an optional creator parameter so it can pitch ANY creator, not just the selected tab.
+  const handleSendOpportunityPitch = async (creator = selectedCreator) => {
+    if (!creator || isSendingPitch) return;
     setIsSendingPitch(true);
     const targetEmail = (
-      selectedCreator.email ||
-      selectedCreator.email_public ||
+      creator.email ||
+      creator.email_public ||
       ""
     ).trim();
-    const cId = selectedCreator.id;
+    const cId = creator.id;
 
     const concepts =
-      selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
-    const fallbackSubject = `Partnership Opportunity Deck & Top 3 Software Concepts for ${selectedCreator.name || selectedCreator.display_name}`;
-    const fallbackBody =
-      `Hi ${selectedCreator.name?.split(" ")[0] || "there"},\n\nFollowing up on our sync! Based on our deep audience research across your ${selectedCreator.followerStr || "100k+"} community in ${selectedCreator.niche}, we designed the top 3 software product concepts tailored for your audience:\n\n` +
+      creator.productConcepts || ensureCreatorConcepts(creator);
+    const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
+    const pitchSubject = `[STEP 6: OPPORTUNITY PITCH] Top 3 Software Concepts & Deck for ${creator.name || creator.display_name}`;
+    const pitchBody =
+      `Hi ${creator.name?.split(" ")[0] || "there"},\n\nFollowing up on our sync! Based on our deep audience research across your ${creator.followerStr || "100k+"} community in ${creator.niche}, we designed the top 3 software product concepts tailored for your audience:\n\n` +
       concepts
         .map(
           (c, i) =>
             `• Concept #${i + 1}: ${c.name} (${c.pricing})\n  ${c.tagline}\n  Key Problem: ${c.problem}\n  Opportunity Score: ${c.opportunityScore}/100\n`,
         )
         .join("\n") +
-      `\nOur engineering team will build the full MVP at zero upfront cost under our 50/50 revenue-share partnership.\n\nLet us know which concept excites you most to kick off development!\n\nBest,\nCreator Forge Venture Studio`;
+      `\nOur engineering team will build the full MVP at zero upfront cost under our 50/50 revenue-share partnership.\n\nWhich of these three concepts resonates most with you? Let us know to kick off development!\n\nBest,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${cId} | Handle:@${cleanHandle}]`;
 
-    const subjectToSend = customPitchSubject || fallbackSubject;
-    const bodyToSend = customPitchBody || fallbackBody;
+    // Use custom pitch only if this is the currently selected creator (user may have edited it)
+    const subjectToSend = (creator.id === selectedCreator?.id && customPitchSubject) ? customPitchSubject : pitchSubject;
+    const bodyToSend = (creator.id === selectedCreator?.id && customPitchBody) ? customPitchBody : pitchBody;
 
     try {
       if (targetEmail && targetEmail.includes("@")) {
@@ -2560,20 +2638,24 @@ export default function AcquisitionEngine({
   };
 
   // Autonomous auto-send opportunity pitch upon arriving in Step 6
+  // Sends to ALL qualified creators who haven't been pitched yet — not just the selected tab.
   useEffect(() => {
     if (
       activeStep === 6 &&
-      selectedCreator &&
       campaignRunning &&
       !isSendingPitch
     ) {
-      if (!pitchSentMap[selectedCreator.id]) {
-        handleSendOpportunityPitch();
+      // Find the first qualified creator who hasn't been pitched yet
+      const unpitchedCreator = interestedCreators.find(
+        (c) => !pitchSentMap[c.id] && hasValidEmail(c),
+      );
+      if (unpitchedCreator) {
+        handleSendOpportunityPitch(unpitchedCreator);
       }
     }
   }, [
     activeStep,
-    selectedCreator?.id,
+    interestedCreators.length,
     campaignRunning,
     pitchSentMap,
     isSendingPitch,
@@ -2596,8 +2678,8 @@ export default function AcquisitionEngine({
     const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
 
     const persuasionSubject = isConfused
-      ? `Re: Simplifying our co-founder partnership for ${creatorName} (${topConcept?.name || "SaaS"})`
-      : `Re: Zero-effort co-founder model for ${creatorName} (${topConcept?.name || "SaaS"})`;
+      ? `Re: [STEP 6: PARTNERSHIP] Simplifying our co-founder partnership for ${creatorName} (${topConcept?.name || "SaaS"})`
+      : `Re: [STEP 6: PARTNERSHIP] Zero-effort co-founder model for ${creatorName} (${topConcept?.name || "SaaS"})`;
 
     const persuasionBody = isConfused
       ? `Hi ${firstName},\n\nI completely understand! We made it sound far more complicated than it actually is — sorry about that!\n\nHere is the simple 30-second version of why our creator partners love this:\n\n` +
@@ -2621,6 +2703,8 @@ export default function AcquisitionEngine({
           cId,
         );
       }
+      const sentTimeIso = new Date().toISOString();
+      const sentTimestamp = Date.now();
       setPersuasionSentMap((prev) => ({
         ...prev,
         [cId]: {
@@ -2628,7 +2712,10 @@ export default function AcquisitionEngine({
             hour: "2-digit",
             minute: "2-digit",
           }),
+          sentAt: sentTimeIso,
+          sentTimestamp,
           recipient: targetEmail,
+          subject: persuasionSubject,
         },
       }));
       await syncImapReplies();
@@ -2754,6 +2841,7 @@ export default function AcquisitionEngine({
           .replace(/\{\{niche\}\}/g, c.niche)
           .replace(/\{\{follower_count\}\}/g, c.followerStr || "100k+")
           .replace(/\{\{followers\}\}/g, c.followerStr || "100k+")
+          .replace(/\{\{creator_id\}\}/g, c.id)
           .replace(/\{\{product_name\}\}/g, "a high-growth product");
 
         try {
@@ -2893,9 +2981,10 @@ export default function AcquisitionEngine({
           `✅ IMAP Sync Complete: ${repliedThreads.length} active reply threads fetched from Gmail and classified.`,
         );
 
-        // Check for positive replies across ALL creators (Step 4, 5, or 6)
-        if (autoAdvanceOnPositive && activeStep >= 4) {
+        // Check for positive replies across ALL creators (Step 4 only — ignore already pitched/qualified creators)
+        if (autoAdvanceOnPositive && activeStep <= 4) {
           for (const c of creators) {
+            if (c.hasReplied || pitchSentMap[c.id]) continue;
             const reply = getCreatorReply(c, threads);
             if (
               reply &&
@@ -2934,10 +3023,11 @@ export default function AcquisitionEngine({
     }
   }, [activeStep]);
 
-  // Watch for any positive replies coming in across all creators
+  // Watch for any positive replies coming in across all creators (Step 4 only)
   useEffect(() => {
-    if (activeStep >= 4 && autoAdvanceOnPositive && realThreads.length > 0) {
+    if (activeStep <= 4 && autoAdvanceOnPositive && realThreads.length > 0) {
       for (const c of creators) {
+        if (c.hasReplied || pitchSentMap[c.id]) continue;
         const reply = getCreatorReply(c, realThreads);
         if (
           reply &&
@@ -3064,6 +3154,16 @@ export default function AcquisitionEngine({
 
     // 3. Affirmative Agreement / Concept Selection
     const affirmativePatterns = [
+      "interested",
+      "i'm interested",
+      "im interested",
+      "i am interested",
+      "we're interested",
+      "we are interested",
+      "yes interested",
+      "definitely interested",
+      "very interested",
+      "would be interested",
       "let's do it",
       "lets do it",
       "sounds great",
@@ -3081,6 +3181,14 @@ export default function AcquisitionEngine({
       "i choose",
       "i prefer",
       "let's go with",
+      "love to",
+      "let's talk",
+      "lets talk",
+      "let's connect",
+      "lets connect",
+      "happy to chat",
+      "open to",
+      "yes",
     ];
     const hasAffirmative = affirmativePatterns.some((p) => text.includes(p));
 
@@ -3165,6 +3273,8 @@ export default function AcquisitionEngine({
         const { sendDirectEmail } = await import("../../services/opsApi");
         await sendDirectEmail(targetEmail, followUpSubject, followUpBody, cId);
       }
+      const sentTimeIso = new Date().toISOString();
+      const sentTimestamp = Date.now();
       setPitchSentMap((prev) => ({
         ...prev,
         [cId]: {
@@ -3172,7 +3282,10 @@ export default function AcquisitionEngine({
             hour: "2-digit",
             minute: "2-digit",
           }),
+          sentAt: sentTimeIso,
+          sentTimestamp,
           recipient: targetEmail || "creator",
+          subject: followUpSubject,
         },
       }));
       await syncImapReplies();
@@ -3273,7 +3386,7 @@ export default function AcquisitionEngine({
       );
     }
 
-    const answerSubject = `Re: Answers to your questions regarding software co-founding (${concepts[0]?.name})`;
+    const answerSubject = `Re: [STEP 6: ANSWERS] Co-founding questions regarding ${concepts[0]?.name} (${creatorName})`;
     const answerBody =
       `Hi ${firstName},\n\n` +
       `Thanks for asking — that is the most important question to clarify before we build anything together!\n\n` +
@@ -3283,13 +3396,28 @@ export default function AcquisitionEngine({
       `2. ${concepts[1]?.name} — ${concepts[1]?.tagline} (${concepts[1]?.pricing})\n` +
       `3. ${concepts[2]?.name} — ${concepts[2]?.tagline} (${concepts[2]?.pricing})\n\n` +
       `Which of these 3 concepts do you think solves the biggest bottleneck for your audience? Let us know, and we will initialize your private partner portal and launch validation.\n\n` +
-      `Best regards,\nCreator Forge Studio Team\n\n---\nRef: [CF-CID:${cId} | Handle:@${cleanHandle}]`;
+      `Best regards,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP6_DIALOG_ANSWER | CF-CID:${cId} | Handle:@${cleanHandle}]`;
 
     try {
       if (targetEmail && targetEmail.includes("@")) {
         const { sendDirectEmail } = await import("../../services/opsApi");
         await sendDirectEmail(targetEmail, answerSubject, answerBody, cId);
       }
+      const sentTimeIso = new Date().toISOString();
+      const sentTimestamp = Date.now();
+      setAnswerSentMap((prev) => ({
+        ...prev,
+        [cId]: {
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          sentAt: sentTimeIso,
+          sentTimestamp,
+          recipient: targetEmail,
+          subject: answerSubject,
+        },
+      }));
       await syncImapReplies();
     } catch (e) {
       console.warn("Answer email dispatch error:", e);
@@ -3298,41 +3426,53 @@ export default function AcquisitionEngine({
     }
   };
 
-  // Watch for creator concept choice & incoming messages in Step 6 (strictly in response to Step 6 pitch)
+  // Watch for creator concept choice & incoming messages in Step 6 (strictly in response to Step 6 pitch & dialog)
   useEffect(() => {
     if (activeStep === 6 && realThreads.length > 0) {
       for (const c of creators) {
         const incoming = getCreatorThreadMessages(c, realThreads);
         const pitchSent = pitchSentMap[c.id];
+        const answerSent = answerSentMap[c.id];
+        const persuasionSent = persuasionSentMap[c.id];
         const concepts = c.productConcepts || ensureCreatorConcepts(c);
 
-        // Check if any message or thread confirms a Step 6 pitch was dispatched
+        // Determine the latest outbound communication sent to this creator in Step 6 (Pitch, Answer, or Persuasion)
+        const pTime = pitchSent?.sentTimestamp || (pitchSent?.sentAt ? new Date(pitchSent.sentAt).getTime() : 0);
+        const aTime = answerSent?.sentTimestamp || (answerSent?.sentAt ? new Date(answerSent.sentAt).getTime() : 0);
+        const perTime = persuasionSent?.sentTimestamp || (persuasionSent?.sentAt ? new Date(persuasionSent.sentAt).getTime() : 0);
+
+        let latestOutboundTime = Math.max(pTime, aTime, perTime);
+
+        // Fallback: Check if any outbound message exists in realThreads
+        if (!latestOutboundTime) {
+          for (const thread of realThreads) {
+            const msgs = thread.messages || [];
+            for (const m of msgs) {
+              const isOut = m.is_outbound || m.from_address?.includes("creatorforge") || m.from_address?.includes("@gmail.com");
+              const subj = (m.subject || "").toLowerCase();
+              if (isOut && /blueprint|opportunity deck|software concepts|concept pitch|concepts for|answers to your questions|simplifying|zero-effort/i.test(subj)) {
+                const t = m.sent_at || m.created_at;
+                if (t) {
+                  const tMs = new Date(t).getTime();
+                  if (tMs > latestOutboundTime) latestOutboundTime = tMs;
+                }
+              }
+            }
+          }
+        }
+
         const hasStep6PitchThread = incoming.some((msg) => {
           const subj = (msg.subject || "").toLowerCase();
-          return /blueprint|opportunity deck|software concepts|concept pitch|concepts for/i.test(subj);
+          return /blueprint|opportunity deck|software concepts|concept pitch|concepts for|answers to your questions|co-founder partnership|zero upfront cost|preview/i.test(subj);
         });
 
-        const pitchWasDispatched = Boolean(pitchSent || hasStep6PitchThread);
+        const pitchWasDispatched = Boolean(latestOutboundTime > 0 || pitchSent || hasStep6PitchThread);
         if (!pitchWasDispatched) continue;
 
-        // Determine pitch sent timestamp if available
-        const pitchSentTime =
-          pitchSent?.sentTimestamp ||
-          (pitchSent?.sentAt ? new Date(pitchSent.sentAt).getTime() : null);
-
-        // Filter messages to find those that belong to Step 6:
-        // 1. Direct Subject Match: Any message replying to the Blueprint / Opportunity Deck
-        // 2. Timestamp Match: Any message received after the pitch was dispatched
-        const step6Replies = incoming.filter((msg) => {
-          const subj = (msg.subject || "").toLowerCase();
-          if (/blueprint|opportunity deck|software concepts|concept pitch|concepts for/i.test(subj)) {
-            return true;
-          }
-          if (pitchSentTime && msg.received_at) {
-            return new Date(msg.received_at).getTime() > pitchSentTime;
-          }
-          return false;
-        });
+        // Filter messages to find those that are GENUINE feedback/replies to our Step 6 outreach:
+        const step6Replies = incoming.filter((msg) =>
+          isStep6Message(msg, latestOutboundTime),
+        );
 
         if (step6Replies.length > 0) {
           const latestStep6 = step6Replies[0];
@@ -3368,26 +3508,42 @@ export default function AcquisitionEngine({
             }));
           }
         } else {
-          // No reply to the Step 6 Opportunity Pitch yet!
-          // The creator replied to Step 4, but that was initial qualification and must NOT execute project.
+          // No reply to our latest Step 6 outreach yet!
+          // The system MUST wait for creator's feedback/reply in dialog before taking any action.
+          let waitAction = "Awaiting Pitch Feedback";
+          let waitReason = `Opportunity pitch presenting 3 concepts was dispatched to ${c.name || "creator"}. The engine is listening on Gmail IMAP specifically for their feedback, concept choice, or questions before taking action.`;
+          let waitColor = "purple";
+          let waitBadge = "bg-purple-500/20 text-purple-300 border-purple-500/40";
+
+          if (aTime > pTime && aTime >= perTime) {
+            waitAction = "Answers Sent — Awaiting Reply";
+            waitReason = `Clarifying answers regarding 50/50 split and tech stack were dispatched to ${c.name || "creator"}. Listening on Gmail IMAP for their response in dialog before proceeding.`;
+            waitColor = "blue";
+            waitBadge = "bg-blue-500/20 text-blue-300 border-blue-500/40";
+          } else if (perTime > pTime && perTime >= aTime) {
+            waitAction = "Persuasion Sent — Awaiting Reply";
+            waitReason = `Persuasion recovery email addressing ${c.name || "creator"}'s hesitation was dispatched. Listening on Gmail IMAP for their response in dialog before proceeding.`;
+            waitColor = "amber";
+            waitBadge = "bg-amber-500/20 text-amber-300 border-amber-500/40";
+          }
+
           setAiDetectedChoiceMap((prev) => ({
             ...prev,
             [c.id]: {
               decision: "AWAITING_STEP6_REPLY",
-              actionLabel: "Awaiting Concept Choice",
+              actionLabel: waitAction,
               conceptName: concepts[0]?.name || "Recommended Concept",
               confidence: 0,
-              reasoning: `Opportunity pitch presenting 3 concepts was dispatched to ${c.name || "creator"}. Initial interest from Step 4 qualified them for this stage; the engine is now listening on Gmail IMAP specifically for their feedback or concept choice before taking action.`,
-              color: "purple",
-              badgeClass:
-                "bg-purple-500/20 text-purple-300 border-purple-500/40",
+              reasoning: waitReason,
+              color: waitColor,
+              badgeClass: waitBadge,
               isStep6Reply: false,
             },
           }));
         }
       }
     }
-  }, [realThreads, activeStep, creators, selectedCreatorId, pitchSentMap]);
+  }, [realThreads, activeStep, creators, selectedCreatorId, pitchSentMap, answerSentMap, persuasionSentMap]);
 
   // Autonomous execution of Create Project ONLY when creator confirms interest in Step 6
   useEffect(() => {
@@ -3452,6 +3608,58 @@ export default function AcquisitionEngine({
     campaignRunning,
     persuasionSentMap,
     isSendingPitch,
+  ]);
+
+  // Autonomous execution of Answer Email when creator asks questions in Step 6
+  useEffect(() => {
+    if (
+      activeStep === 6 &&
+      selectedCreator &&
+      campaignRunning &&
+      !isSendingPitch
+    ) {
+      const currentChoice = aiDetectedChoiceMap[selectedCreator.id];
+      if (
+        currentChoice &&
+        currentChoice.decision === "ANSWER_QUESTION" &&
+        currentChoice.isStep6Reply &&
+        !answerSentMap[selectedCreator.id]
+      ) {
+        handleSendAnswer(selectedCreator);
+      }
+    }
+  }, [
+    activeStep,
+    selectedCreator?.id,
+    aiDetectedChoiceMap,
+    campaignRunning,
+    answerSentMap,
+    isSendingPitch,
+  ]);
+
+  // Autonomous handling of rejection / opt-out in Step 6
+  useEffect(() => {
+    if (
+      activeStep === 6 &&
+      selectedCreator &&
+      campaignRunning
+    ) {
+      const currentChoice = aiDetectedChoiceMap[selectedCreator.id];
+      if (
+        currentChoice &&
+        currentChoice.decision === "NOT_INTERESTED" &&
+        currentChoice.isStep6Reply &&
+        selectedCreator.status !== "rejected"
+      ) {
+        handleRejectCreator(selectedCreator.id);
+      }
+    }
+  }, [
+    activeStep,
+    selectedCreator?.id,
+    selectedCreator?.status,
+    aiDetectedChoiceMap,
+    campaignRunning,
   ]);
 
   const handleSimulateReply = (creatorId, classification) => {
@@ -6125,12 +6333,16 @@ export default function AcquisitionEngine({
                 <div
                   className={`p-4 rounded-2xl bg-[#161a23] border ${
                     currentAiChoice.decision === "PERSUADE"
-                      ? "border-rose-500/50 bg-rose-950/20"
-                      : currentAiChoice.decision === "RESEND"
-                        ? "border-amber-500/50 bg-amber-950/20"
-                        : currentAiChoice.decision === "AWAITING_STEP6_REPLY"
-                          ? "border-purple-500/40 bg-purple-950/20"
-                          : "border-emerald-500/50 bg-emerald-950/20"
+                      ? "border-amber-500/50 bg-amber-950/20"
+                      : currentAiChoice.decision === "ANSWER_QUESTION"
+                        ? "border-blue-500/50 bg-blue-950/20"
+                        : currentAiChoice.decision === "NOT_INTERESTED"
+                          ? "border-rose-500/50 bg-rose-950/20"
+                          : currentAiChoice.decision === "RESEND"
+                            ? "border-amber-500/50 bg-amber-950/20"
+                            : currentAiChoice.decision === "AWAITING_STEP6_REPLY"
+                              ? "border-purple-500/40 bg-purple-950/20"
+                              : "border-emerald-500/50 bg-emerald-950/20"
                   } space-y-3 shadow-xl animate-in fade-in`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-2.5">
@@ -6147,23 +6359,31 @@ export default function AcquisitionEngine({
                           <span
                             className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase ${
                               currentAiChoice.decision === "PERSUADE"
-                                ? "bg-rose-500 text-white"
-                                : currentAiChoice.decision === "RESEND"
-                                  ? "bg-amber-500 text-slate-950"
-                                  : currentAiChoice.decision ===
-                                      "AWAITING_STEP6_REPLY"
-                                    ? "bg-purple-500/30 text-purple-200 border border-purple-500/40"
-                                    : "bg-emerald-500 text-slate-950"
+                                ? "bg-amber-500 text-slate-950"
+                                : currentAiChoice.decision === "ANSWER_QUESTION"
+                                  ? "bg-blue-500 text-white"
+                                  : currentAiChoice.decision === "NOT_INTERESTED"
+                                    ? "bg-rose-500 text-white"
+                                    : currentAiChoice.decision === "RESEND"
+                                      ? "bg-amber-500 text-slate-950"
+                                      : currentAiChoice.decision ===
+                                          "AWAITING_STEP6_REPLY"
+                                        ? "bg-purple-500/30 text-purple-200 border border-purple-500/40"
+                                        : "bg-emerald-500 text-slate-950"
                             }`}
                           >
                             {currentAiChoice.decision === "PERSUADE"
                               ? "⚡ CONVINCE CREATOR (PERSUASION PITCH)"
-                              : currentAiChoice.decision === "RESEND"
-                                ? "🔄 RESEND / NURTURE"
-                                : currentAiChoice.decision ===
-                                    "AWAITING_STEP6_REPLY"
-                                  ? "⏳ AWAITING CONCEPT REPLY"
-                                  : "🚀 CREATE PROJECT"}
+                              : currentAiChoice.decision === "ANSWER_QUESTION"
+                                ? "💬 ANSWER CREATOR QUESTIONS"
+                                : currentAiChoice.decision === "NOT_INTERESTED"
+                                  ? "❌ CREATOR DECLINED"
+                                  : currentAiChoice.decision === "RESEND"
+                                    ? "🔄 RESEND / NURTURE"
+                                    : currentAiChoice.decision ===
+                                        "AWAITING_STEP6_REPLY"
+                                      ? `⏳ ${currentAiChoice.actionLabel?.toUpperCase() || "AWAITING CREATOR FEEDBACK"}`
+                                      : "🚀 CREATE PROJECT"}
                           </span>
                           {currentAiChoice.confidence > 0 && (
                             <span className="text-[11px] font-mono text-slate-400">
@@ -6318,28 +6538,21 @@ export default function AcquisitionEngine({
                 </div>
 
                 <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                  {getCreatorThreadMessages(selectedCreator, realThreads)
-                    .length > 0 ? (
-                    getCreatorThreadMessages(selectedCreator, realThreads).map(
-                      (msg, idx) => {
+                  {(() => {
+                    const allMsgs = getCreatorThreadMessages(selectedCreator, realThreads);
+                    const pitchSent = selectedCreator ? pitchSentMap[selectedCreator.id] : null;
+                    const answerSent = selectedCreator ? answerSentMap[selectedCreator.id] : null;
+                    const persuasionSent = selectedCreator ? persuasionSentMap[selectedCreator.id] : null;
+
+                    const pTime = pitchSent?.sentTimestamp || (pitchSent?.sentAt ? new Date(pitchSent.sentAt).getTime() : 0);
+                    const aTime = answerSent?.sentTimestamp || (answerSent?.sentAt ? new Date(answerSent.sentAt).getTime() : 0);
+                    const perTime = persuasionSent?.sentTimestamp || (persuasionSent?.sentAt ? new Date(persuasionSent.sentAt).getTime() : 0);
+                    const latestOutbound = Math.max(pTime, aTime, perTime);
+
+                    return allMsgs.length > 0 ? (
+                      allMsgs.map((msg, idx) => {
                         const isLatest = idx === 0;
-                        const pitchSent = selectedCreator
-                          ? pitchSentMap[selectedCreator.id]
-                          : null;
-                        const pitchSentTime =
-                          pitchSent?.sentTimestamp ||
-                          (pitchSent?.sentAt
-                            ? new Date(pitchSent.sentAt).getTime()
-                            : 0);
-                        const msgTime = msg.received_at
-                          ? new Date(msg.received_at).getTime()
-                          : 0;
-                        const isStep6Reply =
-                          (msg.subject &&
-                            /blueprint|opportunity deck|software concepts|concept pitch|concepts for/i.test(
-                              msg.subject,
-                            )) ||
-                          (pitchSentTime > 0 && msgTime > pitchSentTime);
+                        const isStep6Reply = isStep6Message(msg, latestOutbound);
 
                         return (
                           <div
@@ -6392,9 +6605,9 @@ export default function AcquisitionEngine({
                     <div className="p-4 text-center text-xs text-slate-400 italic">
                       Waiting for incoming reply from{" "}
                       {selectedCreator?.email || selectedCreator?.email_public}
-                      ... (Auto-polling active)
                     </div>
-                  )}
+                  );
+                })()}
                 </div>
               </div>
             </div>

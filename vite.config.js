@@ -42,8 +42,8 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: backendTarget,
           changeOrigin: true,
-          timeout: 60000,
-          proxyTimeout: 60000,
+          timeout: 300000,
+          proxyTimeout: 300000,
           configure: (proxy) => {
             proxy.on('error', (err) => {
               console.warn(`[Vite proxy] FastAPI backend not running at ${backendTarget}:`, err.message)

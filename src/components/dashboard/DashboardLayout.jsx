@@ -10,7 +10,7 @@ import Accounts from './Accounts'
 import Settings from './Settings'
 import ForgeChat from './ForgeChat'
 import { useForge } from '../../App'
-import { Sparkles, Laptop, Smartphone, Menu } from 'lucide-react'
+import { Sparkles, Laptop, Smartphone, Menu, LogOut } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { AppMockup } from '../onboarding/Preview'
 import ApiKeysModal from '../ui/ApiKeysModal'
@@ -172,7 +172,9 @@ export default function DashboardLayout() {
     apiModalOpen, 
     setApiModalOpen,
     activeTab,
-    setActiveTab
+    setActiveTab,
+    logout,
+    userProfile,
   } = useForge()
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024)
   const [chatOpen, setChatOpen] = useState(false)
@@ -276,6 +278,16 @@ export default function DashboardLayout() {
                 )}
               </div>
             </div>
+
+            {/* Individual User Logout Button */}
+            <button
+              onClick={logout}
+              title={`Logout ${userProfile?.username || userProfile?.email || 'User'}`}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer shadow-sm ml-1"
+            >
+              <LogOut size={13} className="text-rose-400" />
+              <span className="hidden md:inline">Logout</span>
+            </button>
           </div>
         </div>
 
