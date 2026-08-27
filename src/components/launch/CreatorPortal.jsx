@@ -4,6 +4,7 @@ import {
   Users, ExternalLink, Globe, Sparkles, AlertCircle, ShieldCheck, ArrowRight,
   TrendingUp, Award, Calendar, CheckSquare, Eye, Smartphone, Send
 } from 'lucide-react'
+import { getFrontendUrl } from '../../services/opsApi'
 
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
@@ -185,7 +186,7 @@ export default function CreatorPortal({ portalId }) {
   const completedTasksCount = schedule.filter(t => t.done || t.completed).length
   const totalTasksCount = schedule.length
   const reservations = project.reservations || []
-  const preorderUrl = `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'}/preorder?ref=${project.creatorHandle?.replace('@','') || 'creator'}`
+  const preorderUrl = `${getFrontendUrl()}/preorder?ref=${project.creatorHandle?.replace('@','') || 'creator'}`
 
   return (
     <div className="min-h-screen bg-[#090b0e] text-slate-100 font-sans flex flex-col">

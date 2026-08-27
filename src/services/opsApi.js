@@ -226,4 +226,12 @@ export const updateCreatorCampaignTask = (id, taskId, updates) => req('PATCH', `
 export const addProjectReservation = (id, reservation) => req('POST', `/projects/${id}/reservations`, reservation)
 export const recordGateDecision = (id, decisionData) => req('POST', `/projects/${id}/gate-decision`, decisionData)
 export const deleteCoLaunchProject = (id) => req('DELETE', `/projects/${id}`)
+export const deleteAllProjects = () => req('DELETE', '/projects')
 
+export const getFrontendUrl = () => {
+  const envUrl = import.meta.env?.VITE_FRONTEND_URL
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+    return envUrl.trim().replace(/\/$/, '')
+  }
+  return 'https://creator-forge-frontend.vercel.app'
+}

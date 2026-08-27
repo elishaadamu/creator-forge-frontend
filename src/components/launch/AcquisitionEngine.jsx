@@ -22,6 +22,7 @@ import {
   Check,
   ExternalLink,
   ShieldCheck,
+  ShieldAlert,
   Mail,
   Users,
   TrendingUp,
@@ -30,8 +31,21 @@ import {
   Pencil,
   Rocket,
   Trash2,
+  Instagram,
+  Youtube,
+  Twitter,
+  Music,
+  Plus,
+  AlertTriangle,
+  Flame,
+  Bot,
+  Lightbulb,
+  Radio,
 } from "lucide-react";
 import { deleteAllCreators } from "../../services/opsApi";
+import AdminPipelineLookup from "./AdminPipelineLookup";
+import ActionNotificationToast from "../ui/ActionNotificationToast";
+import ConfirmationModal from "../ui/ConfirmationModal";
 
 export default function AcquisitionEngine({
   initialCreators = [],
@@ -58,6 +72,7 @@ export default function AcquisitionEngine({
     }
   });
   const [campaignRunning, setCampaignRunning] = useState(true);
+  const [showAdminLookup, setShowAdminLookup] = useState(false);
 
   useEffect(() => {
     try {
@@ -90,10 +105,10 @@ export default function AcquisitionEngine({
     "twitter",
   ]);
   const [templateSubject, setTemplateSubject] = useState(
-    "[STEP 3: INITIAL INQUIRY] Co-founder partnership inquiry for {{display_name}}",
+    "Co-founder partnership inquiry for {{display_name}}",
   );
   const [templateBody, setTemplateBody] = useState(
-    `Hi {{first_name}},\n\nI've been following your {{niche}} content on {{platform}} and love how engaged your community is.\n\nWe're building {{product_name}} — a high-growth product tailored for creators in {{niche}}. Given your audience scale ({{follower_count}} followers) and strong engagement, we'd love to discuss a co-founder partnership with a 50/50 revenue split.\n\nAre you open to a quick 15-minute sync this week?\n\nBest,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP3_INQUIRY | CF-CID:{{creator_id}} | Handle:@{{handle}}]`,
+    `Hi {{first_name}},\n\nI have been following your {{niche}} work on {{platform}} and love the community you have built.\n\nWe operate Creator Forge Studio — an elite software venture lab. We design, engineer, and fund 100% of custom software products for top creators under a 50/50 net recurring revenue partnership. You never write code, manage servers, or handle customer support (<2 hours/month advisory role).\n\nBased on audience research across your {{follower_count}} community in {{niche}}, we designed 3 software product concepts tailored specifically for your audience to create compounding monthly recurring revenue.\n\nAre you open to reviewing a 60-second preview deck this week?\n\nBest regards,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP3_INQUIRY | CF-CID:{{creator_id}} | Handle:@{{handle}}]`,
   );
 
   // Discovered Creators State (Dynamic AI + Apify + Hunter.io Pipeline)
@@ -143,17 +158,33 @@ export default function AcquisitionEngine({
     }
   }, [creators]);
 
+  // Alert & Notification System State
+  const [toasts, setToasts] = useState([]);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
 
-  const handleDeleteAllCreators = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete all creators and start again? This will clear all discovered creators, outreach logs, and pipeline data.",
-      )
-    ) {
-      return;
-    }
+  const notify = (type, title, message, duration = 3500) => {
+    const id = "toast_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5);
+    setToasts((prev) => {
+      // Deduplicate: replace any existing toast with the same title so it never stacks
+      const filtered = prev.filter((t) => t.title !== title);
+      // Keep at most 2 toasts on screen simultaneously
+      return [...filtered.slice(-1), { id, type, title, message, duration }];
+    });
+  };
+
+  const dismissToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleDeleteAllCreators = () => {
+    setShowDeleteConfirmModal(true);
+  };
+
+  const executeDeleteAllCreators = async () => {
     setIsDeletingAll(true);
+    const creatorCount = creators.length;
+    const threadCount = realThreads.length;
     try {
       try {
         await deleteAllCreators();
@@ -165,6 +196,8 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_launch_acquisition_step");
       localStorage.removeItem("forge_launch_real_threads");
       localStorage.removeItem("forge_launch_pitch_sent_map");
+      localStorage.removeItem("forge_launch_answer_sent_map");
+      localStorage.removeItem("forge_launch_persuasion_sent_map");
       localStorage.setItem("forge_launch_active_section", "section1");
       onResetAll?.();
       setCreators([]);
@@ -179,9 +212,39 @@ export default function AcquisitionEngine({
       setActiveStep(1);
       setDiscoveryLog("");
       setOutreachLog("");
+      setShowDeleteConfirmModal(false);
+
+      // Trigger rich alert toast
+      notify(
+        "success",
+        "Pipeline Reset & Creators Deleted",
+        `Successfully wiped ${creatorCount} creators, ${threadCount} email threads, and reset workflow back to Step 1.`,
+        6000
+      );
+    } catch (err) {
+      notify(
+        "error",
+        "Deletion Failed",
+        err.message || "An error occurred while resetting the pipeline."
+      );
     } finally {
       setIsDeletingAll(false);
     }
+  };
+
+  const toggleCampaignRunning = () => {
+    setCampaignRunning((prev) => {
+      const next = !prev;
+      notify(
+        next ? "success" : "warning",
+        next ? "Acquisition Engine Active" : "Acquisition Engine Paused",
+        next
+          ? "Autonomous workers are actively scouting leads, sending outreach, and polling replies."
+          : "Autonomous background processing has been temporarily paused.",
+        4000
+      );
+      return next;
+    });
   };
 
   // Email Modification State
@@ -219,8 +282,10 @@ export default function AcquisitionEngine({
     try {
       const { updateCreatorDetails } = await import("../../services/opsApi");
       await updateCreatorDetails(creatorId, { email_public: newEmail });
+      notify("success", "Email Updated", `Contact email updated to ${newEmail || "empty"}.`, 3500);
     } catch (err) {
       console.warn("[AcquisitionEngine] Failed to save email to DB:", err);
+      notify("warning", "Saved Locally", `Email updated in session: ${newEmail}`, 3500);
     }
   };
 
@@ -269,7 +334,7 @@ export default function AcquisitionEngine({
         );
         setHunterStatusMsg((prev) => ({
           ...prev,
-          [creator.id]: `🎯 Hunter Found: ${res.email} (${res.score}%)`,
+          [creator.id]: `[Hunter.io] Found: ${res.email} (${res.score}%)`,
         }));
         try {
           await updateCreatorDetails(creator.id, { email_public: res.email });
@@ -279,14 +344,14 @@ export default function AcquisitionEngine({
       } else {
         setHunterStatusMsg((prev) => ({
           ...prev,
-          [creator.id]: "⚠️ No Hunter email found for this domain/name",
+          [creator.id]: "[Notice] No Hunter email found for this domain/name",
         }));
       }
     } catch (err) {
       console.warn("[Hunter.io] Find error:", err);
       setHunterStatusMsg((prev) => ({
         ...prev,
-        [creator.id]: "⚠️ Hunter lookup failed",
+        [creator.id]: "[Notice] Hunter lookup failed",
       }));
     } finally {
       setFindingHunterId(null);
@@ -583,7 +648,7 @@ export default function AcquisitionEngine({
     return `${mins}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  // 🔄 Reset Pipeline State & Start Clean
+  // Reset Pipeline State & Start Clean
   const handleStartFresh = () => {
     setCreators([]);
     setSelectedCreatorId(null);
@@ -606,7 +671,7 @@ export default function AcquisitionEngine({
     setActiveStep(1);
   };
 
-  // ⚡ Autonomous Engine Start & Discovery Trigger (AI + Apify + Hunter.io)
+  // Autonomous Engine Start & Discovery Trigger (AI + Apify + Hunter.io)
   const handleStartEngine = async () => {
     // 1. Immediately wipe previous batch state so Step 2 renders completely fresh
     setCreators([]);
@@ -637,14 +702,14 @@ export default function AcquisitionEngine({
     const activeNiches =
       niches.length > 0 ? niches : ["Tech", "Software", "SaaS"];
     setDiscoveryLog(
-      `🤖 [AI Scout] Dynamically discovering ${targetCount} fresh creators across [${activeNiches.join(", ")}] on ${selectedPlatforms.join(", ")}...`,
+      `[AI Scout] Dynamically discovering ${targetCount} fresh creators across [${activeNiches.join(", ")}] on ${selectedPlatforms.join(", ")}...`,
     );
 
     try {
       const { discoverAutonomousCreators } =
         await import("../../services/opsApi");
       setDiscoveryLog(
-        `🔍 [Apify / Scrapers] Extracting channel URLs, handles & profile metrics for ${activeNiches.join(", ")}...`,
+        `[Apify / Scrapers] Extracting channel URLs, handles & profile metrics for ${activeNiches.join(", ")}...`,
       );
 
       const res = await discoverAutonomousCreators({
@@ -663,17 +728,17 @@ export default function AcquisitionEngine({
           (c.email || c.email_public || "").includes("@"),
         ).length;
         setDiscoveryLog(
-          `🎯 [Hunter.io & Apify] Discovered & enriched ${res.creators.length} creators (${emailsFound} verified business emails validated via Hunter.io). You have 3 minutes to review/modify emails before autonomous dispatch.`,
+          `[Hunter.io & Apify] Discovered & enriched ${res.creators.length} creators (${emailsFound} verified business emails validated via Hunter.io). You have 3 minutes to review/modify emails before autonomous dispatch.`,
         );
       } else {
         setDiscoveryLog(
-          "⚠️ [Engine Notice] Query completed. Processed dynamic creators from database and live scrapers.",
+          "[Engine Notice] Query completed. Processed dynamic creators from database and live scrapers.",
         );
       }
     } catch (e) {
       console.warn(e);
       setDiscoveryLog(
-        `⚠️ Discovery note: ${e.message || "Scouted dynamic creators."}`,
+        `[Notice] Discovery note: ${e.message || "Scouted dynamic creators."}`,
       );
     } finally {
       setDiscovering(false);
@@ -2548,7 +2613,7 @@ export default function AcquisitionEngine({
     if (!selectedCreator) return;
     const concepts =
       selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
-    const subject = `🔥 Co-Founder Partnership Blueprint: 3 Custom SaaS Solutions for ${selectedCreator.name || selectedCreator.display_name}`;
+    const subject = `Co-Founder Partnership Blueprint: 3 Custom SaaS Solutions for ${selectedCreator.name || selectedCreator.display_name}`;
     const body =
       `Hey ${selectedCreator.name?.split(" ")[0] || "there"},\n\nExcited to share our technical breakdown! We analyzed your top-performing content and audience discussions to architect 3 custom SaaS solutions for your subscribers:\n\n` +
       concepts
@@ -2577,7 +2642,7 @@ export default function AcquisitionEngine({
     const concepts =
       creator.productConcepts || ensureCreatorConcepts(creator);
     const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
-    const pitchSubject = `[STEP 6: OPPORTUNITY PITCH] Top 3 Software Concepts & Deck for ${creator.name || creator.display_name}`;
+    const pitchSubject = `Top 3 Software Concepts & Opportunity Deck for ${creator.name || creator.display_name}`;
     const pitchBody =
       `Hi ${creator.name?.split(" ")[0] || "there"},\n\nFollowing up on our sync! Based on our deep audience research across your ${creator.followerStr || "100k+"} community in ${creator.niche}, we designed the top 3 software product concepts tailored for your audience:\n\n` +
       concepts
@@ -2613,6 +2678,12 @@ export default function AcquisitionEngine({
           subject: subjectToSend,
         },
       }));
+      notify(
+        "success",
+        "Opportunity Pitch Dispatched",
+        `Step 6 pitch and deck delivered to ${creator.name || creator.handle} (${targetEmail || "creator"}).`,
+        5000
+      );
       await syncImapReplies();
     } catch (e) {
       console.warn(
@@ -2646,9 +2717,45 @@ export default function AcquisitionEngine({
       !isSendingPitch
     ) {
       // Find the first qualified creator who hasn't been pitched yet
-      const unpitchedCreator = interestedCreators.find(
-        (c) => !pitchSentMap[c.id] && hasValidEmail(c),
-      );
+      const unpitchedCreator = interestedCreators.find((c) => {
+        if (!hasValidEmail(c)) return false;
+        if (pitchSentMap[c.id]) return false;
+
+        // Check if pitch was already dispatched in thread (e.g. by backend autonomous worker)
+        const msgs = getCreatorThreadMessages(c, realThreads);
+        const existingPitch = msgs.find((m) => {
+          const s = (m.subject || "").toLowerCase();
+          const b = (m.body || "").toLowerCase();
+          return (
+            s.includes("step 6") ||
+            s.includes("step6") ||
+            s.includes("opportunity pitch") ||
+            s.includes("opportunity deck") ||
+            s.includes("software concepts") ||
+            b.includes("cf-stage:step6_pitch")
+          );
+        });
+
+        if (existingPitch) {
+          // Already pitched! Sync to pitchSentMap so UI recognizes it without re-sending
+          setPitchSentMap((prev) => ({
+            ...prev,
+            [c.id]: {
+              time: existingPitch.received_at
+                ? new Date(existingPitch.received_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                : "Dispatched",
+              sentAt: existingPitch.received_at || new Date().toISOString(),
+              sentTimestamp: existingPitch.received_at ? new Date(existingPitch.received_at).getTime() : Date.now(),
+              recipient: c.email || c.email_public,
+              subject: existingPitch.subject || "Step 6 Opportunity Pitch",
+            },
+          }));
+          return false;
+        }
+
+        return true;
+      });
+
       if (unpitchedCreator) {
         handleSendOpportunityPitch(unpitchedCreator);
       }
@@ -2659,6 +2766,7 @@ export default function AcquisitionEngine({
     campaignRunning,
     pitchSentMap,
     isSendingPitch,
+    realThreads,
   ]);
 
   // Autonomous Persuasion Email to overturn disinterest/hesitation
@@ -2678,8 +2786,8 @@ export default function AcquisitionEngine({
     const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
 
     const persuasionSubject = isConfused
-      ? `Re: [STEP 6: PARTNERSHIP] Simplifying our co-founder partnership for ${creatorName} (${topConcept?.name || "SaaS"})`
-      : `Re: [STEP 6: PARTNERSHIP] Zero-effort co-founder model for ${creatorName} (${topConcept?.name || "SaaS"})`;
+      ? `Re: Simplifying our co-founder partnership for ${creatorName} (${topConcept?.name || "SaaS"})`
+      : `Re: Zero-effort co-founder model for ${creatorName} (${topConcept?.name || "SaaS"})`;
 
     const persuasionBody = isConfused
       ? `Hi ${firstName},\n\nI completely understand! We made it sound far more complicated than it actually is — sorry about that!\n\nHere is the simple 30-second version of why our creator partners love this:\n\n` +
@@ -2718,6 +2826,12 @@ export default function AcquisitionEngine({
           subject: persuasionSubject,
         },
       }));
+      notify(
+        "info",
+        "Persuasion Outreach Dispatched",
+        `Sent simplified terms and partnership clarification to ${creatorName}.`,
+        4500
+      );
       await syncImapReplies();
     } catch (e) {
       console.warn("Persuasion dispatch error:", e);
@@ -2792,6 +2906,12 @@ export default function AcquisitionEngine({
         threshold: "$5,000 in pre-sales or 50 paid founding reservations",
       },
     });
+    notify(
+      "success",
+      "Section 2 Project Initialized",
+      `Launched Co-Launch Project OS for ${selectedCreator.name || selectedCreator.handle} (${concept?.name || "Venture"}). Dual briefing dispatched to admin & creator!`,
+      6000
+    );
   };
 
   const [sendingBulk, setSendingBulk] = useState(false);
@@ -2806,7 +2926,13 @@ export default function AcquisitionEngine({
 
     if (validEmailList.length === 0) {
       setOutreachLog(
-        `⚠️ Notice: No email addresses found for the ${creators.length} creators in this batch. Please add emails in Step 2 or via Hunter.io. Advancing to Step 4...`,
+        `[Notice] No email addresses found for the ${creators.length} creators in this batch. Please add emails in Step 2 or via Hunter.io. Advancing to Step 4...`,
+      );
+      notify(
+        "warning",
+        "Missing Contact Emails",
+        `No email addresses found for ${creators.length} creators. Add emails in Step 2 or Hunter.io. Advancing to Step 4...`,
+        4500
       );
       setSendingBulk(false);
       if (autoAdvance || campaignRunning) {
@@ -2818,7 +2944,7 @@ export default function AcquisitionEngine({
     }
 
     setOutreachLog(
-      `⚡ [Google SMTP Queue] Delivering real outreach emails to ${validEmailList.length} verified creators...`,
+      `[Google SMTP Queue] Delivering real outreach emails to ${validEmailList.length} verified creators...`,
     );
     try {
       const { sendDirectEmail } = await import("../../services/opsApi");
@@ -2836,7 +2962,7 @@ export default function AcquisitionEngine({
             (c.name || c.display_name || "there").split(" ")[0],
           )
           .replace(/\{\{display_name\}\}/g, c.name || c.display_name)
-          .replace(/\{\{handle\}\}/g, c.handle)
+          .replace(/\{\{handle\}\}/g, (c.handle || "").replace(/^@/, ""))
           .replace(/\{\{platform\}\}/g, c.platform)
           .replace(/\{\{niche\}\}/g, c.niche)
           .replace(/\{\{follower_count\}\}/g, c.followerStr || "100k+")
@@ -2862,8 +2988,15 @@ export default function AcquisitionEngine({
 
       await Promise.allSettled(sendPromises);
 
+      notify(
+        "success",
+        "Outreach Wave Dispatched",
+        `Sent Step 3 inquiries to ${sentCount} creators via Google SMTP outbox.`,
+        5000
+      );
+
       setOutreachLog(
-        `✅ Outreach Batch Dispatched via Google SMTP! Sent to ${sentCount} creators (${validEmailList.map((c) => c.email || c.email_public).join(", ")}). Transitioning to Step 4...`,
+        `[Delivered] Outreach Batch Dispatched via Google SMTP! Sent to ${sentCount} creators (${validEmailList.map((c) => c.email || c.email_public).join(", ")}). Transitioning to Step 4...`,
       );
 
       if (autoAdvance || campaignRunning) {
@@ -2874,7 +3007,7 @@ export default function AcquisitionEngine({
     } catch (e) {
       console.warn("[AcquisitionEngine] Outreach error:", e);
       setOutreachLog(
-        `⚠️ Outreach notice: ${e.message || "Dispatched outreach"}. Transitioning to Step 4...`,
+        `[Notice] Outreach notice: ${e.message || "Dispatched outreach"}. Transitioning to Step 4...`,
       );
       if (autoAdvance || campaignRunning) {
         setTimeout(() => {
@@ -2962,7 +3095,8 @@ export default function AcquisitionEngine({
     } catch (e) {}
   }, [realThreads]);
 
-  const syncImapReplies = async () => {
+  const syncImapReplies = async (isManual = false) => {
+    const isManualClick = isManual === true;
     setPollingImap(true);
     setImapSyncLog(
       "Connecting to Gmail IMAP server to check for incoming replies...",
@@ -2978,8 +3112,17 @@ export default function AcquisitionEngine({
           (t) => t.replies && t.replies.length > 0,
         );
         setImapSyncLog(
-          `✅ IMAP Sync Complete: ${repliedThreads.length} active reply threads fetched from Gmail and classified.`,
+          `[IMAP Sync Complete] ${repliedThreads.length} active reply threads fetched from Gmail and classified.`,
         );
+        // Only trigger an alert toast if user manually clicked a Refresh button
+        if (isManualClick) {
+          notify(
+            "info",
+            "Gmail Inbox Refreshed",
+            `Checked IMAP inbox: ${repliedThreads.length} active reply threads fetched and classified.`,
+            2500
+          );
+        }
 
         // Check for positive replies across ALL creators (Step 4 only — ignore already pitched/qualified creators)
         if (autoAdvanceOnPositive && activeStep <= 4) {
@@ -3001,7 +3144,7 @@ export default function AcquisitionEngine({
       }
     } catch (e) {
       console.warn("[AcquisitionEngine] IMAP poll error:", e);
-      setImapSyncLog("⚠️ IMAP check: Waiting for creator replies.");
+      setImapSyncLog("[IMAP Check] Waiting for creator replies.");
     } finally {
       setPollingImap(false);
     }
@@ -3114,6 +3257,19 @@ export default function AcquisitionEngine({
     // 2. Questions / More Info / Inquiries -> Answer questions first! Do NOT launch yet!
     const questionPatterns = [
       "?",
+      "further explanation",
+      "further explaination",
+      "more details",
+      "need more details",
+      "give me more details",
+      "explain further",
+      "more information",
+      "more info",
+      "need more info",
+      "clarification",
+      "clarify",
+      "how it works",
+      "how this works",
       "thoughts",
       "thought",
       "think",
@@ -3288,6 +3444,12 @@ export default function AcquisitionEngine({
           subject: followUpSubject,
         },
       }));
+      notify(
+        "info",
+        "Follow-up Nudge Sent",
+        `Dispatched preview follow-up to ${selectedCreator.name || selectedCreator.handle}.`,
+        4500
+      );
       await syncImapReplies();
     } catch (e) {
       console.warn("Resend error:", e);
@@ -3298,7 +3460,9 @@ export default function AcquisitionEngine({
 
   const handleAutonomousCancel = () => {
     if (!selectedCreator) return;
+    const name = selectedCreator.name || selectedCreator.handle;
     handleRejectCreator(selectedCreator.id);
+    notify("warning", "Lead Archived", `Archived ${name} from active acquisition list.`, 3500);
   };
 
   // Answer Creator Questions in Step 6
@@ -3386,7 +3550,7 @@ export default function AcquisitionEngine({
       );
     }
 
-    const answerSubject = `Re: [STEP 6: ANSWERS] Co-founding questions regarding ${concepts[0]?.name} (${creatorName})`;
+    const answerSubject = `Re: Co-founding questions regarding ${concepts[0]?.name} (${creatorName})`;
     const answerBody =
       `Hi ${firstName},\n\n` +
       `Thanks for asking — that is the most important question to clarify before we build anything together!\n\n` +
@@ -3418,6 +3582,12 @@ export default function AcquisitionEngine({
           subject: answerSubject,
         },
       }));
+      notify(
+        "info",
+        "Clarification Dispatched",
+        `Sent detailed answers addressing inquiries for ${creatorName}.`,
+        4500
+      );
       await syncImapReplies();
     } catch (e) {
       console.warn("Answer email dispatch error:", e);
@@ -3716,16 +3886,16 @@ export default function AcquisitionEngine({
   return (
     <div className="space-y-6">
       {/* Header & Campaign Status */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] shadow-2xl relative overflow-hidden">
+        
 
-        <div className="space-y-1 z-10">
+        <div className="space-y-1 z-10 max-w-xl">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
               <Zap className="w-5 h-5 text-purple-400 fill-purple-400" />
               <span>Autonomous Creator Acquisition Engine</span>
             </h1>
-            <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
               Live Real-Data
             </span>
           </div>
@@ -3735,79 +3905,89 @@ export default function AcquisitionEngine({
           </p>
         </div>
 
-        <div className="flex items-center gap-3 z-10">
+        <div className="flex items-center gap-2.5 z-10 flex-shrink-0 flex-wrap sm:flex-nowrap">
           <button
             onClick={handleDeleteAllCreators}
             disabled={isDeletingAll}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-white cursor-pointer"
+            className="flex items-center gap-2 px-3.5 h-9 rounded-xl text-xs font-bold transition-all border bg-red-500/10 border-red-500/25 text-red-400 hover:bg-red-500/20 hover:text-white cursor-pointer whitespace-nowrap flex-shrink-0 disabled:opacity-50"
             title="Delete all creators from database and reset pipeline"
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>{isDeletingAll ? "Deleting..." : "Delete All Creators"}</span>
+            <Trash2 className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{isDeletingAll ? "Deleting..." : "Delete All Leads"}</span>
           </button>
 
           <button
-            onClick={() => setCampaignRunning(!campaignRunning)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+            onClick={toggleCampaignRunning}
+            className={`flex items-center gap-2 px-3.5 h-9 rounded-xl text-xs font-bold transition-all border whitespace-nowrap flex-shrink-0 cursor-pointer ${
               campaignRunning
                 ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                 : "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
             }`}
           >
             {campaignRunning ? (
-              <Play className="w-3.5 h-3.5 fill-emerald-400" />
+              <Play className="w-3.5 h-3.5 fill-emerald-400 flex-shrink-0" />
             ) : (
-              <Pause className="w-3.5 h-3.5 fill-amber-400" />
+              <Pause className="w-3.5 h-3.5 fill-amber-400 flex-shrink-0" />
             )}
             <span>{campaignRunning ? "Engine Active" : "Engine Paused"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowAdminLookup(true)}
+            className="flex items-center gap-2 px-3.5 h-9 rounded-xl text-xs font-bold transition-all border bg-rose-500/10 border-rose-500/25 text-rose-300 hover:bg-rose-500/20 cursor-pointer shadow-sm whitespace-nowrap flex-shrink-0"
+            title="Open Admin Oversight & Error Log"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
+            <span>Error & Exception Log</span>
           </button>
         </div>
       </div>
 
-      {/* 6 Step Progress Navigation */}
+      {/* Phase Navigation */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
         {[
           {
             step: 1,
-            label: "1. Setup Engine",
+            label: "Setup Engine",
             icon: Target,
             textColor: "text-purple-400",
-            activeBg: "bg-purple-500/20 border-purple-500/40 text-white",
+            activeBg: "bg-purple-500/15 border-purple-500/40 text-white",
           },
           {
             step: 2,
-            label: "2. Scraped Leads",
+            label: "Scraped Leads",
             icon: Search,
             textColor: "text-indigo-400",
-            activeBg: "bg-indigo-500/20 border-indigo-500/40 text-white",
+            activeBg: "bg-indigo-500/15 border-indigo-500/40 text-white",
           },
           {
             step: 3,
-            label: "3. Outreach Wave",
+            label: "Outreach Wave",
             icon: Send,
             textColor: "text-cyan-400",
-            activeBg: "bg-cyan-500/20 border-cyan-500/40 text-white",
+            activeBg: "bg-cyan-500/15 border-cyan-500/40 text-white",
           },
           {
             step: 4,
-            label: "4. Interested Review",
+            label: "Interested Review",
             icon: MessageSquare,
             textColor: "text-emerald-400",
-            activeBg: "bg-emerald-500/20 border-emerald-500/40 text-white",
+            activeBg: "bg-emerald-500/15 border-emerald-500/40 text-white",
           },
           {
             step: 5,
-            label: "5. Product Ideas",
+            label: "Product Ideas",
             icon: Sparkles,
             textColor: "text-amber-400",
-            activeBg: "bg-amber-500/20 border-amber-500/40 text-white",
+            activeBg: "bg-amber-500/15 border-amber-500/40 text-white",
           },
           {
             step: 6,
-            label: "6. Pitch & Select",
+            label: "Pitch & Select",
             icon: Award,
             textColor: "text-pink-400",
-            activeBg: "bg-pink-500/20 border-pink-500/40 text-white",
+            activeBg: "bg-pink-500/15 border-pink-500/40 text-white",
           },
         ].map((item) => {
           const Icon = item.icon;
@@ -3816,13 +3996,13 @@ export default function AcquisitionEngine({
             <button
               key={item.step}
               onClick={() => setActiveStep(item.step)}
-              className={`flex flex-col items-start p-3.5 rounded-xl text-left transition-all border ${
+              className={`flex flex-col items-start p-3 rounded-xl text-left transition-all border cursor-pointer ${
                 isActive
                   ? item.activeBg
-                  : "bg-white/[0.02] border-transparent text-slate-400 hover:bg-white/[0.05] hover:text-white"
+                  : "bg-[#0e1117] border-white/[0.06] text-slate-400 hover:border-white/[0.14] hover:text-white"
               }`}
             >
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.05] mb-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.04] mb-2">
                 <Icon className={`w-4 h-4 ${item.textColor}`} />
               </div>
               <span className="text-xs font-bold truncate w-full">
@@ -3934,13 +4114,18 @@ export default function AcquisitionEngine({
                         onClick={() =>
                           isAdded ? removeNiche(tag) : addNiche(tag)
                         }
-                        className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
                           isAdded
-                            ? "bg-purple-600/25 text-purple-300 border-purple-500/50"
+                            ? "bg-purple-500/15 text-purple-200 border-purple-500/40"
                             : "bg-white/[0.02] text-slate-400 hover:text-white border-white/[0.06] hover:border-white/20"
                         }`}
                       >
-                        {isAdded ? `✓ ${tag}` : `+ ${tag}`}
+                        {isAdded ? (
+                          <Check className="w-3 h-3 text-purple-300" />
+                        ) : (
+                          <Plus className="w-3 h-3 text-slate-500" />
+                        )}
+                        <span>{tag}</span>
                       </button>
                     );
                   })}
@@ -3950,19 +4135,20 @@ export default function AcquisitionEngine({
               {/* Target Platforms Multi-select */}
               <div className="space-y-2">
                 <label className="text-xs text-slate-300 font-semibold flex items-center justify-between">
-                  <span>Target Social Media Platforms</span>
+                  <span>Target Platforms</span>
                   <span className="text-[11px] text-slate-500 font-normal">
-                    Select platforms for autonomous acquisition
+                    Select platforms for lead discovery
                   </span>
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {[
-                    { id: "youtube", label: "YouTube", icon: "▶" },
-                    { id: "instagram", label: "Instagram", icon: "📸" },
-                    { id: "tiktok", label: "TikTok", icon: "🎵" },
-                    { id: "twitter", label: "Twitter / X", icon: "𝕏" },
+                    { id: "youtube", label: "YouTube", icon: Youtube, color: "text-red-400" },
+                    { id: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-400" },
+                    { id: "tiktok", label: "TikTok", icon: Music, color: "text-cyan-400" },
+                    { id: "twitter", label: "X / Twitter", icon: Twitter, color: "text-sky-400" },
                   ].map((p) => {
                     const isSelected = selectedPlatforms.includes(p.id);
+                    const PlatformIcon = p.icon;
                     return (
                       <button
                         key={p.id}
@@ -3970,11 +4156,11 @@ export default function AcquisitionEngine({
                         onClick={() => togglePlatform(p.id)}
                         className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                           isSelected
-                            ? "bg-purple-950/40 border-purple-500 text-white shadow-[0_0_12px_rgba(147,51,234,0.2)]"
+                            ? "bg-purple-500/15 border-purple-500/40 text-white"
                             : "bg-[#161a23] border-white/[0.06] text-slate-400 hover:text-white hover:border-white/20"
                         }`}
                       >
-                        <span>{p.icon}</span>
+                        <PlatformIcon className={`w-3.5 h-3.5 ${p.color}`} />
                         <span>{p.label}</span>
                         {isSelected && (
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-1" />
@@ -4176,17 +4362,17 @@ export default function AcquisitionEngine({
               <button
                 onClick={handleStartEngine}
                 disabled={discovering}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(147,51,234,0.4)] transition-all disabled:opacity-50 cursor-pointer"
+                className="w-full py-3.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm flex items-center justify-center gap-2 border border-purple-500/50 transition-all disabled:opacity-50 cursor-pointer shadow-md active:scale-95"
               >
                 {discovering ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Autonomous Engine Running...</span>
+                    <RefreshCw className="w-4 h-4 animate-spin text-purple-200" />
+                    <span>Discovering & Enriching Leads...</span>
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-                    <span>⚡ START AUTONOMOUS ENGINE (DISCOVER & ENRICH)</span>
+                    <Zap className="w-4 h-4 text-purple-200" />
+                    <span>Run Autonomous Discovery</span>
                   </>
                 )}
               </button>
@@ -4200,17 +4386,17 @@ export default function AcquisitionEngine({
         </div>
       )}
 
-      {/* STEP 2: FIND & QUALIFY CREATORS */}
+      {/* SCRAPED LEADS: FIND & QUALIFY CREATORS */}
       {activeStep === 2 && (
         <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">
-                  Step 2
+                  Scraped Leads
                 </span>
                 <span className="text-xs text-slate-500">•</span>
-                <span className="text-xs text-slate-300">
+                <span className="text-xs text-slate-400">
                   Live Apify & Scraper Enrichment
                 </span>
               </div>
@@ -4219,24 +4405,22 @@ export default function AcquisitionEngine({
                 <span>Find & Qualify Creators</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Review discovered creators & emails. You have{" "}
-                <strong>2 minutes</strong> to modify any email before autonomous
-                sequence dispatch.
+                Review discovered creator profiles and verified contact emails before launching autonomous outreach.
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
               {creators.length > 0 && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono shadow-sm">
-                  <Clock className="w-3.5 h-3.5 text-purple-400" />
+                <div className="h-9 px-3 rounded-xl bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono flex items-center gap-2 shadow-sm whitespace-nowrap">
+                  <Clock className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
                   <span>
                     Auto-Dispatch in:{" "}
-                    <strong>{formatCountdown(countdownSeconds)}</strong>
+                    <strong className="text-white">{formatCountdown(countdownSeconds)}</strong>
                   </span>
                   <button
                     type="button"
                     onClick={toggleStep2Timer}
-                    className="ml-1 text-[11px] underline text-purple-400 hover:text-white cursor-pointer"
+                    className="ml-1 text-[11px] underline text-purple-300 hover:text-white cursor-pointer font-sans"
                   >
                     {timerPaused ? "Resume" : "Pause"}
                   </button>
@@ -4246,7 +4430,7 @@ export default function AcquisitionEngine({
               <button
                 onClick={handleStartEngine}
                 disabled={discovering}
-                className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/10 text-white font-bold text-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer border border-white/10"
+                className="h-9 px-3.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-200 hover:text-white font-semibold text-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer border border-white/10 whitespace-nowrap active:scale-95"
                 title="Re-run discovery"
               >
                 <RefreshCw
@@ -4257,9 +4441,9 @@ export default function AcquisitionEngine({
 
               <button
                 onClick={() => setActiveStep(3)}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-indigo-500/40 shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
               >
-                <span>Dispatch Now (Step 3)</span>
+                <span>Proceed to Outreach Wave</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -4322,7 +4506,7 @@ export default function AcquisitionEngine({
                       onClick={() => setSelectedCreatorId(c.id)}
                       className={`p-4 rounded-xl border transition-all cursor-pointer space-y-3 relative ${
                         selectedCreatorId === c.id
-                          ? "bg-purple-950/30 border-purple-500/60 shadow-[0_0_16px_rgba(147,51,234,0.15)] ring-1 ring-purple-500/40"
+                          ? "bg-purple-950/30 border-purple-500/60 shadow-sm"
                           : "bg-[#161a23] border-white/[0.08] hover:border-white/20"
                       }`}
                     >
@@ -4393,7 +4577,7 @@ export default function AcquisitionEngine({
                               e.stopPropagation();
                               e.preventDefault();
                             }}
-                            className="p-1.5 px-2 rounded-lg bg-[#090b0e] border border-purple-500 flex items-center gap-1.5 text-xs shadow-[0_0_12px_rgba(168,85,247,0.25)]"
+                            className="p-1.5 px-2 rounded-lg bg-[#090b0e] border border-purple-500/60 flex items-center gap-1.5 text-xs shadow-sm"
                           >
                             <Mail className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
                             <input
@@ -4443,7 +4627,7 @@ export default function AcquisitionEngine({
                                         className="text-[9px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.2 rounded"
                                         title="Hunter.io Deliverability Score"
                                       >
-                                        🎯 {c.hunter_score}%
+                                        <span className="flex items-center gap-0.5"><Target className="w-2.5 h-2.5 text-amber-400" /> {c.hunter_score}%</span>
                                       </span>
                                     ) : null}
                                   </div>
@@ -4497,7 +4681,7 @@ export default function AcquisitionEngine({
                                     <span>
                                       {findingHunterId === c.id
                                         ? "Searching..."
-                                        : "Find (Hunter.io 🎯)"}
+                                        : "Find with Hunter.io"}
                                     </span>
                                   </button>
                                   <button
@@ -4549,8 +4733,8 @@ export default function AcquisitionEngine({
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
-                  Step 3
+                <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                  Outreach Wave
                 </span>
                 <span className="text-xs text-slate-500">•</span>
                 <span className="text-xs text-slate-300">
@@ -4579,7 +4763,7 @@ export default function AcquisitionEngine({
                 <span>
                   {sendingBulk
                     ? "Sending Email Batch..."
-                    : `✉️ Send Bulk Batch (${creators.length} Creators)`}
+                    : `Dispatch Bulk Wave (${creators.length} Creators)`}
                 </span>
               </button>
               <button
@@ -4791,7 +4975,7 @@ export default function AcquisitionEngine({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                      Step 4
+                      Interested Review
                     </span>
                     <span className="text-xs text-slate-500">•</span>
                     <span className="text-xs text-slate-300">
@@ -4823,13 +5007,13 @@ export default function AcquisitionEngine({
                     }
                     className={`px-3 py-2 rounded-xl border text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                       autoAdvanceOnPositive
-                        ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                        ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-sm"
                         : "bg-white/[0.04] border-white/10 text-slate-400"
                     }`}
-                    title="Automatically advance to Step 5 (Product Concepts) when a positive reply is received"
+                    title="Automatically advance to Product Ideas when a positive reply is received"
                   >
                     <Zap
-                      className={`w-3.5 h-3.5 ${autoAdvanceOnPositive ? "text-emerald-400 fill-emerald-400 animate-pulse" : "text-slate-500"}`}
+                      className={`w-3.5 h-3.5 ${autoAdvanceOnPositive ? "text-emerald-400 fill-emerald-400" : "text-slate-500"}`}
                     />
                     <span>
                       Auto-Advance on Positive:{" "}
@@ -4839,7 +5023,7 @@ export default function AcquisitionEngine({
 
                   <button
                     type="button"
-                    onClick={syncImapReplies}
+                    onClick={() => syncImapReplies(true)}
                     disabled={pollingImap}
                     className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 text-white font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                     title="Check Gmail IMAP for new creator replies"
@@ -4856,7 +5040,7 @@ export default function AcquisitionEngine({
 
                   <button
                     onClick={() => setActiveStep(5)}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-emerald-500/40 shadow-sm cursor-pointer active:scale-95"
                   >
                     <span>Advance to Product Ideas</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -4871,7 +5055,7 @@ export default function AcquisitionEngine({
                   onClick={() => setReplyFilter("all")}
                   className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     replyFilter === "all"
-                      ? "bg-purple-500/20 border-purple-500/50 shadow-[0_0_12px_rgba(168,85,247,0.2)]"
+                      ? "bg-purple-500/20 border-purple-500/50 shadow-sm text-white"
                       : "bg-[#161a23] border-white/[0.06] hover:border-white/20"
                   }`}
                 >
@@ -4890,7 +5074,7 @@ export default function AcquisitionEngine({
                   onClick={() => setReplyFilter("interested")}
                   className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     replyFilter === "interested"
-                      ? "bg-emerald-500/20 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                      ? "bg-emerald-500/20 border-emerald-500/50 shadow-sm text-white"
                       : "bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40"
                   }`}
                 >
@@ -4912,7 +5096,7 @@ export default function AcquisitionEngine({
                   onClick={() => setReplyFilter("question")}
                   className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     replyFilter === "question"
-                      ? "bg-amber-500/20 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                      ? "bg-amber-500/20 border-amber-500/50 shadow-sm text-white"
                       : "bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40"
                   }`}
                 >
@@ -4934,7 +5118,7 @@ export default function AcquisitionEngine({
                   onClick={() => setReplyFilter("not_interested")}
                   className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     replyFilter === "not_interested"
-                      ? "bg-red-500/20 border-red-500/50 shadow-[0_0_12px_rgba(239,68,68,0.2)]"
+                      ? "bg-red-500/20 border-red-500/50 shadow-sm text-white"
                       : "bg-red-500/5 border-red-500/20 hover:border-red-500/40"
                   }`}
                 >
@@ -4956,7 +5140,7 @@ export default function AcquisitionEngine({
                   onClick={() => setReplyFilter("unsubscribe")}
                   className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     replyFilter === "unsubscribe"
-                      ? "bg-slate-500/20 border-slate-500/50 shadow-[0_0_12px_rgba(100,116,139,0.2)]"
+                      ? "bg-slate-500/20 border-slate-500/50 shadow-sm text-white"
                       : "bg-slate-500/5 border-slate-500/20 hover:border-slate-500/40"
                   }`}
                 >
@@ -4978,7 +5162,7 @@ export default function AcquisitionEngine({
                   onClick={() => setReplyFilter("awaiting_reply")}
                   className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     replyFilter === "awaiting_reply"
-                      ? "bg-blue-500/20 border-blue-500/50 shadow-[0_0_12px_rgba(59,130,246,0.2)]"
+                      ? "bg-blue-500/20 border-blue-500/50 shadow-sm text-white"
                       : "bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40"
                   }`}
                 >
@@ -4997,13 +5181,13 @@ export default function AcquisitionEngine({
                   onClick={() => setReplyFilter("no_email")}
                   className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     replyFilter === "no_email"
-                      ? "bg-amber-500/20 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                      ? "bg-amber-500/20 border-amber-500/50 shadow-sm text-white"
                       : "bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-amber-400 text-xs">⚠️</span>
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
                       <span className="text-[11px] font-bold text-amber-300">
                         No Email ({noEmailCount})
                       </span>
@@ -5038,7 +5222,7 @@ export default function AcquisitionEngine({
                           onClick={() => setSelectedCreatorId(c.id)}
                           className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 relative ${
                             isSelected
-                              ? "bg-purple-950/40 border-purple-500/60 shadow-[0_0_16px_rgba(168,85,247,0.2)] ring-1 ring-purple-500/40"
+                              ? "bg-purple-950/30 border-purple-500/60 shadow-sm"
                               : "bg-[#161a23] border-white/[0.06] hover:border-white/20"
                           }`}
                         >
@@ -5108,7 +5292,7 @@ export default function AcquisitionEngine({
                             </p>
                           ) : reply.classification === "no_email" ? (
                             <p className="text-[11px] text-amber-400/80 italic">
-                              ⚠️ Outreach not sent. No email address available.
+                              Outreach not sent. No email address available.
                             </p>
                           ) : (
                             <p className="text-[11px] text-slate-500 italic">
@@ -5205,31 +5389,31 @@ export default function AcquisitionEngine({
                                 value="interested"
                                 className="bg-[#161a23] text-emerald-300"
                               >
-                                🎯 Interested (Positive)
+                                Interested (Positive)
                               </option>
                               <option
                                 value="question"
                                 className="bg-[#161a23] text-amber-300"
                               >
-                                ❓ Question
+                                Question
                               </option>
                               <option
                                 value="not_interested"
                                 className="bg-[#161a23] text-red-300"
                               >
-                                ❌ Not Interested
+                                Not Interested
                               </option>
                               <option
                                 value="unsubscribe"
                                 className="bg-[#161a23] text-slate-400"
                               >
-                                🚫 Unsubscribe
+                                Unsubscribe
                               </option>
                               <option
                                 value="no_email"
                                 className="bg-[#161a23] text-amber-400"
                               >
-                                ⚠️ No Email
+                                No Email
                               </option>
                             </select>
                           </div>
@@ -5328,7 +5512,7 @@ export default function AcquisitionEngine({
                         "no_email" ? (
                           <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs space-y-3">
                             <div className="flex items-center gap-2 text-amber-300 font-bold">
-                              <span>⚠️ No Email Address Found</span>
+                              <span>No Email Address Found</span>
                             </div>
                             <p className="text-slate-300 text-[11px]">
                               This creator does not have a public business
@@ -5370,7 +5554,7 @@ export default function AcquisitionEngine({
                                 ) : (
                                   <Target className="w-3.5 h-3.5 text-amber-400" />
                                 )}
-                                <span>Find with Hunter.io 🎯</span>
+                                <span>Find with Hunter.io</span>
                               </button>
                             </div>
 
@@ -5521,7 +5705,7 @@ export default function AcquisitionEngine({
         <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
           {/* Positive Reply Auto-Advance Notification Banner */}
           {positiveAdvanceNotice && (
-            <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/70 via-[#101923] to-purple-950/50 border border-emerald-500/40 flex items-start justify-between gap-3 shadow-[0_0_24px_rgba(16,185,129,0.2)] animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="p-4 rounded-xl bg-[#101923] border border-emerald-500/40 flex items-start justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Sparkles className="w-4 h-4 text-emerald-400" />
@@ -5529,7 +5713,7 @@ export default function AcquisitionEngine({
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-emerald-300">
-                      🎯 Positive Creator Reply Detected
+                      Positive Creator Reply Detected
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">
                       • {positiveAdvanceNotice.time}
@@ -5543,8 +5727,7 @@ export default function AcquisitionEngine({
                     </span>
                   </p>
                   <p className="text-[11px] text-emerald-400/90 font-medium">
-                    ✓ Autonomously approved and advanced to Step 5: Audience
-                    Analysis & Top 3 Product Concepts.
+                    Autonomously approved and advanced to Product Ideas.
                   </p>
                 </div>
               </div>
@@ -5576,7 +5759,7 @@ export default function AcquisitionEngine({
                     }}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-purple-600/25 border-purple-500/70 text-white shadow-[0_0_12px_rgba(168,85,247,0.25)]"
+                        ? "bg-purple-500/20 border-purple-500/60 text-white shadow-sm"
                         : "bg-white/[0.03] border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/20"
                     }`}
                   >
@@ -5587,7 +5770,7 @@ export default function AcquisitionEngine({
                     />
                     <span>{c.name || c.display_name}</span>
                     <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                      🎯 Positive
+                      Positive
                     </span>
                   </button>
                 );
@@ -5645,7 +5828,7 @@ export default function AcquisitionEngine({
                     </span>
                     <button
                       type="button"
-                      onClick={syncImapReplies}
+                      onClick={() => syncImapReplies(true)}
                       disabled={pollingImap}
                       className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-[11px] font-bold transition-all cursor-pointer"
                     >
@@ -5713,7 +5896,7 @@ export default function AcquisitionEngine({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-amber-300">
-                    ⚡ Autonomous Pipeline Active
+                    Autonomous Pipeline Active
                   </span>
                   <span className="text-[10px] text-slate-400 font-mono">
                     • Selected:{" "}
@@ -5723,7 +5906,7 @@ export default function AcquisitionEngine({
                 </div>
                 <p className="text-xs text-slate-300">
                   Deep audience research complete. Auto-advancing to{" "}
-                  <strong>Step 6 Opportunity Pitch</strong> in{" "}
+                  <strong>Pitch & Select</strong> in{" "}
                   <span className="font-mono text-amber-400 font-bold">
                     {step5Countdown}s
                   </span>
@@ -5744,7 +5927,7 @@ export default function AcquisitionEngine({
                 onClick={() => setActiveStep(6)}
                 className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1 transition-all cursor-pointer shadow-md"
               >
-                <span>Advance to Step 6 Now</span>
+                <span>Advance to Pitch & Select</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -5754,7 +5937,7 @@ export default function AcquisitionEngine({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                  Step 5
+                  Product Ideas
                 </span>
                 <span className="text-xs text-slate-500">•</span>
                 <span className="text-xs text-slate-300">
@@ -5803,7 +5986,7 @@ export default function AcquisitionEngine({
                   <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-white flex items-center gap-1.5">
-                        <span>📹</span> Top-Performing Content
+                        <Play className="w-3.5 h-3.5 text-purple-400" /><span>Top-Performing Content</span>
                       </span>
                       <span className="text-[10px] text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded font-mono">
                         {audIntel.topContent.badge}
@@ -5821,7 +6004,7 @@ export default function AcquisitionEngine({
                   <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-white flex items-center gap-1.5">
-                        <span>💬</span> Recurring Questions
+                        <MessageSquare className="w-3.5 h-3.5 text-cyan-400" /><span>Recurring Questions</span>
                       </span>
                       <span className="text-[10px] text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded font-mono">
                         {audIntel.recurringQuestions.badge}
@@ -5839,7 +6022,7 @@ export default function AcquisitionEngine({
                   <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-white flex items-center gap-1.5">
-                        <span>⚠️</span> Core Pain Points
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /><span>Core Pain Points</span>
                       </span>
                       <span className="text-[10px] text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded font-mono">
                         {audIntel.painPoints.badge}
@@ -5857,7 +6040,7 @@ export default function AcquisitionEngine({
                   <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-white flex items-center gap-1.5">
-                        <span>👥</span> Audience Demographics
+                        <Users className="w-3.5 h-3.5 text-indigo-400" /><span>Audience Demographics</span>
                       </span>
                       <span className="text-[10px] text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded font-mono">
                         {audIntel.demographics.badge}
@@ -5875,7 +6058,7 @@ export default function AcquisitionEngine({
                   <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-white flex items-center gap-1.5">
-                        <span>💰</span> Current Monetization
+                        <Award className="w-3.5 h-3.5 text-emerald-400" /><span>Current Monetization</span>
                       </span>
                       <span className="text-[10px] text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded font-mono">
                         {audIntel.monetization.badge}
@@ -5893,7 +6076,7 @@ export default function AcquisitionEngine({
                   <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-white flex items-center gap-1.5">
-                        <span>🥊</span> Competitors & Intent
+                        <Target className="w-3.5 h-3.5 text-pink-400" /><span>Competitors & Intent</span>
                       </span>
                       <span className="text-[10px] text-pink-300 bg-pink-500/10 px-2 py-0.5 rounded font-mono">
                         {audIntel.competitors.badge}
@@ -5945,7 +6128,7 @@ export default function AcquisitionEngine({
                       onClick={() => setSelectedConceptId(concept.id)}
                       className={`p-5 rounded-2xl border transition-all cursor-pointer space-y-4 flex flex-col justify-between ${
                         isSelected
-                          ? "bg-purple-950/40 border-purple-500/70 shadow-[0_0_28px_rgba(147,51,234,0.25)] ring-2 ring-purple-500/60"
+                          ? "bg-[#151926] border-purple-500/80 shadow-md ring-1 ring-purple-500/40"
                           : "bg-[#161a23] border-white/[0.08] text-slate-300 hover:border-white/20"
                       }`}
                     >
@@ -6168,7 +6351,7 @@ export default function AcquisitionEngine({
                     }}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                        ? "bg-emerald-600 text-white border-emerald-500/50 shadow-sm"
                         : "bg-white/[0.03] border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/20"
                     }`}
                   >
@@ -6180,11 +6363,11 @@ export default function AcquisitionEngine({
                     <span>{c.name || c.display_name}</span>
                     {pitchSent ? (
                       <span className="text-[10px] font-bold text-emerald-300 bg-black/40 px-1.5 py-0.2 rounded">
-                        {msgs.length > 0 ? "💬 In Dialogue" : "📡 Pitch Sent"}
+                        {msgs.length > 0 ? "In Dialogue" : "Pitch Sent"}
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold text-purple-300 bg-black/40 px-1.5 py-0.2 rounded">
-                        📝 Draft Ready
+                        Draft Ready
                       </span>
                     )}
                   </button>
@@ -6223,11 +6406,11 @@ export default function AcquisitionEngine({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-pink-400">
-                  Step 6
+                  Co-Launch Kickoff
                 </span>
                 <span className="text-xs text-slate-500">•</span>
                 <span className="text-xs text-slate-300">
-                  Opportunity Pitch & Co-Launch Kickoff
+                  Opportunity Pitch & Agreement
                 </span>
               </div>
               <h2 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
@@ -6238,16 +6421,14 @@ export default function AcquisitionEngine({
                 </span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Automatically draft follow-up presenting 3 concepts, mockups,
-                and pricing. Human review & send → AI monitors response →
-                Confirm & Create Project.
+                Select from the 3 engineered concepts, review the proposal, and initialize the co-launch venture.
               </p>
             </div>
 
-            {/* Prominent Create Project Button (Matches Blueprint) */}
+            {/* Prominent Create Project Button */}
             <button
               onClick={handlePitchAndCreateProject}
-              className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-black text-sm shadow-[0_0_28px_rgba(147,51,234,0.4)] transition-all flex items-center gap-2.5 cursor-pointer transform hover:-translate-y-0.5"
+              className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm border border-emerald-500/50 shadow-md transition-all flex items-center gap-2.5 cursor-pointer active:scale-95"
             >
               <span>CREATE PROJECT</span>
               <ArrowRight className="w-4 h-4" />
@@ -6258,16 +6439,17 @@ export default function AcquisitionEngine({
           {currentPitchSent ? (
             <div className="space-y-3">
               {/* Real-Time Telemetry & Status Banner */}
-              <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-lg animate-in fade-in">
+              <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-sm animate-in fade-in">
                 <div className="flex items-center gap-2.5">
                   <div
-                    className={`w-2.5 h-2.5 rounded-full ${pollingImap ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`}
+                    className={`w-2 h-2 rounded-full ${pollingImap ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`}
                   />
-                  <span className="text-emerald-300 font-bold">
-                    📡 Real-Time Sync Active for{" "}
+                  <span className="text-emerald-300 font-bold flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Real-Time Sync Active for{" "}
                     {selectedCreator?.email ||
                       selectedCreator?.email_public ||
-                      currentPitchSent.recipient}
+                      currentPitchSent.recipient}</span>
                   </span>
                   <span className="text-slate-400 font-mono text-[11px]">
                     (Auto-polling Gmail IMAP every 3s)
@@ -6277,7 +6459,7 @@ export default function AcquisitionEngine({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={syncImapReplies}
+                    onClick={() => syncImapReplies(true)}
                     disabled={pollingImap}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer"
                   >
@@ -6293,17 +6475,18 @@ export default function AcquisitionEngine({
 
               {/* Autonomous Project Launch Countdown Banner */}
               {autoLaunchCountdown !== null && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950 via-teal-950 to-purple-950 border-2 border-emerald-500 shadow-[0_0_35px_rgba(16,185,129,0.35)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-in zoom-in-95">
+                <div className="p-4 rounded-2xl bg-[#101923] border border-emerald-500/50 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-in zoom-in-95">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-mono font-black text-xl animate-pulse">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-mono font-black text-xl">
                       {autoLaunchCountdown}s
                     </div>
                     <div>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block">
-                        ⚡ Autonomous Execution Active
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                        <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Autonomous Execution Active</span>
                       </span>
-                      <h4 className="text-sm font-black text-white">
-                        Creator confirmed agreement! Auto-launching Project OS
+                      <h4 className="text-sm font-bold text-white">
+                        Creator confirmed agreement! Initializing Project OS
                         for {selectedCreator?.name} in {autoLaunchCountdown}s...
                       </h4>
                     </div>
@@ -6312,7 +6495,7 @@ export default function AcquisitionEngine({
                     <button
                       type="button"
                       onClick={handlePitchAndCreateProject}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
                     >
                       <Rocket className="w-3.5 h-3.5" />
                       <span>Launch Now</span>
@@ -6343,7 +6526,7 @@ export default function AcquisitionEngine({
                             : currentAiChoice.decision === "AWAITING_STEP6_REPLY"
                               ? "border-purple-500/40 bg-purple-950/20"
                               : "border-emerald-500/50 bg-emerald-950/20"
-                  } space-y-3 shadow-xl animate-in fade-in`}
+                  } space-y-3 shadow-md animate-in fade-in`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-2.5">
                     <div className="flex items-center gap-2">
@@ -6352,38 +6535,22 @@ export default function AcquisitionEngine({
                       </span>
                       <div>
                         <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 block">
-                          Autonomous AI Decision Engine
+                          AI Decision Engine
                         </span>
-                        <h4 className="text-sm font-black text-white flex items-center gap-2">
-                          <span>Action:</span>
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase ${
-                              currentAiChoice.decision === "PERSUADE"
-                                ? "bg-amber-500 text-slate-950"
-                                : currentAiChoice.decision === "ANSWER_QUESTION"
-                                  ? "bg-blue-500 text-white"
-                                  : currentAiChoice.decision === "NOT_INTERESTED"
-                                    ? "bg-rose-500 text-white"
-                                    : currentAiChoice.decision === "RESEND"
-                                      ? "bg-amber-500 text-slate-950"
-                                      : currentAiChoice.decision ===
-                                          "AWAITING_STEP6_REPLY"
-                                        ? "bg-purple-500/30 text-purple-200 border border-purple-500/40"
-                                        : "bg-emerald-500 text-slate-950"
-                            }`}
-                          >
+                        <h4 className="text-sm font-black text-white flex items-center gap-1.5">
+                          <span>
                             {currentAiChoice.decision === "PERSUADE"
-                              ? "⚡ CONVINCE CREATOR (PERSUASION PITCH)"
+                              ? "AUTONOMOUS PERSUASION"
                               : currentAiChoice.decision === "ANSWER_QUESTION"
-                                ? "💬 ANSWER CREATOR QUESTIONS"
+                                ? "ANSWER QUESTIONS"
                                 : currentAiChoice.decision === "NOT_INTERESTED"
-                                  ? "❌ CREATOR DECLINED"
+                                  ? "CREATOR DECLINED"
                                   : currentAiChoice.decision === "RESEND"
-                                    ? "🔄 RESEND / NURTURE"
+                                    ? "RESEND / NURTURE"
                                     : currentAiChoice.decision ===
                                         "AWAITING_STEP6_REPLY"
-                                      ? `⏳ ${currentAiChoice.actionLabel?.toUpperCase() || "AWAITING CREATOR FEEDBACK"}`
-                                      : "🚀 CREATE PROJECT"}
+                                      ? `${currentAiChoice.actionLabel?.toUpperCase() || "AWAITING CREATOR FEEDBACK"}`
+                                      : "CREATE PROJECT"}
                           </span>
                           {currentAiChoice.confidence > 0 && (
                             <span className="text-[11px] font-mono text-slate-400">
@@ -6400,11 +6567,11 @@ export default function AcquisitionEngine({
                         <button
                           type="button"
                           onClick={handlePitchAndCreateProject}
-                          className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-black text-xs shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all flex items-center gap-2 cursor-pointer transform hover:scale-[1.02]"
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs border border-emerald-500/40 shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95"
                         >
                           <Rocket className="w-3.5 h-3.5" />
                           <span>
-                            Execute: Create Project (
+                            Create Project (
                             {currentAiChoice.conceptName}) →
                           </span>
                         </button>
@@ -6431,7 +6598,7 @@ export default function AcquisitionEngine({
                       {currentAiChoice.decision === "NOT_INTERESTED" && (
                         <span className="text-[11px] text-rose-300 font-mono flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20">
                           <span>
-                            ❌ Creator Declined • Halting Autonomous Launch
+                            Creator Declined • Halting Launch
                           </span>
                         </span>
                       )}
@@ -6452,7 +6619,7 @@ export default function AcquisitionEngine({
                           )}
                           <span>
                             {persuasionSentMap[selectedCreator.id]
-                              ? "Persuasion Sent ✓ (Resend)"
+                              ? "Persuasion Sent (Resend)"
                               : "Execute: Auto-Send Persuasion Pitch →"}
                           </span>
                         </button>
@@ -6478,8 +6645,8 @@ export default function AcquisitionEngine({
                         <span className="text-[11px] text-purple-300 font-mono flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
                           <Clock className="w-3.5 h-3.5 animate-pulse text-purple-400" />
                           <span>
-                            Step 6 Pitch Dispatched • Waiting for Creator
-                            Response
+                            Proposal Dispatched • Waiting for Creator
+                            Feedback
                           </span>
                         </span>
                       )}
@@ -6569,12 +6736,12 @@ export default function AcquisitionEngine({
                                   {msg.from_address}
                                 </span>
                                 {isStep6Reply ? (
-                                  <span className="px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/40 text-[9px] font-black uppercase tracking-wider">
-                                    Step 6: Concept Pitch Reply
+                                  <span className="px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/40 text-[9px] font-bold uppercase tracking-wider">
+                                    Proposal Feedback Reply
                                   </span>
                                 ) : (
-                                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-black uppercase tracking-wider">
-                                    Step 4: Initial Interest Qualification
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold uppercase tracking-wider">
+                                    Initial Outreach Reply
                                   </span>
                                 )}
                                 {isLatest && (
@@ -6667,7 +6834,7 @@ export default function AcquisitionEngine({
                           onClick={() => setSelectedConceptId(c.id)}
                           className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1.5 ${
                             isChosen
-                              ? "bg-purple-950/50 border-purple-500/80 shadow-[0_0_15px_rgba(147,51,234,0.2)] ring-1 ring-purple-500/50"
+                              ? "bg-[#181d2a] border-purple-500/70 shadow-sm ring-1 ring-purple-500/40"
                               : "bg-black/30 border-white/[0.06] hover:border-white/15"
                           }`}
                         >
@@ -6874,7 +7041,7 @@ export default function AcquisitionEngine({
       {/* ── Interested & Qualified Creators Modal ───────────────────────────────── */}
       {showInterestedModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-3xl rounded-2xl bg-[#0e1117] border border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.15)] p-6 space-y-5 max-h-[85vh] flex flex-col">
+          <div className="w-full max-w-3xl rounded-2xl bg-[#0e1117] border border-emerald-500/30 shadow-2xl p-6 space-y-5 max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -6886,14 +7053,13 @@ export default function AcquisitionEngine({
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
                   These creators replied with interest or have been approved.
-                  Click any creator to jump straight to their distinct Step 6
-                  pitch & concepts!
+                  Click any creator to jump straight to their distinct proposal & concepts!
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={syncImapReplies}
+                  onClick={() => syncImapReplies(true)}
                   disabled={pollingImap}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer"
                 >
@@ -6931,7 +7097,7 @@ export default function AcquisitionEngine({
                       key={c.id}
                       className={`p-4 rounded-xl bg-[#161a23] border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs ${
                         isCurrentlySelected
-                          ? "border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/40"
+                          ? "border-emerald-500/60 shadow-sm ring-1 ring-emerald-500/30"
                           : "border-white/[0.06] hover:border-white/20"
                       }`}
                     >
@@ -6961,11 +7127,11 @@ export default function AcquisitionEngine({
                             <span className="text-slate-500">•</span>
                             {pitchSent ? (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/30 flex items-center gap-1">
-                                <span>📡 Step 6 Pitch Dispatched</span>
+                                <span>Proposal Dispatched</span>
                               </span>
                             ) : (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-purple-500/15 text-purple-300 border-purple-500/30 flex items-center gap-1">
-                                <span>📝 Ready to Pitch in Step 6</span>
+                                <span>Ready to Pitch</span>
                               </span>
                             )}
                             {choice?.conceptName && (
@@ -7007,8 +7173,8 @@ export default function AcquisitionEngine({
                         >
                           <span>
                             {isCurrentlySelected
-                              ? "Viewing in Step 6 ✓"
-                              : "Open in Step 6 Distinctively →"}
+                              ? "Viewing in Pitch & Select"
+                              : "Open in Pitch & Select →"}
                           </span>
                         </button>
                       </div>
@@ -7020,8 +7186,8 @@ export default function AcquisitionEngine({
 
             <div className="flex items-center justify-between border-t border-white/[0.08] pt-3 text-[11px] text-slate-400">
               <span>
-                💡 Click any creator above to isolate and preview their exact
-                Step 6 pitch & concepts.
+                Click any creator above to isolate and preview their exact
+                proposal & concepts.
               </span>
               <button
                 type="button"
@@ -7049,13 +7215,13 @@ export default function AcquisitionEngine({
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
                   These creators have not replied with interest yet. Once they
-                  reply, they will automatically unlock Step 5 & Step 6.
+                  reply, they will automatically advance to Product Ideas & Proposal Pitch.
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={syncImapReplies}
+                  onClick={() => syncImapReplies(true)}
                   disabled={pollingImap}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold transition-all cursor-pointer"
                 >
@@ -7077,7 +7243,7 @@ export default function AcquisitionEngine({
             <div className="overflow-y-auto flex-1 space-y-3 pr-1">
               {awaitingCreators.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 text-xs">
-                  🎉 All creators in this batch have replied and are qualified!
+                  All creators in this batch have replied and are qualified.
                 </div>
               ) : (
                 awaitingCreators.map((c) => {
@@ -7112,23 +7278,23 @@ export default function AcquisitionEngine({
                               </span>
                             ) : (
                               <span className="text-amber-400 text-[11px] italic">
-                                ⚠️ No Email Address
+                                No Email Address
                               </span>
                             )}
                             <span className="text-slate-500">•</span>
                             {replyInfo.hasRealReply ? (
                               replyInfo.classification === "not_interested" ? (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-rose-500/10 text-rose-300 border-rose-500/30 flex items-center gap-1">
-                                  <span>❌ Declined / Not Interested</span>
+                                  <span>Declined / Not Interested</span>
                                 </span>
                               ) : replyInfo.classification === "question" ||
                                 replyInfo.classification === "more_info" ? (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-blue-500/10 text-blue-300 border-blue-500/30 flex items-center gap-1">
-                                  <span>❓ Question / Asking for Info</span>
+                                  <span>Question / Asking for Info</span>
                                 </span>
                               ) : (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-300 border-emerald-500/30 flex items-center gap-1">
-                                  <span>🎯 Qualified / Interested</span>
+                                  <span>Qualified / Interested</span>
                                 </span>
                               )
                             ) : (
@@ -7141,7 +7307,7 @@ export default function AcquisitionEngine({
                               >
                                 {hasEmail
                                   ? "⏳ Awaiting Reply"
-                                  : "⚠️ No Email (Outreach Skipped)"}
+                                  : "No Email (Outreach Skipped)"}
                               </span>
                             )}
                           </div>
@@ -7182,7 +7348,7 @@ export default function AcquisitionEngine({
                           }}
                           className="px-3.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
                         >
-                          <span>Mark as Interested & Open Step 6 →</span>
+                          <span>Mark as Interested & Pitch</span>
                         </button>
                       </div>
                     </div>
@@ -7192,9 +7358,9 @@ export default function AcquisitionEngine({
             </div>
 
             <div className="flex items-center justify-between border-t border-white/[0.08] pt-3 text-[11px] text-slate-400">
-              <span>
-                💡 When creators reply to your email, they will automatically
-                move into Step 5 & Step 6.
+              <span className="flex items-center gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                <span>When creators reply to your email, they will automatically advance to product review.</span>
               </span>
               <button
                 type="button"
@@ -7207,6 +7373,54 @@ export default function AcquisitionEngine({
           </div>
         </div>
       )}
+
+      {/* Admin Pipeline Oversight & Error Lookup Modal */}
+      <AdminPipelineLookup
+        isOpen={showAdminLookup}
+        onClose={() => setShowAdminLookup(false)}
+        creators={creators}
+        realThreads={realThreads}
+        pitchSentMap={pitchSentMap}
+        answerSentMap={answerSentMap}
+        persuasionSentMap={persuasionSentMap}
+        onSelectCreator={(cid) => {
+          setSelectedCreatorId(cid);
+          setShowAdminLookup(false);
+          setActiveStep(6);
+        }}
+        onTriggerFollowUp={(c) => {
+          handleAutonomousResend(c);
+        }}
+        onForceLaunchProject={(c) => {
+          setSelectedCreatorId(c.id);
+          setShowAdminLookup(false);
+          handlePitchAndCreateProject();
+        }}
+        onSyncImap={() => syncImapReplies(true)}
+        isSyncing={pollingImap}
+        onNotify={notify}
+      />
+
+      {/* Universal Floating Action Notifications & Alerts */}
+      <ActionNotificationToast toasts={toasts} onDismiss={dismissToast} />
+
+      {/* Confirmation Modal for Resetting Pipeline & Deleting All Leads */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirmModal}
+        onClose={() => setShowDeleteConfirmModal(false)}
+        onConfirm={executeDeleteAllCreators}
+        title="Reset Pipeline & Delete All Leads?"
+        message="Are you sure you want to delete all creators and start again? This will permanently wipe all discovered creators, email threads, outreach history, and reset your acquisition workflow back to campaign setup."
+        confirmText="Confirm & Delete Everything"
+        cancelText="Keep Leads"
+        isDestructive={true}
+        isLoading={isDeletingAll}
+        stats={[
+          `${creators.length} Discovered Creators`,
+          `${realThreads.length} Email Threads`,
+          "All Opportunity Pitches & Decks",
+        ]}
+      />
     </div>
   );
 }

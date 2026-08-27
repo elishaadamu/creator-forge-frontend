@@ -77,7 +77,7 @@ export default function ProductMockupDisplay({ project, theme = 'purple' }) {
           </div>
           <div className="px-2.5 py-0.5 rounded-md bg-[#141720] border border-white/[0.06] text-[10px] font-mono text-slate-400 flex items-center gap-1.5">
             <Globe className="w-3 h-3 text-slate-500" />
-            <span>{typeof window !== 'undefined' ? `${window.location.origin}/app/${productName.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'http://localhost:5173/app'}</span>
+            <span>{`${(import.meta.env?.VITE_FRONTEND_URL || 'https://creator-forge-frontend.vercel.app').replace(/\/$/, '')}/app/${productName.toLowerCase().replace(/[^a-z0-9]/g, '')}`}</span>
           </div>
         </div>
 

@@ -21,7 +21,8 @@ import {
   updateValidationPlan,
   updateValidationCampaign,
   addProjectReservation,
-  recordGateDecision
+  recordGateDecision,
+  getFrontendUrl
 } from '../../services/opsApi'
 
 export default function Phase1Validate({
@@ -193,7 +194,7 @@ export default function Phase1Validate({
     }
   }, [])
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'
+  const origin = getFrontendUrl()
   const productSlug = (project?.slug || project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '-')
 
   const showNotification = (msg) => {
@@ -994,7 +995,7 @@ export default function Phase1Validate({
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#141720] border border-white/[0.08] text-purple-300 font-mono text-[11px] truncate flex-1 max-w-lg">
                     <Globe className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                     <span className="truncate">
-                      {typeof window !== 'undefined' ? `${window.location.origin}/preorder/${(project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'http://localhost:5173/preorder'}
+                      {`${origin}/preorder/${productSlug}`}
                     </span>
                   </div>
                 </div>
@@ -1002,10 +1003,10 @@ export default function Phase1Validate({
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => {
-                      const url = typeof window !== 'undefined' ? `${window.location.origin}/preorder/${(project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '')}` : ''
+                      const url = `${origin}/preorder/${productSlug}`
                       if (url) {
                         navigator.clipboard?.writeText(url)
-                        showNotification('Localhost pre-order link copied!')
+                        showNotification('Pre-order link copied!')
                       }
                     }}
                     className="px-3 py-1 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 text-xs font-bold border border-white/[0.1] flex items-center gap-1 transition-colors"
@@ -1015,7 +1016,7 @@ export default function Phase1Validate({
                   </button>
 
                   <a
-                    href={typeof window !== 'undefined' ? `${window.location.origin}/preorder/${(project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '')}` : '#'}
+                    href={`${origin}/preorder/${productSlug}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-3 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1 transition-colors shadow-sm"
@@ -1133,7 +1134,7 @@ export default function Phase1Validate({
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#141720] border border-white/[0.08] text-purple-300 font-mono text-[11px] truncate flex-1 max-w-lg">
                     <Globe className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                     <span className="truncate">
-                      {typeof window !== 'undefined' ? `${window.location.origin}/survey/${(project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'http://localhost:5173/survey'}
+                      {`${origin}/survey/${productSlug}`}
                     </span>
                   </div>
                 </div>
@@ -1141,7 +1142,7 @@ export default function Phase1Validate({
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => {
-                      const url = typeof window !== 'undefined' ? `${window.location.origin}/survey/${(project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '')}` : ''
+                      const url = `${origin}/survey/${productSlug}`
                       if (url) {
                         navigator.clipboard?.writeText(url)
                         showNotification('Shareable survey link copied!')
@@ -1154,7 +1155,7 @@ export default function Phase1Validate({
                   </button>
 
                   <a
-                    href={typeof window !== 'undefined' ? `${window.location.origin}/survey/${(project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '')}` : '#'}
+                    href={`${origin}/survey/${productSlug}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-3 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1 transition-colors shadow-sm"
@@ -1777,7 +1778,7 @@ export default function Phase1Validate({
                   { channel: '1-on-1 DM Outreach', ref: 'dm_outreach' },
                 ].map((item, i) => {
                   const slug = (project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '')
-                  const fullUrl = `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'}/preorder/${slug}?ref=${item.ref}`
+                  const fullUrl = `${origin}/preorder/${slug}?ref=${item.ref}`
                   return (
                     <div key={i} className="p-3 rounded-lg bg-[#0e1117] border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>

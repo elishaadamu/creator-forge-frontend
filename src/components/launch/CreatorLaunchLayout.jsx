@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Rocket, Target, Layers, ExternalLink, LogOut, User, Lock, X } from 'lucide-react'
+import { Rocket, Target, Layers, ExternalLink, LogOut, User, X, ShieldAlert, Lock } from 'lucide-react'
 import AcquisitionEngine from './AcquisitionEngine'
 import ProjectOS from './ProjectOS'
+import AdminPipelineLookup from './AdminPipelineLookup'
 import { createCoLaunchProject, getCoLaunchProject } from '../../services/opsApi'
 
 export default function CreatorLaunchLayout({
@@ -23,22 +24,16 @@ export default function CreatorLaunchLayout({
   })
   const [activeProject, setActiveProject] = useState(() => {
     try {
-      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
-      const projParam = searchParams?.get('project')
-      // Strictly load project ONLY if authorized by the creator's admin URL
-      if (projParam) {
-        const savedProject = localStorage.getItem('forge_launch_active_project')
-        if (savedProject) {
-          const parsed = JSON.parse(savedProject)
-          if (parsed?.id === projParam) return parsed
-        }
+      const savedProject = localStorage.getItem('forge_launch_active_project')
+      if (savedProject) {
+        return JSON.parse(savedProject)
       }
       return null
     } catch {
       return null
     }
   })
-  const [showLockedModal, setShowLockedModal] = useState(false)
+  const [showAdminLookup, setShowAdminLookup] = useState(false)
 
   // Read active individual user / admin profile
   const [userProfile, setUserProfile] = useState(() => {
@@ -230,101 +225,142 @@ export default function CreatorLaunchLayout({
     }
   }
 
-  const handleResetProject = () => {
+  const handleCreateDemoProject = () => {
+    handleCreateProjectFromConcept({
+      creatorId: 'demo_creator_1',
+      creatorName: 'TechLead Co-Launch',
+      creatorHandle: '@TechLead',
+      creatorEmail: 'creator@example.com',
+      creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60',
+      niche: 'Software & SaaS',
+      productName: 'FlowForge DevOS',
+      productTagline: 'AI-assisted developer workflow orchestrator and release pipeline.',
+      targetAudience: 'Software engineers, founders, indie hackers',
+      customer: 'Senior Developers & Technical Founders',
+      problem: 'Managing fragmented CI/CD, deployment keys, and pull request testing wastes 10+ hours per sprint.',
+      pricing: '$49/mo per seat',
+      presaleTarget: 5000,
+    })
+  }
+
+  const handleResetProject = async () => {
     try {
       localStorage.removeItem('forge_launch_active_project')
-    } catch (e) {}
+      localStorage.removeItem('forge_launch_discovered_creators')
+      localStorage.removeItem('forge_launch_real_threads')
+      localStorage.removeItem('forge_launch_pitch_sent_map')
+      localStorage.removeItem('forge_launch_answer_sent_map')
+      localStorage.removeItem('forge_launch_persuasion_sent_map')
+      localStorage.removeItem('forge_launch_ai_choice_map')
+      localStorage.removeItem('forge_creator_data')
+      localStorage.removeItem('forge_step2_timer_target')
+      localStorage.setItem('forge_launch_active_section', 'section1')
+      localStorage.setItem('forge_launch_active_step', '1')
+      localStorage.setItem('forge_launch_acquisition_step', '1')
+
+      const { deleteAllCreators, deleteCoLaunchProject } = await import('../../services/opsApi')
+      if (activeProject?.id) {
+        await deleteCoLaunchProject(activeProject.id).catch(() => {})
+      }
+      await deleteAllCreators().catch(() => {})
+    } catch (e) {
+      console.warn('Reset project and acquisition error:', e)
+    }
+
     setActiveProject(null)
     setActiveSection('section1')
+    window.location.href = '/launch?section=section1&step=1'
   }
 
   return (
     <div className="min-h-screen bg-[#090b0e] text-slate-100 font-sans flex flex-col">
       {/* Top Navbar */}
-      <header className="h-14 border-b border-white/[0.08] bg-[#0d0f14] sticky top-0 z-50 flex items-center justify-between px-6">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => window.location.href = '/'}>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center">
+      <header className="h-14 border-b border-white/[0.08] bg-[#0d0f14]/95 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6">
+        {/* Left: Brand & Navigation */}
+        <div className="flex items-center gap-3 sm:gap-5 flex-shrink-0">
+          <div
+            className="flex items-center gap-2.5 cursor-pointer group"
+            onClick={() => (window.location.href = '/')}
+          >
+            <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:border-purple-500/50 transition-colors">
               <Rocket className="w-4 h-4 text-purple-400" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-white tracking-tight text-sm">Creator Launch</span>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                  OS
-                </span>
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white tracking-tight text-sm">
+                Creator Launch
+              </span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                OS
+              </span>
             </div>
           </div>
 
           <div className="h-4 w-px bg-white/10 hidden md:block" />
 
           {/* Section Switcher Tabs */}
-          <div className="hidden md:flex items-center p-1 rounded-xl bg-white/[0.03] border border-white/[0.07]">
+          <div className="flex items-center p-1 rounded-xl bg-white/[0.03] border border-white/[0.07]">
             <button
               onClick={() => setActiveSection('section1')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 activeSection === 'section1'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-purple-500/20 text-purple-200 border border-purple-500/40 shadow-sm'
+                  : 'text-slate-400 hover:text-white border border-transparent'
               }`}
             >
               <Target className="w-3.5 h-3.5 text-purple-400" />
-              <span>Section 1: Acquisition & Opportunity</span>
+              <span>Section 1: Acquisition</span>
             </button>
             <button
-              onClick={() => {
-                if (activeProject) {
-                  setActiveSection('section2')
-                } else {
-                  setShowLockedModal(true)
-                }
-              }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              onClick={() => setActiveSection('section2')}
+              className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 activeSection === 'section2'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : activeProject
-                    ? 'text-slate-400 hover:text-white'
-                    : 'text-slate-500 hover:text-slate-400'
+                  ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 shadow-sm'
+                  : 'text-slate-400 hover:text-white border border-transparent'
               }`}
             >
-              {activeProject ? (
-                <Layers className="w-3.5 h-3.5 text-emerald-400" />
-              ) : (
-                <Lock className="w-3.5 h-3.5 text-amber-400/80" />
-              )}
-              <span>Section 2: Co-Launch Project OS</span>
-              {!activeProject && (
-                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400/90 border border-amber-500/20">
-                  Locked
-                </span>
-              )}
+              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Section 2: Project OS</span>
             </button>
           </div>
         </div>
 
-        {/* Global Controls, User Profile & Logout */}
-        <div className="flex items-center gap-3">
+        {/* Right: Actions, User Profile & Logout */}
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+          {/* Admin Pipeline & Exception Lookup Button */}
+          <button
+            type="button"
+            onClick={() => setShowAdminLookup(true)}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-all cursor-pointer shadow-sm"
+            title="Admin Pipeline Oversight & Error Lookup"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
+            <span>Admin Error Log</span>
+          </button>
+
+          <div className="h-4 w-px bg-white/10 hidden md:block" />
+
           {/* Active Individual User Profile Badge */}
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08]">
-            <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[11px] font-bold text-purple-300">
+          <div className="hidden sm:flex items-center gap-2 px-2.5 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+            <div className="w-5 h-5 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[10px] font-bold text-purple-300 flex-shrink-0">
               {userInitial}
             </div>
-            <div className="flex flex-col text-left">
-              <span className="text-xs font-semibold text-slate-200 leading-tight max-w-[120px] truncate">
+            <div className="flex items-center gap-1.5 text-left">
+              <span className="text-xs font-semibold text-slate-200 leading-none max-w-[100px] truncate">
                 {userDisplayName}
               </span>
-              <span className="text-[9px] text-slate-400 font-mono leading-tight">
-                Operator Admin
+              <span className="text-[9px] text-slate-400 font-mono leading-none">
+                (Admin)
               </span>
             </div>
           </div>
 
+          {/* Back to Dashboard */}
           <button
-            onClick={() => window.location.href = '/dashboard'}
-            className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
+            onClick={() => (window.location.href = '/dashboard')}
+            className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white px-2.5 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-colors whitespace-nowrap cursor-pointer"
           >
-            <span>Back to Dashboard</span>
+            <span className="hidden xl:inline">Back to Dashboard</span>
+            <span className="xl:hidden">Dashboard</span>
             <ExternalLink className="w-3 h-3 text-slate-400" />
           </button>
 
@@ -332,7 +368,7 @@ export default function CreatorLaunchLayout({
           <button
             onClick={handleLogout}
             title={`Logout ${userDisplayName}`}
-            className="flex items-center gap-1.5 text-xs font-semibold text-rose-300 hover:text-rose-100 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/25 transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 text-xs font-semibold text-rose-300 hover:text-rose-100 px-3 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/25 transition-all cursor-pointer shadow-sm whitespace-nowrap"
           >
             <LogOut className="w-3.5 h-3.5 text-rose-400" />
             <span className="hidden sm:inline">Logout</span>
@@ -400,57 +436,32 @@ export default function CreatorLaunchLayout({
             onResetProject={handleResetProject}
           />
         ) : (
-          <div className="p-12 rounded-2xl bg-[#0e1117] border border-white/[0.08] text-center space-y-4 max-w-lg mx-auto my-12">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
-              <Lock className="w-6 h-6" />
+          <div className="p-10 rounded-2xl bg-[#0e1117] border border-white/[0.08] text-center space-y-5 max-w-lg mx-auto my-12 shadow-xl">
+            <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center mx-auto text-purple-400">
+              <Layers className="w-6 h-6" />
             </div>
-            <h2 className="text-base font-bold text-white">Section 2: Project OS Locked</h2>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Section 2 cannot be accessed directly without an authorized project link. To access this creator's Co-Launch Project OS, open the <strong>Admin Project OS Dashboard</strong> link sent to your briefing email.
-            </p>
-            <div className="pt-2">
+            <div className="space-y-1.5">
+              <h2 className="text-base font-bold text-white">No Active Co-Launch Project</h2>
+              <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+                You haven't partnered with a creator yet. Qualify and pitch a lead in Section 1 to launch a live project, or initialize a demo venture below.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setActiveSection('section1')}
-                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 hover:text-white font-semibold text-xs border border-white/10 transition-colors cursor-pointer"
               >
-                Go to Section 1: Acquisition Engine
+                Go to Section 1: Acquisition
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Section 2 Locked Warning Modal */}
-        {showLockedModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="w-full max-w-md bg-[#12151c] border border-amber-500/30 rounded-2xl p-6 shadow-2xl space-y-4 relative">
               <button
-                onClick={() => setShowLockedModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                type="button"
+                onClick={handleCreateDemoProject}
+                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
               >
-                <X className="w-4 h-4" />
+                <Rocket className="w-3.5 h-3.5" />
+                <span>Initialize Demo Venture</span>
               </button>
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <Lock className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-white">Section 2: Project OS Locked</h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Section 2 cannot be accessed again unless you use the dedicated <strong>Admin Project OS Dashboard</strong> URL dispatched to your admin email for that creator:
-              </p>
-              <div className="p-3 rounded-xl bg-black/40 border border-white/[0.08] text-[11px] font-mono text-purple-300 break-all">
-                /launch?section=section2&project=proj_xxx
-              </div>
-              <p className="text-[11px] text-slate-400">
-                Alternatively, you can complete Section 1 Step 6 to acquire a new creator and initialize a fresh venture.
-              </p>
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  onClick={() => setShowLockedModal(false)}
-                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-colors"
-                >
-                  Understood
-                </button>
-              </div>
             </div>
           </div>
         )}
@@ -460,6 +471,52 @@ export default function CreatorLaunchLayout({
       <footer className="border-t border-white/[0.06] py-4 text-center text-xs text-slate-500 bg-[#090b0e]">
         <p>Creator Forge Launch Engine OS &copy; {new Date().getFullYear()}</p>
       </footer>
+
+      {/* Admin Pipeline Oversight & Error Lookup Modal */}
+      <AdminPipelineLookup
+        isOpen={showAdminLookup}
+        onClose={() => setShowAdminLookup(false)}
+        creators={(() => {
+          try {
+            return JSON.parse(localStorage.getItem('forge_launch_discovered_creators') || '[]')
+          } catch {
+            return []
+          }
+        })()}
+        realThreads={(() => {
+          try {
+            return JSON.parse(localStorage.getItem('forge_launch_real_threads') || '[]')
+          } catch {
+            return []
+          }
+        })()}
+        pitchSentMap={(() => {
+          try {
+            return JSON.parse(localStorage.getItem('forge_launch_pitch_sent_map') || '{}')
+          } catch {
+            return {}
+          }
+        })()}
+        answerSentMap={(() => {
+          try {
+            return JSON.parse(localStorage.getItem('forge_launch_answer_sent_map') || '{}')
+          } catch {
+            return {}
+          }
+        })()}
+        persuasionSentMap={(() => {
+          try {
+            return JSON.parse(localStorage.getItem('forge_launch_persuasion_sent_map') || '{}')
+          } catch {
+            return {}
+          }
+        })()}
+        onSelectCreator={(cid) => {
+          setShowAdminLookup(false)
+          setActiveSection('section1')
+        }}
+        onForceLaunchProject={handleCreateProjectFromConcept}
+      />
     </div>
   )
 }

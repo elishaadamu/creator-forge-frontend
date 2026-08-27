@@ -17,6 +17,7 @@ import {
   generatePhase3LaunchReportAI,
   buildSmartFallbackPhase3LaunchReport
 } from '../../services/ai'
+import { getFrontendUrl } from '../../services/opsApi'
 
 export default function Phase3Launch({ project, api, onUpdateProject }) {
   const [activeStep, setActiveStep] = useState('prep') // 'prep' | 'monitor' | 'manager' | 'report'
@@ -341,7 +342,7 @@ ${creatorAssets.newsletterBroadcast?.body}
     showToast('Downloaded Markdown Launch Report!')
   }
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
+  const origin = getFrontendUrl()
   const productSlug = (project?.slug || project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '-')
   const conversionRate = telemetry.visitors > 0 ? ((telemetry.customers / telemetry.visitors) * 100).toFixed(1) : '0.0'
 

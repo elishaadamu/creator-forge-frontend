@@ -18,6 +18,7 @@ import {
   buildSmartFallbackReadinessReport,
   autoImplementFixesAI
 } from '../../services/ai'
+import { getFrontendUrl } from '../../services/opsApi'
 
 export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanceToPhase3 }) {
   const [activeStep, setActiveStep] = useState('plan') // 'plan' | 'build' | 'beta' | 'gate'
@@ -644,7 +645,7 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} â
     showToast('Downloaded Markdown Product Spec!')
   }
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
+  const origin = getFrontendUrl()
   const productSlug = (project?.slug || project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '-')
   const presalesRevenue = Number(project?.currentPresales || 0)
   const backersCount = Array.isArray(project?.reservations) ? project.reservations.length : 0
