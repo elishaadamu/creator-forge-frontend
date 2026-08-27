@@ -34,6 +34,44 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
     trackVisit('/dashboard', onUpdateProject)
   }, [])
 
+  // Automatically dispatch portal link to creator upon project creation (must be called unconditionally before early return)
+  useEffect(() => {
+    if (!project) return
+    const autoEmail = (project.creatorEmail || project.email_public || project.email || '').trim()
+    if (
+      autoEmail.includes('@') &&
+      !project.portalLinkSent &&
+      !isSendingEmail
+    ) {
+      const presaleTargetVal = Number(project.presaleTarget || project.targetRevenue || 5000)
+      const portalSlugVal = (project.creatorHandle || project.creatorName || 'creator').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+      const portalTokenVal = project.portalToken || 'cf_sec_live'
+      const originVal = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'
+      const magicPortalUrlVal = `${originVal}/portal/${portalSlugVal}?token=${portalTokenVal}`
+      const kickoffMsg = `Hey ${project.creatorName || 'there'}! 🎉\n\nYour private Co-Founder Portal for ${project.productName || 'our product'} is live.\n\nYou can track our $${presaleTargetVal.toLocaleString()} validation milestone, review your revenue share, and check off your daily launch tasks here:\n${magicPortalUrlVal}\n\nLet's build something massive!`
+
+      setIsSendingEmail(true)
+      sendDirectEmail(
+        autoEmail,
+        `Private Co-Founder Portal: ${project.productName || 'Your Product'}`,
+        kickoffMsg,
+        project.creatorId || null
+      ).then(() => {
+        setPortalSentStatus(`Auto-sent to ${autoEmail}`)
+        onUpdateProject?.(prev => ({
+          ...(prev || {}),
+          portalLinkSent: true,
+          portalLinkSentTo: autoEmail,
+          portalLinkSentAt: new Date().toISOString()
+        }))
+      }).catch(err => {
+        console.warn('[ProjectOS] Auto-send portal link failed:', err)
+      }).finally(() => {
+        setIsSendingEmail(false)
+      })
+    }
+  }, [project?.id, project?.creatorEmail, project?.portalLinkSent, isSendingEmail])
+
   if (!project) {
     return (
       <div className="p-12 rounded-2xl bg-[#0e1117] border border-white/[0.08] text-center space-y-4 max-w-lg mx-auto my-12">
@@ -46,8 +84,9 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
         </p>
         <div className="pt-2">
           <button
+            type="button"
             onClick={onGoToAcquisition}
-            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors"
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer"
           >
             Go to Section 1: Acquire Creator
           </button>
@@ -80,37 +119,6 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
       setShareNotice('')
     }, 2500)
   }
-
-  // Automatically dispatch portal link to creator upon project creation
-  useEffect(() => {
-    if (!project) return
-    const autoEmail = (project.creatorEmail || project.email_public || project.email || '').trim()
-    if (
-      autoEmail.includes('@') &&
-      !project.portalLinkSent &&
-      !isSendingEmail
-    ) {
-      setIsSendingEmail(true)
-      sendDirectEmail(
-        autoEmail,
-        `Private Co-Founder Portal: ${project.productName || 'Your Product'}`,
-        kickoffMessage,
-        project.creatorId || null
-      ).then(() => {
-        setPortalSentStatus(`Auto-sent to ${autoEmail}`)
-        onUpdateProject?.(prev => ({
-          ...(prev || {}),
-          portalLinkSent: true,
-          portalLinkSentTo: autoEmail,
-          portalLinkSentAt: new Date().toISOString()
-        }))
-      }).catch(err => {
-        console.warn('[ProjectOS] Auto-send portal link failed:', err)
-      }).finally(() => {
-        setIsSendingEmail(false)
-      })
-    }
-  }, [project?.id, project?.creatorEmail])
 
   const handleSendPortalEmail = async () => {
     if (!targetEmail || !targetEmail.includes('@')) {

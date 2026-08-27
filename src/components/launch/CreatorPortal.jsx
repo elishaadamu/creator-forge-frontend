@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 
 export default function CreatorPortal({ portalId }) {
+  const [loading, setLoading] = useState(true)
   const [project, setProject] = useState(() => {
     try {
       const saved = localStorage.getItem('forge_launch_active_project')
@@ -13,6 +14,56 @@ export default function CreatorPortal({ portalId }) {
     } catch (e) {}
     return null
   })
+
+  // Fetch project from backend API on mount or when URL params/portalId changes
+  useEffect(() => {
+    let isMounted = true
+    const fetchProject = async () => {
+      try {
+        const params = new URLSearchParams(window.location.search)
+        const targetId = portalId || params.get('project') || params.get('id')
+        const { getCoLaunchProject, getCoLaunchProjects } = await import('../../services/opsApi')
+
+        let fetched = null
+        if (targetId && targetId !== 'portal') {
+          try {
+            fetched = await getCoLaunchProject(targetId)
+          } catch (e) {
+            console.warn('[CreatorPortal] Specific project fetch failed:', e)
+          }
+        }
+
+        // If not found by specific ID, fetch the latest active project from DB
+        if (!fetched) {
+          try {
+            const all = await getCoLaunchProjects()
+            if (all && Array.isArray(all) && all.length > 0) {
+              fetched = all[0]
+            }
+          } catch (e) {
+            console.warn('[CreatorPortal] All projects fetch failed:', e)
+          }
+        }
+
+        if (isMounted && fetched) {
+          setProject(fetched)
+          try {
+            localStorage.setItem('forge_launch_active_project', JSON.stringify(fetched))
+            localStorage.setItem('forge_launch_active_section', 'section2')
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn('[CreatorPortal] Failed to sync project from API:', err)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    fetchProject()
+    return () => {
+      isMounted = false
+    }
+  }, [portalId])
 
   useEffect(() => {
     const handleSync = () => {
@@ -81,6 +132,20 @@ export default function CreatorPortal({ portalId }) {
     return ck.announcementPost || 'Social Announcement Post Copy'
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#090b0e] text-white flex items-center justify-center p-6">
+        <div className="max-w-md w-full p-8 rounded-2xl bg-[#0e1117] border border-white/[0.08] text-center space-y-4">
+          <Rocket className="w-10 h-10 text-purple-400 mx-auto animate-bounce" />
+          <h2 className="text-lg font-bold">Loading Co-Founder Portal...</h2>
+          <p className="text-xs text-slate-400">
+            Synchronizing live co-launch workspace, campaign kit, and backer dashboard.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (!project) {
     return (
       <div className="min-h-screen bg-[#090b0e] text-white flex items-center justify-center p-6">
@@ -90,6 +155,13 @@ export default function CreatorPortal({ portalId }) {
           <p className="text-xs text-slate-400">
             Please ask your co-founder operator to initialize your partnership project and share your link.
           </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all cursor-pointer"
+          >
+            Retry Connection
+          </button>
         </div>
       </div>
     )

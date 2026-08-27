@@ -37,6 +37,44 @@ export default function CreatorLaunchLayout({
     }
   }, [activeSection, activeProject])
 
+  // Synchronize with backend DB: keep active project in sync, but NEVER forcefully hijack user's section navigation!
+  useEffect(() => {
+    let isMounted = true
+    const syncDbProjects = async () => {
+      try {
+        const { getCoLaunchProjects } = await import('../../services/opsApi')
+        const projects = await getCoLaunchProjects()
+        if (isMounted) {
+          if (!projects || projects.length === 0) {
+            setActiveProject(null)
+            try {
+              localStorage.removeItem('forge_launch_active_project')
+            } catch (e) {}
+            return
+          }
+
+          const latest = projects[0]
+          setActiveProject(prev => {
+            if (!prev || prev.id !== latest.id || prev.status !== latest.status) {
+              try {
+                localStorage.setItem('forge_launch_active_project', JSON.stringify(latest))
+              } catch (e) {}
+              return latest
+            }
+            return prev
+          })
+        }
+      } catch (err) {
+        console.warn('[CreatorLaunchLayout] Background project sync error:', err)
+      }
+    }
+
+    syncDbProjects()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const handleCreateProjectFromConcept = async (newProjData) => {
     const projId = `proj_${Date.now()}`
     const cleanProject = {
@@ -186,6 +224,14 @@ export default function CreatorLaunchLayout({
             api={api}
             onCreateProject={handleCreateProjectFromConcept}
             onGoToProjectOS={() => setActiveSection('section2')}
+            onResetAll={() => {
+              setActiveProject(null)
+              setActiveSection('section1')
+              try {
+                localStorage.removeItem('forge_launch_active_project')
+                localStorage.setItem('forge_launch_active_section', 'section1')
+              } catch (e) {}
+            }}
           />
         ) : (
           <ProjectOS
