@@ -24,7 +24,7 @@ function proxyAvatars(obj) {
 async function req(method, path, body) {
   const aiKeys = loadAiKeys()
   const scrapeKeys = loadKeys()
-  // 5-minute timeout for heavy endpoints (discover-creators with 50 creators, Hunter.io, Apify)
+  // 5-minute timeout for heavy endpoints (discover-creators with 50 creators, Apify)
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 300000)
   const opts = {
@@ -77,9 +77,6 @@ export const getCreators = (params = {}) => {
   const q = new URLSearchParams(params).toString()
   return req('GET', `/creators${q ? '?' + q : ''}`)
 }
-
-export const scrapeWithScrapeCreators = (platform, handle, apiKey) =>
-  req('POST', '/creators/scrapecreators', { platform, handle, api_key: apiKey })
 
 export const saveCreator = (data) => 
   req('POST', '/creators', data)
@@ -211,9 +208,8 @@ export const runAutonomousFollowups = (id) => req('POST', `/autonomous/run-follo
 export const previewAutonomousTemplate = (data) => req('POST', '/autonomous/preview', data)
 export const discoverAutonomousCreators = (data) => req('POST', '/autonomous/discover-creators', data || {})
 
-// ── Hunter.io Email Finder & Verifier ─────────────────────────────────────────
-export const findEmailWithHunter = (params) => req('POST', '/creators/hunter/find-email', params)
-export const verifyEmailWithHunter = (email) => req('POST', '/creators/hunter/verify-email', { email })
+// ── Apify Business Email Scraper ──────────────────────────────────────────────
+export const findEmailWithApify = (params) => req('POST', '/creators/apify/find-email', params)
 
 // ── Co-Launch Projects & 5-Step Validation Workflow ─────────────────────────
 export const getCoLaunchProjects = () => req('GET', '/projects')

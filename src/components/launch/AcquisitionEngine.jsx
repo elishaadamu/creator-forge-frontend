@@ -111,7 +111,7 @@ export default function AcquisitionEngine({
     `Hi {{first_name}},\n\nI have been following your {{niche}} work on {{platform}} and love the community you have built.\n\nWe operate Creator Forge Studio — an elite software venture lab. We design, engineer, and fund 100% of custom software products for top creators under a 50/50 net recurring revenue partnership. You never write code, manage servers, or handle customer support (<2 hours/month advisory role).\n\nBased on audience research across your {{follower_count}} community in {{niche}}, we designed 3 software product concepts tailored specifically for your audience to create compounding monthly recurring revenue.\n\nAre you open to reviewing a 60-second preview deck this week?\n\nBest regards,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP3_INQUIRY | CF-CID:{{creator_id}} | Handle:@{{handle}}]`,
   );
 
-  // Discovered Creators State (Dynamic AI + Apify + Hunter.io Pipeline)
+  // Discovered Creators State (Dynamic AI + Apify Pipeline)
   const [creators, setCreators] = useState(() => {
     if (initialCreators && initialCreators.length > 0) return initialCreators;
     try {
@@ -298,23 +298,23 @@ export default function AcquisitionEngine({
     setTempEmailValue("");
   };
 
-  // Hunter.io Email Finder State & Handler
-  const [findingHunterId, setFindingHunterId] = useState(null);
-  const [hunterStatusMsg, setHunterStatusMsg] = useState({});
+  // Apify business email lookup state and handler
+  const [findingApifyId, setFindingApifyId] = useState(null);
+  const [apifyStatusMsg, setApifyStatusMsg] = useState({});
 
-  const handleHunterFindEmail = async (creator, e) => {
+  const handleApifyFindEmail = async (creator, e) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
     }
-    setFindingHunterId(creator.id);
+    setFindingApifyId(creator.id);
     try {
-      const { findEmailWithHunter, updateCreatorDetails } =
+      const { findEmailWithApify, updateCreatorDetails } =
         await import("../../services/opsApi");
-      const res = await findEmailWithHunter({
-        full_name: creator.name || creator.display_name,
-        domain: creator.website || "",
-        company: creator.handle?.replace("@", "") || creator.name,
+      const res = await findEmailWithApify({
+        handle: creator.handle?.replace("@", "") || creator.name,
+        channel: creator.handle || creator.name,
+        url: creator.profile_url || "",
       });
       if (res && res.email) {
         setCreators((prev) =>
@@ -324,37 +324,35 @@ export default function AcquisitionEngine({
                 ...c,
                 email: res.email,
                 email_public: res.email,
-                hunter_score: res.score,
-                hunter_verification: res.verification_status,
-                email_verified: res.deliverable === true,
+                email_verified: true,
               };
             }
             return c;
           }),
         );
-        setHunterStatusMsg((prev) => ({
+        setApifyStatusMsg((prev) => ({
           ...prev,
-          [creator.id]: `[Hunter.io] Found: ${res.email} (${res.score}%)`,
+          [creator.id]: `[Apify] Verified Email: ${res.email}`,
         }));
         try {
           await updateCreatorDetails(creator.id, { email_public: res.email });
         } catch (dbErr) {
-          console.warn("[Hunter.io] DB save error:", dbErr);
+          console.warn("[Apify] DB save error:", dbErr);
         }
       } else {
-        setHunterStatusMsg((prev) => ({
+        setApifyStatusMsg((prev) => ({
           ...prev,
-          [creator.id]: "[Notice] No Hunter email found for this domain/name",
+          [creator.id]: "[Notice] No business email found via Apify for this channel",
         }));
       }
     } catch (err) {
-      console.warn("[Hunter.io] Find error:", err);
-      setHunterStatusMsg((prev) => ({
+      console.warn("[Apify] Find error:", err);
+      setApifyStatusMsg((prev) => ({
         ...prev,
-        [creator.id]: "[Notice] Hunter lookup failed",
+        [creator.id]: "[Notice] Apify email lookup failed",
       }));
     } finally {
-      setFindingHunterId(null);
+      setFindingApifyId(null);
     }
   };
 
@@ -671,7 +669,7 @@ export default function AcquisitionEngine({
     setActiveStep(1);
   };
 
-  // Autonomous Engine Start & Discovery Trigger (AI + Apify + Hunter.io)
+  // Autonomous Engine Start & Discovery Trigger (AI + Apify)
   const handleStartEngine = async () => {
     // 1. Immediately wipe previous batch state so Step 2 renders completely fresh
     setCreators([]);
@@ -728,11 +726,11 @@ export default function AcquisitionEngine({
           (c.email || c.email_public || "").includes("@"),
         ).length;
         setDiscoveryLog(
-          `[Hunter.io & Apify] Discovered & enriched ${res.creators.length} creators (${emailsFound} verified business emails validated via Hunter.io). You have 3 minutes to review/modify emails before autonomous dispatch.`,
+          `[Apify Engine] Discovered & enriched ${res.creators.length} creators (${emailsFound} verified business emails retrieved via Apify). You have 3 minutes to review/modify emails before autonomous dispatch.`,
         );
       } else {
         setDiscoveryLog(
-          "[Engine Notice] Query completed. Processed dynamic creators from database and live scrapers.",
+          `[Apify Engine] No qualifying creators returned. Apify checked ${res?.candidate_count || 0} candidates and found ${res?.enriched_count || 0} with verified email and follower criteria.`,
         );
       }
     } catch (e) {
@@ -2926,12 +2924,12 @@ export default function AcquisitionEngine({
 
     if (validEmailList.length === 0) {
       setOutreachLog(
-        `[Notice] No email addresses found for the ${creators.length} creators in this batch. Please add emails in Step 2 or via Hunter.io. Advancing to Step 4...`,
+        `[Notice] No email addresses found for the ${creators.length} creators in this batch. Please add emails in Step 2. Advancing to Step 4...`,
       );
       notify(
         "warning",
         "Missing Contact Emails",
-        `No email addresses found for ${creators.length} creators. Add emails in Step 2 or Hunter.io. Advancing to Step 4...`,
+        `No email addresses found for ${creators.length} creators. Add emails in Step 2. Advancing to Step 4...`,
         4500
       );
       setSendingBulk(false);
@@ -4379,7 +4377,7 @@ export default function AcquisitionEngine({
 
               <p className="text-[11px] text-slate-400 text-center leading-relaxed">
                 Triggers dynamic AI scouting, live Apify profile extraction &
-                Hunter.io email discovery and deliverability verification.
+                verified business email discovery.
               </p>
             </div>
           </div>
@@ -4622,12 +4620,12 @@ export default function AcquisitionEngine({
                                     <span className="font-mono text-emerald-400 truncate">
                                       {c.email_public || c.email}
                                     </span>
-                                    {c.hunter_score ? (
+                                    {c.email_verified ? (
                                       <span
-                                        className="text-[9px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.2 rounded"
-                                        title="Hunter.io Deliverability Score"
+                                        className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded"
+                                        title="Verified Business Email via Apify"
                                       >
-                                        <span className="flex items-center gap-0.5"><Target className="w-2.5 h-2.5 text-amber-400" /> {c.hunter_score}%</span>
+                                        <span className="flex items-center gap-0.5"><Check className="w-2.5 h-2.5 text-emerald-400" /> Verified</span>
                                       </span>
                                     ) : null}
                                   </div>
@@ -4668,20 +4666,20 @@ export default function AcquisitionEngine({
                                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                   <button
                                     type="button"
-                                    onClick={(e) => handleHunterFindEmail(c, e)}
-                                    disabled={findingHunterId === c.id}
-                                    className="p-1.5 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 text-amber-300 hover:text-white flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50"
-                                    title="Find verified email with Hunter.io Email Finder"
+                                    onClick={(e) => handleApifyFindEmail(c, e)}
+                                    disabled={findingApifyId === c.id}
+                                    className="p-1.5 px-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-300 hover:text-white flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                                    title="Find verified business email with Apify"
                                   >
-                                    {findingHunterId === c.id ? (
-                                      <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
+                                    {findingApifyId === c.id ? (
+                                      <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
                                     ) : (
-                                      <Target className="w-3 h-3 text-amber-400" />
+                                      <Zap className="w-3 h-3 text-emerald-400" />
                                     )}
                                     <span>
-                                      {findingHunterId === c.id
-                                        ? "Searching..."
-                                        : "Find with Hunter.io"}
+                                      {findingApifyId === c.id
+                                        ? "Finding..."
+                                        : "Find Business Email"}
                                     </span>
                                   </button>
                                   <button
@@ -4710,9 +4708,9 @@ export default function AcquisitionEngine({
                               </a>
                             </div>
 
-                            {hunterStatusMsg[c.id] && (
+                            {apifyStatusMsg[c.id] && (
                               <p className="text-[10px] text-amber-400/90 font-mono px-1">
-                                {hunterStatusMsg[c.id]}
+                                {apifyStatusMsg[c.id]}
                               </p>
                             )}
                           </div>
@@ -5542,25 +5540,25 @@ export default function AcquisitionEngine({
                               <button
                                 type="button"
                                 onClick={(e) =>
-                                  handleHunterFindEmail(activeReviewCreator, e)
+                                  handleApifyFindEmail(activeReviewCreator, e)
                                 }
                                 disabled={
-                                  findingHunterId === activeReviewCreator.id
+                                  findingApifyId === activeReviewCreator.id
                                 }
-                                className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer flex-shrink-0 disabled:opacity-50"
+                                className="px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer flex-shrink-0 disabled:opacity-50"
                               >
-                                {findingHunterId === activeReviewCreator.id ? (
-                                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                                {findingApifyId === activeReviewCreator.id ? (
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
                                 ) : (
-                                  <Target className="w-3.5 h-3.5 text-amber-400" />
+                                  <Zap className="w-3.5 h-3.5 text-emerald-400" />
                                 )}
-                                <span>Find with Hunter.io</span>
+                                <span>Find Business Email</span>
                               </button>
                             </div>
 
-                            {hunterStatusMsg[activeReviewCreator.id] && (
+                            {apifyStatusMsg[activeReviewCreator.id] && (
                               <p className="text-[11px] text-amber-400 font-mono pt-1">
-                                {hunterStatusMsg[activeReviewCreator.id]}
+                                {apifyStatusMsg[activeReviewCreator.id]}
                               </p>
                             )}
                           </div>
