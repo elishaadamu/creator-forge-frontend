@@ -33,7 +33,6 @@ import {
   Trash2,
   Instagram,
   Youtube,
-  Twitter,
   Music,
   Plus,
   AlertTriangle,
@@ -102,7 +101,6 @@ export default function AcquisitionEngine({
     "youtube",
     "tiktok",
     "instagram",
-    "twitter",
   ]);
   const [templateSubject, setTemplateSubject] = useState(
     "Co-founder partnership inquiry for {{display_name}}",
@@ -4143,7 +4141,6 @@ export default function AcquisitionEngine({
                     { id: "youtube", label: "YouTube", icon: Youtube, color: "text-red-400" },
                     { id: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-400" },
                     { id: "tiktok", label: "TikTok", icon: Music, color: "text-cyan-400" },
-                    { id: "twitter", label: "X / Twitter", icon: Twitter, color: "text-sky-400" },
                   ].map((p) => {
                     const isSelected = selectedPlatforms.includes(p.id);
                     const PlatformIcon = p.icon;
@@ -4258,7 +4255,6 @@ export default function AcquisitionEngine({
                       { id: "youtube", label: "YouTube" },
                       { id: "tiktok", label: "TikTok" },
                       { id: "instagram", label: "Instagram" },
-                      { id: "twitter", label: "Twitter / X" },
                     ].map((p) => {
                       const active = selectedPlatforms.includes(p.id);
                       return (

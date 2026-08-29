@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import {
   Zap, Play, Clock, Users, Mail, Settings, RefreshCw, Check, AlertCircle,
-  Eye, FileText, ChevronRight, Sliders, ShieldCheck, Sparkles, Send, Tag, Filter
+  Eye, FileText, ChevronRight, Sliders, ShieldCheck, Sparkles, Send, Tag, Filter, Bell, Activity
 } from 'lucide-react'
 import {
   getAutonomousCampaigns, updateAutonomousCampaign,
-  runAutonomousBatch, runAutonomousFollowups, previewAutonomousTemplate
+  runAutonomousBatch, runAutonomousFollowups, previewAutonomousTemplate,
+  getFollowupSchedulerStatus,
 } from '../../services/opsApi'
 
 const PRESET_NICHES = [
@@ -49,6 +50,7 @@ export default function AutonomousOutreach() {
   const [status, setStatus] = useState('active')
   const [autoSend, setAutoSend] = useState(true)
   const [lastResult, setLastResult] = useState(null)
+  const [schedulerStatus, setSchedulerStatus] = useState(null)
 
   const showToastMsg = (msg, type = 'info') => {
     setToast({ msg, type })
@@ -85,6 +87,8 @@ export default function AutonomousOutreach() {
 
   useEffect(() => {
     loadCampaign()
+    // Load scheduler status on mount
+    getFollowupSchedulerStatus().then(setSchedulerStatus).catch(() => {})
   }, [])
 
   const handleSave = async () => {
@@ -141,8 +145,13 @@ export default function AutonomousOutreach() {
     setRunningFollowups(true)
     try {
       const res = await runAutonomousFollowups(campaign?.id)
-      setLastResult(res)
-      showToastMsg(`Follow-up check completed: ${res.sent || 0} sent, ${res.processed || 0} processed`, 'success')
+      setLastResult({ ...res, _type: 'followup' })
+      const sent = res.sent ?? 0
+      const processed = res.processed ?? 0
+      const skipped = res.skipped_already_sent ?? 0
+      showToastMsg(`Follow-up check done: ${sent} sent · ${processed} processed · ${skipped} already had follow-up`, 'success')
+      // Refresh scheduler status
+      getFollowupSchedulerStatus().then(setSchedulerStatus).catch(() => {})
       loadCampaign()
     } catch (e) {
       showToastMsg(`Follow-up run failed: ${e.message}`, 'error')
@@ -249,7 +258,7 @@ export default function AutonomousOutreach() {
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all disabled:opacity-50"
           >
             {runningFollowups ? <RefreshCw size={13} className="animate-spin" /> : <Clock size={13} />}
-            <span>Process 7-Day Follow-ups</span>
+            <span>{runningFollowups ? 'Running Follow-ups…' : 'Run Follow-ups Now'}</span>
           </button>
 
           <button
@@ -304,16 +313,65 @@ export default function AutonomousOutreach() {
 
         <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] flex flex-col justify-between">
           <div className="flex items-center justify-between text-white/50 text-xs">
-            <span>1-Week Follow-ups</span>
+            <span>Auto Follow-ups Sent</span>
             <Clock size={14} className="text-amber-400" />
           </div>
           <div className="mt-3">
             <span className="text-2xl font-bold text-white">{campaign?.total_followups_sent || 0}</span>
-            <span className="text-xs text-amber-400 ml-2 font-medium">{followupDelayDays}d Gap</span>
+            <span className="text-xs text-amber-400 ml-2 font-medium">
+              {schedulerStatus?.mode === 'testing' ? `${schedulerStatus.delay_hours}h gap` : `${followupDelayDays}d gap`}
+            </span>
           </div>
-          <p className="text-[10px] text-white/30 mt-2">Auto-sends if no reply after 7 days</p>
+          <p className="text-[10px] text-white/30 mt-2">
+            {schedulerStatus?.mode === 'testing' ? '🧪 Testing mode: 1h intervals' : 'Checks every hour · fires after delay'}
+          </p>
         </div>
       </div>
+
+      {/* ── Follow-up Scheduler Status Panel ─────────────────────────────────── */}
+      {schedulerStatus && (
+        <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <Activity size={15} className="text-amber-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white flex items-center gap-2">
+                Follow-up Scheduler
+                <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border ${
+                  schedulerStatus.mode === 'testing'
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                }`}>
+                  {schedulerStatus.mode}
+                </span>
+              </p>
+              <p className="text-xs text-white/40 mt-0.5">
+                Checks {schedulerStatus.next_check_approx} · fires after {schedulerStatus.followup_fires_after}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-6 text-xs">
+            <div className="text-center">
+              <p className="text-white/40">Targets</p>
+              <p className="text-white font-medium mt-0.5">No-reply + Not Interested</p>
+            </div>
+            <div className="text-center">
+              <p className="text-white/40">Check Interval</p>
+              <p className="text-amber-300 font-bold mt-0.5">{schedulerStatus.check_interval_hours}h</p>
+            </div>
+            <div className="text-center">
+              <p className="text-white/40">Delay Before Fire</p>
+              <p className="text-amber-300 font-bold mt-0.5">{schedulerStatus.delay_hours}h</p>
+            </div>
+            {schedulerStatus.mode === 'testing' && (
+              <div className="text-[11px] text-amber-400/70 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5 max-w-[180px]">
+                Set <code className="font-mono">FOLLOWUP_DELAY_HOURS=168</code> to switch to 7-day production mode
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Configuration Tabs Navigation */}
       <div className="flex items-center gap-2 border-b border-white/10 pb-3">
@@ -649,12 +707,26 @@ export default function AutonomousOutreach() {
               <div className="p-4 rounded-xl bg-purple-950/20 border border-purple-500/20 text-xs space-y-1.5">
                 <p className="font-semibold text-purple-300 flex items-center gap-1.5">
                   <Sparkles size={13} />
-                  <span>Last Batch Run Results</span>
+                  <span>{lastResult._type === 'followup' ? 'Last Follow-up Run Results' : 'Last Batch Run Results'}</span>
                 </p>
                 <div className="text-white/70 space-y-0.5 font-mono text-[11px]">
-                  <p>Eligible Processed: {lastResult.total_eligible ?? lastResult.processed ?? 0}</p>
-                  <p>Sent: {lastResult.sent ?? 0}</p>
-                  <p>Queued: {lastResult.queued ?? 0}</p>
+                  {lastResult._type === 'followup' ? (
+                    <>
+                      <p>Processed: {lastResult.processed ?? 0}</p>
+                      <p>Sent: {lastResult.sent ?? 0}</p>
+                      <p>Queued: {lastResult.queued ?? 0}</p>
+                      <p>Already had follow-up: {lastResult.skipped_already_sent ?? 0}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>Eligible Processed: {lastResult.total_eligible ?? lastResult.processed ?? 0}</p>
+                      <p>Sent: {lastResult.sent ?? 0}</p>
+                      <p>Queued: {lastResult.queued ?? 0}</p>
+                      {lastResult.skipped_no_email > 0 && (
+                        <p className="text-amber-400">Skipped (no email): {lastResult.skipped_no_email}</p>
+                      )}
+                    </>
+                  )}
                   {lastResult.errors?.length > 0 && (
                     <p className="text-red-400">Errors: {lastResult.errors.length}</p>
                   )}

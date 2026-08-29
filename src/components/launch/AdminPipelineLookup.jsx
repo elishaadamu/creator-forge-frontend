@@ -525,7 +525,6 @@ export default function AdminPipelineLookup({
                 <option value="all" className="bg-[#10131c]">All</option>
                 <option value="youtube" className="bg-[#10131c]">YouTube</option>
                 <option value="instagram" className="bg-[#10131c]">Instagram</option>
-                <option value="twitter" className="bg-[#10131c]">X / Twitter</option>
                 <option value="tiktok" className="bg-[#10131c]">TikTok</option>
               </select>
             </div>

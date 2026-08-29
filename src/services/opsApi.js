@@ -207,6 +207,8 @@ export const runAutonomousBatch = (id, limit, payload = {}) => {
 export const runAutonomousFollowups = (id) => req('POST', `/autonomous/run-followups${id ? '?campaign_id=' + id : ''}`)
 export const previewAutonomousTemplate = (data) => req('POST', '/autonomous/preview', data)
 export const discoverAutonomousCreators = (data) => req('POST', '/autonomous/discover-creators', data || {})
+export const getFollowupSchedulerStatus = () => req('GET', '/autonomous/followup-scheduler/status')
+
 
 // ── Apify Business Email Scraper ──────────────────────────────────────────────
 export const findEmailWithApify = (params) => req('POST', '/creators/apify/find-email', params)
