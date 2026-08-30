@@ -40,6 +40,7 @@ import {
   Bot,
   Lightbulb,
   Radio,
+  Globe,
 } from "lucide-react";
 import { deleteAllCreators } from "../../services/opsApi";
 import AdminPipelineLookup from "./AdminPipelineLookup";
@@ -96,6 +97,10 @@ export default function AcquisitionEngine({
   const [minFollowers, setMinFollowers] = useState(100000);
   const [maxFollowers, setMaxFollowers] = useState(1000000);
   const [minEngagement, setMinEngagement] = useState(2.0);
+  const [selectedGeography, setSelectedGeography] = useState("GLOBAL");
+  const [weeklyOutreachVolume, setWeeklyOutreachVolume] = useState(50);
+  const [followUpDays, setFollowUpDays] = useState(7);
+  const [minScoreThreshold, setMinScoreThreshold] = useState(70);
   const [creatorsBatchCount, setCreatorsBatchCount] = useState(3); // Default batch size
   const [selectedPlatforms, setSelectedPlatforms] = useState([
     "youtube",
@@ -394,6 +399,7 @@ export default function AcquisitionEngine({
   };
 
   // Load existing creators from database on mount & merge
+  // Only sync metadata for actively-discovered creators (never auto-populate creators in the background on mount)
   useEffect(() => {
     import("../../services/opsApi").then(({ getCreators }) => {
       getCreators({ limit: 50 })
@@ -401,124 +407,29 @@ export default function AcquisitionEngine({
           const rawList = Array.isArray(res) ? res : res?.creators || [];
           if (rawList.length > 0) {
             setCreators((prev) => {
-              if (prev.length > 0) {
-                const dbMap = new Map(rawList.map((item) => [item.id, item]));
-                return prev.map((c) => {
-                  const dbItem = dbMap.get(c.id);
-                  if (!dbItem) return c;
-                  return {
-                    ...c,
-                    email: dbItem.email_public || c.email,
-                    email_public: dbItem.email_public || c.email_public,
-                    status: dbItem.status || c.status,
-                    replyClassification:
-                      dbItem.reply_classification || c.replyClassification,
-                    reply_classification:
-                      dbItem.reply_classification || c.reply_classification,
-                    replyText: dbItem.reply_text || c.replyText,
-                  };
-                });
-              }
-              const formatted = rawList.map((c) => {
-                const f_count = c.follower_count || 0;
-                const follower_str =
-                  f_count >= 1000000
-                    ? `${(f_count / 1000000).toFixed(1)}M`
-                    : f_count >= 1000
-                      ? `${Math.round(f_count / 1000)}K`
-                      : String(f_count);
-                const c_niche = Array.isArray(c.niche)
-                  ? c.niche
-                  : [c.niche || "Tech"];
-                const primary_niche = c_niche[0] || "Tech";
-                const d_name = c.display_name || c.handle || "Creator";
-                const first_name = d_name.split(" ")[0] || "Creator";
-                const score =
-                  c.creatorScore ||
-                  c.score ||
-                  Math.min(
-                    98,
-                    Math.max(
-                      78,
-                      Math.round(
-                        74 +
-                          (c.engagement_score || 3.5) * 4 +
-                          (c.email_public ? 3 : 0),
-                      ),
-                    ),
-                  );
-
+              if (!prev || prev.length === 0) return []; // Do not populate in the background
+              const dbMap = new Map(rawList.map((item) => [item.id, item]));
+              return prev.map((c) => {
+                const dbItem = dbMap.get(c.id);
+                if (!dbItem) return c;
                 return {
-                  id: c.id,
-                  name: d_name,
-                  display_name: d_name,
-                  handle: `@${c.handle.replace(/^@/, "")}`,
-                  platform: (c.platform || "YouTube").toUpperCase(),
-                  follower_count: f_count,
-                  followerStr: follower_str,
-                  engagement: c.engagement_score || 3.8,
-                  niche: c_niche.join(", "),
-                  avatar:
-                    c.avatar_url ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(c.handle)}&background=6366f1&color=fff`,
-                  creatorScore: score,
-                  email: c.email_public || "",
-                  email_public: c.email_public || "",
-                  status: c.status || "qualified",
-                  replyClassification: c.reply_classification || null,
-                  reply_classification: c.reply_classification || null,
-                  replyText: c.reply_text || null,
-                  hasReplied: Boolean(
-                    c.reply_classification &&
-                    c.reply_classification !== "awaiting_reply" &&
-                    c.reply_classification !== "no_email",
-                  ),
-                  productConcepts: [
-                    {
-                      id: `p1_${c.id}`,
-                      name: `${first_name} OS`,
-                      tagline: `Automated SaaS workspace for ${primary_niche} community`,
-                      problem: `Workflow friction & monetization for ${primary_niche} audience`,
-                      pricing: "$29/mo",
-                      mvpDifficulty: "Low (2 weeks)",
-                      opportunityScore: Math.min(98, score + 2),
-                      rationale: `High audience intent identified in ${primary_niche} community.`,
-                    },
-                    {
-                      id: `p2_${c.id}`,
-                      name: `${first_name} Flow AI`,
-                      tagline: `AI-powered operating system for ${primary_niche}`,
-                      problem:
-                        "Audience retention & automated digital delivery",
-                      pricing: "$49/mo",
-                      mvpDifficulty: "Medium (3 weeks)",
-                      opportunityScore: Math.min(95, score),
-                      rationale:
-                        "Strong engagement on recent video uploads and tutorial series.",
-                    },
-                    {
-                      id: `p3_${c.id}`,
-                      name: `${first_name} Pro Hub`,
-                      tagline: `Private template & tools community for ${primary_niche}`,
-                      problem:
-                        "Resource fragmentation and lack of unified tools",
-                      pricing: "$79/mo",
-                      mvpDifficulty: "Medium (3-4 weeks)",
-                      opportunityScore: Math.min(92, score - 3),
-                      rationale:
-                        "Dedicated following ready for premium software access.",
-                    },
-                  ],
+                  ...c,
+                  email: dbItem.email_public || c.email,
+                  email_public: dbItem.email_public || c.email_public,
+                  status: dbItem.status || c.status,
+                  replyClassification:
+                    dbItem.reply_classification || c.replyClassification,
+                  reply_classification:
+                    dbItem.reply_classification || c.reply_classification,
+                  replyText: dbItem.reply_text || c.replyText,
                 };
               });
-              setSelectedCreatorId(formatted[0]?.id || null);
-              return formatted;
             });
           }
         })
         .catch((e) =>
           console.warn(
-            "[AcquisitionEngine] Failed to load initial creators:",
+            "[AcquisitionEngine] Failed to sync creator metadata:",
             e,
           ),
         );
@@ -715,6 +626,7 @@ export default function AcquisitionEngine({
         min_engagement_rate: minEngagement,
         target_count: targetCount,
         platforms: selectedPlatforms,
+        geography: selectedGeography,
       });
 
       if (res && res.creators && res.creators.length > 0) {
@@ -2374,6 +2286,15 @@ export default function AcquisitionEngine({
   // Distinctive Step Message Classifier: Distinguishes Step 4 (Initial Inquiry Reply) from Step 6 (Pitch & Dialog Reply)
   const isStep6Message = (msg, latestOutboundMs = 0) => {
     if (!msg) return false;
+
+    // If an outbound message (pitch, answer, persuasion) was sent, any reply received BEFORE it is already handled!
+    if (latestOutboundMs > 0 && msg.received_at) {
+      const msgTime = parseUtcMs(msg.received_at);
+      if (msgTime < latestOutboundMs - 4000) {
+        return false;
+      }
+    }
+
     const subj = (msg.subject || "").toLowerCase();
     const body = (msg.body || "").toLowerCase();
     const allText = `${subj} ${body}`;
@@ -2391,7 +2312,7 @@ export default function AcquisitionEngine({
 
     // 2. Distinctive Subject Line Match
     if (
-      /opportunity pitch|opportunity deck|software concepts|concept pitch|concepts for|top 3 software|top 3 concepts|answers to your questions|co-founding questions|simplifying our co-founder|zero-effort co-founder/i.test(
+      /opportunity pitch|opportunity deck|software concepts|concept pitch|concepts for|top 3 software|top 3 concepts|answers to your questions|co-founding questions|simplifying our co-founder|zero-effort co-founder|quick 60-second preview/i.test(
         subj,
       )
     ) {
@@ -2406,7 +2327,7 @@ export default function AcquisitionEngine({
     // 3. Normalized UTC Timestamp Match
     if (latestOutboundMs > 0 && msg.received_at) {
       const msgTime = parseUtcMs(msg.received_at);
-      if (msgTime > latestOutboundMs - 15000) {
+      if (msgTime >= latestOutboundMs - 4000) {
         return true;
       }
     }
@@ -2768,9 +2689,10 @@ export default function AcquisitionEngine({
   // Autonomous Persuasion Email to overturn disinterest/hesitation
   const handleAutonomousPersuade = async (creator = selectedCreator) => {
     if (!creator || isSendingPitch) return;
+    const cId = creator.id;
+    if (persuasionSentMap[cId]) return;
     setIsSendingPitch(true);
     const targetEmail = (creator.email || creator.email_public || "").trim();
-    const cId = creator.id;
     const concepts = creator.productConcepts || ensureCreatorConcepts(creator);
     const topConcept = concepts[0];
     const creatorName = creator.name || creator.display_name || "there";
@@ -2809,8 +2731,8 @@ export default function AcquisitionEngine({
       }
       const sentTimeIso = new Date().toISOString();
       const sentTimestamp = Date.now();
-      setPersuasionSentMap((prev) => ({
-        ...prev,
+      const updatedMap = {
+        ...persuasionSentMap,
         [cId]: {
           time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
@@ -2821,7 +2743,11 @@ export default function AcquisitionEngine({
           recipient: targetEmail,
           subject: persuasionSubject,
         },
-      }));
+      };
+      setPersuasionSentMap(updatedMap);
+      try {
+        localStorage.setItem("forge_launch_persuasion_sent_map", JSON.stringify(updatedMap));
+      } catch {}
       notify(
         "info",
         "Persuasion Outreach Dispatched",
@@ -2844,23 +2770,49 @@ export default function AcquisitionEngine({
   };
 
   const handleApproveCreator = (id) => {
+    const creator = creators.find((c) => c.id === id);
     setCreators((prev) =>
       prev.map((c) =>
         c.id === id
           ? {
               ...c,
               status: "approved",
+              approvedAt: new Date().toISOString(),
               productConcepts: ensureCreatorConcepts(c),
             }
           : c,
       ),
     );
+    notify(
+      "success",
+      "Creator Approved",
+      `${creator?.name || creator?.display_name || "Creator"} approved — generating product concepts and advancing to Audience Analysis.`,
+      4000,
+    );
   };
 
   const handleRejectCreator = (id) => {
+    const creator = creators.find((c) => c.id === id);
     setCreators((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: "rejected" } : c)),
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, status: "rejected", rejectedAt: new Date().toISOString() }
+          : c,
+      ),
     );
+    notify(
+      "error",
+      "Creator Rejected",
+      `${creator?.name || creator?.display_name || "Creator"} has been archived. They will not receive further outreach.`,
+      3500,
+    );
+    // Auto-advance selection to the next unreviewed creator in the filtered list
+    const remaining = creators.filter(
+      (c) => c.id !== id && c.status !== "approved" && c.status !== "rejected",
+    );
+    if (remaining.length > 0) {
+      setSelectedCreatorId(remaining[0].id);
+    }
   };
 
   const handlePitchAndCreateProject = () => {
@@ -3250,7 +3202,102 @@ export default function AcquisitionEngine({
       };
     }
 
-    // 2. Questions / More Info / Inquiries -> Answer questions first! Do NOT launch yet!
+    // 3. Affirmative Agreement / Concept Selection (Highest Priority for Progression)
+    const affirmativePatterns = [
+      "interested",
+      "i'm interested",
+      "im interested",
+      "i am interested",
+      "we're interested",
+      "we are interested",
+      "yes interested",
+      "definitely interested",
+      "very interested",
+      "would be interested",
+      "let's do it",
+      "lets do it",
+      "sounds great",
+      "sounds good",
+      "sounds awesome",
+      "sounds amazing",
+      "sounds cool",
+      "looks great",
+      "looks good",
+      "looks awesome",
+      "looks amazing",
+      "sure",
+      "sure thing",
+      "sure, send it over",
+      "send it over",
+      "send over",
+      "send it",
+      "go ahead",
+      "let's go",
+      "lets go",
+      "let's do this",
+      "lets do this",
+      "let's proceed",
+      "lets proceed",
+      "agreed",
+      "agree",
+      "deal",
+      "i'm down",
+      "im down",
+      "down for this",
+      "sign me up",
+      "count me in",
+      "count on me",
+      "i'm in",
+      "im in",
+      "let's build",
+      "lets build",
+      "ready to move forward",
+      "move forward",
+      "let's partner",
+      "lets partner",
+      "yes let's",
+      "yes lets",
+      "i choose",
+      "i prefer",
+      "let's go with",
+      "lets go with",
+      "let's start",
+      "lets start",
+      "love to",
+      "love this",
+      "love it",
+      "let's talk",
+      "lets talk",
+      "let's connect",
+      "lets connect",
+      "happy to chat",
+      "open to",
+      "yes please",
+      "yes",
+      "yeah",
+      "yep",
+      "ok",
+      "okay",
+      "start building",
+      "create project",
+      "approved",
+      "approve",
+      "concept 1",
+      "concept 2",
+      "concept 3",
+      "option 1",
+      "option 2",
+      "option 3",
+      "#1",
+      "#2",
+      "#3",
+      "first one",
+      "second one",
+      "third one",
+    ];
+    const hasAffirmative = affirmativePatterns.some((p) => text.includes(p));
+
+    // 4. Questions / Inquiries -> Answer questions first only if an actual question is asked
     const questionPatterns = [
       "?",
       "further explanation",
@@ -3288,64 +3335,17 @@ export default function AcquisitionEngine({
       "explain how",
       "who builds",
       "what is the timeline",
-      "check it out",
-      "will check",
-      "looking into it",
-      "send more",
-      "send again",
-      "resend",
       "where is the link",
       "where is the deck",
-      "give me a few days",
-      "will review",
-      "send the details",
-      "share the deck",
-      "send the link",
+      "benefit",
+      "what do i get",
+      "in it for me",
     ];
     const hasQuestion = questionPatterns.some((p) => text.includes(p));
 
-    // 3. Affirmative Agreement / Concept Selection
-    const affirmativePatterns = [
-      "interested",
-      "i'm interested",
-      "im interested",
-      "i am interested",
-      "we're interested",
-      "we are interested",
-      "yes interested",
-      "definitely interested",
-      "very interested",
-      "would be interested",
-      "let's do it",
-      "lets do it",
-      "sounds great",
-      "sounds good",
-      "i'm in",
-      "im in",
-      "let's build",
-      "lets build",
-      "count me in",
-      "ready to move forward",
-      "let's partner",
-      "lets partner",
-      "yes let's",
-      "yes lets",
-      "i choose",
-      "i prefer",
-      "let's go with",
-      "love to",
-      "let's talk",
-      "lets talk",
-      "let's connect",
-      "lets connect",
-      "happy to chat",
-      "open to",
-      "yes",
-    ];
-    const hasAffirmative = affirmativePatterns.some((p) => text.includes(p));
-
+    // Resolve concept match
     let matchedConcept = concepts.find((con) =>
-      text.includes(con.name.toLowerCase()),
+      text.includes(con.name?.toLowerCase()),
     );
     if (!matchedConcept) {
       if (
@@ -3367,7 +3367,22 @@ export default function AcquisitionEngine({
       }
     }
 
-    // If it is a question, ALWAYS prioritize answering the question! Do NOT launch yet!
+    // 5. Explicit Affirmative Agreement or Concept Confirmation -> ADVANCE TO SECTION 2!
+    if ((hasAffirmative || matchedConcept) && !hasQuestion) {
+      const chosen = matchedConcept || concepts[0];
+      return {
+        decision: "CREATE_PROJECT",
+        actionLabel: `Launch & Create Project (${chosen.name})`,
+        confidence: 98,
+        conceptName: chosen.name,
+        conceptId: chosen.id,
+        reasoning: `Creator confirmed positive agreement with concrete intent: "${latestBody.slice(0, 60)}...". Selected Concept: ${chosen.name}. Verified alignment threshold passed; advancing to Section 2.`,
+        color: "emerald",
+        badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+      };
+    }
+
+    // 6. If it is a question, prioritize answering the question
     if (hasQuestion) {
       return {
         decision: "ANSWER_QUESTION",
@@ -3380,18 +3395,57 @@ export default function AcquisitionEngine({
       };
     }
 
-    // Concrete confirmation verification:
-    if (hasAffirmative || matchedConcept) {
-      const chosen = matchedConcept || concepts[0];
+    // 7. Review in Progress / Concept Review Acknowledgment -> Deploy 60s Preview & Nudge
+    const reviewPatterns = [
+      "check them out",
+      "check it out",
+      "check these out",
+      "i'll check",
+      "ill check",
+      "i will check",
+      "will check",
+      "checking",
+      "take a look",
+      "looking into",
+      "looking over",
+      "reviewing",
+      "will review",
+      "let me review",
+      "will look",
+      "give me a few days",
+      "give me a moment",
+      "let me read",
+      "let you know",
+      "get back to you",
+      "can we continue",
+      "how do we continue",
+      "what's next",
+      "whats next",
+    ];
+    const isReview = reviewPatterns.some((p) => text.includes(p));
+
+    if (isReview) {
       return {
-        decision: "CREATE_PROJECT",
-        actionLabel: `Launch & Create Project (${chosen.name})`,
-        confidence: 98,
-        conceptName: chosen.name,
-        conceptId: chosen.id,
-        reasoning: `Creator confirmed positive agreement with concrete intent: "${latestBody.slice(0, 60)}...". Selected Concept: ${chosen.name}. Verified alignment threshold passed; advancing to Section 2.`,
-        color: "emerald",
-        badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+        decision: "REVIEW_PREVIEW",
+        actionLabel: "Send 60s Concept Preview & Nudge",
+        confidence: 96,
+        conceptName: matchedConcept?.name || concepts[0]?.name || "Recommended Concept",
+        reasoning: `Creator acknowledged review in dialog ("${latestBody.slice(0, 60)}..."). AI will provide a tailored 60-second concept breakdown and zero-cost advantage reminder to make their review effortless before concept confirmation.`,
+        color: "amber",
+        badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+      };
+    }
+
+    // 8. Fallback: Conversational Dialog Reply
+    if (text.length > 2) {
+      return {
+        decision: "REVIEW_PREVIEW",
+        actionLabel: "Send Conversational Dialog Follow-up",
+        confidence: 92,
+        conceptName: concepts[0]?.name || "Recommended Concept",
+        reasoning: `Creator reply received in active dialog ("${latestBody.slice(0, 50)}..."). AI will deploy a 60-second summary breakdown and advantages overview to maintain conversation momentum before Section 2.`,
+        color: "amber",
+        badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
       };
     }
 
@@ -3408,17 +3462,32 @@ export default function AcquisitionEngine({
   };
 
   // Autonomous Execution Handlers
-  const handleAutonomousResend = async () => {
-    if (!selectedCreator) return;
+  const handleAutonomousResend = async (creatorParam) => {
+    const creator = creatorParam || selectedCreator;
+    if (!creator || isSendingPitch) return;
+    const cId = creator.id;
+    if (pitchSentMap[cId]?.isFollowup) return;
     setIsSendingPitch(true);
-    const targetEmail = selectedCreator.email || selectedCreator.email_public;
-    const cId = selectedCreator.id;
+    const targetEmail = (
+      creator.email ||
+      creator.email_public ||
+      ""
+    ).trim();
+    const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
     const concepts =
-      selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
-    const followUpSubject = `Quick 60-second preview: ${concepts[0]?.name} for ${selectedCreator.name || "you"}`;
+      creator.productConcepts || ensureCreatorConcepts(creator);
+    const followUpSubject = `Re: Quick 60-second preview: ${concepts[0]?.name} for ${creator.name || "you"}`;
     const followUpBody =
-      `Hi ${selectedCreator.name?.split(" ")[0] || "there"},\n\nThanks for taking a look! To make your review as quick and easy as possible, here is a 60-second breakdown of ${concepts[0]?.name}:\n\n` +
-      `• Key Advantage: ${concepts[0]?.tagline}\n• Projected Model: ${concepts[0]?.pricing}\n• Revenue Split: 50/50 co-founder equity with zero build cost on your end.\n\nLet me know if you have any questions or if you'd like to adjust anything before we start building!\n\nBest,\nCreator Forge Studio`;
+      `Hi ${creator.name?.split(" ")[0] || "there"},\n\n` +
+      `Thanks for taking a look! To make your review as quick and easy as possible, here is a 60-second breakdown of our engineered concepts for your community:\n\n` +
+      `1. ${concepts[0]?.name} — ${concepts[0]?.tagline} (${concepts[0]?.pricing})\n` +
+      `2. ${concepts[1]?.name || concepts[0]?.name + " Pro"} — ${concepts[1]?.tagline || "AI-powered engine"} (${concepts[1]?.pricing || "$49/mo"})\n` +
+      `3. ${concepts[2]?.name || concepts[0]?.name + " Hub"} — ${concepts[2]?.tagline || "Private toolkit suite"} (${concepts[2]?.pricing || "$79/mo"})\n\n` +
+      `• Key Advantage: 100% fully managed engineering, server hosting, Stripe billing, and customer support at zero cost to you.\n` +
+      `• Revenue Split: 50/50 net recurring revenue deposited directly to your bank account.\n` +
+      `• Time Commitment: Under 2 hours/month reviewing product roadmaps and sharing with your audience.\n\n` +
+      `Which of these 3 resonates most with what your followers ask for? Let us know or feel free to ask any questions!\n\n` +
+      `Best regards,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP6_DIALOG_PREVIEW | CF-CID:${cId} | Handle:@${cleanHandle}]`;
 
     try {
       if (targetEmail && targetEmail.includes("@")) {
@@ -3427,8 +3496,8 @@ export default function AcquisitionEngine({
       }
       const sentTimeIso = new Date().toISOString();
       const sentTimestamp = Date.now();
-      setPitchSentMap((prev) => ({
-        ...prev,
+      const updatedMap = {
+        ...pitchSentMap,
         [cId]: {
           time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
@@ -3438,12 +3507,17 @@ export default function AcquisitionEngine({
           sentTimestamp,
           recipient: targetEmail || "creator",
           subject: followUpSubject,
+          isFollowup: true,
         },
-      }));
+      };
+      setPitchSentMap(updatedMap);
+      try {
+        localStorage.setItem("forge_launch_pitch_sent_map", JSON.stringify(updatedMap));
+      } catch {}
       notify(
         "info",
-        "Follow-up Nudge Sent",
-        `Dispatched preview follow-up to ${selectedCreator.name || selectedCreator.handle}.`,
+        "Preview Nudge Sent",
+        `Dispatched 60-second concept preview to ${creator.name || creator.handle}.`,
         4500
       );
       await syncImapReplies();
@@ -3462,24 +3536,26 @@ export default function AcquisitionEngine({
   };
 
   // Answer Creator Questions in Step 6
-  const handleSendAnswer = async () => {
-    if (!selectedCreator || isSendingPitch) return;
+  const handleSendAnswer = async (creatorParam) => {
+    const creator = creatorParam || selectedCreator;
+    if (!creator || isSendingPitch) return;
+    const cId = creator.id;
+    if (answerSentMap[cId]) return;
     setIsSendingPitch(true);
     const targetEmail = (
-      selectedCreator.email ||
-      selectedCreator.email_public ||
+      creator.email ||
+      creator.email_public ||
       ""
     ).trim();
-    const cId = selectedCreator.id;
     const concepts =
-      selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
+      creator.productConcepts || ensureCreatorConcepts(creator);
     const creatorName =
-      selectedCreator.name || selectedCreator.display_name || "there";
+      creator.name || creator.display_name || "there";
     const firstName = creatorName.split(" ")[0];
-    const cleanHandle = (selectedCreator.handle || "").replace(/^@/, "").trim();
+    const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
 
     // Get the creator's actual latest message/question
-    const creatorMsgs = getCreatorThreadMessages(selectedCreator, realThreads);
+    const creatorMsgs = getCreatorThreadMessages(creator, realThreads);
     const latestMsg = creatorMsgs.length > 0 ? creatorMsgs[0].body : "";
     const qLower = (latestMsg || "").toLowerCase().trim();
 
@@ -3565,8 +3641,8 @@ export default function AcquisitionEngine({
       }
       const sentTimeIso = new Date().toISOString();
       const sentTimestamp = Date.now();
-      setAnswerSentMap((prev) => ({
-        ...prev,
+      const updatedMap = {
+        ...answerSentMap,
         [cId]: {
           time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
@@ -3577,7 +3653,11 @@ export default function AcquisitionEngine({
           recipient: targetEmail,
           subject: answerSubject,
         },
-      }));
+      };
+      setAnswerSentMap(updatedMap);
+      try {
+        localStorage.setItem("forge_launch_answer_sent_map", JSON.stringify(updatedMap));
+      } catch {}
       notify(
         "info",
         "Clarification Dispatched",
@@ -3803,6 +3883,35 @@ export default function AcquisitionEngine({
     isSendingPitch,
   ]);
 
+  // Autonomous execution of 60s Preview Nudge when creator acknowledges review in Step 6
+  useEffect(() => {
+    if (
+      activeStep === 6 &&
+      selectedCreator &&
+      campaignRunning &&
+      !isSendingPitch
+    ) {
+      const currentChoice = aiDetectedChoiceMap[selectedCreator.id];
+      if (
+        currentChoice &&
+        (currentChoice.decision === "REVIEW_PREVIEW" || currentChoice.decision === "RESEND") &&
+        currentChoice.isStep6Reply &&
+        !pitchSentMap[selectedCreator.id]?.isFollowup &&
+        !answerSentMap[selectedCreator.id]
+      ) {
+        handleAutonomousResend();
+      }
+    }
+  }, [
+    activeStep,
+    selectedCreator?.id,
+    aiDetectedChoiceMap,
+    campaignRunning,
+    pitchSentMap,
+    answerSentMap,
+    isSendingPitch,
+  ]);
+
   // Autonomous handling of rejection / opt-out in Step 6
   useEffect(() => {
     if (
@@ -3945,42 +4054,42 @@ export default function AcquisitionEngine({
         {[
           {
             step: 1,
-            label: "Setup Engine",
+            label: "1. Campaign Setup",
             icon: Target,
             textColor: "text-purple-400",
             activeBg: "bg-purple-500/15 border-purple-500/40 text-white",
           },
           {
             step: 2,
-            label: "Scraped Leads",
+            label: "2. Find & Qualify",
             icon: Search,
             textColor: "text-indigo-400",
             activeBg: "bg-indigo-500/15 border-indigo-500/40 text-white",
           },
           {
             step: 3,
-            label: "Outreach Wave",
+            label: "3. Autonomous Outreach",
             icon: Send,
             textColor: "text-cyan-400",
             activeBg: "bg-cyan-500/15 border-cyan-500/40 text-white",
           },
           {
             step: 4,
-            label: "Interested Review",
+            label: "4. Interested Review",
             icon: MessageSquare,
             textColor: "text-emerald-400",
             activeBg: "bg-emerald-500/15 border-emerald-500/40 text-white",
           },
           {
             step: 5,
-            label: "Product Ideas",
+            label: "5. Audience & Ideas",
             icon: Sparkles,
             textColor: "text-amber-400",
             activeBg: "bg-amber-500/15 border-amber-500/40 text-white",
           },
           {
             step: 6,
-            label: "Pitch & Select",
+            label: "6. Pitch & Select",
             icon: Award,
             textColor: "text-pink-400",
             activeBg: "bg-pink-500/15 border-pink-500/40 text-white",
@@ -4166,8 +4275,48 @@ export default function AcquisitionEngine({
                 </div>
               </div>
 
-              {/* Sliders and Ranges */}
+              {/* Targeting Parameters: Sliders, Geography & Ranges */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                {/* Target Geography Selector */}
+                <div className="space-y-2 md:col-span-2 p-3.5 rounded-xl bg-[#161a23] border border-white/[0.06]">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Target Geography</span>
+                    </label>
+                    <span className="text-[11px] text-cyan-300 font-mono font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                      {selectedGeography} Selected
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
+                    {[
+                      { id: "US", label: "United States (US)" },
+                      { id: "GLOBAL", label: "Global / All" },
+                      { id: "UK", label: "United Kingdom (UK)" },
+                      { id: "CA", label: "Canada (CA)" },
+                      { id: "EU", label: "Europe (EU)" },
+                      { id: "AU", label: "Australia (AU)" },
+                    ].map((geo) => {
+                      const active = selectedGeography === geo.id;
+                      return (
+                        <button
+                          key={geo.id}
+                          type="button"
+                          onClick={() => setSelectedGeography(geo.id)}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center truncate ${
+                            active
+                              ? "bg-cyan-500/20 border-cyan-500/50 text-white shadow-sm"
+                              : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          {geo.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Sliders and Ranges */}
                 {/* 50 Creators Slider Control */}
                 <div className="space-y-2 p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/30">
                   <div className="flex items-center justify-between">
@@ -4262,7 +4411,7 @@ export default function AcquisitionEngine({
                           key={p.id}
                           type="button"
                           onClick={() => togglePlatform(p.id)}
-                          className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                          className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                             active
                               ? "bg-purple-600/20 border-purple-500/50 text-white shadow-sm"
                               : "bg-[#161a23] border-white/[0.06] text-slate-400 hover:text-slate-200"
@@ -4318,15 +4467,32 @@ export default function AcquisitionEngine({
           {/* Engine Summary & Start Button (Right Sidebar) */}
           <div className="space-y-4">
             <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5 sticky top-20">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                <span>Autonomous Pipeline</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Campaign Control
+                </h4>
+                <button
+                  type="button"
+                  onClick={toggleCampaignRunning}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                    campaignRunning
+                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                      : "bg-amber-500/15 border-amber-500/40 text-amber-300"
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${campaignRunning ? "bg-emerald-400 animate-ping" : "bg-amber-400"}`} />
+                  <span>{campaignRunning ? "Campaign Running" : "Campaign Paused"}</span>
+                </button>
+              </div>
 
               <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-3 text-xs">
                 <div className="flex justify-between">
                   <span className="text-slate-400">Target Range</span>
                   <span className="text-purple-300 font-bold">100K – 1M</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Geography</span>
+                  <span className="text-cyan-300 font-bold">{selectedGeography}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Batch Discovery Size</span>
@@ -4342,7 +4508,7 @@ export default function AcquisitionEngine({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Follow-up Rule</span>
-                  <span className="text-purple-300 font-bold">7 Days Gap</span>
+                  <span className="text-amber-300 font-bold">Auto-follow up after 7d</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Response Handling</span>
@@ -4471,11 +4637,34 @@ export default function AcquisitionEngine({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span className="font-bold text-white uppercase tracking-wider text-[11px]">
-                  Top Qualified Creators ({creators.length})
-                </span>
-                <span>Deduplicated & enriched with public contact info</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 border-b border-white/[0.04] pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-white uppercase tracking-wider text-[11px]">
+                    Top Qualified Creators ({creators.length})
+                  </span>
+                  <span className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-mono">
+                    {creators.filter((c) => (c.creatorScore || 85) >= minScoreThreshold).length} Advanceable (≥{minScoreThreshold})
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-slate-400 font-medium">Score Gate:</span>
+                  <div className="flex items-center gap-1">
+                    {[60, 70, 80, 85].map((threshold) => (
+                      <button
+                        key={threshold}
+                        type="button"
+                        onClick={() => setMinScoreThreshold(threshold)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                          minScoreThreshold === threshold
+                            ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                            : "bg-white/[0.02] text-slate-400 hover:text-white border-white/[0.06]"
+                        }`}
+                      >
+                        ≥{threshold}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -4530,16 +4719,28 @@ export default function AcquisitionEngine({
                         </div>
 
                         <div className="text-right flex-shrink-0">
-                          <span className="text-[11px] font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
-                            Score: {c.creatorScore || 85}/100
-                          </span>
+                          {(() => {
+                            const score = c.creatorScore || 85;
+                            const isAbove = score >= minScoreThreshold;
+                            return (
+                              <span
+                                className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border block ${
+                                  isAbove
+                                    ? "text-amber-300 bg-amber-500/10 border-amber-500/30"
+                                    : "text-slate-400 bg-slate-800/40 border-slate-700"
+                                }`}
+                              >
+                                Score: {score}/100 {isAbove ? "✓" : "↓"}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
 
                       {/* Stats & Channel Action Bar */}
-                      <div className="grid grid-cols-2 gap-2 text-[11px] p-2.5 rounded-lg bg-black/40 border border-white/[0.04]">
+                      <div className="grid grid-cols-3 gap-1.5 text-[11px] p-2.5 rounded-lg bg-black/40 border border-white/[0.04]">
                         <div>
-                          <span className="text-slate-500 block text-[10px]">
+                          <span className="text-slate-500 block text-[9px] uppercase">
                             Followers
                           </span>
                           <span className="text-slate-200 font-bold">
@@ -4547,11 +4748,43 @@ export default function AcquisitionEngine({
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-500 block text-[10px]">
+                          <span className="text-slate-500 block text-[9px] uppercase">
                             Engagement
                           </span>
                           <span className="text-emerald-400 font-bold">
                             {c.engagement || 3.5}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px] uppercase">
+                            Niche Fit
+                          </span>
+                          <span className="text-purple-300 font-bold">
+                            {c.nicheFit || c.niche_fit || "95% Match"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px] uppercase">
+                            Consistency
+                          </span>
+                          <span className="text-cyan-300 font-bold">
+                            {c.postingConsistency || c.posting_consistency || "Weekly"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px] uppercase">
+                            Authenticity
+                          </span>
+                          <span className="text-blue-300 font-bold">
+                            {c.audienceAuthenticity || c.audience_authenticity || "92%"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px] uppercase">
+                            Commercial
+                          </span>
+                          <span className="text-amber-300 font-bold">
+                            {c.commercialPotential || c.commercial_potential || "Strong"}
                           </span>
                         </div>
                       </div>
@@ -4791,9 +5024,9 @@ export default function AcquisitionEngine({
               <span className="text-slate-400 font-medium">
                 Auto Follow-up Rule
               </span>
-              <p className="text-xl font-bold text-purple-300">7 Days Timing</p>
+              <p className="text-xl font-bold text-purple-300">{followUpDays} Days Timing</p>
               <span className="text-[11px] text-slate-500">
-                No response → follow up in 7 days
+                No response → follow up in {followUpDays} days
               </span>
             </div>
             <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
@@ -4906,12 +5139,22 @@ export default function AcquisitionEngine({
                         <td className="p-3">
                           <span
                             className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
-                              emailVal
-                                ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                                : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                              c.status === "rejected"
+                                ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                                : c.status === "approved"
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                  : emailVal
+                                    ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                    : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                             }`}
                           >
-                            {emailVal ? "Ready in Queue" : "Email Needed"}
+                            {c.status === "rejected"
+                              ? "Archived (Rejected)"
+                              : c.status === "approved"
+                                ? "Approved (Active)"
+                                : emailVal
+                                  ? "Ready in Queue"
+                                  : "Email Needed"}
                           </span>
                         </td>
                       </tr>
@@ -5215,11 +5458,26 @@ export default function AcquisitionEngine({
                           key={c.id}
                           onClick={() => setSelectedCreatorId(c.id)}
                           className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 relative ${
-                            isSelected
-                              ? "bg-purple-950/30 border-purple-500/60 shadow-sm"
-                              : "bg-[#161a23] border-white/[0.06] hover:border-white/20"
+                            isRejected
+                              ? "bg-red-950/10 border-red-500/20 opacity-50"
+                              : isApproved
+                                ? "bg-emerald-950/15 border-emerald-500/30"
+                                : isSelected
+                                  ? "bg-purple-950/30 border-purple-500/60 shadow-sm"
+                                  : "bg-[#161a23] border-white/[0.06] hover:border-white/20"
                           }`}
                         >
+                          {/* Approved / Rejected overlay badge */}
+                          {(isApproved || isRejected) && (
+                            <div className={`absolute top-2 right-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
+                              isApproved
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                : "bg-red-500/15 text-red-400 border-red-500/30"
+                            }`}>
+                              {isApproved ? "✓ Approved" : "✗ Rejected"}
+                            </div>
+                          )}
+
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-2.5 min-w-0">
                               <img
@@ -5464,6 +5722,72 @@ export default function AcquisitionEngine({
                         </div>
                       </div>
 
+                      {/* ── Creator Profile + Audience Stats Card ── */}
+                      <div className="p-4 rounded-xl bg-[#090b0e] border border-white/[0.06] space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                            Creator Profile & Audience
+                          </span>
+                          <span className="text-xs font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg">
+                            Creator Score: {activeReviewCreator.creatorScore || 85}/100
+                          </span>
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
+                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Followers</span>
+                            <span className="text-xs font-bold text-white">{activeReviewCreator.followerStr || activeReviewCreator.follower_count || "N/A"}</span>
+                          </div>
+                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
+                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Engagement</span>
+                            <span className="text-xs font-bold text-emerald-400">{activeReviewCreator.engagement || "3.5"}%</span>
+                          </div>
+                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
+                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Niche Fit</span>
+                            <span className="text-xs font-bold text-purple-300">{activeReviewCreator.nicheFit || activeReviewCreator.niche_fit || "95% Match"}</span>
+                          </div>
+                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
+                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Consistency</span>
+                            <span className="text-xs font-bold text-cyan-300">{activeReviewCreator.postingConsistency || activeReviewCreator.posting_consistency || "Weekly"}</span>
+                          </div>
+                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
+                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Authenticity</span>
+                            <span className="text-xs font-bold text-blue-300">{activeReviewCreator.audienceAuthenticity || activeReviewCreator.audience_authenticity || "92%"}</span>
+                          </div>
+                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
+                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Commercial</span>
+                            <span className="text-xs font-bold text-amber-300">{activeReviewCreator.commercialPotential || activeReviewCreator.commercial_potential || "Strong"}</span>
+                          </div>
+                        </div>
+
+                        {/* Bio / Relevant Content */}
+                        {activeReviewCreator.bio && (
+                          <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider mb-1">Relevant Content / Bio</span>
+                            <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-3">{activeReviewCreator.bio}</p>
+                          </div>
+                        )}
+
+                        {/* Outreach History Summary */}
+                        <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-1 border-t border-white/[0.04]">
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3 text-blue-400" />
+                            <strong className="text-slate-200">Email:</strong> {activeReviewCreator.email || activeReviewCreator.email_public || "Not set"}
+                          </span>
+                          <span className="text-slate-600">|</span>
+                          <span className="flex items-center gap-1">
+                            <Send className="w-3 h-3 text-cyan-400" />
+                            <strong className="text-slate-200">Outreach:</strong> {activeReviewCreator.outreach_sent ? "Sent" : "Pending"}
+                          </span>
+                          <span className="text-slate-600">|</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-purple-400" />
+                            <strong className="text-slate-200">Platform:</strong> {activeReviewCreator.platform}
+                          </span>
+                        </div>
+                      </div>
+
                       {/* AI Classification Analysis Box */}
                       <div className="p-3.5 rounded-xl bg-black/40 border border-white/[0.06] space-y-1.5 text-xs">
                         <div className="flex items-center justify-between text-[11px] font-mono">
@@ -5661,17 +5985,34 @@ export default function AcquisitionEngine({
 
                       {/* Human Review Actions */}
                       <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                          Human Review
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            Human Review
+                          </span>
+                          {activeReviewCreator.status === "approved" && (
+                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Approved
+                            </span>
+                          )}
+                          {activeReviewCreator.status === "rejected" && (
+                            <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <XCircle className="w-3 h-3" /> Rejected
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2.5">
                           <button
                             onClick={() =>
                               handleRejectCreator(activeReviewCreator.id)
                             }
-                            className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 text-xs font-bold transition-all cursor-pointer"
+                            disabled={activeReviewCreator.status === "rejected"}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                              activeReviewCreator.status === "rejected"
+                                ? "bg-rose-500/10 text-rose-400/50 border-rose-500/20 cursor-not-allowed"
+                                : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border-rose-500/30"
+                            }`}
                           >
-                            Reject
+                            {activeReviewCreator.status === "rejected" ? "Archived (Rejected)" : "Reject"}
                           </button>
                           <button
                             onClick={() => {
@@ -5679,10 +6020,18 @@ export default function AcquisitionEngine({
                               setSelectedCreatorId(activeReviewCreator.id);
                               setActiveStep(5);
                             }}
-                            className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                            className={`px-5 py-2 rounded-xl text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer border ${
+                              activeReviewCreator.status === "approved"
+                                ? "bg-emerald-700 hover:bg-emerald-600 border-emerald-500/50"
+                                : "bg-emerald-600 hover:bg-emerald-500 border-emerald-500/40"
+                            }`}
                           >
                             <CheckCircle2 className="w-4 h-4" />
-                            <span>Approve & Generate Product Concepts</span>
+                            <span>
+                              {activeReviewCreator.status === "approved"
+                                ? "View Concepts in Step 5"
+                                : "Approve & Generate Product Concepts"}
+                            </span>
                           </button>
                         </div>
                       </div>
@@ -6539,8 +6888,8 @@ export default function AcquisitionEngine({
                                 ? "ANSWER QUESTIONS"
                                 : currentAiChoice.decision === "NOT_INTERESTED"
                                   ? "CREATOR DECLINED"
-                                  : currentAiChoice.decision === "RESEND"
-                                    ? "RESEND / NURTURE"
+                                  : currentAiChoice.decision === "RESEND" || currentAiChoice.decision === "REVIEW_PREVIEW"
+                                    ? "60S PREVIEW & CONCEPT NUDGE"
                                     : currentAiChoice.decision ===
                                         "AWAITING_STEP6_REPLY"
                                       ? `${currentAiChoice.actionLabel?.toUpperCase() || "AWAITING CREATOR FEEDBACK"}`
@@ -6619,7 +6968,7 @@ export default function AcquisitionEngine({
                         </button>
                       )}
 
-                      {currentAiChoice.decision === "RESEND" && (
+                      {(currentAiChoice.decision === "RESEND" || currentAiChoice.decision === "REVIEW_PREVIEW") && (
                         <button
                           type="button"
                           onClick={handleAutonomousResend}
@@ -6631,16 +6980,15 @@ export default function AcquisitionEngine({
                           ) : (
                             <Send className="w-3.5 h-3.5" />
                           )}
-                          <span>Execute: Auto-Resend Nurture Follow-up →</span>
+                          <span>Execute: Auto-Send 60s Concept Preview & Nudge →</span>
                         </button>
                       )}
 
                       {currentAiChoice.decision === "AWAITING_STEP6_REPLY" && (
-                        <span className="text-[11px] text-purple-300 font-mono flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                        <span className={`text-[11px] font-mono flex items-center gap-1.5 px-3 py-1.5 rounded-lg border ${currentAiChoice.badgeClass || "bg-purple-500/10 text-purple-300 border-purple-500/20"}`}>
                           <Clock className="w-3.5 h-3.5 animate-pulse text-purple-400" />
                           <span>
-                            Proposal Dispatched • Waiting for Creator
-                            Feedback
+                            {currentAiChoice.actionLabel || "Proposal Dispatched • Waiting for Creator Feedback"}
                           </span>
                         </span>
                       )}
