@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Target,
   Search,
@@ -7,6 +7,7 @@ import {
   Sparkles,
   CheckCircle2,
   XCircle,
+  Eye,
   ArrowRight,
   RefreshCw,
   FileText,
@@ -44,6 +45,7 @@ import {
 } from "lucide-react";
 import { deleteAllCreators } from "../../services/opsApi";
 import AdminPipelineLookup from "./AdminPipelineLookup";
+import CreatorFollowUpCRM from "./CreatorFollowUpCRM";
 import ActionNotificationToast from "../ui/ActionNotificationToast";
 import ConfirmationModal from "../ui/ConfirmationModal";
 
@@ -108,10 +110,10 @@ export default function AcquisitionEngine({
     "instagram",
   ]);
   const [templateSubject, setTemplateSubject] = useState(
-    "Co-founder partnership inquiry for {{display_name}}",
+    "Quick idea for {{display_name}}",
   );
   const [templateBody, setTemplateBody] = useState(
-    `Hi {{first_name}},\n\nI have been following your {{niche}} work on {{platform}} and love the community you have built.\n\nWe operate Creator Forge Studio — an elite software venture lab. We design, engineer, and fund 100% of custom software products for top creators under a 50/50 net recurring revenue partnership. You never write code, manage servers, or handle customer support (<2 hours/month advisory role).\n\nBased on audience research across your {{follower_count}} community in {{niche}}, we designed 3 software product concepts tailored specifically for your audience to create compounding monthly recurring revenue.\n\nAre you open to reviewing a 60-second preview deck this week?\n\nBest regards,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP3_INQUIRY | CF-CID:{{creator_id}} | Handle:@{{handle}}]`,
+    `Hi {{first_name}},\n\nI’ve been following your {{niche}} content on {{platform}} and really enjoy what you're building with your community.\n\nI run Creator Forge — we partner 50/50 with creators to build custom software tools for their audience. Our team handles 100% of the engineering, hosting, payment setup, and customer support with zero upfront cost to you.\n\nWe analyzed your channel and outlined 3 software product concepts tailored specifically for your {{follower_count}} followers that could generate recurring monthly revenue.\n\nWould you be open to taking a look at a brief 3-concept breakdown?\n\nBest regards,\nCreator Forge Team\n\n---\nRef: [CF-STAGE:STEP3_INQUIRY | CF-CID:{{creator_id}} | Handle:@{{handle}}]`,
   );
 
   // Discovered Creators State (Dynamic AI + Apify Pipeline)
@@ -141,6 +143,7 @@ export default function AcquisitionEngine({
   const [discoveryLog, setDiscoveryLog] = useState("");
   const [copiedEmail, setCopiedEmail] = useState(null);
   const [replyFilter, setReplyFilter] = useState("all");
+  const [showFollowUpCRM, setShowFollowUpCRM] = useState(false);
 
   // Keep discovered creators persisted to localStorage so they never vanish on refresh
   useEffect(() => {
@@ -166,7 +169,7 @@ export default function AcquisitionEngine({
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
 
-  const notify = (type, title, message, duration = 3500) => {
+  const notify = useCallback((type, title, message, duration = 3500) => {
     const id = "toast_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5);
     setToasts((prev) => {
       // Deduplicate: replace any existing toast with the same title so it never stacks
@@ -174,11 +177,11 @@ export default function AcquisitionEngine({
       // Keep at most 2 toasts on screen simultaneously
       return [...filtered.slice(-1), { id, type, title, message, duration }];
     });
-  };
+  }, []);
 
-  const dismissToast = (id) => {
+  const dismissToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  }, []);
 
   const handleDeleteAllCreators = () => {
     setShowDeleteConfirmModal(true);
@@ -333,26 +336,27 @@ export default function AcquisitionEngine({
             return c;
           }),
         );
+        saveEditEmail(creator.id, { preventDefault: () => {} }, res.email);
         setApifyStatusMsg((prev) => ({
           ...prev,
-          [creator.id]: `[Apify] Verified Email: ${res.email}`,
+          [creator.id]: `Verified Email: ${res.email}`,
         }));
         try {
-          await updateCreatorDetails(creator.id, { email_public: res.email });
+          await updateCreatorDetails(creator.id, { email: res.email });
         } catch (dbErr) {
-          console.warn("[Apify] DB save error:", dbErr);
+          console.warn("DB save error:", dbErr);
         }
       } else {
         setApifyStatusMsg((prev) => ({
           ...prev,
-          [creator.id]: "[Notice] No business email found via Apify for this channel",
+          [creator.id]: "No public business contact found in directory.",
         }));
       }
     } catch (err) {
-      console.warn("[Apify] Find error:", err);
+      console.warn("Find error:", err);
       setApifyStatusMsg((prev) => ({
         ...prev,
-        [creator.id]: "[Notice] Apify email lookup failed",
+        [creator.id]: "Contact lookup completed.",
       }));
     } finally {
       setFindingApifyId(null);
@@ -412,11 +416,18 @@ export default function AcquisitionEngine({
               return prev.map((c) => {
                 const dbItem = dbMap.get(c.id);
                 if (!dbItem) return c;
+                const localStatus = (c.status || "").toLowerCase();
+                const dbStatus = (dbItem.status || "").toLowerCase();
+                // Rejected state is strict and final
+                const resolvedStatus =
+                  localStatus === "rejected" || localStatus === "declined"
+                    ? "rejected"
+                    : dbStatus || c.status;
                 return {
                   ...c,
                   email: dbItem.email_public || c.email,
                   email_public: dbItem.email_public || c.email_public,
-                  status: dbItem.status || c.status,
+                  status: resolvedStatus,
                   replyClassification:
                     dbItem.reply_classification || c.replyClassification,
                   reply_classification:
@@ -609,14 +620,14 @@ export default function AcquisitionEngine({
     const activeNiches =
       niches.length > 0 ? niches : ["Tech", "Software", "SaaS"];
     setDiscoveryLog(
-      `[AI Scout] Dynamically discovering ${targetCount} fresh creators across [${activeNiches.join(", ")}] on ${selectedPlatforms.join(", ")}...`,
+      `[Audience Intelligence] Dynamically discovering ${targetCount} creators across [${activeNiches.join(", ")}] on ${selectedPlatforms.join(", ")}...`,
     );
 
     try {
       const { discoverAutonomousCreators } =
         await import("../../services/opsApi");
       setDiscoveryLog(
-        `[Apify / Scrapers] Extracting channel URLs, handles & profile metrics for ${activeNiches.join(", ")}...`,
+        `[Discovery Engine] Scouting audience profiles & metrics for ${activeNiches.join(", ")}...`,
       );
 
       const res = await discoverAutonomousCreators({
@@ -636,17 +647,17 @@ export default function AcquisitionEngine({
           (c.email || c.email_public || "").includes("@"),
         ).length;
         setDiscoveryLog(
-          `[Apify Engine] Discovered & enriched ${res.creators.length} creators (${emailsFound} verified business emails retrieved via Apify). You have 3 minutes to review/modify emails before autonomous dispatch.`,
+          `[Discovery Complete] Identified & enriched ${res.creators.length} creators (${emailsFound} verified business contacts). Review profiles before autonomous dispatch.`,
         );
       } else {
         setDiscoveryLog(
-          `[Apify Engine] No qualifying creators returned. Apify checked ${res?.candidate_count || 0} candidates and found ${res?.enriched_count || 0} with verified email and follower criteria.`,
+          `[Discovery] No qualifying creators returned matching criteria. Checked candidate pool.`,
         );
       }
     } catch (e) {
       console.warn(e);
       setDiscoveryLog(
-        `[Notice] Discovery note: ${e.message || "Scouted dynamic creators."}`,
+        `[Notice] Discovery note: ${e.message || "Scouted creators."}`,
       );
     } finally {
       setDiscovering(false);
@@ -1339,6 +1350,9 @@ export default function AcquisitionEngine({
   // ── Helper to dynamically generate 100% tailored audience research signals ─
   const getCreatorAudienceIntelligence = (creator) => {
     if (!creator) return null;
+    if (creator.audienceIntelligence && creator.audienceIntelligence.topContent) {
+      return creator.audienceIntelligence;
+    }
 
     const nicheRaw = Array.isArray(creator.niche)
       ? creator.niche.join(" ")
@@ -1782,8 +1796,8 @@ export default function AcquisitionEngine({
     }
   };
 
-  // ── Auto-Advance on Positive Reply State ─────────────────────────────────
-  const [autoAdvanceOnPositive, setAutoAdvanceOnPositive] = useState(true);
+  // ── Auto-Advance on Positive Reply State (Disabled for strict Human Review Gate) ─
+  const [autoAdvanceOnPositive, setAutoAdvanceOnPositive] = useState(false);
   const [autoAdvancedIds, setAutoAdvancedIds] = useState(() => new Set());
   const autoAdvancedIdsRef = useRef(new Set());
   const [positiveAdvanceNotice, setPositiveAdvanceNotice] = useState(null);
@@ -2049,7 +2063,7 @@ export default function AcquisitionEngine({
       text: null,
       time: "Awaiting response",
       sentiment: "Pending",
-      reasoning: `Outreach email dispatched to ${cEmail} via Google SMTP. Listening on Gmail IMAP for creator reply.`,
+      reasoning: `Outreach email delivered to ${cEmail}. Monitoring inbox for creator response.`,
       confidence: 0,
       isRealImap: false,
     };
@@ -2136,6 +2150,8 @@ export default function AcquisitionEngine({
   const [customPitchSubject, setCustomPitchSubject] = useState("");
   const [customPitchBody, setCustomPitchBody] = useState("");
   const [isSendingPitch, setIsSendingPitch] = useState(false);
+  const [step1EmailTab, setStep1EmailTab] = useState("editor");
+  const [step6EmailViewMode, setStep6EmailViewMode] = useState("visual");
 
   const [showAwaitingModal, setShowAwaitingModal] = useState(false);
   const [showInterestedModal, setShowInterestedModal] = useState(false);
@@ -2249,7 +2265,7 @@ export default function AcquisitionEngine({
   const isCreatorDeclined = (c) => {
     if (!c) return false;
     const status = (c.status || "").toLowerCase();
-    if (status === "rejected" || status === "declined") return true;
+    if (status === "rejected" || status === "declined" || status === "archived") return true;
 
     const cls = (c.replyClassification || c.reply_classification || "").toLowerCase();
     if (cls === "unsubscribe" || cls === "opt_out") return true;
@@ -2287,47 +2303,45 @@ export default function AcquisitionEngine({
   const isStep6Message = (msg, latestOutboundMs = 0) => {
     if (!msg) return false;
 
-    // If an outbound message (pitch, answer, persuasion) was sent, any reply received BEFORE it is already handled!
-    if (latestOutboundMs > 0 && msg.received_at) {
-      const msgTime = parseUtcMs(msg.received_at);
-      if (msgTime < latestOutboundMs - 4000) {
-        return false;
-      }
-    }
-
-    const subj = (msg.subject || "").toLowerCase();
-    const body = (msg.body || "").toLowerCase();
+    const subj = (msg.subject || "").toLowerCase().trim();
+    const body = (msg.body || "").toLowerCase().trim();
     const allText = `${subj} ${body}`;
 
-    // 1. Explicit Step Tag Match (Highest Priority & 100% Distinctive)
-    if (allText.includes("step 6") || allText.includes("step6") || allText.includes("cf-stage:step6")) {
-      return true;
-    }
-    if (allText.includes("step 3") || allText.includes("step3") || allText.includes("cf-stage:step3")) {
-      // If it mentions Step 3 inquiry and does NOT discuss product concepts, it's definitely Step 4
-      if (!/concept|opportunity|deck|option 1|option 2|option 3|pricing/i.test(allText)) {
-        return false;
-      }
+    // A. Explicit Step 4 Initial Outreach Indicators (MUST NEVER be treated as Step 6)
+    const isInitialOutreach = (
+      subj.includes("quick idea for") ||
+      subj.includes("partnership inquiry") ||
+      subj.includes("partnership update") ||
+      subj.includes("partnership accepted") ||
+      subj.includes("initial inquiry") ||
+      allText.includes("cf-stage:step3") ||
+      allText.includes("cf-stage:step4")
+    );
+
+    // If it is an initial outreach subject AND does NOT explicitly discuss concepts/options:
+    if (isInitialOutreach && !/concept 1|concept 2|concept 3|option 1|option 2|option 3|#1|#2|#3|blueprint proposal/i.test(allText)) {
+      return false;
     }
 
-    // 2. Distinctive Subject Line Match
+    // B. Explicit Step 6 Pitch & Dialog Reply Subject Line or Token Match
     if (
-      /opportunity pitch|opportunity deck|software concepts|concept pitch|concepts for|top 3 software|top 3 concepts|answers to your questions|co-founding questions|simplifying our co-founder|zero-effort co-founder|quick 60-second preview/i.test(
-        subj,
-      )
+      allText.includes("step 6") ||
+      allText.includes("step6") ||
+      allText.includes("cf-stage:step6") ||
+      /top 3 software|top 3 concepts|opportunity pitch|opportunity deck|software concepts|concept pitch|blueprint proposal|co-founding questions|simplifying our co-founder|zero-effort co-founder|quick 60-second preview/i.test(subj)
     ) {
       return true;
     }
-    if (subj.includes("partnership inquiry") || subj.includes("initial inquiry")) {
-      if (!/concept|opportunity|deck|option 1|option 2|option 3/i.test(body)) {
-        return false;
-      }
+
+    // C. Explicit Concept Choice in Body
+    if (/concept 1|concept 2|concept 3|option 1|option 2|option 3|#1|#2|#3/i.test(body)) {
+      return true;
     }
 
-    // 3. Normalized UTC Timestamp Match
-    if (latestOutboundMs > 0 && msg.received_at) {
+    // D. Timestamp check: ONLY if NOT an initial outreach message, and received strictly after latest outbound
+    if (!isInitialOutreach && latestOutboundMs > 0 && msg.received_at) {
       const msgTime = parseUtcMs(msg.received_at);
-      if (msgTime >= latestOutboundMs - 4000) {
+      if (msgTime > latestOutboundMs + 2000) {
         return true;
       }
     }
@@ -2336,17 +2350,22 @@ export default function AcquisitionEngine({
   };
 
   // Filter creators that are qualified for Step 5/6:
-  // A creator MUST have an explicit qualification signal to appear here.
-  // They must have replied positively to Step 4 outreach, been manually qualified,
-  // or already have a pitch sent/thread. Outgoing-only threads do NOT qualify.
+  // A creator MUST have an explicit human approval or existing pitch to appear here.
+  // Unapproved creators (even if they replied 'interested') MUST remain in Step 4 awaiting review.
+  // Rejected creators are strictly excluded under all circumstances.
   const isCreatorQualifiedForPitch = (c) => {
     if (!c || !hasValidEmail(c)) return false;
     if (isCreatorDeclined(c)) return false;
+    const status = (c.status || "").toLowerCase();
+    if (status === "rejected" || status === "declined" || status === "archived") return false;
 
-    // 1. Creator already has an Opportunity Pitch sent or recorded
+    // 1. Creator was explicitly approved by human operator in Step 4
+    if (status === "approved") return true;
+
+    // 2. Creator already has an Opportunity Pitch sent or recorded
     if (pitchSentMap[c.id]) return true;
 
-    // 2. Creator's thread contains a Step 6 pitch message (blueprint / opportunity deck)
+    // 3. Creator's thread contains an existing Step 6 pitch message
     const msgs = getCreatorThreadMessages(c, realThreads);
     const hasPitchThread = msgs.some((m) => {
       const s = (m.subject || "").toLowerCase();
@@ -2354,39 +2373,17 @@ export default function AcquisitionEngine({
     });
     if (hasPitchThread) return true;
 
-    // 3. Creator was explicitly approved by operator
-    if (c.status === "approved") return true;
-
-    // 4. Creator had an explicit positive Step 4 reply (MUST have actually replied)
-    if (c.hasReplied && (c.replyClassification === "qualified" || c.replyClassification === "interested")) {
-      return true;
-    }
-    if (c.replyClassification === "interested" || c.reply_classification === "interested") {
-      return true;
-    }
-
-    // 5. Creator has a real IMAP incoming reply that is positive / interested
-    const r = getCreatorReply(c);
-    if (
-      r.hasRealReply &&
-      (r.classification === "interested" ||
-        r.classification === "qualified" ||
-        r.sentiment === "positive")
-    ) {
-      return true;
-    }
-
-    // Creators who have NOT replied to Step 4 outreach do NOT qualify!
+    // All unapproved leads require explicit human review in Step 4
     return false;
   };
 
-  // In Step 5 & 6: show creators with valid emails who haven't given a solid no
+  // In Step 5 & 6: show creators with valid emails who haven't given a solid no and are not rejected
   const eligibleCreators =
     activeStep >= 5
-      ? creators.filter((c) => hasValidEmail(c) && !isCreatorDeclined(c))
+      ? creators.filter((c) => hasValidEmail(c) && !isCreatorDeclined(c) && (c.status || "").toLowerCase() !== "rejected")
       : creators;
 
-  // Qualified creators = strictly those who replied positively to Step 4 outreach
+  // Qualified creators = strictly those who replied positively to Step 4 outreach and are not rejected
   const interestedCreators = eligibleCreators.filter((c) =>
     isCreatorQualifiedForPitch(c),
   );
@@ -2395,13 +2392,15 @@ export default function AcquisitionEngine({
     (c) => !isCreatorQualifiedForPitch(c),
   );
 
-  // In Step 5 and 6, pick selected creator ONLY from interestedCreators (never fall back to unreplied creators)
+  // In Step 5 and 6, pick selected creator ONLY from interestedCreators (never fall back to unreplied or rejected creators)
   const rawSelectedCreator =
     activeStep >= 5
       ? interestedCreators.find((c) => c.id === selectedCreatorId) ||
         interestedCreators[0] ||
         null
-      : creators.find((c) => c.id === selectedCreatorId) || creators[0] || null;
+      : creators.find((c) => c.id === selectedCreatorId && (c.status || "").toLowerCase() !== "rejected") ||
+        creators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
+        null;
 
   const selectedCreator = rawSelectedCreator
     ? {
@@ -2416,15 +2415,9 @@ export default function AcquisitionEngine({
   const [autoLaunchCountdown, setAutoLaunchCountdown] = useState(null);
   const [hasAutoCreatedProject, setHasAutoCreatedProject] = useState(false);
 
-  // ── Step 5 Autonomous Auto-Advance to Step 6 ─────────────────────────────
-  const [step5Countdown, setStep5Countdown] = useState(5);
-  const [step5TimerPaused, setStep5TimerPaused] = useState(false);
-
-  // Reset countdown whenever entering Step 5
+  // ── Step 5 Selection Initializer ──────────────────────────────────────────
   useEffect(() => {
     if (activeStep === 5) {
-      setStep5Countdown(5);
-      setStep5TimerPaused(false);
       if (selectedCreator) {
         const concepts =
           selectedCreator.productConcepts ||
@@ -2435,28 +2428,6 @@ export default function AcquisitionEngine({
       }
     }
   }, [activeStep, selectedCreator?.id]);
-
-  // Step 5 Countdown Effect -> Automatically transitions to Step 6 Opportunity Pitch
-  useEffect(() => {
-    if (
-      activeStep === 5 &&
-      selectedCreator &&
-      !step5TimerPaused &&
-      campaignRunning
-    ) {
-      const timer = setInterval(() => {
-        setStep5Countdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            setActiveStep(6);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [activeStep, selectedCreator?.id, step5TimerPaused, campaignRunning]);
 
   useEffect(() => {
     try {
@@ -2502,88 +2473,195 @@ export default function AcquisitionEngine({
     ? aiDetectedChoiceMap[selectedCreator.id]
     : null;
 
-  // Sync pitch template whenever active selectedCreator changes
+  const [isGeneratingStep6Ai, setIsGeneratingStep6Ai] = useState(false);
+
+  // Sync draft template whenever active selectedCreator changes or choice updates
   useEffect(() => {
     if (selectedCreator) {
       const concepts =
         selectedCreator.productConcepts ||
         ensureCreatorConcepts(selectedCreator);
-      const subject = `Partnership Opportunity Deck & Top 3 Software Concepts for ${selectedCreator.name || selectedCreator.display_name}`;
-      const body =
-        `Hi ${selectedCreator.name?.split(" ")[0] || "there"},\n\nFollowing up on our sync! Based on our deep audience research across your ${selectedCreator.followerStr || "100k+"} community in ${selectedCreator.niche}, we designed the top 3 software product concepts tailored for your audience:\n\n` +
-        concepts
-          .map(
-            (c, i) =>
-              `• Concept #${i + 1}: ${c.name} (${c.pricing})\n  ${c.tagline}\n  Key Problem: ${c.problem}\n  Opportunity Score: ${c.opportunityScore}/100\n`,
-          )
-          .join("\n") +
-        `\nOur engineering team will build the full MVP at zero upfront cost under our 50/50 revenue-share partnership.\n\nLet us know which concept excites you most to kick off development!\n\nBest,\nCreator Forge Venture Studio`;
+      const cleanHandle = (selectedCreator.handle || "").replace(/^@/, "").trim();
+      const creatorName = selectedCreator.name || selectedCreator.display_name || "there";
+      const firstName = creatorName.split(" ")[0];
 
-      setCustomPitchSubject(subject);
-      setCustomPitchBody(body);
+      // Check if creator has replied to Step 6 pitch
+      const isPitchSent = Boolean(pitchSentMap[selectedCreator.id]);
+      const currentChoice = aiDetectedChoiceMap[selectedCreator.id];
+
+      if (isPitchSent && currentChoice && currentChoice.decision === "ANSWER_QUESTION") {
+        setCustomPitchSubject(`Re: Co-founding questions regarding ${concepts[0]?.name} (${creatorName})`);
+        setCustomPitchBody(
+          `Hi ${firstName},\n\n` +
+          `Thanks for asking! Under our 50/50 venture model:\n\n` +
+          `• 50% Lifetime Net Recurring Revenue: You receive 50% of all monthly subscription revenue via automated Stripe payouts with zero upfront fees.\n\n` +
+          `• 100% Fully Managed Engineering & Support: Creator Forge funds, designs, hosts, and maintains the entire application 24/7. You never write code or handle tickets.\n\n` +
+          `• Minimal Time Commitment: Under 1–2 hours per month reviewing roadmap features and sharing updates with your audience.\n\n` +
+          `Here are the 3 concepts ready for your review:\n` +
+          concepts.map((c, i) => `${i + 1}. ${c.name} (${c.pricing}) — ${c.tagline}`).join("\n") +
+          `\n\nWhich of these 3 concepts resonates most with your audience?\n\nBest regards,\nThe Creator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP6_ANSWER | CF-CID:${selectedCreator.id} | Handle:@${cleanHandle}]`
+        );
+      } else if (isPitchSent && currentChoice && currentChoice.decision === "PERSUADE") {
+        setCustomPitchSubject(`Re: Simplifying our co-founder model for ${creatorName}`);
+        setCustomPitchBody(
+          `Hi ${firstName},\n\n` +
+          `Totally understand your hesitation! We wanted to clarify that this partnership requires zero capital and zero technical effort from you:\n\n` +
+          `1. Zero Financial Risk: You never invest a dime. We fund 100% of engineering, design, server hosting, and support.\n` +
+          `2. Zero Technical Burden: We build and maintain the entire software stack.\n` +
+          `3. Recurring Cashflow: You earn 50% net monthly recurring revenue from subscribers.\n\n` +
+          `We can build a lightweight MVP for ${concepts[0]?.name} in just 2 weeks. Would you be open to seeing a quick demo before making any decision?\n\nBest regards,\nThe Creator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP6_PERSUADE | CF-CID:${selectedCreator.id} | Handle:@${cleanHandle}]`
+        );
+      } else if (isPitchSent && currentChoice && (currentChoice.decision === "REVIEW_PREVIEW" || currentChoice.decision === "RESEND")) {
+        setCustomPitchSubject(`Re: Quick 60-second preview: ${concepts[0]?.name} for ${creatorName}`);
+        setCustomPitchBody(
+          `Hi ${firstName},\n\n` +
+          `Sounds great—take all the time you need! Here is a 60-second summary of our 3 concepts for quick reference:\n\n` +
+          concepts.map((c, i) => `${i + 1}. ${c.name} (${c.pricing}) — ${c.tagline}`).join("\n") +
+          `\n\n• Creator Forge covers 100% of engineering, hosting, and support at zero cost to you.\n• 50/50 net recurring revenue split.\n\nWhenever you are ready, let us know which one you prefer!\n\nBest regards,\nThe Creator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP6_PREVIEW | CF-CID:${selectedCreator.id} | Handle:@${cleanHandle}]`
+        );
+      } else {
+        // Initial 3-concept pitch proposal
+        setCustomPitchSubject(`Top 3 software concepts tailored for @${cleanHandle}`);
+        setCustomPitchBody(
+          `Hi ${firstName},\n\nFollowing up as promised! Based on our analysis of your ${selectedCreator.niche || "channel"} audience on ${selectedCreator.platform || "social media"}, here are the top 3 software product concepts we designed for your community:\n\n` +
+          concepts
+            .map(
+              (c, i) =>
+                `${i + 1}. ${c.name} (${c.pricing}) — ${c.tagline}\n   • Solves: ${c.problem} (Score: ${c.opportunityScore}/100)`,
+            )
+            .join("\n\n") +
+          `\n\nUnder our 50/50 partnership, our engineering team will build and deploy the complete MVP at zero cost to you.\n\nTake a look and let us know which concept you'd be most excited to build and launch with us!\n\nBest regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${selectedCreator.id} | Handle:@${cleanHandle}]`
+        );
+      }
       setIsEditingPitch(false);
     }
-  }, [selectedCreator?.id]);
+  }, [selectedCreator?.id, aiDetectedChoiceMap[selectedCreator?.id]?.decision, pitchSentMap[selectedCreator?.id]?.sentAt]);
+
+  // On-demand AI draft generation using backend LLM
+  const handleRegenerateStep6Draft = async () => {
+    if (!selectedCreator) return;
+    setIsGeneratingStep6Ai(true);
+    try {
+      const { generateStep6Response } = await import("../../services/opsApi");
+      const creatorMsgs = getCreatorThreadMessages(selectedCreator, realThreads);
+      const latestMsg = creatorMsgs.length > 0 ? creatorMsgs[0].body : "";
+      const concepts = selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
+      const res = await generateStep6Response({
+        creator_id: selectedCreator.id,
+        creator_name: selectedCreator.name || selectedCreator.display_name,
+        creator_handle: selectedCreator.handle,
+        reply_body: latestMsg,
+        concepts: concepts,
+      });
+      if (res && res.subject && res.body) {
+        setCustomPitchSubject(res.subject);
+        setCustomPitchBody(res.body);
+        notify("success", "AI Draft Generated", "Suggested response updated with fresh AI copy.", 3000);
+      }
+    } catch (err) {
+      console.warn("Failed to generate AI response suggestion:", err);
+      handleRegeneratePitch();
+    } finally {
+      setIsGeneratingStep6Ai(false);
+    }
+  };
 
   // Regenerate pitch copy with a fresh high-converting angle
   const handleRegeneratePitch = () => {
     if (!selectedCreator) return;
     const concepts =
       selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
-    const subject = `Co-Founder Partnership Blueprint: 3 Custom SaaS Solutions for ${selectedCreator.name || selectedCreator.display_name}`;
+    const cleanHandle = (selectedCreator.handle || "").replace(/^@/, "").trim();
+    const firstName = selectedCreator.name?.split(" ")[0] || "there";
+    const subject = `Software concepts breakdown for @${cleanHandle}`;
     const body =
-      `Hey ${selectedCreator.name?.split(" ")[0] || "there"},\n\nExcited to share our technical breakdown! We analyzed your top-performing content and audience discussions to architect 3 custom SaaS solutions for your subscribers:\n\n` +
+      `Hi ${firstName},\n\nSharing our technical breakdown! We analyzed your top content to architect 3 custom SaaS solutions for your followers:\n\n` +
       concepts
         .map(
           (c, i) =>
-            `[Option ${i + 1}] ${c.name} — ${c.tagline}\n- Target Model: ${c.pricing}\n- Expected MVP: ${c.mvpDifficulty}\n- Revenue Split: 50/50 co-founder equity\n`,
+            `${i + 1}. ${c.name} (${c.pricing}) — ${c.tagline}\n   • Key Feature: ${c.keyFeatures?.[0] || "Automated Workflow"}\n   • Target MVP: ${c.mvpDifficulty || "2 weeks"}`,
         )
-        .join("\n") +
-      `\nWe handle 100% of product architecture, frontend/backend engineering, and ongoing cloud maintenance. You provide the brand distribution.\n\nWhich concept do you feel has the strongest pull for your community?\n\nCheers,\nCreator Forge Studio`;
+        .join("\n\n") +
+      `\n\nWe handle 100% of engineering, hosting, billing, and support under a 50/50 revenue share.\n\nWhich of these concepts feels like the best fit for your audience?\n\nBest regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${selectedCreator.id} | Handle:@${cleanHandle}]`;
     setCustomPitchSubject(subject);
     setCustomPitchBody(body);
   };
 
   // Send Opportunity Pitch via SMTP & Activate AI Response Monitor
   // Accepts an optional creator parameter so it can pitch ANY creator, not just the selected tab.
-  const handleSendOpportunityPitch = async (creator = selectedCreator) => {
+  const handleSendOpportunityPitch = async (creatorParam) => {
+    // Robust creator resolution: Ignore React SyntheticEvents
+    const creator =
+      creatorParam && creatorParam.id && !creatorParam.nativeEvent && !creatorParam.target
+        ? creatorParam
+        : selectedCreator;
+
     if (!creator || isSendingPitch) return;
-    setIsSendingPitch(true);
+
+    // Safety check: Never send pitch to rejected or unapproved leads
+    if (creator.status === "rejected") {
+      notify(
+        "error",
+        "Lead Is Rejected",
+        `Cannot pitch ${creator.name || creator.display_name || creator.handle || "this creator"} because this lead is marked as Rejected.`,
+        4000,
+      );
+      return;
+    }
+
     const targetEmail = (
       creator.email ||
       creator.email_public ||
       ""
     ).trim();
     const cId = creator.id;
+    const creatorName = creator.name || creator.display_name || creator.handle || "Creator";
+
+    if (!targetEmail || !targetEmail.includes("@")) {
+      notify(
+        "warning",
+        "Missing Contact Email",
+        `Cannot dispatch Step 6 pitch because no email address is set for ${creatorName}. Please enter an email address in Step 2 or in the Follow-Up CRM.`,
+        5500,
+      );
+      return;
+    }
+
+    setIsSendingPitch(true);
 
     const concepts =
       creator.productConcepts || ensureCreatorConcepts(creator);
     const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
-    const pitchSubject = `Top 3 Software Concepts & Opportunity Deck for ${creator.name || creator.display_name}`;
+    const firstName = (creator.name || creator.display_name || "there").split(" ")[0];
+    const pitchSubject = `Top 3 software concepts tailored for @${cleanHandle}`;
     const pitchBody =
-      `Hi ${creator.name?.split(" ")[0] || "there"},\n\nFollowing up on our sync! Based on our deep audience research across your ${creator.followerStr || "100k+"} community in ${creator.niche}, we designed the top 3 software product concepts tailored for your audience:\n\n` +
+      `Hi ${firstName},\n\nFollowing up as promised! Based on our analysis of your ${creator.niche || "channel"} audience on ${creator.platform || "social media"}, here are the top 3 software product concepts we designed for your community:\n\n` +
       concepts
         .map(
           (c, i) =>
-            `• Concept #${i + 1}: ${c.name} (${c.pricing})\n  ${c.tagline}\n  Key Problem: ${c.problem}\n  Opportunity Score: ${c.opportunityScore}/100\n`,
+            `${i + 1}. ${c.name} (${c.pricing}) — ${c.tagline}\n   • Solves: ${c.problem} (Score: ${c.opportunityScore}/100)`,
         )
-        .join("\n") +
-      `\nOur engineering team will build the full MVP at zero upfront cost under our 50/50 revenue-share partnership.\n\nWhich of these three concepts resonates most with you? Let us know to kick off development!\n\nBest,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${cId} | Handle:@${cleanHandle}]`;
+        .join("\n\n") +
+      `\n\nUnder our 50/50 partnership, our engineering team will build and deploy the complete MVP at zero cost to you.\n\nTake a look and let us know which concept you'd be most excited to build and launch with us!\n\nBest regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${cId} | Handle:@${cleanHandle}]`;
 
     // Use custom pitch only if this is the currently selected creator (user may have edited it)
-    const subjectToSend = (creator.id === selectedCreator?.id && customPitchSubject) ? customPitchSubject : pitchSubject;
-    const bodyToSend = (creator.id === selectedCreator?.id && customPitchBody) ? customPitchBody : pitchBody;
+    const subjectToSend =
+      creator.id === selectedCreator?.id && customPitchSubject
+        ? customPitchSubject
+        : pitchSubject;
+    const bodyToSend =
+      creator.id === selectedCreator?.id && customPitchBody
+        ? customPitchBody
+        : pitchBody;
 
     try {
-      if (targetEmail && targetEmail.includes("@")) {
-        const { sendDirectEmail } = await import("../../services/opsApi");
-        await sendDirectEmail(targetEmail, subjectToSend, bodyToSend, cId);
-      }
+      const { sendDirectEmail } = await import("../../services/opsApi");
+      await sendDirectEmail(targetEmail, subjectToSend, bodyToSend, cId);
 
       const sentTimeIso = new Date().toISOString();
       const sentTimestamp = Date.now();
-      setPitchSentMap((prev) => ({
-        ...prev,
+      const updatedMap = {
+        ...pitchSentMap,
         [cId]: {
           time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
@@ -2591,15 +2669,23 @@ export default function AcquisitionEngine({
           }),
           sentAt: sentTimeIso,
           sentTimestamp,
-          recipient: targetEmail || "creator",
+          recipient: targetEmail,
           subject: subjectToSend,
         },
-      }));
+      };
+      setPitchSentMap(updatedMap);
+      try {
+        localStorage.setItem(
+          "forge_launch_pitch_sent_map",
+          JSON.stringify(updatedMap),
+        );
+      } catch {}
+
       notify(
         "success",
         "Opportunity Pitch Dispatched",
-        `Step 6 pitch and deck delivered to ${creator.name || creator.handle} (${targetEmail || "creator"}).`,
-        5000
+        `Step 6 proposal delivered to ${creatorName} (${targetEmail}).`,
+        5000,
       );
       await syncImapReplies();
     } catch (e) {
@@ -2607,38 +2693,133 @@ export default function AcquisitionEngine({
         "[AcquisitionEngine] Failed to dispatch opportunity pitch:",
         e,
       );
-      setPitchSentMap((prev) => ({
-        ...prev,
-        [cId]: {
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          sentAt: new Date().toISOString(),
-          sentTimestamp: Date.now(),
-          recipient: targetEmail || "creator",
-          subject: subjectToSend,
-        },
-      }));
+      notify(
+        "error",
+        "Pitch Dispatch Failed",
+        `Failed to deliver email to ${targetEmail}: ${e.message}`,
+        5500,
+      );
     } finally {
       setIsSendingPitch(false);
     }
   };
 
-  // Autonomous auto-send opportunity pitch upon arriving in Step 6
-  // Sends to ALL qualified creators who haven't been pitched yet — not just the selected tab.
-  useEffect(() => {
-    if (
-      activeStep === 6 &&
-      campaignRunning &&
-      !isSendingPitch
-    ) {
-      // Find the first qualified creator who hasn't been pitched yet
-      const unpitchedCreator = interestedCreators.find((c) => {
-        if (!hasValidEmail(c)) return false;
-        if (pitchSentMap[c.id]) return false;
+  // ── Step 5: AI Audience Analysis & Automatic Advance to Step 6 ─────────────
+  const [isSynthesizingStep5Ai, setIsSynthesizingStep5Ai] = useState(false);
 
-        // Check if pitch was already dispatched in thread (e.g. by backend autonomous worker)
+  const handleSynthesizeStep5Ai = async (creator = selectedCreator) => {
+    if (!creator) return;
+    setIsSynthesizingStep5Ai(true);
+    try {
+      const { generateAudienceAndConcepts } = await import("../../services/opsApi");
+      const res = await generateAudienceAndConcepts({
+        creator_id: creator.id,
+        creator_name: creator.name || creator.display_name,
+        creator_handle: creator.handle,
+        niche: creator.niche,
+        platform: creator.platform,
+        followers: creator.followerStr || `${creator.follower_count}`,
+        bio: creator.bio,
+      });
+
+      if (res && res.product_concepts && res.product_concepts.length > 0) {
+        setCreators((prev) =>
+          prev.map((c) =>
+            c.id === creator.id
+              ? {
+                  ...c,
+                  productConcepts: res.product_concepts,
+                  audienceIntelligence: res.audience_intelligence,
+                }
+              : c,
+          ),
+        );
+        if (res.pitch_email) {
+          setCustomPitchSubject(res.pitch_email.subject);
+          setCustomPitchBody(res.pitch_email.body);
+        }
+        notify(
+          "success",
+          "AI Concepts & Audience Synthesized",
+          `Engineered top 3 custom software product concepts and deep audience research for ${creator.name || creator.handle}.`,
+          3500,
+        );
+      }
+    } catch (err) {
+      console.warn("AI synthesis failed:", err);
+      notify(
+        "info",
+        "Templates Ready",
+        "Loaded tailored product concepts and audience research.",
+        2500,
+      );
+    } finally {
+      setIsSynthesizingStep5Ai(false);
+    }
+  };
+
+  // Autonomous Step 5 to Step 6 handler: Runs AI synthesis, dispatches 3-concept email, and advances to Step 6
+  const handleAutoSynthesizeAndAdvance = async (creator) => {
+    if (!creator) return;
+    setIsSynthesizingStep5Ai(true);
+    try {
+      const { generateAudienceAndConcepts } = await import("../../services/opsApi");
+      const res = await generateAudienceAndConcepts({
+        creator_id: creator.id,
+        creator_name: creator.name || creator.display_name,
+        creator_handle: creator.handle,
+        niche: creator.niche,
+        platform: creator.platform,
+        followers: creator.followerStr || `${creator.follower_count}`,
+        bio: creator.bio,
+      });
+
+      let updatedCreator = creator;
+      if (res && res.product_concepts && res.product_concepts.length > 0) {
+        updatedCreator = {
+          ...creator,
+          productConcepts: res.product_concepts,
+          audienceIntelligence: res.audience_intelligence,
+        };
+        setCreators((prev) =>
+          prev.map((c) => (c.id === creator.id ? updatedCreator : c)),
+        );
+        if (res.pitch_email) {
+          setCustomPitchSubject(res.pitch_email.subject);
+          setCustomPitchBody(res.pitch_email.body);
+        }
+      }
+
+      // Automatically dispatch the tailored 3-concept blueprint proposal email to creator
+      await handleSendOpportunityPitch(updatedCreator);
+
+      // Automatically advance to Step 6
+      setActiveStep(6);
+      notify(
+        "success",
+        "Step 5 & 6 Autonomous Pipeline Complete",
+        `Synthesized 3 custom software concepts and delivered proposal email to ${creator.name || creator.handle}.`,
+        4500
+      );
+    } catch (err) {
+      console.warn("Auto synthesis error:", err);
+      setActiveStep(6);
+    } finally {
+      setIsSynthesizingStep5Ai(false);
+    }
+  };
+
+  const handleSendBlueprintAndAdvanceToStep6 = async (creator = selectedCreator) => {
+    if (!creator) return;
+    await handleSendOpportunityPitch(creator);
+    setActiveStep(6);
+  };
+
+  // Sync past thread dispatches to pitchSentMap without firing unsolicited new emails
+  useEffect(() => {
+    if (activeStep === 6 && realThreads && realThreads.length > 0) {
+      interestedCreators.forEach((c) => {
+        if (pitchSentMap[c.id]) return;
         const msgs = getCreatorThreadMessages(c, realThreads);
         const existingPitch = msgs.find((m) => {
           const s = (m.subject || "").toLowerCase();
@@ -2647,14 +2828,12 @@ export default function AcquisitionEngine({
             s.includes("step 6") ||
             s.includes("step6") ||
             s.includes("opportunity pitch") ||
-            s.includes("opportunity deck") ||
             s.includes("software concepts") ||
             b.includes("cf-stage:step6_pitch")
           );
         });
 
         if (existingPitch) {
-          // Already pitched! Sync to pitchSentMap so UI recognizes it without re-sending
           setPitchSentMap((prev) => ({
             ...prev,
             [c.id]: {
@@ -2667,27 +2846,17 @@ export default function AcquisitionEngine({
               subject: existingPitch.subject || "Step 6 Opportunity Pitch",
             },
           }));
-          return false;
         }
-
-        return true;
       });
-
-      if (unpitchedCreator) {
-        handleSendOpportunityPitch(unpitchedCreator);
-      }
     }
-  }, [
-    activeStep,
-    interestedCreators.length,
-    campaignRunning,
-    pitchSentMap,
-    isSendingPitch,
-    realThreads,
-  ]);
+  }, [activeStep, interestedCreators.length, realThreads]);
 
   // Autonomous Persuasion Email to overturn disinterest/hesitation
-  const handleAutonomousPersuade = async (creator = selectedCreator) => {
+  const handleAutonomousPersuade = async (creatorParam) => {
+    const creator =
+      creatorParam && creatorParam.id && !creatorParam.nativeEvent && !creatorParam.target
+        ? creatorParam
+        : selectedCreator;
     if (!creator || isSendingPitch) return;
     const cId = creator.id;
     if (persuasionSentMap[cId]) return;
@@ -2771,18 +2940,33 @@ export default function AcquisitionEngine({
 
   const handleApproveCreator = (id) => {
     const creator = creators.find((c) => c.id === id);
-    setCreators((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              status: "approved",
-              approvedAt: new Date().toISOString(),
-              productConcepts: ensureCreatorConcepts(c),
-            }
-          : c,
-      ),
+    const updatedCreators = creators.map((c) =>
+      c.id === id
+        ? {
+            ...c,
+            status: "approved",
+            isApproved: true,
+            approvedAt: new Date().toISOString(),
+            productConcepts: ensureCreatorConcepts(c),
+          }
+        : c,
     );
+    setCreators(updatedCreators);
+
+    try {
+      localStorage.setItem(
+        "forge_launch_discovered_creators",
+        JSON.stringify(updatedCreators),
+      );
+    } catch (e) {}
+
+    // Persist to backend database
+    import("../../services/opsApi").then(({ updateCreatorDetails }) => {
+      updateCreatorDetails(id, { status: "approved" }).catch((e) =>
+        console.warn("[AcquisitionEngine] Failed to persist approval status:", e),
+      );
+    });
+
     notify(
       "success",
       "Creator Approved",
@@ -2793,26 +2977,201 @@ export default function AcquisitionEngine({
 
   const handleRejectCreator = (id) => {
     const creator = creators.find((c) => c.id === id);
-    setCreators((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? { ...c, status: "rejected", rejectedAt: new Date().toISOString() }
-          : c,
-      ),
+    const updatedCreators = creators.map((c) =>
+      c.id === id
+        ? {
+            ...c,
+            status: "rejected",
+            isApproved: false,
+            rejectedAt: new Date().toISOString(),
+          }
+        : c,
     );
+    setCreators(updatedCreators);
+
+    try {
+      localStorage.setItem(
+        "forge_launch_discovered_creators",
+        JSON.stringify(updatedCreators),
+      );
+    } catch (e) {
+      console.warn("[AcquisitionEngine] Failed to persist rejection:", e);
+    }
+
+    // Persist to backend database
+    import("../../services/opsApi").then(({ updateCreatorDetails }) => {
+      updateCreatorDetails(id, { status: "rejected" }).catch((e) =>
+        console.warn("[AcquisitionEngine] Failed to persist rejection status:", e),
+      );
+    });
+
     notify(
       "error",
       "Creator Rejected",
       `${creator?.name || creator?.display_name || "Creator"} has been archived. They will not receive further outreach.`,
       3500,
     );
-    // Auto-advance selection to the next unreviewed creator in the filtered list
-    const remaining = creators.filter(
-      (c) => c.id !== id && c.status !== "approved" && c.status !== "rejected",
-    );
-    if (remaining.length > 0) {
-      setSelectedCreatorId(remaining[0].id);
+
+    // Auto-advance selection to the next active, non-rejected creator
+    if (activeStep >= 5) {
+      const nextQualified = updatedCreators.filter(
+        (c) =>
+          c.id !== id &&
+          (c.status || "").toLowerCase() !== "rejected" &&
+          isCreatorQualifiedForPitch(c),
+      );
+      if (nextQualified.length > 0) {
+        setSelectedCreatorId(nextQualified[0].id);
+      } else {
+        const nextAny = updatedCreators.filter(
+          (c) => c.id !== id && (c.status || "").toLowerCase() !== "rejected",
+        );
+        setSelectedCreatorId(nextAny.length > 0 ? nextAny[0].id : null);
+      }
+    } else {
+      const remaining = updatedCreators.filter(
+        (c) =>
+          c.id !== id &&
+          c.status !== "approved" &&
+          (c.status || "").toLowerCase() !== "rejected",
+      );
+      if (remaining.length > 0) {
+        setSelectedCreatorId(remaining[0].id);
+      } else {
+        const anyRemaining = updatedCreators.filter(
+          (c) => c.id !== id && (c.status || "").toLowerCase() !== "rejected",
+        );
+        setSelectedCreatorId(anyRemaining.length > 0 ? anyRemaining[0].id : null);
+      }
     }
+  };
+
+  // ── Step 4: Decision Modal State & Handlers (Accept / Reject with Optional AI Email) ──
+  const [decisionModal, setDecisionModal] = useState({
+    isOpen: false,
+    creator: null,
+    decisionType: "approve", // "approve" or "reject"
+    sendEmail: true,
+    subject: "",
+    body: "",
+    isGeneratingAi: false,
+    isSending: false,
+  });
+
+  const openDecisionModal = (creator, decisionType = "approve") => {
+    if (!creator) return;
+    const isApprove = decisionType === "approve";
+    const cName = creator.name || creator.display_name || creator.handle || "Partner";
+    const firstName = cName.split(" ")[0];
+    const niche = creator.niche || "your space";
+    const platform = creator.platform || "social media";
+    const hasEmail = Boolean((creator.email || creator.email_public) && (creator.email || creator.email_public).includes("@"));
+
+    const defaultSubject = isApprove
+      ? `Partnership Accepted: Advancing to Product Discovery for ${cName}`
+      : `Creator Forge Partnership Update for ${cName}`;
+
+    const defaultBody = isApprove
+      ? `Hi ${firstName},\n\nGreat news! Following our review of your ${niche} content and community engagement on ${platform}, our studio team has officially approved your channel for our Co-Launch Software Incubation batch.\n\nWhat happens next:\n• Our engineering & product team is currently conducting deep audience research across your community.\n• We are designing the top 3 custom software product concepts engineered specifically to monetize your followers.\n• Under our 50/50 revenue-share partnership, Creator Forge covers 100% of engineering, hosting, billing, and support at zero upfront cost to you.\n\nWe'll follow up shortly with your customized 3-concept Opportunity Deck & interactive MVP previews.\n\nExcited to build with you,\nCreator Forge Studio Team`
+      : `Hi ${firstName},\n\nThank you for your response and for taking the time to explore a potential co-launch partnership with us.\n\nAfter reviewing our cohort capacity, we are currently prioritizing specific software verticals for this upcoming batch and will not be proceeding with development at this immediate moment.\n\nWe are big fans of your ${niche} content on ${platform} and will keep your channel on file for future software project opportunities.\n\nWishing you continued growth and success,\nCreator Forge Studio Team`;
+
+    setDecisionModal({
+      isOpen: true,
+      creator,
+      decisionType,
+      sendEmail: hasEmail,
+      subject: defaultSubject,
+      body: defaultBody,
+      isGeneratingAi: false,
+      isSending: false,
+    });
+  };
+
+  const handleGenerateDecisionAi = async () => {
+    if (!decisionModal.creator) return;
+    setDecisionModal((prev) => ({ ...prev, isGeneratingAi: true }));
+    try {
+      const { generateDecisionEmail } = await import("../../services/opsApi");
+      const res = await generateDecisionEmail({
+        creator_id: decisionModal.creator.id,
+        creator_name: decisionModal.creator.name || decisionModal.creator.display_name,
+        creator_handle: decisionModal.creator.handle,
+        niche: decisionModal.creator.niche,
+        platform: decisionModal.creator.platform,
+        decision: decisionModal.decisionType,
+      });
+      if (res && res.subject && res.body) {
+        setDecisionModal((prev) => ({
+          ...prev,
+          subject: res.subject,
+          body: res.body,
+          isGeneratingAi: false,
+        }));
+        notify(
+          "success",
+          "AI Email Generated",
+          `Tailored ${decisionModal.decisionType === "approve" ? "acceptance" : "rejection"} email generated with AI.`,
+          3000,
+        );
+      } else {
+        setDecisionModal((prev) => ({ ...prev, isGeneratingAi: false }));
+      }
+    } catch (err) {
+      console.warn("AI Generation failed:", err);
+      setDecisionModal((prev) => ({ ...prev, isGeneratingAi: false }));
+      notify("info", "Template Ready", "Loaded professional decision template.", 2500);
+    }
+  };
+
+  const handleConfirmDecisionModal = async () => {
+    if (!decisionModal.creator) return;
+    const { creator, decisionType, sendEmail, subject, body } = decisionModal;
+    setDecisionModal((prev) => ({ ...prev, isSending: true }));
+
+    const targetEmail = creator.email || creator.email_public;
+    if (sendEmail && targetEmail && targetEmail.includes("@") && body.trim()) {
+      try {
+        const { sendDirectEmail } = await import("../../services/opsApi");
+        await sendDirectEmail(targetEmail, subject, body, creator.id);
+        notify(
+          "success",
+          "Decision Email Dispatched",
+          `Notification email successfully delivered to ${targetEmail}.`,
+          3500,
+        );
+      } catch (err) {
+        console.warn("Failed to dispatch decision email:", err);
+        notify(
+          "warning",
+          "Email Notice",
+          `Decision recorded, but email dispatch encountered an issue: ${err.message}`,
+          4000,
+        );
+      }
+    }
+
+    if (decisionType === "approve") {
+      handleApproveCreator(creator.id);
+      setSelectedCreatorId(creator.id);
+      setActiveStep(5);
+      // Automatically synthesize AI audience research, dispatch 3-concept blueprint, and advance to Step 6
+      setTimeout(() => {
+        handleAutoSynthesizeAndAdvance(creator);
+      }, 600);
+    } else {
+      handleRejectCreator(creator.id);
+    }
+
+    setDecisionModal({
+      isOpen: false,
+      creator: null,
+      decisionType: "approve",
+      sendEmail: true,
+      subject: "",
+      body: "",
+      isGeneratingAi: false,
+      isSending: false,
+    });
   };
 
   const handlePitchAndCreateProject = () => {
@@ -2892,7 +3251,7 @@ export default function AcquisitionEngine({
     }
 
     setOutreachLog(
-      `[Google SMTP Queue] Delivering real outreach emails to ${validEmailList.length} verified creators...`,
+      `[Outreach Queue] Delivering partnership inquiries to ${validEmailList.length} verified creators...`,
     );
     try {
       const { sendDirectEmail } = await import("../../services/opsApi");
@@ -2939,12 +3298,12 @@ export default function AcquisitionEngine({
       notify(
         "success",
         "Outreach Wave Dispatched",
-        `Sent Step 3 inquiries to ${sentCount} creators via Google SMTP outbox.`,
+        `Sent partnership inquiries to ${sentCount} verified creators.`,
         5000
       );
 
       setOutreachLog(
-        `[Delivered] Outreach Batch Dispatched via Google SMTP! Sent to ${sentCount} creators (${validEmailList.map((c) => c.email || c.email_public).join(", ")}). Transitioning to Step 4...`,
+        `[Delivered] Outreach wave successfully dispatched to ${sentCount} creators. Transitioning to Step 4...`,
       );
 
       if (autoAdvance || campaignRunning) {
@@ -2977,25 +3336,20 @@ export default function AcquisitionEngine({
     }
   }, [activeStep, campaignRunning]);
 
-  // ── Auto-advance trigger function ──────────────────────────────────────────
+  // ── Creator reply notification & state update function (Strict Human Review Gate) ─
   const triggerAutoAdvance = (creator, reply) => {
     if (!creator) return;
     autoAdvancedIdsRef.current.add(creator.id);
     setAutoAdvancedIds((prev) => new Set([...prev, creator.id]));
 
-    // IMPORTANT: Step 4 positive reply = "qualified" for Step 5/6 pitch.
-    // This is NOT the same as Step 6 "interested" (confirmed partnership).
-    // The creator must still receive & respond to the Step 6 Opportunity Pitch
-    // before they can be promoted to Section 2.
     setCreators((prev) =>
       prev.map((c) =>
         c.id === creator.id
           ? {
               ...c,
-              status: "qualified",
               hasReplied: true,
-              replyClassification: "qualified",
-              reply_classification: "qualified",
+              replyClassification: reply?.classification || "interested",
+              reply_classification: reply?.classification || "interested",
               replyText: reply?.text || c.replyText,
               replyTime: reply?.time || "Recently",
               productConcepts: ensureCreatorConcepts(c),
@@ -3007,28 +3361,23 @@ export default function AcquisitionEngine({
     // Persist to DB
     import("../../services/opsApi").then(({ updateCreatorDetails }) => {
       updateCreatorDetails(creator.id, {
-        reply_classification: "qualified",
-        status: "qualified",
-        reply_text: reply?.text || "Creator responded positively to initial outreach — qualified for Step 6 pitch",
+        reply_classification: reply?.classification || "interested",
+        reply_text: reply?.text || "Creator responded — awaiting human review in Step 4",
       }).catch((e) => console.warn(e));
     });
 
-    // 2. Select this creator ONLY if no creator is currently selected (never hijack user selection!)
+    // Select this creator ONLY if no creator is currently selected
     setSelectedCreatorId((prev) => (prev ? prev : creator.id));
 
-    // 3. Set positive advance notification banner
+    // Notify human of incoming response (does NOT change activeStep)
     const cName =
       creator.name || creator.display_name || creator.handle || "Creator";
-    setPositiveAdvanceNotice({
-      creatorId: creator.id,
-      creatorName: cName,
-      handle: creator.handle,
-      replyText: reply?.text || "Creator responded positively — qualified for partnership pitch",
-      time: reply?.time || "Just now",
-    });
-
-    // 4. Smoothly advance to Step 5 ONLY if currently on Step 4 or earlier
-    setActiveStep((prev) => (prev <= 4 ? 5 : prev));
+    notify(
+      "info",
+      "New Creator Response",
+      `${cName} replied: "${(reply?.text || "Interested").slice(0, 45)}..." — Ready for Human Review in Step 4.`,
+      4500,
+    );
   };
 
   // Persist realThreads to localStorage
@@ -3047,7 +3396,7 @@ export default function AcquisitionEngine({
     const isManualClick = isManual === true;
     setPollingImap(true);
     setImapSyncLog(
-      "Connecting to Gmail IMAP server to check for incoming replies...",
+      "Syncing inbox for recent replies...",
     );
     try {
       const { pollInboxReplies, getThreads } =
@@ -3060,14 +3409,14 @@ export default function AcquisitionEngine({
           (t) => t.replies && t.replies.length > 0,
         );
         setImapSyncLog(
-          `[IMAP Sync Complete] ${repliedThreads.length} active reply threads fetched from Gmail and classified.`,
+          `[Inbox Synced] ${repliedThreads.length} active reply threads updated and classified.`,
         );
         // Only trigger an alert toast if user manually clicked a Refresh button
         if (isManualClick) {
           notify(
             "info",
-            "Gmail Inbox Refreshed",
-            `Checked IMAP inbox: ${repliedThreads.length} active reply threads fetched and classified.`,
+            "Inbox Refreshed",
+            `Inbox synced: ${repliedThreads.length} active reply threads updated.`,
             2500
           );
         }
@@ -3153,16 +3502,16 @@ export default function AcquisitionEngine({
     if (hardOptOutPatterns.some((p) => text.includes(p))) {
       return {
         decision: "NOT_INTERESTED",
-        actionLabel: "Creator Unsubscribed",
+        actionLabel: "Opt-Out Requested",
         confidence: 99,
         conceptName: concepts[0]?.name || "Recommended SaaS",
-        reasoning: `Creator explicitly requested to opt out ("${latestBody.slice(0, 60)}..."). The engine will respect their decision and will NOT initialize Section 2.`,
+        reasoning: `Creator requested to opt out. Lead archived.`,
         color: "rose",
         badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40",
       };
     }
 
-    // 2. Hesitation / Confusion / Soft Rejection -> PERSUADE & Overcome Objection!
+    // 2. Hesitation / Confusion / Soft Rejection -> Suggested Persuasion Draft
     const hesitationPatterns = [
       "confusing",
       "confused",
@@ -3193,111 +3542,16 @@ export default function AcquisitionEngine({
     if (hesitationPatterns.some((p) => text.includes(p))) {
       return {
         decision: "PERSUADE",
-        actionLabel: "Creator Hesitant — Auto-Persuade",
+        actionLabel: "Suggested: Persuasion Draft",
         confidence: 96,
         conceptName: concepts[0]?.name || "Recommended SaaS",
-        reasoning: `Creator expressed hesitation or confusion ("${latestBody.slice(0, 60)}..."). The autonomous engine is deploying a dedicated persuasion email addressing their confusion, highlighting the zero-risk 50/50 model to recover the partnership.`,
+        reasoning: `Creator expressed hesitation. Suggested: 50/50 zero-risk clarification draft.`,
         color: "amber",
         badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
       };
     }
 
-    // 3. Affirmative Agreement / Concept Selection (Highest Priority for Progression)
-    const affirmativePatterns = [
-      "interested",
-      "i'm interested",
-      "im interested",
-      "i am interested",
-      "we're interested",
-      "we are interested",
-      "yes interested",
-      "definitely interested",
-      "very interested",
-      "would be interested",
-      "let's do it",
-      "lets do it",
-      "sounds great",
-      "sounds good",
-      "sounds awesome",
-      "sounds amazing",
-      "sounds cool",
-      "looks great",
-      "looks good",
-      "looks awesome",
-      "looks amazing",
-      "sure",
-      "sure thing",
-      "sure, send it over",
-      "send it over",
-      "send over",
-      "send it",
-      "go ahead",
-      "let's go",
-      "lets go",
-      "let's do this",
-      "lets do this",
-      "let's proceed",
-      "lets proceed",
-      "agreed",
-      "agree",
-      "deal",
-      "i'm down",
-      "im down",
-      "down for this",
-      "sign me up",
-      "count me in",
-      "count on me",
-      "i'm in",
-      "im in",
-      "let's build",
-      "lets build",
-      "ready to move forward",
-      "move forward",
-      "let's partner",
-      "lets partner",
-      "yes let's",
-      "yes lets",
-      "i choose",
-      "i prefer",
-      "let's go with",
-      "lets go with",
-      "let's start",
-      "lets start",
-      "love to",
-      "love this",
-      "love it",
-      "let's talk",
-      "lets talk",
-      "let's connect",
-      "lets connect",
-      "happy to chat",
-      "open to",
-      "yes please",
-      "yes",
-      "yeah",
-      "yep",
-      "ok",
-      "okay",
-      "start building",
-      "create project",
-      "approved",
-      "approve",
-      "concept 1",
-      "concept 2",
-      "concept 3",
-      "option 1",
-      "option 2",
-      "option 3",
-      "#1",
-      "#2",
-      "#3",
-      "first one",
-      "second one",
-      "third one",
-    ];
-    const hasAffirmative = affirmativePatterns.some((p) => text.includes(p));
-
-    // 4. Questions / Inquiries -> Answer questions first only if an actual question is asked
+    // 3. Questions / Inquiries -> Suggested Answer Draft
     const questionPatterns = [
       "?",
       "further explanation",
@@ -3342,60 +3596,19 @@ export default function AcquisitionEngine({
       "in it for me",
     ];
     const hasQuestion = questionPatterns.some((p) => text.includes(p));
-
-    // Resolve concept match
-    let matchedConcept = concepts.find((con) =>
-      text.includes(con.name?.toLowerCase()),
-    );
-    if (!matchedConcept) {
-      if (
-        text.includes("concept 2") ||
-        text.includes("option 2") ||
-        text.includes("second") ||
-        text.includes("#2")
-      ) {
-        matchedConcept = concepts[1] || concepts[0];
-      } else if (
-        text.includes("concept 3") ||
-        text.includes("option 3") ||
-        text.includes("third") ||
-        text.includes("#3")
-      ) {
-        matchedConcept = concepts[2] || concepts[0];
-      } else if (hasAffirmative && !hasQuestion) {
-        matchedConcept = concepts[0];
-      }
-    }
-
-    // 5. Explicit Affirmative Agreement or Concept Confirmation -> ADVANCE TO SECTION 2!
-    if ((hasAffirmative || matchedConcept) && !hasQuestion) {
-      const chosen = matchedConcept || concepts[0];
-      return {
-        decision: "CREATE_PROJECT",
-        actionLabel: `Launch & Create Project (${chosen.name})`,
-        confidence: 98,
-        conceptName: chosen.name,
-        conceptId: chosen.id,
-        reasoning: `Creator confirmed positive agreement with concrete intent: "${latestBody.slice(0, 60)}...". Selected Concept: ${chosen.name}. Verified alignment threshold passed; advancing to Section 2.`,
-        color: "emerald",
-        badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-      };
-    }
-
-    // 6. If it is a question, prioritize answering the question
     if (hasQuestion) {
       return {
         decision: "ANSWER_QUESTION",
-        actionLabel: "Answer Creator Question",
+        actionLabel: "Suggested: Answer Draft",
         confidence: 95,
-        conceptName: matchedConcept?.name || concepts[0]?.name || "Recommended Concept",
-        reasoning: `Creator asked a clarifying question ("${latestBody.slice(0, 60)}..."). AI will provide thorough answers on the 50/50 split, tech stack, and zero-risk model before requesting a concept decision. The engine will not advance to Section 2 until concrete agreement is reached.`,
+        conceptName: concepts[0]?.name || "Recommended Concept",
+        reasoning: `Creator asked questions. Suggested: Term clarification & revenue split draft.`,
         color: "blue",
         badgeClass: "bg-blue-500/20 text-blue-300 border-blue-500/40",
       };
     }
 
-    // 7. Review in Progress / Concept Review Acknowledgment -> Deploy 60s Preview & Nudge
+    // 4. Review in Progress / Concept Review Acknowledgment
     const reviewPatterns = [
       "check them out",
       "check it out",
@@ -3423,16 +3636,92 @@ export default function AcquisitionEngine({
       "whats next",
     ];
     const isReview = reviewPatterns.some((p) => text.includes(p));
-
     if (isReview) {
       return {
         decision: "REVIEW_PREVIEW",
-        actionLabel: "Send 60s Concept Preview & Nudge",
+        actionLabel: "Suggested: 60s Preview",
         confidence: 96,
-        conceptName: matchedConcept?.name || concepts[0]?.name || "Recommended Concept",
-        reasoning: `Creator acknowledged review in dialog ("${latestBody.slice(0, 60)}..."). AI will provide a tailored 60-second concept breakdown and zero-cost advantage reminder to make their review effortless before concept confirmation.`,
+        conceptName: concepts[0]?.name || "Recommended Concept",
+        reasoning: `Creator is reviewing concepts. Suggested: 60-second summary & concept preview draft.`,
         color: "amber",
         badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+      };
+    }
+
+    // 5. Explicit Concept Selection or Build Agreement
+    const explicitConceptSelection = [
+      "concept 1",
+      "concept 2",
+      "concept 3",
+      "option 1",
+      "option 2",
+      "option 3",
+      "#1",
+      "#2",
+      "#3",
+      "first one",
+      "second one",
+      "third one",
+      "i choose",
+      "i prefer",
+      "let's go with",
+      "lets go with",
+      "let's build",
+      "lets build",
+      "start building",
+      "create project",
+      "ready to move forward",
+      "move forward",
+      "let's do it",
+      "lets do it",
+      "let's do this",
+      "lets do this",
+      "let's proceed",
+      "lets proceed",
+      "sign me up",
+      "count me in",
+      "deal",
+      "agreed",
+    ];
+    const hasExplicitSelection = explicitConceptSelection.some((p) =>
+      text.includes(p),
+    );
+
+    // Resolve concept match
+    let matchedConcept = concepts.find((con) =>
+      text.includes(con.name?.toLowerCase()),
+    );
+    if (!matchedConcept) {
+      if (
+        text.includes("concept 2") ||
+        text.includes("option 2") ||
+        text.includes("second") ||
+        text.includes("#2")
+      ) {
+        matchedConcept = concepts[1] || concepts[0];
+      } else if (
+        text.includes("concept 3") ||
+        text.includes("option 3") ||
+        text.includes("third") ||
+        text.includes("#3")
+      ) {
+        matchedConcept = concepts[2] || concepts[0];
+      } else if (hasExplicitSelection) {
+        matchedConcept = concepts[0];
+      }
+    }
+
+    if (hasExplicitSelection || (matchedConcept && text.length > 5)) {
+      const chosen = matchedConcept || concepts[0];
+      return {
+        decision: "CREATE_PROJECT",
+        actionLabel: `Launch & Create Project (${chosen.name})`,
+        confidence: 98,
+        conceptName: chosen.name,
+        conceptId: chosen.id,
+        reasoning: `Creator confirmed positive agreement with concrete intent: "${latestBody.slice(0, 60)}...". Selected Concept: ${chosen.name}. Verified alignment threshold passed; click Create Project to initialize Section 2.`,
+        color: "emerald",
+        badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
       };
     }
 
@@ -3463,7 +3752,10 @@ export default function AcquisitionEngine({
 
   // Autonomous Execution Handlers
   const handleAutonomousResend = async (creatorParam) => {
-    const creator = creatorParam || selectedCreator;
+    const creator =
+      creatorParam && creatorParam.id && !creatorParam.nativeEvent && !creatorParam.target
+        ? creatorParam
+        : selectedCreator;
     if (!creator || isSendingPitch) return;
     const cId = creator.id;
     if (pitchSentMap[cId]?.isFollowup) return;
@@ -3537,7 +3829,10 @@ export default function AcquisitionEngine({
 
   // Answer Creator Questions in Step 6
   const handleSendAnswer = async (creatorParam) => {
-    const creator = creatorParam || selectedCreator;
+    const creator =
+      creatorParam && creatorParam.id && !creatorParam.nativeEvent && !creatorParam.target
+        ? creatorParam
+        : selectedCreator;
     if (!creator || isSendingPitch) return;
     const cId = creator.id;
     if (answerSentMap[cId]) return;
@@ -3757,18 +4052,18 @@ export default function AcquisitionEngine({
           // No reply to our latest Step 6 outreach yet!
           // The system MUST wait for creator's feedback/reply in dialog before taking any action.
           let waitAction = "Awaiting Pitch Feedback";
-          let waitReason = `Opportunity pitch presenting 3 concepts was dispatched to ${c.name || "creator"}. The engine is listening on Gmail IMAP specifically for their feedback, concept choice, or questions before taking action.`;
+          let waitReason = `Opportunity pitch presenting 3 concepts was dispatched to ${c.name || "creator"}. Monitoring inbox for their feedback, concept choice, or questions before taking action.`;
           let waitColor = "purple";
           let waitBadge = "bg-purple-500/20 text-purple-300 border-purple-500/40";
 
           if (aTime > pTime && aTime >= perTime) {
             waitAction = "Answers Sent — Awaiting Reply";
-            waitReason = `Clarifying answers regarding 50/50 split and tech stack were dispatched to ${c.name || "creator"}. Listening on Gmail IMAP for their response in dialog before proceeding.`;
+            waitReason = `Clarifying answers regarding 50/50 split and tech stack were dispatched to ${c.name || "creator"}. Monitoring inbox for their response before proceeding.`;
             waitColor = "blue";
             waitBadge = "bg-blue-500/20 text-blue-300 border-blue-500/40";
           } else if (perTime > pTime && perTime >= aTime) {
             waitAction = "Persuasion Sent — Awaiting Reply";
-            waitReason = `Persuasion recovery email addressing ${c.name || "creator"}'s hesitation was dispatched. Listening on Gmail IMAP for their response in dialog before proceeding.`;
+            waitReason = `Persuasion recovery email addressing ${c.name || "creator"}'s hesitation was dispatched. Monitoring inbox for their response before proceeding.`;
             waitColor = "amber";
             waitBadge = "bg-amber-500/20 text-amber-300 border-amber-500/40";
           }
@@ -3791,126 +4086,7 @@ export default function AcquisitionEngine({
     }
   }, [realThreads, activeStep, creators, selectedCreatorId, pitchSentMap, answerSentMap, persuasionSentMap]);
 
-  // Autonomous execution of Create Project ONLY when creator confirms interest in Step 6
-  useEffect(() => {
-    if (
-      activeStep === 6 &&
-      selectedCreator &&
-      campaignRunning &&
-      !hasAutoCreatedProject
-    ) {
-      const currentChoice = aiDetectedChoiceMap[selectedCreator.id];
-      if (
-        currentChoice &&
-        currentChoice.decision === "CREATE_PROJECT" &&
-        currentChoice.isStep6Reply
-      ) {
-        setHasAutoCreatedProject(true);
-        setAutoLaunchCountdown(3);
-      }
-    }
-  }, [
-    activeStep,
-    selectedCreator?.id,
-    aiDetectedChoiceMap,
-    campaignRunning,
-    hasAutoCreatedProject,
-  ]);
-
-  useEffect(() => {
-    if (autoLaunchCountdown === null) return;
-    if (autoLaunchCountdown <= 0) {
-      handlePitchAndCreateProject();
-      return;
-    }
-    const timer = setTimeout(() => {
-      setAutoLaunchCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [autoLaunchCountdown]);
-
-  // Autonomous execution of Persuasion Email ONLY when creator responds with disinterest in Step 6
-  useEffect(() => {
-    if (
-      activeStep === 6 &&
-      selectedCreator &&
-      campaignRunning &&
-      !isSendingPitch
-    ) {
-      const currentChoice = aiDetectedChoiceMap[selectedCreator.id];
-      if (
-        currentChoice &&
-        currentChoice.decision === "PERSUADE" &&
-        currentChoice.isStep6Reply &&
-        !persuasionSentMap[selectedCreator.id]
-      ) {
-        handleAutonomousPersuade(selectedCreator);
-      }
-    }
-  }, [
-    activeStep,
-    selectedCreator?.id,
-    aiDetectedChoiceMap,
-    campaignRunning,
-    persuasionSentMap,
-    isSendingPitch,
-  ]);
-
-  // Autonomous execution of Answer Email when creator asks questions in Step 6
-  useEffect(() => {
-    if (
-      activeStep === 6 &&
-      selectedCreator &&
-      campaignRunning &&
-      !isSendingPitch
-    ) {
-      const currentChoice = aiDetectedChoiceMap[selectedCreator.id];
-      if (
-        currentChoice &&
-        currentChoice.decision === "ANSWER_QUESTION" &&
-        currentChoice.isStep6Reply &&
-        !answerSentMap[selectedCreator.id]
-      ) {
-        handleSendAnswer(selectedCreator);
-      }
-    }
-  }, [
-    activeStep,
-    selectedCreator?.id,
-    aiDetectedChoiceMap,
-    campaignRunning,
-    answerSentMap,
-    isSendingPitch,
-  ]);
-
-  // Autonomous execution of 60s Preview Nudge when creator acknowledges review in Step 6
-  useEffect(() => {
-    if (
-      activeStep === 6 &&
-      selectedCreator &&
-      campaignRunning &&
-      !isSendingPitch
-    ) {
-      const currentChoice = aiDetectedChoiceMap[selectedCreator.id];
-      if (
-        currentChoice &&
-        (currentChoice.decision === "REVIEW_PREVIEW" || currentChoice.decision === "RESEND") &&
-        currentChoice.isStep6Reply &&
-        !pitchSentMap[selectedCreator.id]?.isFollowup &&
-        !answerSentMap[selectedCreator.id]
-      ) {
-        handleAutonomousResend();
-      }
-    }
-  }, [
-    activeStep,
-    selectedCreator?.id,
-    aiDetectedChoiceMap,
-    campaignRunning,
-    pitchSentMap,
-    answerSentMap,
-    isSendingPitch,
-  ]);
+  // Step 6 Human Confirmation Gate (All emails and project launches are strictly manually approved by human operator)
 
   // Autonomous handling of rejection / opt-out in Step 6
   useEffect(() => {
@@ -4005,7 +4181,7 @@ export default function AcquisitionEngine({
             </span>
           </div>
           <p className="text-xs text-slate-400">
-            Real creator discovery, Apify profile & email extraction, AI product
+            Real-time creator discovery, verified contact extraction, AI product
             concepts, and autonomous outreach orchestration.
           </p>
         </div>
@@ -4245,7 +4421,7 @@ export default function AcquisitionEngine({
                     Select platforms for lead discovery
                   </span>
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-3 gap-2.5 w-full">
                   {[
                     { id: "youtube", label: "YouTube", icon: Youtube, color: "text-red-400" },
                     { id: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-400" },
@@ -4258,7 +4434,7 @@ export default function AcquisitionEngine({
                         key={p.id}
                         type="button"
                         onClick={() => togglePlatform(p.id)}
-                        className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer w-full ${
                           isSelected
                             ? "bg-purple-500/15 border-purple-500/40 text-white"
                             : "bg-[#161a23] border-white/[0.06] text-slate-400 hover:text-white hover:border-white/20"
@@ -4288,10 +4464,10 @@ export default function AcquisitionEngine({
                       {selectedGeography} Selected
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1 w-full">
                     {[
-                      { id: "US", label: "United States (US)" },
                       { id: "GLOBAL", label: "Global / All" },
+                      { id: "US", label: "United States (US)" },
                       { id: "UK", label: "United Kingdom (UK)" },
                       { id: "CA", label: "Canada (CA)" },
                       { id: "EU", label: "Europe (EU)" },
@@ -4303,7 +4479,7 @@ export default function AcquisitionEngine({
                           key={geo.id}
                           type="button"
                           onClick={() => setSelectedGeography(geo.id)}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center truncate ${
+                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center truncate w-full ${
                             active
                               ? "bg-cyan-500/20 border-cyan-500/50 text-white shadow-sm"
                               : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200"
@@ -4393,74 +4569,201 @@ export default function AcquisitionEngine({
                     />
                   </div>
                 </div>
-
-                {/* Target Platforms Multi-Select */}
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-xs text-slate-300 font-semibold">
-                    Target Platforms
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[
-                      { id: "youtube", label: "YouTube" },
-                      { id: "tiktok", label: "TikTok" },
-                      { id: "instagram", label: "Instagram" },
-                    ].map((p) => {
-                      const active = selectedPlatforms.includes(p.id);
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => togglePlatform(p.id)}
-                          className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                            active
-                              ? "bg-purple-600/20 border-purple-500/50 text-white shadow-sm"
-                              : "bg-[#161a23] border-white/[0.06] text-slate-400 hover:text-slate-200"
-                          }`}
-                        >
-                          {p.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* Email Template Card */}
-            <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
-              <div className="border-b border-white/[0.07] pb-3 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-purple-400" />
-                  <span>Personalized Outreach Email Template</span>
-                </h3>
-                <span className="text-[11px] text-purple-400 font-mono">
-                  Dynamic Merge Tags
+            {/* ── Luxury Email Outreach Studio (Step 1) ────────────────────── */}
+            <div className="rounded-2xl bg-[#0b0e14] border border-white/10 shadow-2xl overflow-hidden space-y-0">
+              {/* Window Titlebar */}
+              <div className="bg-[#121620] px-4 py-3 border-b border-white/[0.08] flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-purple-400" />
+                    <span className="text-xs font-bold text-white tracking-wide">
+                      Outreach Email Studio
+                    </span>
+                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono font-semibold">
+                      🔒 TLS / SPF Ready
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-[#090b0e] p-1 rounded-xl border border-white/[0.06]">
+                  <button
+                    type="button"
+                    onClick={() => setStep1EmailTab("editor")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      step1EmailTab === "editor"
+                        ? "bg-purple-600 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    Edit Template
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep1EmailTab("preview")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      step1EmailTab === "preview"
+                        ? "bg-purple-600 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Live Preview</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Merge Tags Insertion Toolbar */}
+              <div className="px-5 py-2.5 bg-[#10141d] border-b border-white/[0.06] flex items-center gap-2 overflow-x-auto text-[11px]">
+                <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px] flex-shrink-0 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-purple-400" />
+                  <span>Insert Tags:</span>
                 </span>
+                {[
+                  { tag: "{{first_name}}", label: "First Name" },
+                  { tag: "{{display_name}}", label: "Full Name" },
+                  { tag: "{{niche}}", label: "Niche" },
+                  { tag: "{{platform}}", label: "Platform" },
+                  { tag: "{{follower_count}}", label: "Followers" },
+                  { tag: "{{product_name}}", label: "Product Name" },
+                ].map((item) => (
+                  <button
+                    key={item.tag}
+                    type="button"
+                    onClick={() => {
+                      setTemplateBody((prev) => `${prev} ${item.tag}`);
+                    }}
+                    className="px-2 py-0.5 rounded-lg bg-white/[0.05] hover:bg-purple-500/20 border border-white/[0.08] hover:border-purple-500/40 text-purple-300 font-mono text-[10px] font-semibold transition-all cursor-pointer flex-shrink-0"
+                    title={`Click to append ${item.tag}`}
+                  >
+                    +{item.tag}
+                  </button>
+                ))}
               </div>
 
-              <div>
-                <label className="text-xs text-slate-400 block mb-1 font-medium">
-                  Subject
-                </label>
-                <input
-                  type="text"
-                  value={templateSubject}
-                  onChange={(e) => setTemplateSubject(e.target.value)}
-                  className="w-full bg-[#161a23] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white font-mono"
-                />
-              </div>
+              {/* Editor Mode */}
+              {step1EmailTab === "editor" ? (
+                <div className="p-5 space-y-4">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                      Email Subject
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={templateSubject}
+                        onChange={(e) => setTemplateSubject(e.target.value)}
+                        className="w-full bg-[#141824] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 transition-colors"
+                      />
+                    </div>
+                  </div>
 
-              <div>
-                <label className="text-xs text-slate-400 block mb-1 font-medium">
-                  Body
-                </label>
-                <textarea
-                  rows={5}
-                  value={templateBody}
-                  onChange={(e) => setTemplateBody(e.target.value)}
-                  className="w-full bg-[#161a23] border border-white/10 rounded-xl p-3.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 leading-relaxed"
-                />
-              </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                      Email Message Body
+                    </label>
+                    <textarea
+                      rows={7}
+                      value={templateBody}
+                      onChange={(e) => setTemplateBody(e.target.value)}
+                      className="w-full bg-[#141824] border border-white/10 rounded-xl p-4 text-xs text-slate-200 font-mono focus:outline-none focus:border-purple-500 leading-relaxed transition-colors resize-y"
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* Live Client Preview Mode */
+                <div className="p-5 space-y-4 animate-in fade-in">
+                  <div className="rounded-xl bg-[#131722] border border-white/[0.08] p-5 space-y-4 shadow-inner">
+                    {/* Fake Email Client Metadata Header */}
+                    <div className="space-y-2 border-b border-white/[0.06] pb-3 text-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400 font-bold w-12">
+                            From:
+                          </span>
+                          <span className="text-slate-200 font-mono">
+                            Creator Forge Studio &lt;partnerships@creatorforge.com&gt;
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-purple-400 font-mono font-bold">
+                          Step 1 Outreach Wave
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400 font-bold w-12">
+                          To:
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-200 font-mono text-[11px] font-bold">
+                            Marcus Vance (marcus@channel.com)
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            • 320K YouTube
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="text-slate-400 font-bold w-12">
+                          Subject:
+                        </span>
+                        <span className="text-white font-bold text-xs">
+                          {templateSubject
+                            .replace("{{display_name}}", "Marcus Vance")
+                            .replace("{{first_name}}", "Marcus")}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Email Rendered Body */}
+                    <div className="text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed space-y-3">
+                      {templateBody
+                        .replace(/\{\{first_name\}\}/g, "Marcus")
+                        .replace(/\{\{display_name\}\}/g, "Marcus Vance")
+                        .replace(/\{\{niche\}\}/g, "AI Tools & Automation")
+                        .replace(/\{\{platform\}\}/g, "YouTube")
+                        .replace(/\{\{follower_count\}\}/g, "320,000")
+                        .replace(/\{\{product_name\}\}/g, "Marcus OS")}
+                    </div>
+
+                    {/* Co-founder Guarantee Box */}
+                    <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-between text-xs text-purple-200">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span className="font-semibold">
+                          50/50 Revenue Split • Zero Upfront Cost to Creator
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono text-purple-300">
+                        Venture Studio Model
+                      </span>
+                    </div>
+
+                    {/* Studio Signature */}
+                    <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                      <div>
+                        <div className="font-bold text-white">
+                          Creator Forge Studio Team
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          Co-Founding Software Empires with Digital Creators
+                        </div>
+                      </div>
+                      <div className="text-right text-[10px] text-slate-500">
+                        San Francisco, CA • studio@creatorforge.com
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -4538,26 +4841,26 @@ export default function AcquisitionEngine({
               </button>
 
               <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-                Triggers dynamic AI scouting, live Apify profile extraction &
-                verified business email discovery.
+                Triggers autonomous audience analysis, profile evaluation &
+                verified business contact discovery.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* SCRAPED LEADS: FIND & QUALIFY CREATORS */}
+      {/* QUALIFIED LEADS: FIND & QUALIFY CREATORS */}
       {activeStep === 2 && (
         <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">
-                  Scraped Leads
+                  Discovered Leads
                 </span>
                 <span className="text-xs text-slate-500">•</span>
                 <span className="text-xs text-slate-400">
-                  Live Apify & Scraper Enrichment
+                  Profile & Contact Intelligence
                 </span>
               </div>
               <h2 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
@@ -4852,7 +5155,7 @@ export default function AcquisitionEngine({
                                     {c.email_verified ? (
                                       <span
                                         className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded"
-                                        title="Verified Business Email via Apify"
+                                        title="Verified Business Contact"
                                       >
                                         <span className="flex items-center gap-0.5"><Check className="w-2.5 h-2.5 text-emerald-400" /> Verified</span>
                                       </span>
@@ -4898,7 +5201,7 @@ export default function AcquisitionEngine({
                                     onClick={(e) => handleApifyFindEmail(c, e)}
                                     disabled={findingApifyId === c.id}
                                     className="p-1.5 px-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-300 hover:text-white flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50"
-                                    title="Find verified business email with Apify"
+                                    title="Search directory for verified contact"
                                   >
                                     {findingApifyId === c.id ? (
                                       <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
@@ -4915,7 +5218,7 @@ export default function AcquisitionEngine({
                                     type="button"
                                     onClick={(e) => startEditEmail(c.id, "", e)}
                                     className="p-1.5 px-2 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 hover:border-purple-500/40 text-purple-300 hover:text-white flex items-center gap-1 text-[11px] font-semibold transition-all cursor-pointer"
-                                    title="Add/Modify Creator Email Manually"
+                                    title="Add or update email address"
                                   >
                                     <Pencil className="w-2.5 h-2.5 text-purple-400" />
                                     <span>Edit</span>
@@ -4938,7 +5241,7 @@ export default function AcquisitionEngine({
                             </div>
 
                             {apifyStatusMsg[c.id] && (
-                              <p className="text-[10px] text-amber-400/90 font-mono px-1">
+                              <p className="text-[10px] text-emerald-400/90 font-mono px-1">
                                 {apifyStatusMsg[c.id]}
                               </p>
                             )}
@@ -5187,6 +5490,9 @@ export default function AcquisitionEngine({
           const unsubCount = creatorsWithReplies.filter(
             (c) => c.replyInfo.classification === "unsubscribe",
           ).length;
+          const otherCount = creatorsWithReplies.filter(
+            (c) => c.replyInfo.classification === "other",
+          ).length;
           const awaitingCount = creatorsWithReplies.filter(
             (c) => c.replyInfo.classification === "awaiting_reply",
           ).length;
@@ -5209,78 +5515,35 @@ export default function AcquisitionEngine({
             <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
               {/* Header */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                      Interested Review
-                    </span>
-                    <span className="text-xs text-slate-500">•</span>
-                    <span className="text-xs text-slate-300">
-                      Live IMAP Polling & AI Reply Classification
-                    </span>
-                  </div>
+                <div>
                   <h2 className="text-base font-bold text-white flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-emerald-400" />
                     <span>
                       Interested Creator Review ({filteredReplies.length})
                     </span>
                   </h2>
-                  <p className="text-xs text-slate-400">
-                    Real replies are polled directly from Gmail via IMAP and
-                    classified by AI into 4 categories.
-                  </p>
-                  {imapSyncLog && (
-                    <p className="text-[11px] font-mono text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-md border border-purple-500/20 inline-block mt-1">
-                      {imapSyncLog}
-                    </p>
-                  )}
                 </div>
 
-                <div className="flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setAutoAdvanceOnPositive(!autoAdvanceOnPositive)
-                    }
-                    className={`px-3 py-2 rounded-xl border text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                      autoAdvanceOnPositive
-                        ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-sm"
-                        : "bg-white/[0.04] border-white/10 text-slate-400"
-                    }`}
-                    title="Automatically advance to Product Ideas when a positive reply is received"
-                  >
-                    <Zap
-                      className={`w-3.5 h-3.5 ${autoAdvanceOnPositive ? "text-emerald-400 fill-emerald-400" : "text-slate-500"}`}
-                    />
-                    <span>
-                      Auto-Advance on Positive:{" "}
-                      {autoAdvanceOnPositive ? "ON" : "OFF"}
-                    </span>
-                  </button>
-
+                <div className="flex items-center gap-2.5 flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => syncImapReplies(true)}
                     disabled={pollingImap}
-                    className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 text-white font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                    title="Check Gmail IMAP for new creator replies"
+                    className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 text-white font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 flex-shrink-0"
+                    title="Check inbox for new creator replies"
                   >
                     <RefreshCw
-                      className={`w-3.5 h-3.5 text-purple-400 ${pollingImap ? "animate-spin" : ""}`}
+                      className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center text-purple-400 ${pollingImap ? "animate-spin" : ""}`}
                     />
-                    <span>
-                      {pollingImap
-                        ? "Polling Gmail IMAP..."
-                        : "Sync IMAP Replies"}
-                    </span>
+                    <span className="flex-shrink-0">Sync Replies</span>
                   </button>
 
                   <button
                     onClick={() => setActiveStep(5)}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-emerald-500/40 shadow-sm cursor-pointer active:scale-95"
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-emerald-500/40 shadow-sm cursor-pointer active:scale-95 flex-shrink-0"
                   >
                     <span>Advance to Product Ideas</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
                   </button>
                 </div>
               </div>
@@ -5396,6 +5659,28 @@ export default function AcquisitionEngine({
 
                 <button
                   type="button"
+                  onClick={() => setReplyFilter("other")}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    replyFilter === "other"
+                      ? "bg-indigo-500/20 border-indigo-500/50 shadow-sm text-white"
+                      : "bg-indigo-500/5 border-indigo-500/20 hover:border-indigo-500/40"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                      <span className="text-[11px] font-bold text-indigo-300">
+                        Other
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded">
+                      {otherCount}
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setReplyFilter("awaiting_reply")}
                   className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     replyFilter === "awaiting_reply"
@@ -5439,7 +5724,7 @@ export default function AcquisitionEngine({
                   <p>No creators matching this category filter.</p>
                   <p className="text-slate-400 text-[11px]">
                     When creators reply to your outreach emails, click{" "}
-                    <strong>"Sync IMAP Replies"</strong> to fetch and classify
+                    <strong>"Sync Replies"</strong> to fetch and classify
                     their responses.
                   </p>
                 </div>
@@ -5457,37 +5742,31 @@ export default function AcquisitionEngine({
                         <div
                           key={c.id}
                           onClick={() => setSelectedCreatorId(c.id)}
-                          className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 relative ${
-                            isRejected
-                              ? "bg-red-950/10 border-red-500/20 opacity-50"
+                          className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2.5 ${
+                            isSelected
+                              ? "bg-purple-950/25 border-purple-500/70 shadow-lg shadow-purple-950/40 ring-1 ring-purple-500/40"
                               : isApproved
-                                ? "bg-emerald-950/15 border-emerald-500/30"
-                                : isSelected
-                                  ? "bg-purple-950/30 border-purple-500/60 shadow-sm"
-                                  : "bg-[#161a23] border-white/[0.06] hover:border-white/20"
+                                ? "bg-emerald-950/10 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-950/20"
+                                : isRejected
+                                  ? "bg-red-950/10 border-red-500/20 opacity-60 hover:opacity-90"
+                                  : "bg-[#141824] border-white/[0.08] hover:border-white/20 hover:bg-[#181d2c]"
                           }`}
                         >
-                          {/* Approved / Rejected overlay badge */}
-                          {(isApproved || isRejected) && (
-                            <div className={`absolute top-2 right-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
-                              isApproved
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                : "bg-red-500/15 text-red-400 border-red-500/30"
-                            }`}>
-                              {isApproved ? "✓ Approved" : "✗ Rejected"}
-                            </div>
-                          )}
-
-                          <div className="flex items-start justify-between gap-2">
+                          {/* Card Header: Avatar, Name/Handle & Classification Badge */}
+                          <div className="flex items-center justify-between gap-2.5">
                             <div className="flex items-center gap-2.5 min-w-0">
                               <img
                                 src={
                                   c.avatar ||
                                   c.avatar_url ||
-                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(c.handle || "Creator")}&background=6366f1&color=fff`
+                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || c.handle || "Creator")}&background=6366f1&color=fff`
                                 }
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || c.handle || "Creator")}&background=6366f1&color=fff`;
+                                }}
                                 alt=""
-                                className="w-9 h-9 rounded-full object-cover border border-white/10 flex-shrink-0"
+                                className="w-9 h-9 rounded-full object-cover border border-white/15 flex-shrink-0 shadow-sm"
                               />
                               <div className="min-w-0">
                                 <h4 className="text-xs font-bold text-white truncate">
@@ -5499,19 +5778,20 @@ export default function AcquisitionEngine({
                               </div>
                             </div>
 
+                            {/* Classification Status Badge */}
                             <span
-                              className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0 border ${
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border ${
                                 reply.classification === "interested"
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                  ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
                                   : reply.classification === "question"
-                                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                    ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
                                     : reply.classification === "not_interested"
-                                      ? "bg-red-500/10 text-red-400 border-red-500/20"
+                                      ? "bg-red-500/15 text-red-300 border-red-500/30"
                                       : reply.classification === "unsubscribe"
-                                        ? "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                                        ? "bg-slate-500/15 text-slate-300 border-slate-500/30"
                                         : reply.classification === "no_email"
-                                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                                          : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                          ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                                          : "bg-blue-500/15 text-blue-300 border-blue-500/30"
                               }`}
                             >
                               <span
@@ -5520,8 +5800,7 @@ export default function AcquisitionEngine({
                                     ? "bg-emerald-400"
                                     : reply.classification === "question"
                                       ? "bg-amber-400"
-                                      : reply.classification ===
-                                          "not_interested"
+                                      : reply.classification === "not_interested"
                                         ? "bg-red-400"
                                         : reply.classification === "unsubscribe"
                                           ? "bg-slate-400"
@@ -5538,44 +5817,47 @@ export default function AcquisitionEngine({
                             </span>
                           </div>
 
+                          {/* Message snippet bubble */}
                           {reply.hasRealReply ? (
-                            <p className="text-[11px] text-slate-300 line-clamp-2 italic leading-relaxed">
-                              "{reply.text}"
-                            </p>
+                            <div className="p-2 rounded-lg bg-black/40 border border-white/[0.04]">
+                              <p className="text-[11px] text-slate-200 line-clamp-2 italic leading-relaxed font-sans">
+                                "{reply.snippet || reply.text}"
+                              </p>
+                            </div>
                           ) : reply.classification === "no_email" ? (
-                            <p className="text-[11px] text-amber-400/80 italic">
-                              Outreach not sent. No email address available.
-                            </p>
+                            <div className="p-2 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                              <p className="text-[11px] text-amber-300/80 italic font-sans">
+                                Outreach not sent. No public business email.
+                              </p>
+                            </div>
                           ) : (
-                            <p className="text-[11px] text-slate-500 italic">
-                              Outreach sent via Google SMTP. Awaiting creator
-                              reply in Gmail.
-                            </p>
+                            <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.03]">
+                              <p className="text-[11px] text-slate-400 italic font-sans">
+                                Outreach delivered. Awaiting creator response.
+                              </p>
+                            </div>
                           )}
 
-                          <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-white/[0.04]">
+                          {/* Footer: Timestamp & Approval Status */}
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1.5 border-t border-white/[0.05]">
                             <span className="flex items-center gap-1 font-mono">
                               <Clock className="w-3 h-3 text-slate-500" />
-                              <span>{reply.time}</span>
+                              <span>{reply.time || "Recently"}</span>
                             </span>
                             {isApproved ? (
-                              <span className="text-emerald-400 font-bold flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3" /> Approved
+                              <span className="text-emerald-400 text-[10px] font-extrabold bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wider">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Approved
                               </span>
                             ) : isRejected ? (
-                              <span className="text-red-400 font-bold flex items-center gap-1">
-                                <XCircle className="w-3 h-3" /> Rejected
+                              <span className="text-rose-400 text-[10px] font-extrabold bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wider">
+                                <XCircle className="w-3 h-3 text-rose-400" /> Rejected
                               </span>
                             ) : reply.hasRealReply ? (
-                              <span className="text-purple-400 font-medium">
+                              <span className="text-purple-300 font-semibold flex items-center gap-1">
                                 Ready for Review
                               </span>
-                            ) : reply.classification === "no_email" ? (
-                              <span className="text-amber-400 font-medium">
-                                + Add Email
-                              </span>
                             ) : (
-                              <span className="text-blue-400/80 font-medium">
+                              <span className="text-slate-400 font-medium">
                                 Awaiting Response
                               </span>
                             )}
@@ -5615,61 +5897,6 @@ export default function AcquisitionEngine({
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5 bg-[#090b0e] border border-white/10 rounded-xl px-2.5 py-1">
-                            <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                              Modify Label:
-                            </label>
-                            <select
-                              value={
-                                activeReviewCreator.replyInfo.classification
-                              }
-                              onChange={(e) =>
-                                handleModifyReplyClassification(
-                                  activeReviewCreator.id,
-                                  e.target.value,
-                                )
-                              }
-                              className="bg-transparent border-none text-xs font-bold text-white focus:outline-none cursor-pointer"
-                            >
-                              <option
-                                value="awaiting_reply"
-                                className="bg-[#161a23] text-blue-300"
-                              >
-                                ⏳ Awaiting Reply
-                              </option>
-                              <option
-                                value="interested"
-                                className="bg-[#161a23] text-emerald-300"
-                              >
-                                Interested (Positive)
-                              </option>
-                              <option
-                                value="question"
-                                className="bg-[#161a23] text-amber-300"
-                              >
-                                Question
-                              </option>
-                              <option
-                                value="not_interested"
-                                className="bg-[#161a23] text-red-300"
-                              >
-                                Not Interested
-                              </option>
-                              <option
-                                value="unsubscribe"
-                                className="bg-[#161a23] text-slate-400"
-                              >
-                                Unsubscribe
-                              </option>
-                              <option
-                                value="no_email"
-                                className="bg-[#161a23] text-amber-400"
-                              >
-                                No Email
-                              </option>
-                            </select>
-                          </div>
-
                           <span
                             className={`text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 ${
                               activeReviewCreator.replyInfo.classification ===
@@ -5824,162 +6051,55 @@ export default function AcquisitionEngine({
                         </p>
                       </div>
 
-                      {/* Email Thread Viewer OR Add Email Box */}
+                      {/* Inbound Creator Response / Conversation Stream */}
                       <div className="space-y-3">
-                        {activeReviewCreator.replyInfo.classification ===
-                        "no_email" ? (
-                          <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs space-y-3">
-                            <div className="flex items-center gap-2 text-amber-300 font-bold">
-                              <span>No Email Address Found</span>
-                            </div>
-                            <p className="text-slate-300 text-[11px]">
-                              This creator does not have a public business
-                              email. To send outreach to this creator, please
-                              enter their email address below:
-                            </p>
 
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
-                              <input
-                                type="email"
-                                placeholder="e.g. sponsor@creator.com"
-                                value={tempEmailValue}
-                                onChange={(e) =>
-                                  setTempEmailValue(e.target.value)
-                                }
-                                className="bg-[#090b0e] border border-purple-500/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none flex-1 font-mono"
-                              />
-                              <button
-                                type="button"
-                                onClick={(e) =>
-                                  saveEditEmail(activeReviewCreator.id, e)
-                                }
-                                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all cursor-pointer flex-shrink-0"
-                              >
-                                Save Email
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) =>
-                                  handleApifyFindEmail(activeReviewCreator, e)
-                                }
-                                disabled={
-                                  findingApifyId === activeReviewCreator.id
-                                }
-                                className="px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer flex-shrink-0 disabled:opacity-50"
-                              >
-                                {findingApifyId === activeReviewCreator.id ? (
-                                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
-                                ) : (
-                                  <Zap className="w-3.5 h-3.5 text-emerald-400" />
-                                )}
-                                <span>Find Business Email</span>
-                              </button>
-                            </div>
-
-                            {apifyStatusMsg[activeReviewCreator.id] && (
-                              <p className="text-[11px] text-amber-400 font-mono pt-1">
-                                {apifyStatusMsg[activeReviewCreator.id]}
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <>
-                            {/* Outbound Sent Email */}
-                            <div className="p-3.5 rounded-xl bg-[#090b0e] border border-white/[0.04] space-y-1 text-xs opacity-80">
-                              <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                                <span>Outbound Sent Email (Google SMTP)</span>
-                                <span>
-                                  Recipient:{" "}
-                                  {activeReviewCreator.email ||
-                                    activeReviewCreator.email_public}
+                        {/* Inbound Creator Response / Conversation Bubble */}
+                        {activeReviewCreator.replyInfo.hasRealReply ? (
+                          <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-950/20 via-[#0e1612] to-[#090b0e] border border-emerald-500/30 space-y-2 text-xs shadow-md">
+                            <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={
+                                    activeReviewCreator.avatar ||
+                                    activeReviewCreator.avatar_url ||
+                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(activeReviewCreator.handle || "Creator")}&background=6366f1&color=fff`
+                                  }
+                                  alt=""
+                                  className="w-5 h-5 rounded-full object-cover border border-emerald-500/40"
+                                />
+                                <span className="font-bold text-white text-xs">
+                                  {activeReviewCreator.name ||
+                                    activeReviewCreator.display_name}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] text-emerald-300 font-mono flex items-center gap-1 font-bold">
+                                  <span>✨ Inbound Response</span>
                                 </span>
                               </div>
-                              <p className="text-slate-300 font-mono text-[11px]">
-                                Subject:{" "}
-                                {templateSubject.replace(
-                                  "{{display_name}}",
-                                  activeReviewCreator.name ||
-                                    activeReviewCreator.display_name,
-                                )}
-                              </p>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {activeReviewCreator.replyInfo.replyTime || "Recently"}
+                              </span>
                             </div>
-
-                            {/* Creator Incoming Reply OR Awaiting Box */}
-                            {activeReviewCreator.replyInfo.hasRealReply ? (
-                              <div className="p-4 rounded-xl bg-[#0d1117] border border-purple-500/30 space-y-2 text-xs shadow-inner">
-                                <div className="flex justify-between text-[11px] text-slate-400 font-mono border-b border-white/[0.04] pb-1.5">
-                                  <span className="text-purple-300 font-bold">
-                                    {activeReviewCreator.replyInfo.subject}
-                                  </span>
-                                  <span>
-                                    {activeReviewCreator.replyInfo.time}
-                                  </span>
-                                </div>
-                                <p className="text-slate-100 leading-relaxed italic text-xs pt-1">
-                                  "{activeReviewCreator.replyInfo.text}"
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="p-4 rounded-xl bg-[#11141c] border border-dashed border-white/10 text-xs space-y-3">
-                                <div className="flex items-center gap-2 text-slate-400">
-                                  <Clock className="w-4 h-4 text-blue-400" />
-                                  <span>
-                                    Outreach sent to{" "}
-                                    <strong className="text-slate-200">
-                                      {activeReviewCreator.email ||
-                                        activeReviewCreator.email_public}
-                                    </strong>
-                                    . Awaiting reply in Gmail...
-                                  </span>
-                                </div>
-
-                                {/* Quick test reply simulation helper */}
-                                <div className="pt-2 border-t border-white/[0.06] space-y-1.5">
-                                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                                    Test Pipeline Simulation:
-                                  </span>
-                                  <div className="flex flex-wrap gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleSimulateReply(
-                                          activeReviewCreator.id,
-                                          "interested",
-                                        )
-                                      }
-                                      className="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/20 cursor-pointer"
-                                    >
-                                      + Simulate "Interested"
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleSimulateReply(
-                                          activeReviewCreator.id,
-                                          "question",
-                                        )
-                                      }
-                                      className="px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-500/20 cursor-pointer"
-                                    >
-                                      + Simulate "Question"
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleSimulateReply(
-                                          activeReviewCreator.id,
-                                          "not_interested",
-                                        )
-                                      }
-                                      className="px-2.5 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-300 text-[11px] font-bold border border-red-500/20 cursor-pointer"
-                                    >
-                                      + Simulate "Not Interested"
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </>
+                            <p className="text-slate-200 font-mono text-[11px]">
+                              <strong className="text-emerald-400">Subject:</strong>{" "}
+                              {activeReviewCreator.replyInfo.subject || "Re: Partnership Inquiry"}
+                            </p>
+                            <div className="p-3.5 rounded-xl bg-black/50 border border-emerald-500/20 text-xs text-slate-100 whitespace-pre-wrap font-sans leading-relaxed shadow-inner">
+                              {activeReviewCreator.replyInfo.snippet ||
+                                activeReviewCreator.last_message ||
+                                "Creator responded to outreach."}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-4 rounded-xl bg-blue-950/10 border border-blue-500/20 text-center space-y-1.5 py-6">
+                            <Clock className="w-5 h-5 text-blue-400 mx-auto" />
+                            <p className="text-xs font-semibold text-slate-300">
+                              Awaiting Creator Response
+                            </p>
+                            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                              Outreach email was delivered. Inbound replies will appear here in real-time.
+                            </p>
+                          </div>
                         )}
                       </div>
 
@@ -6002,8 +6122,9 @@ export default function AcquisitionEngine({
                         </div>
                         <div className="flex items-center gap-2.5">
                           <button
+                            type="button"
                             onClick={() =>
-                              handleRejectCreator(activeReviewCreator.id)
+                              openDecisionModal(activeReviewCreator, "reject")
                             }
                             disabled={activeReviewCreator.status === "rejected"}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
@@ -6012,13 +6133,17 @@ export default function AcquisitionEngine({
                                 : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border-rose-500/30"
                             }`}
                           >
-                            {activeReviewCreator.status === "rejected" ? "Archived (Rejected)" : "Reject"}
+                            {activeReviewCreator.status === "rejected" ? "Archived (Rejected)" : "Reject Lead"}
                           </button>
                           <button
+                            type="button"
                             onClick={() => {
-                              handleApproveCreator(activeReviewCreator.id);
-                              setSelectedCreatorId(activeReviewCreator.id);
-                              setActiveStep(5);
+                              if (activeReviewCreator.status === "approved") {
+                                setSelectedCreatorId(activeReviewCreator.id);
+                                setActiveStep(5);
+                              } else {
+                                openDecisionModal(activeReviewCreator, "approve");
+                              }
                             }}
                             className={`px-5 py-2 rounded-xl text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer border ${
                               activeReviewCreator.status === "approved"
@@ -6030,7 +6155,7 @@ export default function AcquisitionEngine({
                             <span>
                               {activeReviewCreator.status === "approved"
                                 ? "View Concepts in Step 5"
-                                : "Approve & Generate Product Concepts"}
+                                : "Accept & Advance to Step 5"}
                             </span>
                           </button>
                         </div>
@@ -6070,7 +6195,7 @@ export default function AcquisitionEngine({
                     </span>
                   </p>
                   <p className="text-[11px] text-emerald-400/90 font-medium">
-                    Autonomously approved and advanced to Product Ideas.
+                    Approved by Human Review — Product Concepts & Audience Intelligence Ready.
                   </p>
                 </div>
               </div>
@@ -6173,12 +6298,13 @@ export default function AcquisitionEngine({
                       type="button"
                       onClick={() => syncImapReplies(true)}
                       disabled={pollingImap}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-[11px] font-bold transition-all cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-[11px] font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50"
+                      title="Sync Gmail replies for this thread"
                     >
                       <RefreshCw
-                        className={`w-3 h-3 ${pollingImap ? "animate-spin" : ""}`}
+                        className={`w-3 h-3 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin" : ""}`}
                       />
-                      <span>Sync</span>
+                      <span className="flex-shrink-0">Sync</span>
                     </button>
                   </div>
                 </div>
@@ -6227,19 +6353,16 @@ export default function AcquisitionEngine({
               </div>
             )}
 
-          {/* Autonomous Step 5 -> Step 6 Countdown Notification Banner */}
-          <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-950/50 via-[#141c26] to-purple-950/40 border border-amber-500/30 flex items-center justify-between gap-3 shadow-md">
+          {/* Step 5 Audience & Concept Review Status Banner */}
+          <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-950/40 via-[#141c26] to-purple-950/30 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
-                <Sparkles
-                  className="w-4 h-4 text-amber-400 animate-spin"
-                  style={{ animationDuration: "4s" }}
-                />
+                <Sparkles className="w-4 h-4 text-amber-400" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-amber-300">
-                    Autonomous Pipeline Active
+                    Audience Analysis & Opportunities Ready
                   </span>
                   <span className="text-[10px] text-slate-400 font-mono">
                     • Selected:{" "}
@@ -6248,29 +6371,17 @@ export default function AcquisitionEngine({
                   </span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  Deep audience research complete. Auto-advancing to{" "}
-                  <strong>Pitch & Select</strong> in{" "}
-                  <span className="font-mono text-amber-400 font-bold">
-                    {step5Countdown}s
-                  </span>
-                  ...
+                  Review audience intelligence and select one of the top 3 engineered concepts below to proceed to Step 6 pitch.
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setStep5TimerPaused((p) => !p)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/[0.06] hover:bg-white/10 text-slate-300 transition-all cursor-pointer"
-              >
-                {step5TimerPaused ? "Resume" : "Pause"}
-              </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveStep(6)}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1 transition-all cursor-pointer shadow-md"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95"
               >
-                <span>Advance to Pitch & Select</span>
+                <span>Proceed to Step 6 Pitch</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -6298,13 +6409,47 @@ export default function AcquisitionEngine({
               </p>
             </div>
 
-            <button
-              onClick={() => setActiveStep(6)}
-              className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-amber-600/20"
-            >
-              <span>Advance to Pitch & Select</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleSynthesizeStep5Ai(selectedCreator)}
+                disabled={isSynthesizingStep5Ai}
+                className="px-3.5 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                title="Use AI to re-engineer 3 concepts & audience intelligence"
+              >
+                {isSynthesizingStep5Ai ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                )}
+                <span>
+                  {isSynthesizingStep5Ai
+                    ? "Synthesizing AI Blueprint..."
+                    : "Regenerate with AI"}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleSendBlueprintAndAdvanceToStep6(selectedCreator)
+                }
+                disabled={isSendingPitch}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50"
+                title="Send the 3 product concepts and mockup blueprints directly to the creator's email and advance to Step 6"
+              >
+                {isSendingPitch ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {isSendingPitch
+                    ? "Dispatching..."
+                    : "Send 3-Concept Blueprint & Advance →"}
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Deep Audience Research Intelligence Breakdown (7 Key Pillars) - 100% Dynamic Per Creator */}
@@ -6668,14 +6813,14 @@ export default function AcquisitionEngine({
         </div>
       )}
 
-      {/* STEP 6: PITCH & SELECT PRODUCT */}
+      {/* STEP 6: PITCH & SELECT PRODUCT (SIMPLIFIED HUMAN-IN-THE-LOOP STUDIO) */}
       {activeStep === 6 && (
-        <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
-          {/* Creator Switcher Tabs for Step 6 (Only Interested / Qualified Creators) */}
+        <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-6">
+          {/* Creator Switcher Tabs */}
           <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] flex items-center justify-between gap-3 overflow-x-auto">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex-shrink-0">
-                Select Creator to Pitch:
+                Creators in Step 6:
               </span>
               {interestedCreators.map((c) => {
                 const isSelected = selectedCreator?.id === c.id;
@@ -6705,11 +6850,11 @@ export default function AcquisitionEngine({
                     />
                     <span>{c.name || c.display_name}</span>
                     {pitchSent ? (
-                      <span className="text-[10px] font-bold text-emerald-300 bg-black/40 px-1.5 py-0.2 rounded">
-                        {msgs.length > 0 ? "In Dialogue" : "Pitch Sent"}
+                      <span className="text-[10px] font-bold text-emerald-300 bg-black/40 px-1.5 py-0.5 rounded">
+                        {msgs.length > 0 ? "In Conversation" : "Proposal Sent"}
                       </span>
                     ) : (
-                      <span className="text-[10px] font-bold text-purple-300 bg-black/40 px-1.5 py-0.2 rounded">
+                      <span className="text-[10px] font-bold text-purple-300 bg-black/40 px-1.5 py-0.5 rounded">
                         Draft Ready
                       </span>
                     )}
@@ -6727,651 +6872,297 @@ export default function AcquisitionEngine({
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 type="button"
-                onClick={() => setShowInterestedModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer shadow-sm"
+                onClick={() => syncImapReplies(true)}
+                disabled={pollingImap}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                title="Check inbox for new replies"
               >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Interested Modal ({interestedCreators.length})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowAwaitingModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold transition-all cursor-pointer shadow-sm"
-              >
-                <Clock className="w-3.5 h-3.5 text-purple-400" />
-                <span>Awaiting Modal ({awaitingCreators.length})</span>
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${pollingImap ? "animate-spin text-purple-400" : "text-slate-400"}`}
+                />
+                <span>Sync Inbox</span>
               </button>
             </div>
           </div>
 
+          {/* Section Header with Creator Profile & Actions */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-pink-400">
-                  Co-Launch Kickoff
-                </span>
-                <span className="text-xs text-slate-500">•</span>
-                <span className="text-xs text-slate-300">
-                  Opportunity Pitch & Agreement
-                </span>
-              </div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
-                <Award className="w-4 h-4 text-pink-400" />
-                <span>
-                  Pitch & Select Product for{" "}
-                  {selectedCreator?.name || "Creator"}
-                </span>
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Select from the 3 engineered concepts, review the proposal, and initialize the co-launch venture.
-              </p>
-            </div>
-
-            {/* Prominent Create Project Button */}
-            <button
-              onClick={handlePitchAndCreateProject}
-              className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm border border-emerald-500/50 shadow-md transition-all flex items-center gap-2.5 cursor-pointer active:scale-95"
-            >
-              <span>CREATE PROJECT</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* AI Response Monitoring Status Banner or Pre-Send Review Callout */}
-          {currentPitchSent ? (
-            <div className="space-y-3">
-              {/* Real-Time Telemetry & Status Banner */}
-              <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-sm animate-in fade-in">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className={`w-2 h-2 rounded-full ${pollingImap ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`}
-                  />
-                  <span className="text-emerald-300 font-bold flex items-center gap-1.5">
-                    <Radio className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Real-Time Sync Active for{" "}
-                    {selectedCreator?.email ||
-                      selectedCreator?.email_public ||
-                      currentPitchSent.recipient}</span>
-                  </span>
-                  <span className="text-slate-400 font-mono text-[11px]">
-                    (Auto-polling Gmail IMAP every 3s)
-                  </span>
-                </div>
-
+            <div className="flex items-center gap-3.5">
+              <img
+                src={selectedCreator?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
+                alt=""
+                className="w-12 h-12 rounded-xl object-cover border border-white/10"
+              />
+              <div>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => syncImapReplies(true)}
-                    disabled={pollingImap}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer"
-                  >
-                    <RefreshCw
-                      className={`w-3.5 h-3.5 ${pollingImap ? "animate-spin" : ""}`}
-                    />
-                    <span>
-                      {pollingImap ? "Syncing Gmail..." : "Sync Gmail Now"}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Autonomous Project Launch Countdown Banner */}
-              {autoLaunchCountdown !== null && (
-                <div className="p-4 rounded-2xl bg-[#101923] border border-emerald-500/50 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-in zoom-in-95">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-mono font-black text-xl">
-                      {autoLaunchCountdown}s
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                        <Zap className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Autonomous Execution Active</span>
-                      </span>
-                      <h4 className="text-sm font-bold text-white">
-                        Creator confirmed agreement! Initializing Project OS
-                        for {selectedCreator?.name} in {autoLaunchCountdown}s...
-                      </h4>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handlePitchAndCreateProject}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
-                    >
-                      <Rocket className="w-3.5 h-3.5" />
-                      <span>Launch Now</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAutoLaunchCountdown(null)}
-                      className="px-3 py-2 rounded-xl bg-white/[0.06] hover:bg-white/10 text-slate-300 text-xs font-semibold border border-white/10 transition-all cursor-pointer"
-                    >
-                      Pause
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Autonomous AI Decision Engine Card */}
-              {currentAiChoice ? (
-                <div
-                  className={`p-4 rounded-2xl bg-[#161a23] border ${
-                    currentAiChoice.decision === "PERSUADE"
-                      ? "border-amber-500/50 bg-amber-950/20"
-                      : currentAiChoice.decision === "ANSWER_QUESTION"
-                        ? "border-blue-500/50 bg-blue-950/20"
-                        : currentAiChoice.decision === "NOT_INTERESTED"
-                          ? "border-rose-500/50 bg-rose-950/20"
-                          : currentAiChoice.decision === "RESEND"
-                            ? "border-amber-500/50 bg-amber-950/20"
-                            : currentAiChoice.decision === "AWAITING_STEP6_REPLY"
-                              ? "border-purple-500/40 bg-purple-950/20"
-                              : "border-emerald-500/50 bg-emerald-950/20"
-                  } space-y-3 shadow-md animate-in fade-in`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
-                        <Sparkles className="w-4 h-4" />
-                      </span>
-                      <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 block">
-                          AI Decision Engine
-                        </span>
-                        <h4 className="text-sm font-black text-white flex items-center gap-1.5">
-                          <span>
-                            {currentAiChoice.decision === "PERSUADE"
-                              ? "AUTONOMOUS PERSUASION"
-                              : currentAiChoice.decision === "ANSWER_QUESTION"
-                                ? "ANSWER QUESTIONS"
-                                : currentAiChoice.decision === "NOT_INTERESTED"
-                                  ? "CREATOR DECLINED"
-                                  : currentAiChoice.decision === "RESEND" || currentAiChoice.decision === "REVIEW_PREVIEW"
-                                    ? "60S PREVIEW & CONCEPT NUDGE"
-                                    : currentAiChoice.decision ===
-                                        "AWAITING_STEP6_REPLY"
-                                      ? `${currentAiChoice.actionLabel?.toUpperCase() || "AWAITING CREATOR FEEDBACK"}`
-                                      : "CREATE PROJECT"}
-                          </span>
-                          {currentAiChoice.confidence > 0 && (
-                            <span className="text-[11px] font-mono text-slate-400">
-                              ({currentAiChoice.confidence}% Confidence)
-                            </span>
-                          )}
-                        </h4>
-                      </div>
-                    </div>
-
-                    {/* Primary Autonomous Action Trigger */}
-                    <div className="flex items-center gap-2">
-                      {currentAiChoice.decision === "CREATE_PROJECT" && (
-                        <button
-                          type="button"
-                          onClick={handlePitchAndCreateProject}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs border border-emerald-500/40 shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-                        >
-                          <Rocket className="w-3.5 h-3.5" />
-                          <span>
-                            Create Project (
-                            {currentAiChoice.conceptName}) →
-                          </span>
-                        </button>
-                      )}
-
-                      {currentAiChoice.decision === "ANSWER_QUESTION" && (
-                        <button
-                          type="button"
-                          onClick={handleSendAnswer}
-                          disabled={isSendingPitch}
-                          className="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                          {isSendingPitch ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Send className="w-3.5 h-3.5" />
-                          )}
-                          <span>
-                            Execute: Auto-Send Answers to Creator Questions →
-                          </span>
-                        </button>
-                      )}
-
-                      {currentAiChoice.decision === "NOT_INTERESTED" && (
-                        <span className="text-[11px] text-rose-300 font-mono flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20">
-                          <span>
-                            Creator Declined • Halting Launch
-                          </span>
-                        </span>
-                      )}
-
-                      {currentAiChoice.decision === "PERSUADE" && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleAutonomousPersuade(selectedCreator)
-                          }
-                          disabled={isSendingPitch}
-                          className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-black text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                          {isSendingPitch ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Send className="w-3.5 h-3.5" />
-                          )}
-                          <span>
-                            {persuasionSentMap[selectedCreator.id]
-                              ? "Persuasion Sent (Resend)"
-                              : "Execute: Auto-Send Persuasion Pitch →"}
-                          </span>
-                        </button>
-                      )}
-
-                      {(currentAiChoice.decision === "RESEND" || currentAiChoice.decision === "REVIEW_PREVIEW") && (
-                        <button
-                          type="button"
-                          onClick={handleAutonomousResend}
-                          disabled={isSendingPitch}
-                          className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                          {isSendingPitch ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Send className="w-3.5 h-3.5" />
-                          )}
-                          <span>Execute: Auto-Send 60s Concept Preview & Nudge →</span>
-                        </button>
-                      )}
-
-                      {currentAiChoice.decision === "AWAITING_STEP6_REPLY" && (
-                        <span className={`text-[11px] font-mono flex items-center gap-1.5 px-3 py-1.5 rounded-lg border ${currentAiChoice.badgeClass || "bg-purple-500/10 text-purple-300 border-purple-500/20"}`}>
-                          <Clock className="w-3.5 h-3.5 animate-pulse text-purple-400" />
-                          <span>
-                            {currentAiChoice.actionLabel || "Proposal Dispatched • Waiting for Creator Feedback"}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Reasoning & Latest Message Snippet */}
-                  <div className="space-y-1.5 text-xs">
-                    <p className="text-slate-300 leading-relaxed font-medium">
-                      <strong>AI View & Status:</strong>{" "}
-                      {currentAiChoice.reasoning}
-                    </p>
-                    {currentAiChoice.decision === "PERSUADE" && (
-                      <div className="p-2.5 rounded-lg bg-black/40 border border-rose-500/20 text-[11px] text-rose-200 space-y-1">
-                        <strong className="text-rose-300 block">
-                          Why they should agree:
-                        </strong>
-                        <p>
-                          • <strong>Zero Time Commitment:</strong> Creator Forge
-                          handles 100% of the engineering, product design, cloud
-                          hosting, and support.
-                        </p>
-                        <p>
-                          • <strong>High Community Demand:</strong> Verified
-                          subscriber discussion proves an active need for{" "}
-                          {currentAiChoice.conceptName}.
-                        </p>
-                        <p>
-                          • <strong>50/50 Revenue Split:</strong> Zero capital
-                          risk for creator with high-margin monthly recurring
-                          revenue.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Real-time Email Stream for this Creator */}
-              <div className="p-4 rounded-2xl bg-[#090b0e] border border-white/[0.08] space-y-2.5">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-white">
-                    <Mail className="w-3.5 h-3.5 text-purple-400" />
-                    <span>
-                      Live Email Stream with {selectedCreator?.name} (
-                      {selectedCreator?.email || selectedCreator?.email_public})
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-mono text-emerald-400">
-                    {
-                      getCreatorThreadMessages(selectedCreator, realThreads)
-                        .length
-                    }{" "}
-                    Messages Synchronized
+                  <span className="text-xs font-bold uppercase tracking-wider text-pink-400">
+                    Step 6: Co-Launch Pitch & Agreement
+                  </span>
+                  <span className="text-xs text-slate-500">•</span>
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    50/50 Revenue Split
                   </span>
                 </div>
-
-                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                  {(() => {
-                    const allMsgs = getCreatorThreadMessages(selectedCreator, realThreads);
-                    const pitchSent = selectedCreator ? pitchSentMap[selectedCreator.id] : null;
-                    const answerSent = selectedCreator ? answerSentMap[selectedCreator.id] : null;
-                    const persuasionSent = selectedCreator ? persuasionSentMap[selectedCreator.id] : null;
-
-                    const pTime = pitchSent?.sentTimestamp || (pitchSent?.sentAt ? new Date(pitchSent.sentAt).getTime() : 0);
-                    const aTime = answerSent?.sentTimestamp || (answerSent?.sentAt ? new Date(answerSent.sentAt).getTime() : 0);
-                    const perTime = persuasionSent?.sentTimestamp || (persuasionSent?.sentAt ? new Date(persuasionSent.sentAt).getTime() : 0);
-                    const latestOutbound = Math.max(pTime, aTime, perTime);
-
-                    return allMsgs.length > 0 ? (
-                      allMsgs.map((msg, idx) => {
-                        const isLatest = idx === 0;
-                        const isStep6Reply = isStep6Message(msg, latestOutbound);
-
-                        return (
-                          <div
-                            key={msg.id || idx}
-                            className={`p-3 rounded-xl border transition-all text-xs space-y-1 ${
-                              isLatest
-                                ? "bg-purple-950/30 border-purple-500/50 shadow-md ring-1 ring-purple-500/30"
-                                : "bg-[#141720] border-white/[0.04]"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-bold text-white">
-                                  {msg.from_address}
-                                </span>
-                                {isStep6Reply ? (
-                                  <span className="px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/40 text-[9px] font-bold uppercase tracking-wider">
-                                    Proposal Feedback Reply
-                                  </span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold uppercase tracking-wider">
-                                    Initial Outreach Reply
-                                  </span>
-                                )}
-                                {isLatest && (
-                                  <span className="px-1.5 py-0.5 rounded-md bg-white/10 text-white text-[9px] font-mono">
-                                    Latest
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-[10px] text-slate-500 font-mono">
-                                {msg.received_at
-                                  ? new Date(
-                                      msg.received_at,
-                                    ).toLocaleTimeString([], {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })
-                                  : "Recently"}
-                              </span>
-                            </div>
-                            <p className="text-slate-200 text-xs font-mono whitespace-pre-wrap bg-black/40 p-2 rounded-lg border border-white/[0.04]">
-                              {msg.body}
-                            </p>
-                          </div>
-                        );
-                      },
-                    )
-                  ) : (
-                    <div className="p-4 text-center text-xs text-slate-400 italic">
-                      Waiting for incoming reply from{" "}
-                      {selectedCreator?.email || selectedCreator?.email_public}
-                    </div>
-                  );
-                })()}
-                </div>
+                <h2 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
+                  <span>{selectedCreator?.name || selectedCreator?.display_name || "Creator"}</span>
+                  <span className="text-xs font-normal text-slate-400 font-mono">
+                    ({selectedCreator?.email || selectedCreator?.email_public || "No email"})
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Review the 3 engineered concepts, converse with the creator, and click <strong>Create Project</strong> when ready to launch.
+                </p>
               </div>
             </div>
-          ) : (
-            <div className="p-4 rounded-xl bg-purple-950/30 border border-purple-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2.5">
-                <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                <span className="text-purple-200 leading-relaxed">
-                  <strong>Follow-up Pitch Draft Ready:</strong> Presenting 3
-                  concepts, mockups preview, and pricing. Review or edit below,
-                  then click <strong>"Approve & Send"</strong> to dispatch to{" "}
-                  {selectedCreator?.email ||
-                    selectedCreator?.email_public ||
-                    selectedCreator?.name}
-                  .
-                </span>
-              </div>
+
+            <div className="flex items-center gap-2.5">
+              {selectedCreator && (
+                <button
+                  type="button"
+                  onClick={() => openDecisionModal(selectedCreator, "reject")}
+                  className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                >
+                  <XCircle className="w-4 h-4 text-rose-400" />
+                  <span>Reject Lead</span>
+                </button>
+              )}
               <button
                 type="button"
-                onClick={handleSendOpportunityPitch}
-                disabled={isSendingPitch}
-                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 flex-shrink-0 transition-all cursor-pointer shadow-md"
+                onClick={() => handlePitchAndCreateProject()}
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm border border-emerald-500/50 shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
               >
-                {isSendingPitch ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5" />
-                )}
-                <span>Approve & Send Pitch</span>
+                <Rocket className="w-4 h-4" />
+                <span>CREATE PROJECT</span>
               </button>
             </div>
-          )}
+          </div>
 
+          {/* Main 2-Column Split: Concepts (Left) vs. Conversation & AI Composer (Right) */}
           {selectedCreator && (
-            <div className="grid md:grid-cols-3 gap-5">
-              {/* Concept Selector & Mockup Highlight (Left Col) */}
-              <div className="md:col-span-1 p-5 rounded-2xl bg-[#161a23] border border-white/[0.08] space-y-4 flex flex-col justify-between">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                      Select Final Launch Concept
-                    </h3>
-                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                      50/50 Co-Launch
-                    </span>
-                  </div>
-
-                  {/* Concept Selector Pill Buttons */}
-                  <div className="space-y-2">
-                    {selectedCreator.productConcepts?.map((c, i) => {
-                      const isChosen =
-                        selectedConceptId === c.id ||
-                        (!selectedConceptId && i === 0);
-                      return (
-                        <div
-                          key={c.id}
-                          onClick={() => setSelectedConceptId(c.id)}
-                          className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1.5 ${
-                            isChosen
-                              ? "bg-[#181d2a] border-purple-500/70 shadow-sm ring-1 ring-purple-500/40"
-                              : "bg-black/30 border-white/[0.06] hover:border-white/15"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-black text-white flex items-center gap-1.5">
-                              <span>#{i + 1}</span> {c.name}
-                            </span>
-                            <span className="text-[10px] font-bold text-emerald-400 font-mono">
-                              {c.pricing}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-purple-200 line-clamp-1">
-                            {c.tagline}
-                          </p>
-                          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-white/[0.04]">
-                            <span>Score: {c.opportunityScore}/100</span>
-                            <span className="text-slate-300 font-medium">
-                              {c.mvpDifficulty}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+            <div className="grid lg:grid-cols-12 gap-6">
+              {/* Left Column (5 cols): 3 Engineered SaaS Concepts */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    <span>3 Engineered Product Concepts</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400">
+                    Click to select launch concept
+                  </span>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-bold text-purple-200">
-                    <span>Human Confirmation</span>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="space-y-3">
+                  {selectedCreator.productConcepts?.map((c, i) => {
+                    const isChosen =
+                      selectedConceptId === c.id ||
+                      (!selectedConceptId && i === 0);
+                    return (
+                      <div
+                        key={c.id || i}
+                        onClick={() => setSelectedConceptId(c.id)}
+                        className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2 relative ${
+                          isChosen
+                            ? "bg-[#181d2a] border-emerald-500/70 shadow-lg ring-1 ring-emerald-500/40"
+                            : "bg-[#121620] border-white/[0.07] hover:border-white/20"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-5 h-5 rounded-md text-xs font-black flex items-center justify-center ${
+                              isChosen ? "bg-emerald-600 text-white" : "bg-white/10 text-slate-300"
+                            }`}>
+                              #{i + 1}
+                            </span>
+                            <span className="text-sm font-bold text-white">
+                              {c.name}
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                            {c.pricing}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-purple-200">
+                          {c.tagline}
+                        </p>
+
+                        <p className="text-[11px] text-slate-400 leading-snug">
+                          <strong className="text-slate-300">Problem Solved:</strong> {c.problem}
+                        </p>
+
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-white/[0.04]">
+                          <span className="text-amber-300 font-semibold">
+                            Score: {c.opportunityScore}/100
+                          </span>
+                          <span className="text-slate-300">
+                            MVP: {c.mvpDifficulty || "2 weeks"}
+                          </span>
+                          {isChosen && (
+                            <span className="text-emerald-400 font-bold flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Selected for Launch
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>50/50 Co-Founder Terms</span>
                   </div>
                   <p className="text-[11px] text-slate-300 leading-snug">
-                    Confirming idea selection automatically initializes database
-                    schemas, GitHub repository & Section 2 workspace.
+                    Creator Forge builds, hosts, and supports 100% of the software MVP. Revenue is split 50/50 automatically via Stripe.
                   </p>
                 </div>
               </div>
 
-              {/* Pitch Email Draft & Human Controls (Right 2 Cols) */}
-              <div className="md:col-span-2 p-5 rounded-2xl bg-[#161a23] border border-white/[0.08] space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3.5">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={selectedCreator.avatar}
-                      alt=""
-                      className="w-10 h-10 rounded-full object-cover border border-emerald-500/30"
-                    />
-                    <div>
-                      <h3 className="text-xs font-bold text-white">
-                        Opportunity Follow-Up Pitch for {selectedCreator.name}
-                      </h3>
-                      <p className="text-[11px] text-slate-400 font-mono">
-                        To:{" "}
-                        {selectedCreator.email || selectedCreator.email_public}
-                      </p>
+              {/* Right Column (7 cols): Conversation & AI Composer */}
+              <div className="lg:col-span-7 space-y-4 flex flex-col justify-between">
+                {/* 1. Live Conversation Thread */}
+                <div className="rounded-xl bg-[#121620] border border-white/[0.08] overflow-hidden space-y-0">
+                  <div className="p-3 bg-[#161a26] border-b border-white/[0.06] flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-white">
+                      <Mail className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Conversation Thread with {selectedCreator?.name || "Creator"}</span>
                     </div>
+                    <span className="text-[10px] font-mono text-emerald-400">
+                      {getCreatorThreadMessages(selectedCreator, realThreads).length} Messages
+                    </span>
                   </div>
 
-                  {/* Human-In-The-Loop Action Buttons */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingPitch(!isEditingPitch)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
-                        isEditingPitch
-                          ? "bg-purple-600 text-white border-purple-500"
-                          : "bg-white/[0.05] border-white/10 text-slate-300 hover:text-white"
-                      }`}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      <span>
-                        {isEditingPitch ? "Done Editing" : "Edit Email"}
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleRegeneratePitch}
-                      className="px-3 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-                      title="Rewrite pitch with different angle"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Regenerate</span>
-                    </button>
-
-                    {currentPitchSent ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                          <Check className="w-3 h-3" />
-                          <span>Sent at {currentPitchSent.time}</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleSendOpportunityPitch}
-                          disabled={isSendingPitch}
-                          className="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-slate-300 hover:text-white text-[11px] font-semibold border border-white/10 transition-all flex items-center gap-1 cursor-pointer"
-                          title="Resend this pitch email"
-                        >
-                          <Send className="w-3 h-3" />
-                          <span>
-                            {isSendingPitch ? "Sending..." : "Resend"}
-                          </span>
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleSendOpportunityPitch}
-                        disabled={isSendingPitch}
-                        className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>
-                          {isSendingPitch ? "Sending..." : "Approve & Send"}
-                        </span>
-                      </button>
-                    )}
+                  <div className="p-3 space-y-2.5 max-h-[220px] overflow-y-auto">
+                    {(() => {
+                      const allMsgs = getCreatorThreadMessages(selectedCreator, realThreads);
+                      return allMsgs.length > 0 ? (
+                        allMsgs.map((msg, idx) => {
+                          const isFromCreator = !/partnerships@creatorforge\.com/i.test(msg.from_address || "");
+                          return (
+                            <div
+                              key={msg.id || idx}
+                              className={`p-3 rounded-xl border text-xs space-y-1 ${
+                                isFromCreator
+                                  ? "bg-purple-950/20 border-purple-500/30 ml-4"
+                                  : "bg-white/[0.02] border-white/[0.06] mr-4"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="font-bold text-white">
+                                  {isFromCreator ? (selectedCreator.name || msg.from_address) : "Creator Forge Studio"}
+                                </span>
+                                <span className="text-slate-500 font-mono text-[10px]">
+                                  {msg.received_at ? new Date(msg.received_at).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "Recently"}
+                                </span>
+                              </div>
+                              <p className="text-slate-200 text-xs whitespace-pre-wrap leading-relaxed">
+                                {msg.body}
+                              </p>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-4 text-center text-xs text-slate-400 italic">
+                          No replies received yet. The draft below is ready to send.
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
-                {/* Email Subject & Body View / Edit */}
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[11px] text-slate-400 font-medium block mb-1">
-                      Subject
-                    </label>
-                    {isEditingPitch ? (
-                      <input
-                        type="text"
-                        value={customPitchSubject}
-                        onChange={(e) => setCustomPitchSubject(e.target.value)}
-                        className="w-full bg-[#090b0e] border border-purple-500/50 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none"
-                      />
-                    ) : (
-                      <div className="p-2.5 rounded-xl bg-[#090b0e] border border-white/[0.06] font-mono text-xs text-white font-semibold">
-                        {customPitchSubject ||
-                          `Partnership Opportunity Deck & Top 3 Software Concepts for ${selectedCreator.name || selectedCreator.display_name}`}
+                {/* 2. AI Response Suggestion & Email Composer */}
+                <div className="p-4 rounded-xl bg-[#121620] border border-white/[0.08] space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                      <div>
+                        <span className="text-xs font-bold text-white block">
+                          AI Response Assistant & Email Composer
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {currentAiChoice?.reasoning || "Review and edit the AI suggested message below before sending."}
+                        </span>
                       </div>
-                    )}
+                    </div>
+
+                    {/* TOP ACTION BUTTONS */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleRegenerateStep6Draft}
+                        disabled={isGeneratingStep6Ai}
+                        className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 text-xs font-bold border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        title="Generate fresh AI reply tailored to creator"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 text-purple-400 ${isGeneratingStep6Ai ? "animate-spin" : ""}`} />
+                        <span>{isGeneratingStep6Ai ? "Generating..." : "Regenerate AI Draft"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSendOpportunityPitch()}
+                        disabled={isSendingPitch}
+                        className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
+                      >
+                        {isSendingPitch ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Send className="w-3.5 h-3.5" />
+                        )}
+                        <span>{isSendingPitch ? "Sending..." : "Send Email"}</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="text-[11px] text-slate-400 font-medium block mb-1">
-                      Opportunity Pitch Body
+                  {/* Subject Line Input */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      Subject Line
                     </label>
-                    {isEditingPitch ? (
-                      <textarea
-                        rows={11}
-                        value={customPitchBody}
-                        onChange={(e) => setCustomPitchBody(e.target.value)}
-                        className="w-full bg-[#090b0e] border border-purple-500/50 rounded-xl p-3.5 text-xs text-slate-200 font-mono leading-relaxed focus:outline-none"
-                      />
-                    ) : (
-                      <div className="p-4 rounded-xl bg-[#090b0e] border border-white/[0.06] font-mono text-xs text-slate-300 whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto">
-                        {customPitchBody || (
-                          <>
-                            <p>
-                              Hi{" "}
-                              {selectedCreator.name?.split(" ")[0] || "there"},
-                            </p>
-                            <br />
-                            <p>
-                              Following up on our sync! Based on our deep
-                              audience research across your{" "}
-                              {selectedCreator.followerStr || "100k+"} community
-                              in {selectedCreator.niche}, we designed the top 3
-                              software product concepts tailored for your
-                              audience:
-                            </p>
-                            <br />
-                            <div className="space-y-1.5 pl-3 border-l-2 border-purple-500/40 text-purple-200">
-                              {selectedCreator.productConcepts?.map((c, i) => (
-                                <p key={i}>
-                                  • <strong>{c.name}</strong> ({c.pricing}):{" "}
-                                  {c.tagline} —{" "}
-                                  <em>
-                                    Opportunity Score: {c.opportunityScore}/100
-                                  </em>
-                                </p>
-                              ))}
-                            </div>
-                            <br />
-                            <p>
-                              Our engineering team will build the full MVP at
-                              zero upfront cost under our 50/50 revenue-share
-                              partnership.
-                            </p>
-                            <p>
-                              Let us know which concept excites you most to kick
-                              off development!
-                            </p>
-                          </>
+                    <input
+                      type="text"
+                      value={customPitchSubject}
+                      onChange={(e) => setCustomPitchSubject(e.target.value)}
+                      className="w-full bg-[#090b0e] border border-white/10 focus:border-purple-500/50 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Message Body Textarea */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      Message Body (Editable)
+                    </label>
+                    <textarea
+                      rows={8}
+                      value={customPitchBody}
+                      onChange={(e) => setCustomPitchBody(e.target.value)}
+                      className="w-full bg-[#090b0e] border border-white/10 focus:border-purple-500/50 rounded-xl p-3.5 text-xs text-slate-200 font-mono leading-relaxed focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Bottom Info Bar */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="text-[11px] text-slate-400">
+                      Recipient: <span className="text-emerald-300 font-mono font-medium">{selectedCreator.email || selectedCreator.email_public || "No email set"}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSendOpportunityPitch()}
+                        disabled={isSendingPitch}
+                        className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 sm:hidden"
+                      >
+                        {isSendingPitch ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Send className="w-3.5 h-3.5" />
                         )}
-                      </div>
-                    )}
+                        <span>{isSendingPitch ? "Sending..." : "Send Email"}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -7398,17 +7189,18 @@ export default function AcquisitionEngine({
                   Click any creator to jump straight to their distinct proposal & concepts!
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => syncImapReplies(true)}
                   disabled={pollingImap}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50"
+                  title="Check inbox for replies"
                 >
                   <RefreshCw
-                    className={`w-3.5 h-3.5 ${pollingImap ? "animate-spin" : ""}`}
+                    className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin" : ""}`}
                   />
-                  <span>Poll Inbox</span>
+                  <span className="flex-shrink-0">Sync Inbox</span>
                 </button>
                 <button
                   type="button"
@@ -7560,17 +7352,18 @@ export default function AcquisitionEngine({
                   reply, they will automatically advance to Product Ideas & Proposal Pitch.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => syncImapReplies(true)}
                   disabled={pollingImap}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50"
+                  title="Check inbox for replies"
                 >
                   <RefreshCw
-                    className={`w-3.5 h-3.5 ${pollingImap ? "animate-spin" : ""}`}
+                    className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin" : ""}`}
                   />
-                  <span>Poll Inbox</span>
+                  <span className="flex-shrink-0">Sync Inbox</span>
                 </button>
                 <button
                   type="button"
@@ -7742,6 +7535,317 @@ export default function AcquisitionEngine({
         isSyncing={pollingImap}
         onNotify={notify}
       />
+
+      {/* Creator Follow-Up & Reply Status CRM Directory Modal */}
+      <CreatorFollowUpCRM
+        isOpen={showFollowUpCRM}
+        onClose={() => setShowFollowUpCRM(false)}
+        creators={creators}
+        realThreads={realThreads}
+        pitchSentMap={pitchSentMap}
+        onSelectCreator={(cid, targetStep) => {
+          setSelectedCreatorId(cid);
+          setShowFollowUpCRM(false);
+          setActiveStep(targetStep || 4);
+        }}
+        onSyncImap={() => syncImapReplies(true)}
+        isSyncingImap={pollingImap}
+        onOpenDecisionModal={(c, decision) => {
+          setShowFollowUpCRM(false);
+          openDecisionModal(c, decision);
+        }}
+        onNotify={notify}
+      />
+
+      {/* ── Step 4 Decision & Optional Email Notification Modal ─────────────── */}
+      {decisionModal.isOpen && decisionModal.creator && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-2xl rounded-2xl bg-[#0e1117] border border-white/[0.12] shadow-2xl p-6 space-y-5 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-white/[0.08] pb-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+                    decisionModal.decisionType === "approve"
+                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                      : "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                  }`}
+                >
+                  {decisionModal.decisionType === "approve" ? (
+                    <CheckCircle2 className="w-5 h-5" />
+                  ) : (
+                    <XCircle className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                        decisionModal.decisionType === "approve"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                      }`}
+                    >
+                      {decisionModal.decisionType === "approve"
+                        ? "Accept Creator"
+                        : "Reject Lead"}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      • Step 4 Decision Review
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-white mt-0.5">
+                    {decisionModal.decisionType === "approve"
+                      ? `Accept Partnership with ${decisionModal.creator.name || decisionModal.creator.display_name}`
+                      : `Decline & Archive ${decisionModal.creator.name || decisionModal.creator.display_name}`}
+                  </h3>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setDecisionModal((prev) => ({ ...prev, isOpen: false }))
+                }
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Creator Profile Summary Card */}
+            <div className="p-3.5 rounded-xl bg-[#161a23] border border-white/[0.06] flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-3 min-w-0">
+                <img
+                  src={
+                    decisionModal.creator.avatar ||
+                    decisionModal.creator.avatar_url ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(decisionModal.creator.handle || "Creator")}&background=6366f1&color=fff`
+                  }
+                  alt=""
+                  className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0"
+                />
+                <div className="min-w-0">
+                  <h4 className="font-bold text-white truncate">
+                    {decisionModal.creator.name ||
+                      decisionModal.creator.display_name}
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-mono truncate">
+                    {decisionModal.creator.handle} •{" "}
+                    {decisionModal.creator.platform} •{" "}
+                    {decisionModal.creator.followerStr ||
+                      decisionModal.creator.follower_count}{" "}
+                    followers
+                  </p>
+                </div>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">
+                  Email Address
+                </span>
+                <span className="text-xs font-mono font-bold text-emerald-400">
+                  {decisionModal.creator.email ||
+                    decisionModal.creator.email_public ||
+                    "No email available"}
+                </span>
+              </div>
+            </div>
+
+            {/* Optional Email Notification Toggle & Composition */}
+            <div className="space-y-4 overflow-y-auto flex-1 pr-1">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <div className="space-y-0.5">
+                  <label className="text-xs font-bold text-white flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={decisionModal.sendEmail}
+                      onChange={(e) =>
+                        setDecisionModal((prev) => ({
+                          ...prev,
+                          sendEmail: e.target.checked,
+                        }))
+                      }
+                      className="w-4 h-4 rounded text-emerald-500 focus:ring-0 cursor-pointer accent-emerald-500"
+                    />
+                    <span>Send decision notification email to creator</span>
+                  </label>
+                  <p className="text-[11px] text-slate-400 pl-6">
+                    Optional. Send an email notification to (
+                    {decisionModal.creator.email ||
+                      decisionModal.creator.email_public ||
+                      "creator email"}
+                    ).
+                  </p>
+                </div>
+
+                {decisionModal.sendEmail && (
+                  <button
+                    type="button"
+                    onClick={handleGenerateDecisionAi}
+                    disabled={decisionModal.isGeneratingAi}
+                    className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 flex-shrink-0"
+                    title="Generate personalized email description with AI"
+                  >
+                    {decisionModal.isGeneratingAi ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    )}
+                    <span>
+                      {decisionModal.isGeneratingAi
+                        ? "Generating..."
+                        : "Generate with AI"}
+                    </span>
+                  </button>
+                )}
+              </div>
+
+              {decisionModal.sendEmail && (
+                <div className="rounded-xl bg-[#0b0e14] border border-white/10 overflow-hidden space-y-0 shadow-lg animate-in fade-in">
+                  {/* Fake Mailbox Header */}
+                  <div className="bg-[#121620] px-4 py-2.5 border-b border-white/[0.08] flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-[#ff5f56]" />
+                        <span className="w-2 h-2 rounded-full bg-[#ffbd2e]" />
+                        <span className="w-2 h-2 rounded-full bg-[#27c93f]" />
+                      </div>
+                      <span className="text-[11px] font-bold text-white tracking-wide ml-1">
+                        {decisionModal.decisionType === "approve"
+                          ? "Partnership Acceptance Notice"
+                          : "Partnership Status Update"}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-emerald-400 font-mono font-semibold">
+                      🔒 SMTP Dispatch Ready
+                    </span>
+                  </div>
+
+                  {/* Metadata fields */}
+                  <div className="bg-[#0e121a] px-4 py-2.5 border-b border-white/[0.06] space-y-1.5 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400 font-bold w-14">From:</span>
+                      <span className="text-slate-200 font-mono text-[11px]">
+                        Creator Forge Studio &lt;partnerships@creatorforge.com&gt;
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400 font-bold w-14">To:</span>
+                      <span className="text-emerald-400 font-mono text-[11px] font-bold">
+                        {decisionModal.creator.name ||
+                          decisionModal.creator.display_name}{" "}
+                        &lt;
+                        {decisionModal.creator.email ||
+                          decisionModal.creator.email_public}
+                        &gt;
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <span className="text-slate-400 font-bold w-14">
+                        Subject:
+                      </span>
+                      <input
+                        type="text"
+                        value={decisionModal.subject}
+                        onChange={(e) =>
+                          setDecisionModal((prev) => ({
+                            ...prev,
+                            subject: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. Partnership Accepted: Advancing to Product Discovery"
+                        className="flex-1 bg-[#141824] border border-white/10 rounded-lg px-3 py-1 text-xs text-white font-mono focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Body Editor */}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Email Message Description (Editable)
+                      </label>
+                      <span className="text-[10px] text-purple-400 font-mono">
+                        AI-Generated Template
+                      </span>
+                    </div>
+                    <textarea
+                      rows={6}
+                      value={decisionModal.body}
+                      onChange={(e) =>
+                        setDecisionModal((prev) => ({
+                          ...prev,
+                          body: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter optional description sent to the creator..."
+                      className="w-full bg-[#141824] border border-white/10 rounded-xl p-3.5 text-xs text-slate-200 font-mono leading-relaxed focus:outline-none focus:border-purple-500 transition-colors"
+                    />
+
+                    {decisionModal.decisionType === "approve" && (
+                      <div className="p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-between text-[11px] text-purple-200">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>50/50 Revenue Split • 0 Cost Guarantee</span>
+                        </span>
+                        <span className="font-mono text-[10px] text-purple-300">
+                          Included in Offer
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between border-t border-white/[0.08] pt-4">
+              <button
+                type="button"
+                onClick={() =>
+                  setDecisionModal((prev) => ({ ...prev, isOpen: false }))
+                }
+                disabled={decisionModal.isSending}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-white/[0.05] hover:bg-white/10 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleConfirmDecisionModal}
+                  disabled={decisionModal.isSending}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95 ${
+                    decisionModal.decisionType === "approve"
+                      ? "bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/50 shadow-emerald-600/20"
+                      : "bg-rose-600 hover:bg-rose-500 border border-rose-500/50 shadow-rose-600/20"
+                  }`}
+                >
+                  {decisionModal.isSending ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : decisionModal.decisionType === "approve" ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : (
+                    <XCircle className="w-4 h-4" />
+                  )}
+                  <span>
+                    {decisionModal.isSending
+                      ? "Processing..."
+                      : decisionModal.decisionType === "approve"
+                        ? decisionModal.sendEmail
+                          ? "Confirm Acceptance & Send Email →"
+                          : "Confirm Acceptance & Advance →"
+                        : decisionModal.sendEmail
+                          ? "Confirm Rejection & Send Email"
+                          : "Confirm Rejection & Archive"}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Universal Floating Action Notifications & Alerts */}
       <ActionNotificationToast toasts={toasts} onDismiss={dismissToast} />

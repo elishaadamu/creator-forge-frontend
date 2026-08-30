@@ -1112,7 +1112,7 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} â
 
                 <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">AI Inference</span>
-                  <div className="text-xs font-bold text-white">{buildPlan.technicalPlan?.techStack?.aiInference || 'Gemini 2.5 / GPT-4o'}</div>
+                  <div className="text-xs font-bold text-white">{buildPlan.technicalPlan?.techStack?.aiInference || 'Adaptive AI Engine / Full-Stack LLM'}</div>
                 </div>
               </div>
 

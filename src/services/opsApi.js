@@ -41,7 +41,8 @@ async function req(method, path, body) {
   }
   if (body) opts.body = JSON.stringify(body)
   try {
-    const res = await fetch(BASE + path, opts)
+    const cleanPath = path.startsWith('/api/') ? path.slice(4) : path
+    const res = await fetch(BASE + cleanPath, opts)
     clearTimeout(timeoutId)
     if (!res.ok) {
       const err = await res.text()
@@ -226,6 +227,16 @@ export const recordGateDecision = (id, decisionData) => req('POST', `/projects/$
 export const deleteCoLaunchProject = (id) => req('DELETE', `/projects/${id}`)
 export const deleteAllProjects = () => req('DELETE', '/projects')
 
+export const generateDecisionEmail = (params) =>
+  req('POST', '/autonomous/generate-decision-email', params)
+
+export const generateAudienceAndConcepts = (params) =>
+  req('POST', '/autonomous/generate-audience-and-concepts', params)
+
+export const generateStep6Response = (params) =>
+  req('POST', '/autonomous/generate-step6-response', params)
+
+
 export const getFrontendUrl = () => {
   const envUrl = import.meta.env?.VITE_FRONTEND_URL
   if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
@@ -233,3 +244,4 @@ export const getFrontendUrl = () => {
   }
   return 'https://creator-forge-frontend.vercel.app'
 }
+

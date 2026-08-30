@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Rocket, Target, Layers, ExternalLink, LogOut, User, X, ShieldAlert, Lock } from 'lucide-react'
+import { Rocket, Target, Layers, ExternalLink, LogOut, User, X, ShieldAlert, Lock, Users } from 'lucide-react'
 import AcquisitionEngine from './AcquisitionEngine'
 import ProjectOS from './ProjectOS'
 import AdminPipelineLookup from './AdminPipelineLookup'
+import CreatorFollowUpCRM from './CreatorFollowUpCRM'
 import { createCoLaunchProject, getCoLaunchProject } from '../../services/opsApi'
 
 export default function CreatorLaunchLayout({
@@ -34,6 +35,7 @@ export default function CreatorLaunchLayout({
     }
   })
   const [showAdminLookup, setShowAdminLookup] = useState(false)
+  const [showFollowUpCRM, setShowFollowUpCRM] = useState(false)
 
   // Read active individual user / admin profile
   const [userProfile, setUserProfile] = useState(() => {
@@ -326,6 +328,17 @@ export default function CreatorLaunchLayout({
 
         {/* Right: Actions, User Profile & Logout */}
         <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+          {/* Creator Follow-Up CRM Directory Button */}
+          <button
+            type="button"
+            onClick={() => setShowFollowUpCRM(true)}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 border border-purple-500/30 transition-all cursor-pointer shadow-sm"
+            title="Open Creator Outreach & Follow-Up CRM Directory"
+          >
+            <Users className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+            <span>Follow-Up CRM</span>
+          </button>
+
           {/* Admin Pipeline & Exception Lookup Button */}
           <button
             type="button"
@@ -516,6 +529,37 @@ export default function CreatorLaunchLayout({
           setActiveSection('section1')
         }}
         onForceLaunchProject={handleCreateProjectFromConcept}
+      />
+
+      {/* Creator Follow-Up & Reply Status CRM Directory Modal */}
+      <CreatorFollowUpCRM
+        isOpen={showFollowUpCRM}
+        onClose={() => setShowFollowUpCRM(false)}
+        creators={(() => {
+          try {
+            return JSON.parse(localStorage.getItem('forge_launch_discovered_creators') || '[]')
+          } catch {
+            return []
+          }
+        })()}
+        realThreads={(() => {
+          try {
+            return JSON.parse(localStorage.getItem('forge_launch_real_threads') || '[]')
+          } catch {
+            return []
+          }
+        })()}
+        pitchSentMap={(() => {
+          try {
+            return JSON.parse(localStorage.getItem('forge_launch_pitch_sent_map') || '{}')
+          } catch {
+            return {}
+          }
+        })()}
+        onSelectCreator={(cid) => {
+          setShowFollowUpCRM(false)
+          setActiveSection('section1')
+        }}
       />
     </div>
   )

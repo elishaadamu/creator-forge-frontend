@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X, Sparkles } from 'lucide-react'
 
 export default function ActionNotificationToast({ toasts = [], onDismiss }) {
@@ -16,6 +16,8 @@ export default function ActionNotificationToast({ toasts = [], onDismiss }) {
 function ToastItem({ toast, onDismiss }) {
   const { id, type = 'info', title, message, duration = 3500 } = toast
   const [progress, setProgress] = useState(100)
+  const onDismissRef = useRef(onDismiss)
+  onDismissRef.current = onDismiss
 
   useEffect(() => {
     const startTime = Date.now()
@@ -25,12 +27,12 @@ function ToastItem({ toast, onDismiss }) {
       setProgress(remaining)
       if (remaining <= 0) {
         clearInterval(interval)
-        onDismiss?.(id)
+        onDismissRef.current?.(id)
       }
     }, 50)
 
     return () => clearInterval(interval)
-  }, [id, duration, onDismiss])
+  }, [id, duration])
 
   const config = {
     success: {

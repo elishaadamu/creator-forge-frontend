@@ -502,12 +502,12 @@ export default function AdminControl() {
               )}
             </div>
 
-            {/* Google SMTP Credentials Section */}
+            {/* Email Dispatcher Credentials Section */}
             <div className="border-t border-white/[0.06] mt-4 pt-3">
-              <span className="text-white/60 font-semibold text-[11px] uppercase tracking-wider block mb-2">Google SMTP Dispatcher</span>
+              <span className="text-white/60 font-semibold text-[11px] uppercase tracking-wider block mb-2">Outreach Email Dispatcher</span>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-white/40 font-medium">Google SMTP Email</span>
+                  <span className="text-white/40 font-medium">Outreach Sender Email</span>
                   {isEditingSettings ? (
                     <input
                       type="email"

@@ -377,12 +377,14 @@ export default function AdminPipelineLookup({
 
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
+              type="button"
               onClick={onSyncImap}
               disabled={isSyncing}
-              className="flex items-center gap-1.5 px-3 h-8 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-xs font-semibold text-slate-200 transition-all disabled:opacity-50 cursor-pointer shadow-sm active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex-shrink-0"
+              title="Check for incoming creator replies"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-purple-400' : 'text-slate-400'}`} />
-              <span>{isSyncing ? 'Syncing Inbox...' : 'Refresh Inbox'}</span>
+              <RefreshCw className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${isSyncing ? 'animate-spin text-purple-400' : 'text-slate-400'}`} />
+              <span className="flex-shrink-0">Sync Replies</span>
             </button>
             <button
               onClick={onClose}
@@ -888,7 +890,7 @@ export default function AdminPipelineLookup({
           <div className="flex items-center gap-2">
             <Info className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
             <span className="text-[11px] sm:text-xs">
-              Autonomous sync active with Google SMTP Outbox & Gmail IMAP Listener.
+              Autonomous sync active with live inbox listener & outreach dispatch.
             </span>
           </div>
           <button
