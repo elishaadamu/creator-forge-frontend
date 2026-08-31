@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Layers, CheckCircle2, ArrowRight, Activity, CheckSquare, Sparkles, BarChart2,
   Share2, Copy, Check, ExternalLink, X, ShieldCheck, Mail, Send, Target,
@@ -18,6 +19,17 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
   const [selectedPhaseStep, setSelectedPhaseStep] = useState('plan')
   const [showShareModal, setShowShareModal] = useState(false)
   const [showPhaseExecutionModal, setShowPhaseExecutionModal] = useState(false)
+
+  // Lock background body scroll whenever a modal is open to prevent underlying page movement
+  useEffect(() => {
+    if (showPhaseExecutionModal || showShareModal) {
+      const prevOverflow = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = prevOverflow
+      }
+    }
+  }, [showPhaseExecutionModal, showShareModal])
   const [copiedKey, setCopiedKey] = useState(null)
   const [shareNotice, setShareNotice] = useState('')
   const [shareTab, setShareTab] = useState('email') // 'email' | 'preview' | 'link'
@@ -826,9 +838,9 @@ partnerships@creatorforge.com`
       </div>
 
       {/* PHASE EXECUTION MODAL (PHASE 1 / PHASE 2 / PHASE 3) */}
-      {showPhaseExecutionModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in">
-          <div className="max-w-5xl w-full max-h-[90vh] overflow-y-auto rounded-3xl bg-[#090b0e] border border-white/[0.1] p-6 space-y-6 shadow-2xl">
+      {showPhaseExecutionModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
+          <div className="max-w-5xl w-full max-h-[92vh] overflow-y-auto rounded-3xl bg-[#090b0e] border border-white/[0.1] p-6 space-y-6 shadow-2xl overscroll-contain">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
@@ -888,13 +900,14 @@ partnerships@creatorforge.com`
               />
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* SHARE CREATOR PORTAL MODAL */}
-      {showShareModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in">
-          <div className="max-w-2xl w-full p-5 sm:p-6 rounded-2xl bg-[#0e1117] border border-purple-500/40 space-y-4 shadow-2xl max-h-[92vh] flex flex-col">
+      {showShareModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
+          <div className="max-w-2xl w-full p-5 sm:p-6 rounded-2xl bg-[#0e1117] border border-purple-500/40 space-y-4 shadow-2xl max-h-[92vh] flex flex-col overscroll-contain">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 shrink-0">
               <div className="flex items-center gap-2.5">
@@ -949,71 +962,65 @@ partnerships@creatorforge.com`
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Copy className="w-3.5 h-3.5" />
+                <ExternalLink className="w-3.5 h-3.5" />
                 <span>Magic Link & DM</span>
               </button>
             </div>
 
-            {/* Modal Tab Body */}
+            {/* Modal Tab Content */}
             <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-              {/* TAB 1: DIRECT EMAIL DISPATCH */}
+              {/* TAB 1: EMAIL DISPATCH */}
               {shareTab === 'email' && (
                 <div className="space-y-3.5 animate-fade-in">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                        Recipient Email
-                      </label>
-                      <input
-                        type="email"
-                        value={portalRecipientEmail}
-                        onChange={(e) => setPortalRecipientEmail(e.target.value)}
-                        placeholder="creator@channel.com"
-                        className="w-full px-3 py-2 rounded-xl bg-[#141824] border border-white/[0.1] text-xs text-white outline-none focus:border-purple-500 font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                        Sender Address
-                      </label>
-                      <input
-                        type="text"
-                        readOnly
-                        value="Creator Forge Studio (partnerships@creatorforge.com)"
-                        className="w-full px-3 py-2 rounded-xl bg-[#141824] border border-white/[0.06] text-xs text-slate-400 outline-none font-mono cursor-not-allowed"
-                      />
-                    </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                      Recipient Email (Creator)
+                    </label>
+                    <input
+                      type="email"
+                      value={portalRecipientEmail}
+                      onChange={(e) => setPortalRecipientEmail(e.target.value)}
+                      placeholder="creator@example.com"
+                      className="w-full px-3 py-2 rounded-xl bg-[#161a23] border border-white/[0.1] text-xs font-mono text-white outline-none focus:border-purple-500/50"
+                    />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                      Email Subject
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                      Subject Line
                     </label>
                     <input
                       type="text"
                       value={portalEmailSubject}
                       onChange={(e) => setPortalEmailSubject(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#141824] border border-white/[0.1] text-xs text-white outline-none focus:border-purple-500 font-mono"
+                      className="w-full px-3 py-2 rounded-xl bg-[#161a23] border border-white/[0.1] text-xs text-white outline-none focus:border-purple-500/50"
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                      Email Body (Markdown & HTML Auto-Formatted)
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                      Personalized Message Body
                     </label>
                     <textarea
-                      rows={9}
+                      rows={5}
                       value={portalEmailBody}
                       onChange={(e) => setPortalEmailBody(e.target.value)}
-                      className="w-full p-3.5 rounded-xl bg-[#141824] border border-white/[0.1] text-xs text-slate-200 outline-none leading-relaxed font-mono resize-none focus:border-purple-500"
+                      className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.1] text-xs text-slate-200 outline-none leading-relaxed font-sans resize-none focus:border-purple-500/50"
                     />
                   </div>
 
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[11px] text-emerald-400 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4" />
-                      <span>Direct delivery via Google SMTP with secure tracking</span>
-                    </span>
+                  {portalEmailStatus && (
+                    <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                      portalEmailSuccess
+                        ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+                        : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                    }`}>
+                      {portalEmailSuccess ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />}
+                      <span>{portalEmailStatus}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end pt-1">
                     <button
                       type="button"
                       onClick={handleSendPortalEmail}
@@ -1048,72 +1055,47 @@ partnerships@creatorforge.com`
                     {/* Simulated Email Client Bar */}
                     <div className="p-2.5 rounded-lg bg-black/60 border border-white/[0.06] text-[11px] space-y-1 font-mono text-slate-400">
                       <div><strong className="text-slate-200">From:</strong> Creator Forge Venture Studio &lt;partnerships@creatorforge.com&gt;</div>
-                      <div><strong className="text-slate-200">To:</strong> {portalRecipientEmail || 'creator@channel.com'}</div>
-                      <div><strong className="text-purple-300">Subject:</strong> {portalEmailSubject}</div>
+                      <div><strong className="text-slate-200">To:</strong> {portalRecipientEmail || 'creator@example.com'}</div>
+                      <div><strong className="text-slate-200">Subject:</strong> {portalEmailSubject}</div>
                     </div>
 
-                    {/* Luxury Email Card Canvas */}
-                    <div className="max-w-xl mx-auto rounded-2xl bg-[#0f172a] border border-[#1e293b] overflow-hidden shadow-2xl">
-                      {/* Email Header Banner */}
-                      <div className="p-5 bg-gradient-to-r from-[#1e1b4b] to-[#0f172a] border-b border-[#334155] flex items-center justify-between">
-                        <div>
-                          <div className="text-base font-extrabold text-white tracking-tight">
-                            <span className="text-purple-400">CREATOR</span> FORGE
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                            Venture Studio & Co-Launch Incubation
-                          </div>
+                    {/* Email Card Preview */}
+                    <div className="rounded-xl border border-white/[0.08] bg-[#0c1017] overflow-hidden text-xs">
+                      <div className="p-4 bg-gradient-to-r from-purple-900/40 via-indigo-900/30 to-purple-950/40 border-b border-white/[0.06] flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Rocket className="w-4 h-4 text-purple-400" />
+                          <span className="font-extrabold text-white text-sm">CREATOR FORGE</span>
                         </div>
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/20 text-purple-200 border border-purple-500/40">
-                          50/50 Co-Founder
+                        <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                          Verified Invite
                         </span>
                       </div>
 
-                      {/* Email Body Content */}
-                      <div className="p-6 space-y-4 text-xs text-slate-300 leading-relaxed">
-                        <p>Hi <strong className="text-white font-bold">{(project?.creatorName || 'there').split(' ')[0]}</strong>,</p>
-                        <p>
-                          Exciting milestone! Our venture studio engineering team has officially initiated the active development and co-launch sprint for <strong className="text-purple-300 font-bold">{project.productName || 'your custom software platform'}</strong> under our 50/50 venture co-launch agreement.
-                        </p>
-                        <p>
-                          Your private, passwordless <strong className="text-white">Co-Founder Portal</strong> is now live. Through your portal, you have real-time transparency into our sprint progress, shared presales revenue, launch strategy, and daily collaboration milestones.
+                      <div className="p-5 space-y-3 text-slate-300 leading-relaxed font-sans">
+                        <p className="whitespace-pre-line text-slate-200 font-medium">
+                          {portalEmailBody}
                         </p>
 
-                        {/* Venture Overview Box */}
-                        <div className="p-4 rounded-xl bg-[#161f38] border border-purple-500/30 space-y-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 block">
-                            📦 Venture Overview & Architecture
-                          </span>
-                          <div className="space-y-1 text-[11px] text-slate-200">
-                            <div>• <strong className="text-white">Product:</strong> {project.productName}</div>
-                            <div>• <strong className="text-white">Tagline:</strong> {project.productTagline || 'Software platform'}</div>
-                            <div>• <strong className="text-emerald-400">Pricing Tier:</strong> {project.pricing || '$29-$79/mo'} (50/50 Net Revenue Share)</div>
-                            <div>• <strong className="text-slate-300">Financial Risk:</strong> 100% funded by Creator Forge</div>
+                        <div className="p-3.5 rounded-xl bg-[#141824] border border-purple-500/30 space-y-2">
+                          <div className="font-bold text-white text-xs">Co-Launch Venture Snapshot</div>
+                          <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div><span className="text-slate-400">Software:</span> <strong className="text-purple-300">{project.productName || 'Custom App'}</strong></div>
+                            <div><span className="text-slate-400">Revenue Split:</span> <strong className="text-emerald-400">50% Net Creator Share</strong></div>
+                            <div><span className="text-slate-400">Initial Pricing:</span> <strong className="text-slate-200">{project.pricing || '$49/mo'}</strong></div>
+                            <div><span className="text-slate-400">Validation Goal:</span> <strong className="text-emerald-400">${presaleTarget.toLocaleString()}</strong></div>
                           </div>
                         </div>
 
-                        {/* Glowing Portal CTA Button */}
-                        <div className="py-2 text-center space-y-1.5">
+                        <div className="pt-2 text-center">
                           <a
                             href={magicPortalUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-sm shadow-[0_10px_25px_rgba(147,51,234,0.4)] border border-white/20 hover:scale-105 transition-all"
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-purple-950/50 hover:brightness-110 transition-all"
                           >
-                            <span>Open Co-Founder Portal →</span>
-                            <ExternalLink className="w-4 h-4" />
+                            <span>Open Co-Founder Portal (Passwordless Access)</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
-                          <p className="text-[10px] text-slate-400 font-mono">Passwordless Direct Access Link</p>
-                        </div>
-
-                        {/* Sprint Highlights */}
-                        <div className="space-y-1.5 text-[11px] text-slate-300 pt-2 border-t border-white/[0.06]">
-                          <strong className="text-white block">🛠️ Current Sprint Deliverables:</strong>
-                          <ul className="space-y-1 pl-4 list-disc text-purple-300">
-                            <li><span className="text-slate-300">MVP Architecture & core web app staging preview</span></li>
-                            <li><span className="text-slate-300">Audience Pre-Order & validation funnel with checkout</span></li>
-                            <li><span className="text-slate-300">Co-Founder Analytics Dashboard tracking live payouts</span></li>
-                          </ul>
                         </div>
                       </div>
 
@@ -1202,7 +1184,8 @@ partnerships@creatorforge.com`
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

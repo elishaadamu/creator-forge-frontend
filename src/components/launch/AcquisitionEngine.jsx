@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Target,
   Search,
@@ -3287,6 +3288,24 @@ export default function AcquisitionEngine({
     });
   };
 
+  // Lock background body scroll whenever any acquisition modal is open
+  useEffect(() => {
+    const isAnyModalOpen = Boolean(
+      showInterestedModal ||
+      showAwaitingModal ||
+      decisionModal?.isOpen ||
+      isLaunchingProject ||
+      showDeleteConfirmModal
+    );
+    if (isAnyModalOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [showInterestedModal, showAwaitingModal, decisionModal?.isOpen, isLaunchingProject, showDeleteConfirmModal]);
+
   const handleGenerateDecisionAi = async () => {
     if (!decisionModal.creator) return;
     setDecisionModal((prev) => ({ ...prev, isGeneratingAi: true }));
@@ -3531,43 +3550,59 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     );
   };
 
+  // Helper to check if a creator has already received initial outreach
+  const isCreatorContacted = (c) => {
+    if (!c) return false;
+    if (c.outreachSent) return true;
+    const s = (c.status || "").toLowerCase();
+    if (["contacted", "outreach_sent", "pitched", "replied", "interested", "launched", "active_project"].includes(s)) return true;
+    if (c.hasReplied) return true;
+    const msgs = getCreatorThreadMessages(c, realThreads);
+    if (msgs && msgs.length > 0) return true;
+    return false;
+  };
+
   const [sendingBulk, setSendingBulk] = useState(false);
   const [outreachLog, setOutreachLog] = useState("");
 
-  const handleSendBulkOutreach = async ({ autoAdvance = false } = {}) => {
+  const handleSendBulkOutreach = async ({ autoAdvance = false, forceAll = false } = {}) => {
     if (sendingBulk) return;
     setSendingBulk(true);
-    const validEmailList = creators.filter((c) =>
-      (c.email || c.email_public || "").trim().includes("@"),
-    );
 
-    if (validEmailList.length === 0) {
-      setOutreachLog(
-        `[Notice] No email addresses found for the ${creators.length} creators in this batch. Please add emails in Step 2. Advancing to Step 4...`,
-      );
-      notify(
-        "warning",
-        "Missing Contact Emails",
-        `No email addresses found for ${creators.length} creators. Add emails in Step 2. Advancing to Step 4...`,
-        4500
-      );
+    const uncontactedList = creators.filter((c) => {
+      const email = (c.email || c.email_public || "").trim();
+      if (!email.includes("@")) return false;
+      return forceAll ? true : !isCreatorContacted(c);
+    });
+
+    if (uncontactedList.length === 0) {
+      const alreadyContactedCount = creators.filter((c) => isCreatorContacted(c)).length;
+      if (alreadyContactedCount > 0) {
+        setOutreachLog(
+          `[Notice] All ${alreadyContactedCount} creators in this cohort have already received initial outreach emails. Ready in Step 4.`,
+        );
+      } else {
+        setOutreachLog(
+          `[Notice] No email addresses found for the ${creators.length} creators in this batch. Please add emails in Step 2.`,
+        );
+      }
       setSendingBulk(false);
-      if (autoAdvance || campaignRunning) {
+      if (autoAdvance) {
         setTimeout(() => {
           setActiveStep(4);
-        }, 1500);
+        }, 1000);
       }
       return;
     }
 
     setOutreachLog(
-      `[Outreach Queue] Delivering partnership inquiries to ${validEmailList.length} verified creators...`,
+      `[Outreach Queue] Delivering partnership inquiries to ${uncontactedList.length} uncontacted creators...`,
     );
     try {
-      const { sendDirectEmail } = await import("../../services/opsApi");
+      const { sendDirectEmail, updateCreatorDetails } = await import("../../services/opsApi");
       let sentCount = 0;
 
-      const sendPromises = validEmailList.map(async (c) => {
+      const sendPromises = uncontactedList.map(async (c) => {
         const targetEmail = (c.email || c.email_public).trim();
         const renderedSubject = templateSubject.replace(
           /\{\{display_name\}\}/g,
@@ -3595,6 +3630,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             c.id,
           );
           sentCount++;
+          try {
+            await updateCreatorDetails(c.id, { status: "contacted" });
+          } catch {}
         } catch (sendErr) {
           console.warn(
             `[AcquisitionEngine] Failed to deliver email to ${targetEmail}:`,
@@ -3605,10 +3643,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
       await Promise.allSettled(sendPromises);
 
+      // Mark delivered creators as contacted
+      setCreators((prev) =>
+        prev.map((item) =>
+          uncontactedList.some((u) => u.id === item.id || u.handle === item.handle)
+            ? { ...item, status: "contacted", outreachSent: true }
+            : item
+        )
+      );
+
       notify(
         "success",
         "Outreach Wave Dispatched",
-        `Sent partnership inquiries to ${sentCount} verified creators.`,
+        `Sent partnership inquiries to ${sentCount} new creators.`,
         5000
       );
 
@@ -3616,7 +3663,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         `[Delivered] Outreach wave successfully dispatched to ${sentCount} creators. Transitioning to Step 4...`,
       );
 
-      if (autoAdvance || campaignRunning) {
+      if (autoAdvance) {
         setTimeout(() => {
           setActiveStep(4);
         }, 1200);
@@ -3626,7 +3673,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       setOutreachLog(
         `[Notice] Outreach notice: ${e.message || "Dispatched outreach"}. Transitioning to Step 4...`,
       );
-      if (autoAdvance || campaignRunning) {
+      if (autoAdvance) {
         setTimeout(() => {
           setActiveStep(4);
         }, 1200);
@@ -3636,13 +3683,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     }
   };
 
-  // Autonomous auto-send on reaching Step 3
+  // Autonomous auto-send on reaching Step 3 (Strictly ONLY if uncontacted creators exist)
   useEffect(() => {
     if (activeStep === 3 && campaignRunning && !sendingBulk) {
-      const timer = setTimeout(() => {
-        handleSendBulkOutreach({ autoAdvance: true });
-      }, 900);
-      return () => clearTimeout(timer);
+      const hasUncontacted = creators.some((c) => {
+        const email = (c.email || c.email_public || "").trim();
+        return email.includes("@") && !isCreatorContacted(c);
+      });
+      if (hasUncontacted) {
+        const timer = setTimeout(() => {
+          handleSendBulkOutreach({ autoAdvance: true });
+        }, 900);
+        return () => clearTimeout(timer);
+      }
     }
   }, [activeStep, campaignRunning]);
 
@@ -8377,9 +8430,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       )}
 
       {/* ── High-Tech Cinematic Project Launch & Dashboard Initialization Overlay ── */}
-      {isLaunchingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-3xl bg-gradient-to-b from-[#141824] to-[#0b0e14] border border-purple-500/30 shadow-[0_0_80px_rgba(168,85,247,0.25)] p-8 text-center space-y-6 relative overflow-hidden">
+      {isLaunchingProject && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-200 overflow-hidden">
+          <div className="w-full max-w-lg rounded-3xl bg-gradient-to-b from-[#141824] to-[#0b0e14] border border-purple-500/30 shadow-[0_0_80px_rgba(168,85,247,0.25)] p-8 text-center space-y-6 relative overflow-hidden overscroll-contain">
             {/* Ambient Background Glow */}
             <div className="absolute -top-24 -left-24 w-48 h-48 bg-purple-600/30 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-600/30 rounded-full blur-3xl pointer-events-none" />
@@ -8470,7 +8523,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Universal Floating Action Notifications & Alerts */}

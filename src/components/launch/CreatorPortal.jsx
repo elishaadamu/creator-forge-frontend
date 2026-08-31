@@ -269,10 +269,14 @@ export default function CreatorPortal({ portalId }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs pt-2">
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Your Profit Share</span>
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Your 50% Profit Share</span>
               <span className="text-sm font-extrabold text-emerald-400 mt-0.5 block">${creatorRevenueShare.toLocaleString()}</span>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Sprint Duration</span>
+              <span className="text-sm font-extrabold text-emerald-300 mt-0.5 block">{project.validationPlan?.period || project.daysLeft || '18 Days'}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
               <span className="text-[10px] text-slate-400 uppercase font-bold block">Pre-Orders / Backers</span>
@@ -290,11 +294,12 @@ export default function CreatorPortal({ portalId }) {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3">
+        <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3 overflow-x-auto">
           {[
             { id: 'tasks', label: 'Daily Launch Checklist', icon: CheckSquare, count: `${completedTasksCount}/${totalTasksCount}` },
             { id: 'scripts', label: 'Copyable Launch Content', icon: Video },
             { id: 'presales', label: 'Verified Pre-Orders', icon: Users, count: reservations.length },
+            { id: 'strategy', label: 'Validation Strategy & Plan', icon: FileText },
           ].map(tab => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -302,7 +307,7 @@ export default function CreatorPortal({ portalId }) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
                   isActive
                     ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50'
                     : 'text-slate-400 hover:text-white bg-[#0e1117] border border-white/[0.06]'
@@ -635,6 +640,58 @@ export default function CreatorPortal({ portalId }) {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB 4: VALIDATION STRATEGY & PLAN */}
+        {activeTab === 'strategy' && (
+          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
+            <div className="border-b border-white/[0.06] pb-3 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-white text-sm">Venture Validation Blueprint</h3>
+                <p className="text-xs text-slate-400">The core target customer, value proposition, and validation success gates agreed upon for this co-launch.</p>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                50/50 Co-Founder Terms
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5">
+                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Target Customer</span>
+                <p className="text-slate-200 leading-relaxed font-sans">
+                  {project.validationPlan?.customer || project.targetAudience || "Core high-intent audience segment from your community."}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5">
+                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">Core Problem Solved</span>
+                <p className="text-slate-200 leading-relaxed font-sans">
+                  {project.validationPlan?.problem || project.problem || "Automating friction points and repetitive tasks for your followers."}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5">
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Founding Member Offer</span>
+                <p className="text-slate-200 leading-relaxed font-sans">
+                  {project.validationPlan?.offer || `Founding Access to ${project.productName || 'the product'}: Lifetime discount & direct alpha access.`}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5">
+                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">Pricing & Reservation</span>
+                <p className="text-slate-200 leading-relaxed font-sans">
+                  {project.validationPlan?.pricing || project.pricing || "$89 founding annual pass with a refundable reservation deposit."}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5 md:col-span-2">
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Success Threshold & Sprint Gate</span>
+                <p className="text-slate-200 leading-relaxed font-sans">
+                  {project.validationPlan?.threshold || `$${presaleTarget.toLocaleString()} in pre-sales or 50 paid founding member reservations within ${project.validationPlan?.period || '18 days'}.`}
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </main>
