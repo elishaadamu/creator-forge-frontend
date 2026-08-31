@@ -165,42 +165,48 @@ export default function CreatorLaunchLayout({
 
   // Deep-link handler: Load specific project & section from URL query params (?section=section2&project=proj_xxx)
   useEffect(() => {
-    try {
-      const searchParams = new URLSearchParams(window.location.search)
-      const secParam = searchParams.get('section')
-      const projIdParam = searchParams.get('project')
+    const handleUrlSync = () => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search)
+        const secParam = searchParams.get('section')
+        const projIdParam = searchParams.get('project')
 
-      if (secParam === 'section2' || secParam === 'section1') {
-        setActiveSection(secParam)
-      }
+        if (secParam === 'section1' || secParam === 'section2') {
+          setActiveSection(secParam)
+        }
 
-      if (projIdParam) {
-        import('../../services/opsApi').then(({ getCoLaunchProject, getCoLaunchProjects }) => {
-          getCoLaunchProject(projIdParam)
-            .then((p) => {
-              if (p && p.id) {
-                setActiveProject(p)
-                try {
-                  localStorage.setItem('forge_launch_active_project', JSON.stringify(p))
-                  localStorage.setItem('forge_launch_active_section', 'section2')
-                } catch {}
-                setActiveSection('section2')
-              }
-            })
-            .catch(() => {
-              getCoLaunchProjects().then((projs) => {
-                const matched = projs?.find((item) => item.id === projIdParam)
-                if (matched) {
-                  setActiveProject(matched)
+        if (projIdParam) {
+          import('../../services/opsApi').then(({ getCoLaunchProject, getCoLaunchProjects }) => {
+            getCoLaunchProject(projIdParam)
+              .then((p) => {
+                if (p && p.id) {
+                  setActiveProject(p)
+                  try {
+                    localStorage.setItem('forge_launch_active_project', JSON.stringify(p))
+                    localStorage.setItem('forge_launch_active_section', 'section2')
+                  } catch {}
                   setActiveSection('section2')
                 }
               })
-            })
-        })
+              .catch(() => {
+                getCoLaunchProjects().then((projs) => {
+                  const matched = projs?.find((item) => item.id === projIdParam)
+                  if (matched) {
+                    setActiveProject(matched)
+                    setActiveSection('section2')
+                  }
+                })
+              })
+          })
+        }
+      } catch (e) {
+        console.warn('[CreatorLaunchLayout] URL parameter parse error:', e)
       }
-    } catch (e) {
-      console.warn('[CreatorLaunchLayout] URL parameter parse error:', e)
     }
+
+    handleUrlSync()
+    window.addEventListener('popstate', handleUrlSync)
+    return () => window.removeEventListener('popstate', handleUrlSync)
   }, [])
 
   // Keep section & project in localStorage
@@ -261,11 +267,11 @@ export default function CreatorLaunchLayout({
     const cleanProject = {
       id: projId,
       createdAt: new Date().toISOString(),
-      currentPhase: newProjData.currentPhase || 2,
+      currentPhase: newProjData.currentPhase || 1,
       ...newProjData,
       // Fresh metrics
       currentPresales: 0,
-      presaleTarget: 5000,
+      presaleTarget: newProjData.presaleTarget || 12500,
       visitors: 0,
       conversionRate: 0,
       reservations: [],
@@ -320,7 +326,8 @@ export default function CreatorLaunchLayout({
       customer: 'Senior Developers & Technical Founders',
       problem: 'Managing fragmented CI/CD, deployment keys, and pull request testing wastes 10+ hours per sprint.',
       pricing: '$49/mo per seat',
-      presaleTarget: 5000,
+      presaleTarget: 12500,
+      currentPhase: 1,
     })
   }
 
@@ -381,7 +388,14 @@ export default function CreatorLaunchLayout({
           {/* Section Switcher Tabs */}
           <div className="flex items-center p-1 rounded-xl bg-white/[0.03] border border-white/[0.07]">
             <button
-              onClick={() => setActiveSection('section1')}
+              onClick={() => {
+                setActiveSection('section1')
+                try {
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('section', 'section1')
+                  window.history.replaceState({}, '', url.toString())
+                } catch {}
+              }}
               className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 activeSection === 'section1'
                   ? 'bg-purple-500/20 text-purple-200 border border-purple-500/40 shadow-sm'
@@ -392,7 +406,14 @@ export default function CreatorLaunchLayout({
               <span>Section 1: Acquisition</span>
             </button>
             <button
-              onClick={() => setActiveSection('section2')}
+              onClick={() => {
+                setActiveSection('section2')
+                try {
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('section', 'section2')
+                  window.history.replaceState({}, '', url.toString())
+                } catch {}
+              }}
               className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 activeSection === 'section2'
                   ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 shadow-sm'
@@ -637,9 +658,13 @@ export default function CreatorLaunchLayout({
             return {}
           }
         })()}
-        onSelectCreator={(cid) => {
+        onSelectCreator={(cid, targetStep) => {
           setShowFollowUpCRM(false)
-          setActiveSection('section1')
+          if (targetStep === 'section2' || targetStep === 7) {
+            setActiveSection('section2')
+          } else {
+            setActiveSection('section1')
+          }
         }}
         onDeleteCreator={() => {
           fetchCrmData()

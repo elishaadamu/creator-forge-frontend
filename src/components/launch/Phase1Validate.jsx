@@ -52,8 +52,6 @@ export default function Phase1Validate({
     }
     return 0
   })
-  const presaleTarget = Number(project?.presaleTarget || project?.targetRevenue || 5000)
-
   // Real Project Reservations / Backers state
   const [reservations, setReservations] = useState(() => project?.reservations || [])
 
@@ -72,6 +70,15 @@ export default function Phase1Validate({
     period: '',
     threshold: ''
   })
+
+  // Dynamic presale target derived from validation plan threshold or project
+  const parseThresholdAmount = (str) => {
+    if (!str) return 0
+    const match = String(str).replace(/,/g, '').match(/\$(\d+)/)
+    return match ? Number(match[1]) : 0
+  }
+  const derivedPlanTarget = parseThresholdAmount(plan?.threshold || project?.validationPlan?.threshold)
+  const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project?.presaleTarget || project?.targetRevenue || 12500)
 
   // Real Project Campaign Kit State
   const [campaignKit, setCampaignKit] = useState(() => {
@@ -231,6 +238,8 @@ export default function Phase1Validate({
     const updated = {
       ...(project || {}),
       validationPlan: plan,
+      presaleTarget: presaleTarget,
+      targetRevenue: presaleTarget,
       campaignKit: campaignKit,
       surveyData: surveyData,
       mockupImage: mockupImage,
@@ -292,9 +301,12 @@ export default function Phase1Validate({
 
       if (generated) {
         setPlan(generated)
+        const newTarget = parseThresholdAmount(generated.threshold) || 12500
         const updated = {
           ...(project || {}),
           validationPlan: generated,
+          presaleTarget: newTarget,
+          targetRevenue: newTarget,
           campaignKit,
           surveyData,
           mockupImage,
@@ -1042,29 +1054,36 @@ export default function Phase1Validate({
                   </p>
 
                   {/* Live Pre-Order Action Buttons */}
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                    <a
-                      href={`${origin}/preorder/${productSlug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/60 transition-all active:scale-95"
-                    >
-                      <CreditCard className="w-4 h-4" />
-                      <span>Live Checkout: Claim Access ($99)</span>
-                      <ExternalLink className="w-3.5 h-3.5 ml-0.5 opacity-75" />
-                    </a>
+                  {(() => {
+                    const priceMatch = (project?.pricing || project?.selectedConcept?.pricing || '$89').match(/\$(\d+)/)
+                    const parsedPrice = priceMatch ? Number(priceMatch[1]) : 89
+                    const depositVal = Math.max(9, Math.round(parsedPrice * 0.2))
+                    return (
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                        <a
+                          href={`${origin}/preorder/${productSlug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/60 transition-all active:scale-95"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          <span>Live Checkout: Claim Access (${parsedPrice})</span>
+                          <ExternalLink className="w-3.5 h-3.5 ml-0.5 opacity-75" />
+                        </a>
 
-                    <a
-                      href={`${origin}/preorder/${productSlug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#141720] hover:bg-[#1a1f2c] text-slate-200 border border-white/[0.1] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                      <span>Reserve with $19 Deposit</span>
-                      <ExternalLink className="w-3.5 h-3.5 ml-0.5 opacity-75" />
-                    </a>
-                  </div>
+                        <a
+                          href={`${origin}/preorder/${productSlug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#141720] hover:bg-[#1a1f2c] text-slate-200 border border-white/[0.1] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                          <span>Reserve with ${depositVal} Deposit</span>
+                          <ExternalLink className="w-3.5 h-3.5 ml-0.5 opacity-75" />
+                        </a>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {/* Visual Designed Mockup Showcase (Full, Non-Editable UI Frame) */}

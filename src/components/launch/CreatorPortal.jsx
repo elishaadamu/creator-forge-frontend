@@ -178,7 +178,13 @@ export default function CreatorPortal({ portalId }) {
   }
 
   const presalesRevenue = Number(project.currentPresales || 0)
-  const presaleTarget = Number(project.presaleTarget || project.targetRevenue || 5000)
+  const parseThresholdAmount = (str) => {
+    if (!str) return 0
+    const match = String(str).replace(/,/g, '').match(/\$(\d+)/)
+    return match ? Number(match[1]) : 0
+  }
+  const derivedPlanTarget = parseThresholdAmount(project.validationPlan?.threshold)
+  const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project.presaleTarget || project.targetRevenue || 12500)
   const creatorRevenueShare = Math.round(presalesRevenue * 0.5)
   const campaignKit = project.campaignKit || {}
   const schedule = (campaignKit.postingSchedule && campaignKit.postingSchedule.length > 0)

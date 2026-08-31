@@ -197,7 +197,11 @@ export default function FollowUpCRMPage() {
             creators={creators}
             realThreads={realThreads}
             onSelectCreator={(creatorId, targetStep) => {
-              window.open(`/launch?section=section1&step=${targetStep || 5}&creator=${encodeURIComponent(creatorId)}`, "_blank");
+              if (targetStep === "section2" || targetStep === 7) {
+                window.open(`/launch?section=section2&creator=${encodeURIComponent(creatorId)}`, "_blank");
+              } else {
+                window.open(`/launch?section=section1&step=${targetStep || 5}&creator=${encodeURIComponent(creatorId)}`, "_blank");
+              }
             }}
             onSyncImap={handleSyncImap}
             isSyncingImap={isSyncingImap}

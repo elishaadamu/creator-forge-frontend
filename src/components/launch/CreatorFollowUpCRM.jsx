@@ -99,6 +99,19 @@ export default function CreatorFollowUpCRM({
 
   const handleDirectApprove = (creatorId) => {
     setStatusOverrides((prev) => ({ ...prev, [creatorId]: "approved" }));
+    const newStageMap = {
+      ...stageMap,
+      [creatorId]: {
+        step: 5,
+        stepName: "Step 5: Audience & 3 Product Ideas",
+        label: "Step 5 Product Studio →",
+        updatedAt: new Date().toISOString(),
+      },
+    };
+    setStageMap(newStageMap);
+    try {
+      localStorage.setItem("forge_creator_stage_map", JSON.stringify(newStageMap));
+    } catch {}
     if (onApproveCreator) {
       onApproveCreator(creatorId);
     }
@@ -506,7 +519,46 @@ export default function CreatorFollowUpCRM({
     const isRejected = effectiveStatus === "rejected" || effectiveStatus === "declined" || effectiveStatus === "archived";
     const replyInfo = getCreatorReplyInfo(c);
     const hasReply = Boolean(replyInfo?.hasReply || c.hasReplied || c.reply_classification || c.replyClassification);
-    const isLaunched = Boolean(c.project_id || effectiveStatus === "launched" || effectiveStatus === "active_project");
+
+    // 1. Check if an active project is launched for this creator (in DB or localStorage)
+    let hasActiveLaunchedProject = Boolean(c.project_id || effectiveStatus === "launched" || effectiveStatus === "active_project" || explicitTracked?.step === "section2" || explicitTracked?.step === 7);
+    if (!hasActiveLaunchedProject) {
+      try {
+        const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
+        if (storedProj) {
+          const matchId = storedProj.creatorId && (storedProj.creatorId === c.id || storedProj.creatorId === c.handle);
+          const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === (c.handle || "").replace(/^@/, "").toLowerCase());
+          const matchEmail = storedProj.creatorEmail && c.email && (storedProj.creatorEmail.toLowerCase() === c.email.toLowerCase());
+          if (matchId || matchHandle || matchEmail) {
+            hasActiveLaunchedProject = true;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 2. Check thread messages to see if creator or operator has exchanged Step 5/6 concept proposals
+    let hasConceptInThread = false;
+    let hasKickoffInThread = false;
+    try {
+      const allMsgs = realThreads.filter(t => {
+        const tId = t.creator_id || t.creatorId;
+        const tHandle = (t.creator_handle || t.handle || "").replace(/^@/, "").toLowerCase();
+        const cHandle = (c.handle || "").replace(/^@/, "").toLowerCase();
+        const tEmail = (t.creator_email || t.email || "").toLowerCase();
+        const cEmail = (c.email || c.email_public || "").toLowerCase();
+        return (tId && tId === c.id) || (tHandle && tHandle === cHandle) || (tEmail && cEmail && tEmail === cEmail);
+      }).flatMap(t => t.messages || (t.body ? [t] : []));
+
+      for (const m of allMsgs) {
+        const text = `${m.subject || ""} ${m.body || ""}`.toLowerCase();
+        if (text.includes("concept 1") || text.includes("concept 2") || text.includes("concept 3") || text.includes("go for concept") || text.includes("choose concept") || text.includes("partnering with creator forge") || text.includes("3 concepts") || text.includes("proposal deck")) {
+          hasConceptInThread = true;
+        }
+        if (text.includes("co-founder portal live") || (text.includes("developing") && text.includes("creator forge")) || text.includes("project os")) {
+          hasKickoffInThread = true;
+        }
+      }
+    } catch (e) {}
 
     if (isRejected) {
       return {
@@ -520,7 +572,7 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    if (isLaunched) {
+    if (hasActiveLaunchedProject || hasKickoffInThread) {
       return {
         stepNumber: 7,
         stepKey: "section2",
@@ -532,19 +584,21 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    if (explicitTracked?.step === 6 || isPitched) {
+    // Step 6: Explicitly in Step 6, or pitch sent, or concept selected in thread
+    if (explicitTracked?.step === 6 || isPitched || hasConceptInThread) {
       return {
         stepNumber: 6,
         stepKey: "step6",
         stepName: "Step 6: Pitch & Co-Launch Studio",
-        badgeText: "Step 6: Pitch & Chat Active",
+        badgeText: "Step 6: Concept Selected",
         badgeClass: "bg-purple-500/20 text-purple-300 border-purple-500/40",
         buttonLabel: "Step 6 Pitch Studio →",
         targetStep: 6,
       };
     }
 
-    if (isApproved || explicitTracked?.step === 5) {
+    // Step 5: ONLY if lead is approved OR operator explicitly advanced to Step 5
+    if (isApproved || (explicitTracked?.step === 5 && isApproved)) {
       return {
         stepNumber: 5,
         stepKey: "step5",
@@ -561,10 +615,10 @@ export default function CreatorFollowUpCRM({
         stepNumber: 4,
         stepKey: "step4",
         stepName: "Step 4: Interested Reply Received",
-        badgeText: "Step 4: Reply Received",
+        badgeText: "Step 4: Reply Review",
         badgeClass: "bg-teal-500/20 text-teal-300 border-teal-500/40",
-        buttonLabel: "Step 5 Product Studio →",
-        targetStep: 5,
+        buttonLabel: "Step 4 Review Reply →",
+        targetStep: 4,
       };
     }
 
@@ -584,7 +638,7 @@ export default function CreatorFollowUpCRM({
       stepNumber: 2,
       stepKey: "step2",
       stepName: "Step 2: Discovered & Qualified",
-      badgeText: "Step 2: Discovered",
+      badgeText: "Step 2: Qualified Lead",
       badgeClass: "bg-slate-500/20 text-slate-300 border-slate-500/40",
       buttonLabel: "Step 3 Outreach →",
       targetStep: 3,
@@ -962,16 +1016,12 @@ export default function CreatorFollowUpCRM({
         </div>
 
         {/* KPI Status Pills */}
-        <div className="p-4 bg-[#0e121a] border-b border-white/[0.06] grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
+        <div className="p-4 bg-[#0e121a] border-b border-white/[0.06] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {[
             { id: "all", label: "All Leads", count: counts.all, color: "text-white", border: "border-white/20", dot: "bg-purple-400" },
-            { id: "approved", label: "Step 5: Approved", count: counts.approved, color: "text-emerald-400", border: "border-emerald-500/30", dot: "bg-emerald-400" },
-            { id: "step6_pitch", label: "Step 6: In Pitch", count: counts.step6_pitch, color: "text-purple-300", border: "border-purple-500/40", dot: "bg-purple-400" },
             { id: "interested", label: "Interested", count: counts.interested, color: "text-teal-400", border: "border-teal-500/30", dot: "bg-teal-400" },
             { id: "question", label: "Questions", count: counts.question, color: "text-amber-400", border: "border-amber-500/30", dot: "bg-amber-400" },
-            { id: "not_interested", label: "Hesitant", count: counts.not_interested, color: "text-orange-400", border: "border-orange-500/30", dot: "bg-orange-400" },
-            { id: "rejected", label: "Rejected", count: counts.rejected, color: "text-rose-400", border: "border-rose-500/30", dot: "bg-rose-400" },
-            { id: "awaiting_reply", label: "Awaiting", count: counts.awaiting_reply, color: "text-blue-400", border: "border-blue-500/30", dot: "bg-blue-400" },
+            { id: "awaiting_reply", label: "Awaiting Reply", count: counts.awaiting_reply, color: "text-blue-400", border: "border-blue-500/30", dot: "bg-blue-400" },
             { id: "unsubscribe", label: "Unsubscribed", count: counts.unsubscribe, color: "text-slate-400", border: "border-slate-500/30", dot: "bg-slate-400" },
           ].map((item) => (
             <button
@@ -1218,7 +1268,9 @@ export default function CreatorFollowUpCRM({
                       <strong className="text-slate-400">Analysis:</strong>{" "}
                       {reply.reasoning ||
                         (reply.hasReply
-                          ? "Creator replied positively to Step 4 outreach. Qualified for Step 5 Audience & Product Synthesis — ready to review tailored concepts."
+                          ? c.isApproved
+                            ? "Lead approved! Qualified for Step 5 Audience & Product Synthesis — ready to review tailored concepts."
+                            : "Creator replied to outreach. Awaiting operator review & approval in Step 4 before advancing to Step 5."
                           : "Autonomous outreach message dispatched. Awaiting inbound creator response.")}
                     </p>
                   </div>

@@ -227,23 +227,30 @@ export default function PreorderLandingPage({ slug }) {
         </p>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
-          <button
-            onClick={() => openCheckout({ name: 'Founding Annual Pass ($99)', price: 99, deposit: false })}
-            className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/60 transition-all active:scale-95"
-          >
-            <CreditCard className="w-4 h-4" />
-            <span>Claim Founding Access ($99)</span>
-          </button>
+        {(() => {
+          const priceMatch = (project?.pricing || '$89').match(/\$(\d+)/)
+          const parsedPrice = priceMatch ? Number(priceMatch[1]) : 89
+          const depositVal = Math.max(9, Math.round(parsedPrice * 0.2))
+          return (
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
+              <button
+                onClick={() => openCheckout({ name: `Founding Annual Pass ($${parsedPrice})`, price: parsedPrice, deposit: false })}
+                className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/60 transition-all active:scale-95 cursor-pointer"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Claim Founding Access (${parsedPrice})</span>
+              </button>
 
-          <button
-            onClick={() => openCheckout({ name: 'Refundable Deposit ($19)', price: 19, deposit: true })}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#141720] hover:bg-[#1c212e] text-slate-200 border border-white/[0.1] font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-          >
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Reserve with $19 Deposit</span>
-          </button>
-        </div>
+              <button
+                onClick={() => openCheckout({ name: `Refundable Deposit ($${depositVal})`, price: depositVal, deposit: true })}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#141720] hover:bg-[#1c212e] text-slate-200 border border-white/[0.1] font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Reserve with ${depositVal} Deposit</span>
+              </button>
+            </div>
+          )
+        })()}
 
         {/* Perks Indicators */}
         <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 pt-2">

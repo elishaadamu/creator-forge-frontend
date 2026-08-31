@@ -1341,16 +1341,54 @@ export function buildSmartFallbackPlan(source) {
     source?.description ||
     `They need a high-leverage solution to automate core tasks.`;
 
+  // Dynamically analyze creator audience scale, pricing, and product complexity
+  const rawFollowers = String(source?.followers || source?.follower_count || source?.followerStr || "250000");
+  let followerCount = 250000;
+  if (rawFollowers.toLowerCase().includes('m')) {
+    followerCount = (parseFloat(rawFollowers) || 1) * 1000000;
+  } else if (rawFollowers.toLowerCase().includes('k')) {
+    followerCount = (parseFloat(rawFollowers) || 250) * 1000;
+  } else {
+    followerCount = Number(rawFollowers.replace(/[^0-9]/g, '')) || 250000;
+  }
+
+  const rawPricing = String(source?.pricing || source?.revenueModel || "$89");
+  const priceMatch = rawPricing.match(/\$(\d+)/);
+  const unitPrice = priceMatch ? Number(priceMatch[1]) : 89;
+  const depositVal = Math.max(9, Math.round(unitPrice * 0.2));
+
+  // Determine backer target based on audience magnitude (0.05% - 0.1% early adopter conversion rate)
+  let targetBackers = 50;
+  if (followerCount >= 1000000) targetBackers = 250;
+  else if (followerCount >= 500000) targetBackers = 180;
+  else if (followerCount >= 200000) targetBackers = 140;
+  else if (followerCount >= 80000) targetBackers = 90;
+  else targetBackers = 50;
+
+  const rawTargetRevenue = targetBackers * unitPrice;
+  const computedRevenueTarget = Math.round(rawTargetRevenue / 500) * 500 || (targetBackers * unitPrice);
+
+  // Determine sprint duration based on MVP difficulty and niche purchasing cycle
+  const diffStr = String(source?.mvpDifficulty || source?.complexity || "").toLowerCase();
+  let sprintDays = 14;
+  if (diffStr.includes("4 week") || diffStr.includes("high") || diffStr.includes("month")) {
+    sprintDays = 21;
+  } else if (diffStr.includes("3 week") || diffStr.includes("medium")) {
+    sprintDays = 18;
+  } else if (diffStr.includes("2 week") || diffStr.includes("low")) {
+    sprintDays = 10;
+  } else {
+    sprintDays = followerCount >= 200000 ? 18 : 14;
+  }
+
   return {
     customer: `${niche} creators and professionals in ${creator}'s community who actively experience workflow friction and already pay for software tools or coaching.`,
     problem: `${tagline} They currently spend 5–10 hours per week using fragmented workarounds and are looking for a cohesive tool designed specifically for ${niche}.`,
     offer: `Founding Member Access to ${product}: 50% lifetime discount, direct alpha access, priority onboarding, and exclusive private feedback channel with the creators.`,
-    pricing:
-      "$99 founding annual membership ($19 refundable reservation deposit option available for immediate risk-free commitment).",
-    testMethod: `1) Host a creator-led video breakdown & community poll. 2) Conduct 10 direct discovery interviews with high-intent respondents. 3) Launch a 48-hour founding member pre-sale collecting paid reservations.`,
-    period: "14 days",
-    threshold:
-      "$5,000 in collected presales or 50 paid founding member reservations from qualified buyers.",
+    pricing: `$${unitPrice} founding annual membership ($${depositVal} refundable reservation deposit option available for immediate risk-free commitment).`,
+    testMethod: `1) Host a creator-led video breakdown & community poll. 2) Conduct 10 direct discovery interviews with high-intent respondents. 3) Launch a targeted founding member pre-sale window collecting paid reservations.`,
+    period: `${sprintDays} days`,
+    threshold: `$${computedRevenueTarget.toLocaleString()} in collected presales or ${targetBackers} paid founding member reservations from qualified buyers.`,
   };
 }
 
@@ -1376,27 +1414,38 @@ export async function generateValidationPlanAI(
   const model =
     projectData?.revenueModel ||
     projectData?.pricingModel ||
-    "$99/yr founding access";
+    projectData?.pricing ||
+    "$89/yr founding access";
+  const followers = projectData?.followers || projectData?.followerStr || "250K";
+  const difficulty = projectData?.mvpDifficulty || "Medium (3 weeks)";
 
-  const system = `You are an elite product incubator strategist specializing in creator co-launches and pre-sale validation gates. You generate concrete, quantified, and realistic validation plan specifications. Return ONLY a valid JSON object matching the requested schema with no surrounding text or markdown outside the JSON.`;
+  const system = `You are an elite product incubator strategist specializing in creator co-launches and pre-sale validation gates. You generate concrete, quantified, and realistic validation plan specifications. 
+CRITICAL RULE: DO NOT use static or default numbers for target revenue or validation period. You MUST analyze the creator's audience scale (${followers}), unit price (${model}), and MVP complexity (${difficulty}) to compute a custom revenue threshold and optimal sprint timeline.
+Return ONLY a valid JSON object matching the requested schema with no surrounding text or markdown outside the JSON.`;
 
-  const prompt = `Generate a comprehensive validation plan specification for this co-launch product:
+  const prompt = `Generate a comprehensive, customized validation plan specification for this co-launch product:
 Product Name: ${product}
 Tagline/Problem: ${tagline}
 Creator Co-Founder: ${creator}
+Audience / Reach: ${followers} Followers
 Niche: ${niche}
 Target Audience: ${audience}
 Proposed Pricing/Model: ${model}
+MVP Difficulty/Complexity: ${difficulty}
+
+CALCULATION INSTRUCTIONS:
+1. "threshold": Compute a mathematically sound revenue milestone (e.g. for 250K followers @ $89 = $12,500 or 140 paid reservations; for 50K followers @ $29 = $2,500 or 80 reservations).
+2. "period": Determine the exact validation sprint days (e.g. '10 days', '14 days', '18 days', or '21 days') based on product complexity and creator video publishing cadence.
 
 Return a valid JSON object with the following exact keys:
 {
   "customer": "Specific description of the exact high-intent sub-segment who will pay first (2-3 sentences)",
   "problem": "The acute, expensive, and frustrating pain point this product solves immediately (2-3 sentences)",
   "offer": "Founding member pre-sale offer including perks, early alpha access, discount, and onboarding guarantee (2-3 sentences)",
-  "pricing": "Exact price point for pre-order and reservation deposit terms (e.g. '$99 founding annual pass with a $19 refundable reservation deposit')",
-  "testMethod": "Exact 3-step test methodology: 1) Creator announcement & video CTA, 2) Direct interviews with 10 qualified leads, 3) 48-hour founding member pre-sale window collecting real money, not just email opt-ins (3-4 sentences)",
-  "period": "Timeline duration (e.g. '14 days')",
-  "threshold": "Clear quantified success threshold criteria to pass phase gate (e.g. '$5,000 collected or 50 paid reservations from qualified prospects')"
+  "pricing": "Exact price point for pre-order and reservation deposit terms (e.g. '$89 founding annual pass with a $18 refundable reservation deposit')",
+  "testMethod": "Exact 3-step test methodology: 1) Creator announcement & video CTA, 2) Direct interviews with 10 qualified leads, 3) Targeted founding member pre-sale window collecting real money, not just email opt-ins (3-4 sentences)",
+  "period": "AI-calculated optimal sprint timeline (e.g. '18 days' or '10 days')",
+  "threshold": "AI-calculated quantified success threshold criteria based on audience size (e.g. '$12,500 collected or 140 paid reservations from qualified prospects')"
 }
 
 Ensure all fields are realistic, concrete, and tailored specifically to "${product}" and "${creator}".`;
@@ -1416,28 +1465,15 @@ Ensure all fields are realistic, concrete, and tailored specifically to "${produ
     }
 
     if (resObj && (resObj.customer || resObj.problem || resObj.offer)) {
+      const fallback = buildSmartFallbackPlan(projectData);
       return {
-        customer: String(
-          resObj.customer || buildSmartFallbackPlan(projectData).customer,
-        ),
-        problem: String(
-          resObj.problem || buildSmartFallbackPlan(projectData).problem,
-        ),
-        offer: String(
-          resObj.offer || buildSmartFallbackPlan(projectData).offer,
-        ),
-        pricing: String(
-          resObj.pricing ||
-            "$99 founding annual plan ($19 refundable reservation)",
-        ),
-        testMethod: String(
-          resObj.testMethod ||
-            "Publish creator-led CTA, interview 10 qualified prospects, and collect paid reservations.",
-        ),
-        period: String(resObj.period || "14 days"),
-        threshold: String(
-          resObj.threshold || "$5,000 collected or 50 paid reservations.",
-        ),
+        customer: String(resObj.customer || fallback.customer),
+        problem: String(resObj.problem || fallback.problem),
+        offer: String(resObj.offer || fallback.offer),
+        pricing: String(resObj.pricing || fallback.pricing),
+        testMethod: String(resObj.testMethod || fallback.testMethod),
+        period: String(resObj.period || fallback.period),
+        threshold: String(resObj.threshold || fallback.threshold),
       };
     }
     throw new Error("Incomplete validation plan schema");

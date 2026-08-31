@@ -44,6 +44,7 @@ import {
   Globe,
 } from "lucide-react";
 import { deleteAllCreators } from "../../services/opsApi";
+import { buildSmartFallbackPlan } from "../../services/ai";
 import AdminPipelineLookup from "./AdminPipelineLookup";
 import CreatorFollowUpCRM from "./CreatorFollowUpCRM";
 import ActionNotificationToast from "../ui/ActionNotificationToast";
@@ -117,6 +118,8 @@ export default function AcquisitionEngine({
   );
 
   // Discovered Creators State (Dynamic AI + Apify Pipeline)
+  const [isLaunchingProject, setIsLaunchingProject] = useState(false);
+  const [launchStepIndex, setLaunchStepIndex] = useState(1);
   const [creators, setCreators] = useState(() => {
     const deletedIds = (() => {
       try {
@@ -153,6 +156,9 @@ export default function AcquisitionEngine({
   });
   const [selectedCreatorId, setSelectedCreatorId] = useState(() => {
     try {
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const creatorParam = searchParams?.get('creator');
+      if (creatorParam) return creatorParam;
       const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
       const savedCreators = JSON.parse(
         localStorage.getItem("forge_launch_discovered_creators") || "[]",
@@ -171,6 +177,27 @@ export default function AcquisitionEngine({
   const [copiedEmail, setCopiedEmail] = useState(null);
   const [replyFilter, setReplyFilter] = useState("all");
   const [showFollowUpCRM, setShowFollowUpCRM] = useState(false);
+
+  // Sync step and creator from URL if passed as deep-link query parameters
+  useEffect(() => {
+    const handleUrlSync = () => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const stepParam = Number(searchParams.get('step'));
+        const creatorParam = searchParams.get('creator');
+        if (stepParam >= 1 && stepParam <= 6) {
+          setActiveStep(stepParam);
+        }
+        if (creatorParam) {
+          setSelectedCreatorId(creatorParam);
+        }
+      } catch (e) {}
+    };
+
+    handleUrlSync();
+    window.addEventListener('popstate', handleUrlSync);
+    return () => window.removeEventListener('popstate', handleUrlSync);
+  }, []);
 
   // Keep discovered creators persisted to localStorage so they never vanish on refresh
   useEffect(() => {
@@ -2923,6 +2950,20 @@ export default function AcquisitionEngine({
       await handleSendOpportunityPitch(updatedCreator);
 
       // Automatically advance to Step 6
+      try {
+        const map = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+        map[creator.id] = {
+          step: 6,
+          stepNumber: 6,
+          actionName: "Step 6 Pitch & Co-Launch Studio",
+          updatedAt: new Date().toISOString(),
+        };
+        if (creator.handle) {
+          map[(creator.handle || "").replace(/^@/, "").toLowerCase()] = map[creator.id];
+        }
+        localStorage.setItem("forge_creator_stage_map", JSON.stringify(map));
+      } catch (e) {}
+
       setActiveStep(6);
       notify(
         "success",
@@ -2941,6 +2982,19 @@ export default function AcquisitionEngine({
   const handleSendBlueprintAndAdvanceToStep6 = async (creator = selectedCreator) => {
     if (!creator) return;
     await handleSendOpportunityPitch(creator);
+    try {
+      const map = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+      map[creator.id] = {
+        step: 6,
+        stepNumber: 6,
+        actionName: "Step 6 Pitch & Co-Launch Studio",
+        updatedAt: new Date().toISOString(),
+      };
+      if (creator.handle) {
+        map[(creator.handle || "").replace(/^@/, "").toLowerCase()] = map[creator.id];
+      }
+      localStorage.setItem("forge_creator_stage_map", JSON.stringify(map));
+    } catch (e) {}
     setActiveStep(6);
   };
 
@@ -3327,13 +3381,66 @@ export default function AcquisitionEngine({
     const concept =
       concepts.find((p) => p.id === selectedConceptId) || concepts[0];
 
-    // Deliver formal partnership kick-off email to the creator
+    setIsLaunchingProject(true);
+    setLaunchStepIndex(1);
+
+    // Step 1: Prepare Concept Architecture
+    await new Promise((r) => setTimeout(r, 450));
+    setLaunchStepIndex(2);
+
+    // Deliver formal partnership kick-off email to the creator with secure portal access
     const targetEmail = (selectedCreator.email || selectedCreator.email_public || "").trim();
+    const portalSlug = (selectedCreator.handle || selectedCreator.name || "creator").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+    const portalToken = "cf_sec_live";
+    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3001";
+    const magicPortalUrl = `${origin}/portal/${portalSlug}?token=${portalToken}`;
+
     if (targetEmail && targetEmail.includes("@")) {
       const firstName = (selectedCreator.name || selectedCreator.display_name || "there").split(" ")[0];
       const handleClean = (selectedCreator.handle || "").replace(/^@/, "");
-      const kickoffSubject = `🚀 Partnership Kick-off: Developing ${concept?.name || "your software product"} with Creator Forge`;
-      const kickoffBody = `Hi ${firstName},\n\nGreat news! Our studio engineering team has officially selected and initiated the development project for **${concept?.name || "your custom software platform"}** under our 50/50 venture co-launch agreement.\n\nHere is our current development sprint:\n• Engineering Architecture & MVP specification for ${concept?.name} (${concept?.pricing || "$29-$79/mo"})\n• Setting up your private Co-Founder Portal & shared analytics dashboard\n• Pre-launch validation and community onboarding pipeline\n\nUnder our partnership, Creator Forge covers 100% of the engineering, server infrastructure, billing, and technical operations with zero upfront capital required from you.\n\nWe will share live staging previews and your co-founder portal link shortly. Excited to build this together!\n\nBest regards,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handleClean}]`;
+      const prodName = concept?.name || "your custom software platform";
+      const pricing = concept?.pricing || "$29-$79/mo";
+      const tagline = concept?.tagline || "Tailored software venture";
+      const problem = concept?.problem || "Monetizing and streamlining workflows for your community";
+
+      const kickoffSubject = `🚀 Co-Founder Portal Live: Developing ${prodName} with Creator Forge`;
+      const kickoffBody = `Hi ${firstName},
+
+Exciting milestone! Our venture studio engineering team has officially initiated the active development and co-launch sprint for **${prodName}** under our 50/50 venture co-launch agreement.
+
+Your private, passwordless **Co-Founder Portal** is now live. Through your portal, you have real-time transparency into our sprint progress, shared presales revenue, launch strategy, and daily collaboration milestones.
+
+---
+
+### 📦 Venture Overview & Architecture
+• **Product Name:** ${prodName}
+• **Value Proposition:** ${tagline}
+• **Pricing Tier:** ${pricing} (50/50 Net Revenue Split)
+• **Target Solution:** ${problem}
+• **Financial Risk:** Zero upfront capital — Creator Forge covers 100% of engineering, hosting, payment setup, and customer operations.
+
+---
+
+### 🔑 Access Your Co-Founder Portal
+Click the link below to access your private co-founder dashboard (no password required):
+
+${magicPortalUrl}
+
+---
+
+### 🛠️ Current Engineering Sprint:
+1. **MVP Architecture & Staging Environment:** Fully functional core web app ready for your private review.
+2. **Audience Pre-Order & Validation Funnel:** High-converting landing page, checkout, and email sequence.
+3. **Co-Founder Analytics Dashboard:** Live tracking of daily visitors, conversion rate, and revenue payouts.
+
+We are thrilled to partner with you on this venture. Feel free to reply directly to this email at any time.
+
+Best regards,
+**The Creator Forge Studio Team**
+partnerships@creatorforge.com
+
+---
+Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handleClean}]`;
 
       try {
         const { sendDirectEmail } = await import("../../services/opsApi");
@@ -3343,6 +3450,25 @@ export default function AcquisitionEngine({
         console.warn("[AcquisitionEngine] Failed to dispatch kick-off email:", mailErr);
       }
     }
+
+    // Step 3: Compute Validation Milestones & Dashboard
+    setLaunchStepIndex(3);
+    await new Promise((r) => setTimeout(r, 550));
+
+    const smartInitialPlan = buildSmartFallbackPlan({
+      productName: concept?.name,
+      productTagline: concept?.tagline,
+      creatorName: selectedCreator.name || selectedCreator.display_name,
+      handle: selectedCreator.handle,
+      followers: selectedCreator.followerStr || selectedCreator.follower_count,
+      niche: selectedCreator.niche,
+      pricing: concept?.pricing,
+      revenueModel: concept?.revenueModel,
+      mvpDifficulty: concept?.mvpDifficulty,
+    });
+
+    const parsedTargetMatch = smartInitialPlan.threshold.match(/\$([0-9,]+)/);
+    const parsedTargetVal = parsedTargetMatch ? Number(parsedTargetMatch[1].replace(/,/g, '')) : 12500;
 
     onCreateProject({
       creatorId: selectedCreator.id,
@@ -3367,22 +3493,40 @@ export default function AcquisitionEngine({
       creatorScore: selectedCreator.creatorScore || selectedCreator.score || 85,
       opportunityScore: concept?.opportunityScore || 92,
       selectedConcept: concept,
-      currentPhase: 2,
-      validationPlan: {
-        customer: concept?.customer || "",
-        problem: concept?.problem || "",
-        offer: `${concept?.name} Founding Access: ${concept?.tagline}`,
-        pricing: concept?.pricing || "$29/mo Starter",
-        testMethod: `1) Co-founder video announcement, 2) 10 user interviews, 3) 48-hour Founding Pre-Order sprint`,
-        period: "14 days",
-        threshold: "$5,000 in pre-sales or 50 paid founding reservations",
-      },
+      presaleTarget: parsedTargetVal,
+      targetRevenue: parsedTargetVal,
+      currentPhase: 1,
+      validationPlan: smartInitialPlan,
     });
+
+    try {
+      const map = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+      map[selectedCreator.id] = {
+        step: "section2",
+        stepNumber: 7,
+        actionName: "Section 2 Project OS",
+        updatedAt: new Date().toISOString(),
+      };
+      if (selectedCreator.handle) {
+        map[(selectedCreator.handle || "").replace(/^@/, "").toLowerCase()] = map[selectedCreator.id];
+      }
+      localStorage.setItem("forge_creator_stage_map", JSON.stringify(map));
+    } catch (e) {}
+
+    // Step 4: Finalizing & Opening Dashboard
+    setLaunchStepIndex(4);
+    await new Promise((r) => setTimeout(r, 600));
+
+    if (onGoToProjectOS) {
+      onGoToProjectOS();
+    }
+
+    setIsLaunchingProject(false);
 
     notify(
       "success",
       "Section 2 Project Initialized",
-      `Launched Co-Launch Project OS (Phase 2: Build MVP) for ${selectedCreator.name || selectedCreator.handle} (${concept?.name || "Venture"}). Kick-off email dispatched to ${targetEmail || "creator"}!`,
+      `Launched Co-Launch Project OS for ${selectedCreator.name || selectedCreator.handle} (${concept?.name || "Venture"}). Kick-off email dispatched to ${targetEmail || "creator"}!`,
       6000
     );
   };
@@ -6625,12 +6769,12 @@ export default function AcquisitionEngine({
               </p>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
               <button
                 type="button"
                 onClick={() => handleSynthesizeStep5Ai(selectedCreator)}
                 disabled={isSynthesizingStep5Ai}
-                className="px-3.5 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="h-9 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 whitespace-nowrap shadow-sm"
                 title="Use AI to re-engineer 3 concepts & audience intelligence"
               >
                 {isSynthesizingStep5Ai ? (
@@ -6640,8 +6784,8 @@ export default function AcquisitionEngine({
                 )}
                 <span>
                   {isSynthesizingStep5Ai
-                    ? "Synthesizing AI Blueprint..."
-                    : "Regenerate with AI"}
+                    ? "Synthesizing..."
+                    : "Regenerate Ideas"}
                 </span>
               </button>
 
@@ -6651,25 +6795,25 @@ export default function AcquisitionEngine({
                     type="button"
                     onClick={() => handleSendOpportunityPitch(selectedCreator)}
                     disabled={isSendingPitch}
-                    className="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    className="h-9 px-3.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 text-purple-300 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 active:scale-95 whitespace-nowrap shadow-sm"
                     title="Send follow-up concept email again to creator"
                   >
                     {isSendingPitch ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" />
                     ) : (
-                      <Send className="w-3.5 h-3.5" />
+                      <Send className="w-3.5 h-3.5 text-purple-400" />
                     )}
                     <span>
-                      {isSendingPitch ? "Re-sending..." : "Re-send / Follow Up Email"}
+                      {isSendingPitch ? "Re-sending..." : "Re-send Email"}
                     </span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setActiveStep(6)}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95"
+                    className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 whitespace-nowrap border border-emerald-500/40"
                   >
-                    <span>Advance to Step 6 Studio →</span>
+                    <span>Advance to Step 6 →</span>
                   </button>
                 </>
               ) : (
@@ -6679,7 +6823,7 @@ export default function AcquisitionEngine({
                     handleSendBlueprintAndAdvanceToStep6(selectedCreator)
                   }
                   disabled={isSendingPitch}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50"
+                  className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 whitespace-nowrap border border-emerald-500/40"
                   title="Send the 3 product concepts directly to the creator's email and advance to Step 6"
                 >
                   {isSendingPitch ? (
@@ -6690,7 +6834,7 @@ export default function AcquisitionEngine({
                   <span>
                     {isSendingPitch
                       ? "Dispatching..."
-                      : "Send 3 Concepts Email & Advance →"}
+                      : "Send 3 Concepts & Advance →"}
                   </span>
                 </button>
               )}
@@ -7026,6 +7170,7 @@ export default function AcquisitionEngine({
       {activeStep === 6 && (
         <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-6">
           {/* Creator Switcher Tabs */}
+          {/* Creator Switcher Tabs (Only Interested / Qualified Creators) */}
           <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] flex items-center justify-between gap-3 overflow-x-auto">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex-shrink-0">
@@ -7034,10 +7179,30 @@ export default function AcquisitionEngine({
               {interestedCreators.map((c) => {
                 const isSelected = selectedCreator?.id === c.id;
                 const msgs = getCreatorThreadMessages(c, realThreads);
+                
+                // Check if creator project is already launched in Project OS (Section 2)
+                let isLaunched = Boolean(c.project_id || (c.status || "").toLowerCase() === "launched" || (c.status || "").toLowerCase() === "active_project");
+                if (!isLaunched) {
+                  try {
+                    const stageMap = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+                    if (stageMap[c.id]?.step === "section2" || stageMap[c.id]?.step === 7) isLaunched = true;
+                    if (c.handle && (stageMap[c.handle.replace(/^@/, "").toLowerCase()]?.step === "section2" || stageMap[c.handle.replace(/^@/, "").toLowerCase()]?.step === 7)) isLaunched = true;
+                    const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
+                    if (storedProj) {
+                      const matchId = storedProj.creatorId && (storedProj.creatorId === c.id || storedProj.creatorId === c.handle);
+                      const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === (c.handle || "").replace(/^@/, "").toLowerCase());
+                      const matchEmail = storedProj.creatorEmail && (c.email || c.email_public) && (storedProj.creatorEmail.toLowerCase() === (c.email || c.email_public).toLowerCase());
+                      if (matchId || matchHandle || matchEmail) isLaunched = true;
+                    }
+                  } catch (e) {}
+                }
+
                 const pitchSent = Boolean(
                   pitchSentMap[c.id] ||
-                  msgs.some((m) => /blueprint|opportunity deck|software concepts|concept pitch|concepts for/i.test(m.subject || ""))
+                  (c.status || "").toLowerCase() === "pitched" ||
+                  msgs.some((m) => /blueprint|opportunity deck|software concepts|concept pitch|concepts for|partnering with creator forge|concept 1|concept 2|concept 3|co-founder portal/i.test(`${m.subject || ""} ${m.body || ""}`))
                 );
+
                 return (
                   <button
                     key={c.id}
@@ -7058,12 +7223,34 @@ export default function AcquisitionEngine({
                       className="w-5 h-5 rounded-full object-cover"
                     />
                     <span>{c.name || c.display_name}</span>
-                    {pitchSent ? (
-                      <span className="text-[10px] font-bold text-emerald-300 bg-black/40 px-1.5 py-0.5 rounded">
+                    {isLaunched ? (
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${
+                          isSelected
+                            ? "text-white bg-slate-950/70 border border-black/30 shadow-sm"
+                            : "text-emerald-300 bg-emerald-500/15 border border-emerald-500/30"
+                        }`}
+                      >
+                        Launched
+                      </span>
+                    ) : pitchSent ? (
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${
+                          isSelected
+                            ? "text-white bg-slate-950/70 border border-black/30 shadow-sm"
+                            : "text-purple-300 bg-purple-500/15 border border-purple-500/30"
+                        }`}
+                      >
                         {msgs.length > 0 ? "In Conversation" : "Proposal Sent"}
                       </span>
                     ) : (
-                      <span className="text-[10px] font-bold text-purple-300 bg-black/40 px-1.5 py-0.5 rounded">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${
+                          isSelected
+                            ? "text-white bg-slate-950/70 border border-black/30 shadow-sm"
+                            : "text-amber-300 bg-amber-500/15 border border-amber-500/30"
+                        }`}
+                      >
                         Draft Ready
                       </span>
                     )}
@@ -7124,25 +7311,76 @@ export default function AcquisitionEngine({
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               {selectedCreator && (
                 <button
                   type="button"
                   onClick={() => openDecisionModal(selectedCreator, "reject")}
-                  className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  className="h-9 px-3.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-sm"
                 >
-                  <XCircle className="w-4 h-4 text-rose-400" />
+                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
                   <span>Reject Lead</span>
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => handlePitchAndCreateProject()}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm border border-emerald-500/50 shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-              >
-                <Rocket className="w-4 h-4" />
-                <span>CREATE PROJECT</span>
-              </button>
+
+              {(() => {
+                let isSelectedCreatorLaunched = Boolean(
+                  selectedCreator?.project_id ||
+                  (selectedCreator?.status || "").toLowerCase() === "launched" ||
+                  (selectedCreator?.status || "").toLowerCase() === "active_project"
+                );
+                if (!isSelectedCreatorLaunched && selectedCreator) {
+                  try {
+                    const stageMap = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+                    if (stageMap[selectedCreator.id]?.step === "section2" || stageMap[selectedCreator.id]?.step === 7) isSelectedCreatorLaunched = true;
+                    if (selectedCreator.handle && (stageMap[selectedCreator.handle.replace(/^@/, "").toLowerCase()]?.step === "section2" || stageMap[selectedCreator.handle.replace(/^@/, "").toLowerCase()]?.step === 7)) isSelectedCreatorLaunched = true;
+                    const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
+                    if (storedProj) {
+                      const matchId = storedProj.creatorId && (storedProj.creatorId === selectedCreator.id || storedProj.creatorId === selectedCreator.handle);
+                      const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === (selectedCreator.handle || "").replace(/^@/, "").toLowerCase());
+                      const matchEmail = storedProj.creatorEmail && (selectedCreator.email || selectedCreator.email_public) && (storedProj.creatorEmail.toLowerCase() === (selectedCreator.email || selectedCreator.email_public).toLowerCase());
+                      if (matchId || matchHandle || matchEmail) isSelectedCreatorLaunched = true;
+                    }
+                  } catch (e) {}
+                }
+
+                if (isSelectedCreatorLaunched) {
+                  return (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handlePitchAndCreateProject()}
+                        className="h-9 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap shadow-sm"
+                        title="Re-sync project specs from selected concept"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Re-Sync Project</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onGoToProjectOS) onGoToProjectOS();
+                        }}
+                        className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold border border-emerald-500/40 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+                      >
+                        <Rocket className="w-3.5 h-3.5 text-emerald-200" />
+                        <span>Open Project OS</span>
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <button
+                    type="button"
+                    onClick={() => handlePitchAndCreateProject()}
+                    className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold border border-emerald-500/40 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+                  >
+                    <Rocket className="w-3.5 h-3.5 text-emerald-200" />
+                    <span>Create Project</span>
+                  </button>
+                );
+              })()}
             </div>
           </div>
 
@@ -7826,7 +8064,11 @@ export default function AcquisitionEngine({
           setSelectedCreatorId(cid);
           if (conceptId) setSelectedConceptId(conceptId);
           setShowFollowUpCRM(false);
-          setActiveStep(targetStep || 4);
+          if (targetStep === "section2" || targetStep === 7) {
+            if (onGoToProjectOS) onGoToProjectOS();
+          } else {
+            setActiveStep(Number(targetStep) || 4);
+          }
         }}
         onSyncImap={() => syncImapReplies(true)}
         onApproveCreator={handleApproveCreator}
@@ -8128,6 +8370,103 @@ export default function AcquisitionEngine({
                           : "Confirm Rejection & Archive"}
                   </span>
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── High-Tech Cinematic Project Launch & Dashboard Initialization Overlay ── */}
+      {isLaunchingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl bg-gradient-to-b from-[#141824] to-[#0b0e14] border border-purple-500/30 shadow-[0_0_80px_rgba(168,85,247,0.25)] p-8 text-center space-y-6 relative overflow-hidden">
+            {/* Ambient Background Glow */}
+            <div className="absolute -top-24 -left-24 w-48 h-48 bg-purple-600/30 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-600/30 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Glowing Icon Animation */}
+            <div className="relative mx-auto w-20 h-20 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 p-[2px] shadow-lg shadow-purple-900/50">
+              <div className="w-full h-full rounded-2xl bg-[#0e1117] flex items-center justify-center">
+                <Rocket className="w-10 h-10 text-purple-400 animate-bounce" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
+                Initializing Co-Launch Venture OS
+              </span>
+              <h2 className="text-xl font-black text-white">
+                Launching Project for {selectedCreator?.name || selectedCreator?.handle}
+              </h2>
+              <p className="text-xs text-slate-400">
+                Synthesizing architecture, telemetry, validation gates, and opening Section 2: Project OS...
+              </p>
+            </div>
+
+            {/* Step Checkpoints */}
+            <div className="space-y-2.5 text-left bg-[#0e1117]/80 rounded-2xl p-4 border border-white/[0.06]">
+              {[
+                { id: 1, text: "Binding Selected Concept Specs & Data Architecture" },
+                { id: 2, text: "Dispatching Co-Founder Portal Magic Link via SMTP" },
+                { id: 3, text: "Synthesizing AI Validation Milestones & Targets" },
+                { id: 4, text: "Opening Section 2: Project OS Dashboard Workspace" },
+              ].map((step) => {
+                const isComplete = launchStepIndex > step.id;
+                const isCurrent = launchStepIndex === step.id;
+                return (
+                  <div key={step.id} className="flex items-center gap-3 text-xs">
+                    {isComplete ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    ) : isCurrent ? (
+                      <RefreshCw className="w-4 h-4 text-purple-400 animate-spin flex-shrink-0" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-slate-700 flex-shrink-0" />
+                    )}
+                    <span
+                      className={`font-semibold ${
+                        isComplete
+                          ? "text-emerald-300"
+                          : isCurrent
+                          ? "text-white font-bold"
+                          : "text-slate-500"
+                      }`}
+                    >
+                      {step.text}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Dynamic Progress Bar */}
+            <div className="space-y-1.5">
+              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-500 to-emerald-400 transition-all duration-300 rounded-full shadow-[0_0_12px_rgba(52,211,153,0.5)]"
+                  style={{
+                    width: `${
+                      launchStepIndex === 1
+                        ? 25
+                        : launchStepIndex === 2
+                        ? 50
+                        : launchStepIndex === 3
+                        ? 75
+                        : 100
+                    }%`,
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                <span>Phase: Co-Launch Deployment</span>
+                <span>
+                  {launchStepIndex === 1
+                    ? "25%"
+                    : launchStepIndex === 2
+                    ? "50%"
+                    : launchStepIndex === 3
+                    ? "75%"
+                    : "100% Ready"}
+                </span>
               </div>
             </div>
           </div>

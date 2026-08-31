@@ -20,6 +20,79 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
   const [showPhaseExecutionModal, setShowPhaseExecutionModal] = useState(false)
   const [copiedKey, setCopiedKey] = useState(null)
   const [shareNotice, setShareNotice] = useState('')
+  const [shareTab, setShareTab] = useState('email') // 'email' | 'preview' | 'link'
+  const [portalRecipientEmail, setPortalRecipientEmail] = useState(() => (project?.creatorEmail || project?.email_public || project?.email || '').trim())
+  const [portalEmailSubject, setPortalEmailSubject] = useState(() => `🚀 Co-Founder Portal Live: Developing ${project?.productName || 'our software'} with Creator Forge`)
+  const [portalEmailBody, setPortalEmailBody] = useState(() => {
+    const firstName = (project?.creatorName || 'there').split(' ')[0]
+    const prodName = project?.productName || 'your custom software platform'
+    const pricing = project?.pricing || '$29-$79/mo'
+    const tagline = project?.productTagline || 'Tailored software venture'
+    const portalSlug = (project?.creatorHandle || project?.creatorName || 'creator').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+    const portalToken = project?.portalToken || 'cf_sec_live'
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
+    const mUrl = `${origin}/portal/${portalSlug}?token=${portalToken}`
+    return `Hi ${firstName},
+
+Exciting milestone! Our venture studio engineering team has officially initiated the active development and co-launch sprint for **${prodName}** under our 50/50 venture co-launch agreement.
+
+Your private, passwordless **Co-Founder Portal** is now live. Through your portal, you have real-time transparency into our sprint progress, shared presales revenue, launch strategy, and daily collaboration milestones.
+
+---
+
+### 📦 Venture Overview & Architecture
+• **Product Name:** ${prodName}
+• **Value Proposition:** ${tagline}
+• **Pricing Tier:** ${pricing} (50/50 Net Revenue Split)
+• **Financial Risk:** Zero upfront capital — Creator Forge covers 100% of engineering, hosting, payment setup, and customer operations.
+
+---
+
+### 🔑 Access Your Co-Founder Portal
+Click the link below to access your private co-founder dashboard (no password required):
+
+${mUrl}
+
+---
+
+### 🛠️ Current Engineering Sprint:
+1. **MVP Architecture & Staging Environment:** Fully functional core web app ready for your private review.
+2. **Audience Pre-Order & Validation Funnel:** High-converting landing page, checkout, and email sequence.
+3. **Co-Founder Analytics Dashboard:** Live tracking of daily visitors, conversion rate, and revenue payouts.
+
+We are thrilled to partner with you on this venture. Feel free to reply directly to this email at any time.
+
+Best regards,
+**The Creator Forge Studio Team**
+partnerships@creatorforge.com`
+  })
+  const [isSendingPortalEmail, setIsSendingPortalEmail] = useState(false)
+  const [portalEmailSuccess, setPortalEmailSuccess] = useState(false)
+
+  const handleSendPortalEmail = async () => {
+    const to = (portalRecipientEmail || targetEmail || '').trim()
+    if (!to || !to.includes('@')) {
+      alert('Please enter a valid recipient email address.')
+      return
+    }
+
+    setIsSendingPortalEmail(true)
+    try {
+      const { sendDirectEmail } = await import('../../services/opsApi')
+      await sendDirectEmail(to, portalEmailSubject, portalEmailBody, project.creatorId || project.id)
+      setPortalEmailSuccess(true)
+      setShareNotice(`Portal email invitation successfully sent to ${to}!`)
+      setTimeout(() => {
+        setShareNotice('')
+        setPortalEmailSuccess(false)
+      }, 4000)
+    } catch (err) {
+      console.error('Failed to send portal email:', err)
+      alert(err.message || 'Failed to dispatch email. Please verify SMTP credentials.')
+    } finally {
+      setIsSendingPortalEmail(false)
+    }
+  }
   const targetEmail = (project?.creatorEmail || project?.email_public || project?.email || '').trim()
 
   useEffect(() => {
@@ -52,10 +125,18 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
 
   const currentPhase = project.currentPhase || 1
   const presalesRevenue = Number(project.currentPresales || 0)
-  const presaleTarget = Number(project.presaleTarget || project.targetRevenue || 5000)
+
+  // Dynamic presale target derived from validation plan threshold or project
+  const parseThresholdAmount = (str) => {
+    if (!str) return 0
+    const match = String(str).replace(/,/g, '').match(/\$(\d+)/)
+    return match ? Number(match[1]) : 0
+  }
+  const derivedPlanTarget = parseThresholdAmount(project.validationPlan?.threshold)
+  const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project.presaleTarget || project.targetRevenue || 12500)
   const visitorsCount = Number(project.visitors || 0)
   const conversionRate = Number(project.conversionRate || 0)
-  const daysLeft = project.daysLeft || project.validationPlan?.period || '—'
+  const daysLeft = project.daysLeft || project.validationPlan?.period || '18 days'
 
   const portalSlug = (project.creatorHandle || project.creatorName || 'creator').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
   const portalToken = project.portalToken || 'cf_sec_live'
@@ -201,20 +282,33 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
             <div className="flex-1 p-5 sm:p-6 space-y-5 bg-[#0e1117]">
               {/* Header inside Command Center */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-                    <span>{project.productName || 'Software Product'}</span>
-                    <span className="text-slate-400 font-normal">×</span>
-                    <span>{project.creatorName || 'Creator Partner'}</span>
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                      <span>{project.productName || 'Software Product'}</span>
+                      <span className="text-slate-400 font-normal">×</span>
+                      <span className="truncate">{project.creatorName || 'Creator Partner'}</span>
+                    </h2>
+                    {project.pricing && (
+                      <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shadow-xs whitespace-nowrap shrink-0">
+                        {project.pricing}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 mt-1 line-clamp-1 max-w-2xl">
                     {project.productTagline || 'Co-launching software with creator audience.'}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                    Phase {currentPhase}: Validate
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-xs ${
+                    currentPhase === 2
+                      ? 'text-blue-400 bg-blue-500/10 border border-blue-500/20'
+                      : currentPhase === 3
+                      ? 'text-purple-400 bg-purple-500/10 border border-purple-500/20'
+                      : 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
+                  }`}>
+                    {currentPhase === 1 ? 'Phase 1: Validate' : currentPhase === 2 ? 'Phase 2: Build MVP' : 'Phase 3: Launch'}
                   </span>
                 </div>
               </div>
@@ -270,15 +364,21 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
                   {/* Two Columns: Tasks & AI Activity */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     {/* Tasks Card */}
-                    <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.08] space-y-3 flex flex-col justify-between">
+                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-3 flex flex-col justify-between hover:border-white/15 transition-all">
                       <div>
                         <div className="flex items-center justify-between border-b border-white/[0.06] pb-2 mb-2.5">
-                          <span className="font-bold text-white text-xs">Tasks</span>
-                          <span className="text-[10px] text-slate-400 font-mono">{checklistTasks.length} total</span>
+                          <span className="font-bold text-white text-xs flex items-center gap-1.5">
+                            <CheckSquare className="w-3.5 h-3.5 text-purple-400" />
+                            <span>Validation Sprint Tasks</span>
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono font-bold bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.06]">
+                            {checklistTasks.length} total
+                          </span>
                         </div>
                         {checklistTasks.length === 0 ? (
-                          <div className="py-4 text-center text-slate-500 text-xs">
-                            No tasks created yet. Generate or add tasks in Step 1 & 3.
+                          <div className="py-3 text-center text-slate-400 text-xs space-y-1">
+                            <p className="text-slate-300 font-medium">No tasks logged yet</p>
+                            <p className="text-[10px] text-slate-500">Tasks generate automatically during Phase 1 Validation.</p>
                           </div>
                         ) : (
                           <div className="space-y-2">
@@ -296,7 +396,7 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
                       </div>
                       <button
                         onClick={() => setSidebarTab('tasks')}
-                        className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 mt-2 text-left"
+                        className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 mt-2 text-left cursor-pointer"
                       >
                         <span>View all tasks</span>
                         <span>→</span>
@@ -304,15 +404,22 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
                     </div>
 
                     {/* AI Activity Card */}
-                    <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.08] space-y-3 flex flex-col justify-between">
+                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-3 flex flex-col justify-between hover:border-white/15 transition-all">
                       <div>
                         <div className="flex items-center justify-between border-b border-white/[0.06] pb-2 mb-2.5">
-                          <span className="font-bold text-white text-xs">AI Activity</span>
-                          <span className="text-[10px] text-emerald-400 font-mono">Autonomous</span>
+                          <span className="font-bold text-white text-xs flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>AI Activity Stream</span>
+                          </span>
+                          <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>Autonomous</span>
+                          </span>
                         </div>
                         {aiActivityList.length === 0 ? (
-                          <div className="py-4 text-center text-slate-500 text-xs">
-                            No AI actions recorded yet. Actions log automatically during plan & campaign execution.
+                          <div className="py-3 text-center text-slate-400 text-xs space-y-1">
+                            <p className="text-slate-300 font-medium">Autonomous agent standing by</p>
+                            <p className="text-[10px] text-slate-500">Actions log automatically during validation & campaign execution.</p>
                           </div>
                         ) : (
                           <div className="space-y-1.5 text-slate-300 text-[11px]">
@@ -327,7 +434,7 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
                       </div>
                       <button
                         onClick={() => setSidebarTab('decisions')}
-                        className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 mt-2 text-left"
+                        className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 mt-2 text-left cursor-pointer"
                       >
                         <span>View all activity</span>
                         <span>→</span>
@@ -786,84 +893,304 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
 
       {/* SHARE CREATOR PORTAL MODAL */}
       {showShareModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="max-w-xl w-full p-6 rounded-2xl bg-[#0e1117] border border-purple-500/40 space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in">
+          <div className="max-w-2xl w-full p-5 sm:p-6 rounded-2xl bg-[#0e1117] border border-purple-500/40 space-y-4 shadow-2xl max-h-[92vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
                   <Share2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Creator Co-Founder Portal Magic Link</h3>
-                  <p className="text-[11px] text-slate-400">Passwordless access link for {project.creatorName || 'Creator'}</p>
+                  <h3 className="text-sm font-bold text-white">Creator Co-Founder Portal & Email Dispatch</h3>
+                  <p className="text-[11px] text-slate-400">Passwordless access link & luxury email invite for {project.creatorName || 'Creator'}</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowShareModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08]"
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Portal Magic URL Box */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
-                Secure Magic Link
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={magicPortalUrl}
-                  className="flex-1 px-3 py-2 rounded-xl bg-[#161a23] border border-white/[0.1] text-xs font-mono text-purple-300 outline-none select-all"
-                />
-                <button
-                  onClick={() => handleCopy(magicPortalUrl, 'link')}
-                  className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
-                >
-                  {copiedKey === 'link' ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedKey === 'link' ? 'Copied' : 'Copy'}</span>
-                </button>
-              </div>
+            {/* Modal Navigation Tabs */}
+            <div className="flex items-center gap-1.5 p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl shrink-0">
+              <button
+                type="button"
+                onClick={() => setShareTab('email')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  shareTab === 'email'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>Email Dispatch (SMTP)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShareTab('preview')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  shareTab === 'preview'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Visual Email Preview</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShareTab('link')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  shareTab === 'link'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Magic Link & DM</span>
+              </button>
             </div>
 
-            {/* Kickoff DM */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                  Kickoff Invite Message
-                </label>
-                <button
-                  onClick={() => handleCopy(kickoffMessage, 'msg')}
-                  className="text-xs text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1"
-                >
-                  {copiedKey === 'msg' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedKey === 'msg' ? 'Copied Message' : 'Copy Message'}</span>
-                </button>
-              </div>
-              <textarea
-                readOnly
-                rows={6}
-                value={kickoffMessage}
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-slate-200 outline-none leading-relaxed font-sans resize-none select-all"
-              />
+            {/* Modal Tab Body */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {/* TAB 1: DIRECT EMAIL DISPATCH */}
+              {shareTab === 'email' && (
+                <div className="space-y-3.5 animate-fade-in">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Recipient Email
+                      </label>
+                      <input
+                        type="email"
+                        value={portalRecipientEmail}
+                        onChange={(e) => setPortalRecipientEmail(e.target.value)}
+                        placeholder="creator@channel.com"
+                        className="w-full px-3 py-2 rounded-xl bg-[#141824] border border-white/[0.1] text-xs text-white outline-none focus:border-purple-500 font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Sender Address
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value="Creator Forge Studio (partnerships@creatorforge.com)"
+                        className="w-full px-3 py-2 rounded-xl bg-[#141824] border border-white/[0.06] text-xs text-slate-400 outline-none font-mono cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                      Email Subject
+                    </label>
+                    <input
+                      type="text"
+                      value={portalEmailSubject}
+                      onChange={(e) => setPortalEmailSubject(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#141824] border border-white/[0.1] text-xs text-white outline-none focus:border-purple-500 font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                      Email Body (Markdown & HTML Auto-Formatted)
+                    </label>
+                    <textarea
+                      rows={9}
+                      value={portalEmailBody}
+                      onChange={(e) => setPortalEmailBody(e.target.value)}
+                      className="w-full p-3.5 rounded-xl bg-[#141824] border border-white/[0.1] text-xs text-slate-200 outline-none leading-relaxed font-mono resize-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[11px] text-emerald-400 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Direct delivery via Google SMTP with secure tracking</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSendPortalEmail}
+                      disabled={isSendingPortalEmail}
+                      className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSendingPortalEmail ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Dispatching...</span>
+                        </>
+                      ) : portalEmailSuccess ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-300" />
+                          <span>Sent Successfully!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Send Portal Invite Email 🚀</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: LUXURY VISUAL EMAIL PREVIEW */}
+              {shareTab === 'preview' && (
+                <div className="space-y-3 animate-fade-in">
+                  <div className="p-4 rounded-xl bg-[#07090e] border border-white/[0.1] space-y-3 shadow-inner">
+                    {/* Simulated Email Client Bar */}
+                    <div className="p-2.5 rounded-lg bg-black/60 border border-white/[0.06] text-[11px] space-y-1 font-mono text-slate-400">
+                      <div><strong className="text-slate-200">From:</strong> Creator Forge Venture Studio &lt;partnerships@creatorforge.com&gt;</div>
+                      <div><strong className="text-slate-200">To:</strong> {portalRecipientEmail || 'creator@channel.com'}</div>
+                      <div><strong className="text-purple-300">Subject:</strong> {portalEmailSubject}</div>
+                    </div>
+
+                    {/* Luxury Email Card Canvas */}
+                    <div className="max-w-xl mx-auto rounded-2xl bg-[#0f172a] border border-[#1e293b] overflow-hidden shadow-2xl">
+                      {/* Email Header Banner */}
+                      <div className="p-5 bg-gradient-to-r from-[#1e1b4b] to-[#0f172a] border-b border-[#334155] flex items-center justify-between">
+                        <div>
+                          <div className="text-base font-extrabold text-white tracking-tight">
+                            <span className="text-purple-400">CREATOR</span> FORGE
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                            Venture Studio & Co-Launch Incubation
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/20 text-purple-200 border border-purple-500/40">
+                          50/50 Co-Founder
+                        </span>
+                      </div>
+
+                      {/* Email Body Content */}
+                      <div className="p-6 space-y-4 text-xs text-slate-300 leading-relaxed">
+                        <p>Hi <strong className="text-white font-bold">{(project?.creatorName || 'there').split(' ')[0]}</strong>,</p>
+                        <p>
+                          Exciting milestone! Our venture studio engineering team has officially initiated the active development and co-launch sprint for <strong className="text-purple-300 font-bold">{project.productName || 'your custom software platform'}</strong> under our 50/50 venture co-launch agreement.
+                        </p>
+                        <p>
+                          Your private, passwordless <strong className="text-white">Co-Founder Portal</strong> is now live. Through your portal, you have real-time transparency into our sprint progress, shared presales revenue, launch strategy, and daily collaboration milestones.
+                        </p>
+
+                        {/* Venture Overview Box */}
+                        <div className="p-4 rounded-xl bg-[#161f38] border border-purple-500/30 space-y-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 block">
+                            📦 Venture Overview & Architecture
+                          </span>
+                          <div className="space-y-1 text-[11px] text-slate-200">
+                            <div>• <strong className="text-white">Product:</strong> {project.productName}</div>
+                            <div>• <strong className="text-white">Tagline:</strong> {project.productTagline || 'Software platform'}</div>
+                            <div>• <strong className="text-emerald-400">Pricing Tier:</strong> {project.pricing || '$29-$79/mo'} (50/50 Net Revenue Share)</div>
+                            <div>• <strong className="text-slate-300">Financial Risk:</strong> 100% funded by Creator Forge</div>
+                          </div>
+                        </div>
+
+                        {/* Glowing Portal CTA Button */}
+                        <div className="py-2 text-center space-y-1.5">
+                          <a
+                            href={magicPortalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-sm shadow-[0_10px_25px_rgba(147,51,234,0.4)] border border-white/20 hover:scale-105 transition-all"
+                          >
+                            <span>Open Co-Founder Portal →</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                          <p className="text-[10px] text-slate-400 font-mono">Passwordless Direct Access Link</p>
+                        </div>
+
+                        {/* Sprint Highlights */}
+                        <div className="space-y-1.5 text-[11px] text-slate-300 pt-2 border-t border-white/[0.06]">
+                          <strong className="text-white block">🛠️ Current Sprint Deliverables:</strong>
+                          <ul className="space-y-1 pl-4 list-disc text-purple-300">
+                            <li><span className="text-slate-300">MVP Architecture & core web app staging preview</span></li>
+                            <li><span className="text-slate-300">Audience Pre-Order & validation funnel with checkout</span></li>
+                            <li><span className="text-slate-300">Co-Founder Analytics Dashboard tracking live payouts</span></li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      {/* Email Footer */}
+                      <div className="p-4 bg-[#090d16] border-t border-[#1e293b] text-center text-[10px] text-slate-500 space-y-0.5">
+                        <div className="font-bold text-slate-400">Creator Forge Venture Studio</div>
+                        <div>Co-launching software empires with leading digital creators.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: MAGIC LINK & DM */}
+              {shareTab === 'link' && (
+                <div className="space-y-3.5 animate-fade-in">
+                  {/* Portal Magic URL Box */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                      Secure Magic Link (No Password Required)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={magicPortalUrl}
+                        className="flex-1 px-3 py-2 rounded-xl bg-[#161a23] border border-white/[0.1] text-xs font-mono text-purple-300 outline-none select-all"
+                      />
+                      <button
+                        onClick={() => handleCopy(magicPortalUrl, 'link')}
+                        className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        {copiedKey === 'link' ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedKey === 'link' ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Kickoff DM Message */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                        Social DM / WhatsApp Invite Message
+                      </label>
+                      <button
+                        onClick={() => handleCopy(kickoffMessage, 'msg')}
+                        className="text-xs text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        {copiedKey === 'msg' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedKey === 'msg' ? 'Copied Message' : 'Copy Message'}</span>
+                      </button>
+                    </div>
+                    <textarea
+                      readOnly
+                      rows={6}
+                      value={kickoffMessage}
+                      className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-slate-200 outline-none leading-relaxed font-sans resize-none select-all"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Modal Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-white/[0.08]">
+            {/* Modal Actions Footer */}
+            <div className="flex items-center justify-between pt-3 border-t border-white/[0.08] shrink-0">
               <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
                 <ShieldCheck className="w-4 h-4" />
-                <span>Token verified for live portal session</span>
+                <span>{shareNotice || 'Magic token active & verified'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <a
                   href={magicPortalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  className="px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 hover:text-white border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 transition-colors"
                 >
-                  <span>Preview Portal</span>
+                  <span>Preview Live Portal</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
                 <button
