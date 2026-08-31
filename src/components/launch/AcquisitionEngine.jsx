@@ -3601,9 +3601,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     try {
       const { sendDirectEmail, updateCreatorDetails } = await import("../../services/opsApi");
       let sentCount = 0;
+      const errors = [];
 
-      const sendPromises = uncontactedList.map(async (c) => {
+      // Send sequentially with individual logging for rock-solid reliability and live feedback
+      for (let i = 0; i < uncontactedList.length; i++) {
+        const c = uncontactedList[i];
         const targetEmail = (c.email || c.email_public).trim();
+        const cName = c.name || c.display_name || c.handle || "Creator";
+
+        setOutreachLog(
+          `[Outreach Queue] Dispatching (${i + 1}/${uncontactedList.length}) to ${cName} (${targetEmail})...`,
+        );
+
         const renderedSubject = templateSubject.replace(
           /\{\{display_name\}\}/g,
           c.name || c.display_name,
@@ -3623,61 +3632,74 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           .replace(/\{\{product_name\}\}/g, "a high-growth product");
 
         try {
-          await sendDirectEmail(
-            targetEmail,
-            renderedSubject,
-            renderedBody,
-            c.id,
-          );
+          // 15-second race timeout per email to prevent hanging
+          const sendWithTimeout = Promise.race([
+            sendDirectEmail(targetEmail, renderedSubject, renderedBody, c.id),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Request timed out (15s)")), 15000)
+            ),
+          ]);
+
+          await sendWithTimeout;
           sentCount++;
+
+          // Mark this individual creator as contacted in local state immediately
+          setCreators((prev) =>
+            prev.map((item) =>
+              item.id === c.id || item.handle === c.handle
+                ? { ...item, status: "contacted", outreachSent: true }
+                : item
+            )
+          );
+
           try {
             await updateCreatorDetails(c.id, { status: "contacted" });
           } catch {}
         } catch (sendErr) {
-          console.warn(
-            `[AcquisitionEngine] Failed to deliver email to ${targetEmail}:`,
-            sendErr,
-          );
+          console.warn(`[AcquisitionEngine] Failed email to ${targetEmail}:`, sendErr);
+          errors.push(`${cName} (${targetEmail}): ${sendErr.message || "Failed"}`);
         }
-      });
+      }
 
-      await Promise.allSettled(sendPromises);
-
-      // Mark delivered creators as contacted
-      setCreators((prev) =>
-        prev.map((item) =>
-          uncontactedList.some((u) => u.id === item.id || u.handle === item.handle)
-            ? { ...item, status: "contacted", outreachSent: true }
-            : item
-        )
-      );
-
-      notify(
-        "success",
-        "Outreach Wave Dispatched",
-        `Sent partnership inquiries to ${sentCount} new creators.`,
-        5000
-      );
-
-      setOutreachLog(
-        `[Delivered] Outreach wave successfully dispatched to ${sentCount} creators. Transitioning to Step 4...`,
-      );
-
-      if (autoAdvance) {
-        setTimeout(() => {
-          setActiveStep(4);
-        }, 1200);
+      if (sentCount > 0) {
+        notify(
+          "success",
+          "Outreach Wave Dispatched",
+          `Successfully dispatched partnership inquiries to ${sentCount} creators.`,
+          5000
+        );
+        setOutreachLog(
+          `[Delivered] Outreach wave successfully sent to ${sentCount} creator${sentCount > 1 ? "s" : ""}.${
+            errors.length > 0 ? ` (${errors.length} failed: ${errors.join(", ")})` : ""
+          } Transitioning to Step 4...`,
+        );
+        if (autoAdvance) {
+          setTimeout(() => {
+            setActiveStep(4);
+          }, 1200);
+        }
+      } else {
+        notify(
+          "error",
+          "Outreach Dispatch Failed",
+          `Failed to dispatch emails: ${errors[0] || "Please verify Google SMTP credentials in Settings."}`,
+          6000
+        );
+        setOutreachLog(
+          `[Error] Outreach dispatch failed: ${errors.join(" | ")}. Please verify SMTP credentials in Settings.`,
+        );
       }
     } catch (e) {
       console.warn("[AcquisitionEngine] Outreach error:", e);
       setOutreachLog(
-        `[Notice] Outreach notice: ${e.message || "Dispatched outreach"}. Transitioning to Step 4...`,
+        `[Notice] Outreach notice: ${e.message || "Dispatched outreach"}.`,
       );
-      if (autoAdvance) {
-        setTimeout(() => {
-          setActiveStep(4);
-        }, 1200);
-      }
+      notify(
+        "error",
+        "Outreach Error",
+        e.message || "An unexpected error occurred during dispatch.",
+        5000
+      );
     } finally {
       setSendingBulk(false);
     }
