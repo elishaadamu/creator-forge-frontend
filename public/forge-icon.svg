@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="cfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="50%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+    <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#EF4444"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Dark Background Badge with Rounded Corners -->
+  <rect width="512" height="512" rx="128" fill="#0A0D14"/>
+  <rect width="504" height="504" x="4" y="4" rx="124" stroke="url(#cfGrad)" stroke-width="8" stroke-opacity="0.35"/>
+
+  <!-- Glowing Glow Ring behind Icon -->
+  <circle cx="256" cy="256" r="160" fill="url(#cfGrad)" opacity="0.15" filter="url(#glow)"/>
+
+  <!-- Stylized Modern 'CF' / Forge Flame Geometry -->
+  <!-- Anvil Base / Forge Geometry -->
+  <path d="M128 352 C128 340, 140 332, 156 332 L356 332 C372 332, 384 340, 384 352 L368 392 C364 400, 352 408, 340 408 L172 408 C160 408, 148 400, 144 392 Z" fill="url(#cfGrad)"/>
+  
+  <!-- Central Forge Monogram / Rising Spark Blade -->
+  <path d="M256 104 L312 216 C316 224, 308 236, 296 236 L276 236 L300 312 L212 312 L236 236 L216 236 C204 236, 196 224, 200 216 Z" fill="url(#sparkGrad)" filter="url(#glow)"/>
+  
+  <!-- Outer Modern Curved Framing Wings (Stylized 'C' and 'F') -->
+  <path d="M168 160 C136 200, 136 280, 168 320" stroke="url(#cfGrad)" stroke-width="24" stroke-linecap="round" fill="none"/>
+  <path d="M344 160 C376 200, 376 280, 344 320" stroke="url(#cfGrad)" stroke-width="24" stroke-linecap="round" fill="none"/>
+  
+  <!-- Diamond Spark Highlight -->
+  <polygon points="256,64 266,92 294,102 266,112 256,140 246,112 218,102 246,92" fill="#FDE047"/>
+</svg>

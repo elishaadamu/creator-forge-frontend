@@ -17,6 +17,9 @@ import CreatorLaunchLayout from './components/launch/CreatorLaunchLayout'
 import CreatorPortal from './components/launch/CreatorPortal'
 import PreorderLandingPage from './components/launch/PreorderLandingPage'
 import PublicSurveyPage from './components/launch/PublicSurveyPage'
+import FollowUpCRMPage from './components/launch/FollowUpCRMPage'
+import AdminErrorLogPage from './components/launch/AdminErrorLogPage'
+import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys } from './services/ai'
 import { CheckCircle, AlertCircle, X } from 'lucide-react'
@@ -626,6 +629,12 @@ export default function App() {
     return () => window.removeEventListener('popstate', handleNavigation)
   }, [])
 
+  // Dynamically update document title and SEO metadata on route or step change
+  useEffect(() => {
+    const seo = getRouteSEO(window.location.pathname, step, creatorData)
+    updatePageSEO(seo)
+  }, [step, creatorData?.name, creatorData?.handle, creatorData?.productName])
+
   // Auto-save creatorData updates
   useEffect(() => {
     if (creatorData && (creatorData.handle || creatorData.url)) {
@@ -811,6 +820,16 @@ export default function App() {
   if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/survey') || window.location.pathname.startsWith('/research'))) {
     const slug = window.location.pathname.replace('/survey/', '').replace('/survey', '').replace('/research/', '').replace('/research', '').replace(/\/$/, '')
     return <PublicSurveyPage slug={slug} />
+  }
+
+  // /follow-up-crm or /crm route — standalone Creator Follow-Up & Reply Status CRM
+  if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/follow-up-crm') || window.location.pathname === '/crm')) {
+    return <FollowUpCRMPage />
+  }
+
+  // /admin-error-log or /error-log route — standalone Pipeline Intelligence & Exception Dashboard
+  if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin-error-log') || window.location.pathname.startsWith('/error-log') || window.location.pathname === '/errors')) {
+    return <AdminErrorLogPage />
   }
 
   // /launch or /creator-launch route — standalone Creator Launch OS (Operator Master Command Center)

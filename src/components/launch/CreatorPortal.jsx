@@ -5,6 +5,7 @@ import {
   TrendingUp, Award, Calendar, CheckSquare, Eye, Smartphone, Send
 } from 'lucide-react'
 import { getFrontendUrl } from '../../services/opsApi'
+import { updatePageSEO } from '../../utils/seo'
 
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
@@ -15,6 +16,14 @@ export default function CreatorPortal({ portalId }) {
     } catch (e) {}
     return null
   })
+
+  useEffect(() => {
+    updatePageSEO({
+      title: project?.creatorName ? `${project.creatorName} — Partner Co-Founder Portal | Creator Forge` : "Partner Co-Founder Portal — Creator Forge",
+      description: "Review your tailored software concepts, 50/50 revenue split dashboard, and launch roadmap with Creator Forge Studio.",
+      image: "/og-image.svg"
+    });
+  }, [project?.creatorName]);
 
   // Fetch project from backend API on mount or when URL params/portalId changes
   useEffect(() => {

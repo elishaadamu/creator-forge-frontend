@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Users, ArrowRight, Check, Sparkles } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
+import { updatePageSEO } from '../../utils/seo'
 
 /**
  * CommunityJoin — Public landing page at /join/{handle}
@@ -14,6 +15,14 @@ export default function CommunityJoin({ handle }) {
   const [creatorInfo, setCreatorInfo] = useState(null)
 
   const cleanHandle = (handle || '').replace(/^@/, '').replace(/\//g, '-')
+
+  useEffect(() => {
+    updatePageSEO({
+      title: `Join @${cleanHandle}'s VIP Community | Creator Forge`,
+      description: `Join the official community and get early access to exclusive software tools built with @${cleanHandle}.`,
+      image: "/og-image.svg"
+    });
+  }, [cleanHandle]);
 
   // Try to load creator info from localStorage (populated if the creator's dashboard is on the same browser)
   useEffect(() => {

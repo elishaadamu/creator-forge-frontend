@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import ProductMockupDisplay from './ProductMockupDisplay'
 import { trackVisit } from '../../services/tracker'
+import { updatePageSEO } from '../../utils/seo'
 
 export default function PreorderLandingPage({ slug }) {
   const [project, setProject] = useState(() => {
@@ -16,6 +17,17 @@ export default function PreorderLandingPage({ slug }) {
       return null
     }
   })
+
+  useEffect(() => {
+    const title = project?.name
+      ? `VIP Early Access — ${project.name} | Creator Forge`
+      : "VIP Early Access & Pre-Order | Creator Forge";
+    updatePageSEO({
+      title,
+      description: project?.tagline || "Lock in founder pricing and early access to our exclusive software tool.",
+      image: "/og-image.svg"
+    });
+  }, [project?.name, project?.tagline]);
 
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false)
   const [selectedTier, setSelectedTier] = useState({ name: 'Founding Annual Pass', price: 99, deposit: false })

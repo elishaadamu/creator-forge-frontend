@@ -29,7 +29,8 @@ import {
 } from 'lucide-react'
 
 export default function AdminPipelineLookup({
-  isOpen,
+  isOpen = false,
+  isPage = false,
   onClose,
   creators = [],
   realThreads = [],
@@ -341,7 +342,7 @@ export default function AdminPipelineLookup({
     })
   }, [categorizedCreators, activeTab, platformFilter, searchQuery])
 
-  if (!isOpen) return null
+  if (!isPage && !isOpen) return null
 
   // Helpers for platform badges
   const getPlatformBadge = (platform = '') => {
@@ -353,9 +354,8 @@ export default function AdminPipelineLookup({
     return { name: platform || 'Social', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-2xl animate-in fade-in duration-200">
-      <div className="relative w-full max-w-6xl h-[88vh] flex flex-col bg-[#0b0d13] border border-white/[0.12] rounded-3xl shadow-2xl overflow-hidden">
+  const dashboardContent = (
+    <div className={`relative w-full ${isPage ? 'rounded-3xl min-h-[85vh]' : 'max-w-6xl h-[88vh] rounded-3xl'} flex flex-col bg-[#0b0d13] border border-white/[0.12] shadow-2xl overflow-hidden`}>
         {/* Sleek Command Center Header */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.08] bg-[#10131c]/90 backdrop-blur-md flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -386,12 +386,14 @@ export default function AdminPipelineLookup({
               <RefreshCw className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${isSyncing ? 'animate-spin text-purple-400' : 'text-slate-400'}`} />
               <span className="flex-shrink-0">Sync Replies</span>
             </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer active:scale-95"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {!isPage && onClose && (
+              <button
+                onClick={onClose}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer active:scale-95"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -893,14 +895,29 @@ export default function AdminPipelineLookup({
               Autonomous sync active with live inbox listener & outreach dispatch.
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="px-4 h-7.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-white text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-95"
-          >
-            Close Dashboard
-          </button>
+          {!isPage && onClose && (
+            <button
+              onClick={onClose}
+              className="px-4 h-7.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-white text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-95"
+            >
+              Close Dashboard
+            </button>
+          )}
         </div>
       </div>
+  )
+
+  if (isPage) {
+    return (
+      <div className="w-full animate-in fade-in space-y-6">
+        {dashboardContent}
+      </div>
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-2xl animate-in fade-in duration-200">
+      {dashboardContent}
     </div>
   )
 }

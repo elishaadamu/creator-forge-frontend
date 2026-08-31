@@ -5,12 +5,20 @@ import ProjectOS from './ProjectOS'
 import AdminPipelineLookup from './AdminPipelineLookup'
 import CreatorFollowUpCRM from './CreatorFollowUpCRM'
 import { createCoLaunchProject, getCoLaunchProject } from '../../services/opsApi'
+import { updatePageSEO } from '../../utils/seo'
 
 export default function CreatorLaunchLayout({
   initialProject = null,
   initialCreators = [],
   api = null
 }) {
+  useEffect(() => {
+    updatePageSEO({
+      title: "Operator Master Studio — Acquisition Engine & Launch OS | Creator Forge",
+      description: "End-to-end creator discovery, audience intelligence, autonomous outreach, and 50/50 venture launch pipeline.",
+      image: "/og-image.svg"
+    });
+  }, []);
   const [activeSection, setActiveSection] = useState(() => {
     try {
       const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
@@ -36,6 +44,77 @@ export default function CreatorLaunchLayout({
   })
   const [showAdminLookup, setShowAdminLookup] = useState(false)
   const [showFollowUpCRM, setShowFollowUpCRM] = useState(false)
+  const [crmCreators, setCrmCreators] = useState([])
+  const [crmThreads, setCrmThreads] = useState([])
+  const [isSyncingCrmImap, setIsSyncingCrmImap] = useState(false)
+
+  const fetchCrmData = async () => {
+    try {
+      const { getCreators, getThreads } = await import('../../services/opsApi')
+      const [creatorsRes, threadsRes] = await Promise.allSettled([
+        getCreators({ limit: 50 }),
+        getThreads(),
+      ])
+      if (creatorsRes.status === 'fulfilled' && creatorsRes.value) {
+        const rawList = Array.isArray(creatorsRes.value) ? creatorsRes.value : creatorsRes.value?.creators || []
+        setCrmCreators(rawList)
+      }
+      if (threadsRes.status === 'fulfilled' && threadsRes.value) {
+        setCrmThreads(Array.isArray(threadsRes.value) ? threadsRes.value : [])
+      }
+    } catch (err) {
+      console.warn('[CreatorLaunchLayout] CRM sync error:', err)
+    }
+  }
+
+  const syncCrmImap = async () => {
+    setIsSyncingCrmImap(true)
+    try {
+      const { pollInboxReplies, getThreads } = await import('../../services/opsApi')
+      const res = await pollInboxReplies()
+      const threads = res?.threads || (await getThreads())
+      if (threads && Array.isArray(threads)) {
+        setCrmThreads(threads)
+      }
+    } catch (e) {
+      console.warn('[CreatorLaunchLayout] CRM IMAP sync error:', e)
+    } finally {
+      setIsSyncingCrmImap(false)
+    }
+  }
+
+  const handleApproveCrmCreator = async (creatorId) => {
+    setCrmCreators((prev) =>
+      prev.map((c) => (c.id === creatorId || c.handle === creatorId ? { ...c, status: 'approved' } : c))
+    )
+    try {
+      const { updateCreatorDetails } = await import('../../services/opsApi')
+      await updateCreatorDetails(creatorId, { status: 'approved' })
+    } catch (e) {
+      console.warn('Approve CRM creator failed:', e)
+    }
+  }
+
+  const handleRejectCrmCreator = async (creatorId) => {
+    setCrmCreators((prev) =>
+      prev.map((c) => (c.id === creatorId || c.handle === creatorId ? { ...c, status: 'rejected' } : c))
+    )
+    try {
+      const { updateCreatorDetails } = await import('../../services/opsApi')
+      await updateCreatorDetails(creatorId, { status: 'rejected' })
+    } catch (e) {
+      console.warn('Reject CRM creator failed:', e)
+    }
+  }
+
+  const handleDeleteCrmCreator = (creatorId) => {
+    setCrmCreators((prev) => prev.filter((c) => c.id !== creatorId && c.handle !== creatorId))
+    fetchCrmData()
+  }
+
+  useEffect(() => {
+    fetchCrmData()
+  }, [activeSection])
 
   // Read active individual user / admin profile
   const [userProfile, setUserProfile] = useState(() => {
@@ -182,7 +261,7 @@ export default function CreatorLaunchLayout({
     const cleanProject = {
       id: projId,
       createdAt: new Date().toISOString(),
-      currentPhase: 1,
+      currentPhase: newProjData.currentPhase || 2,
       ...newProjData,
       // Fresh metrics
       currentPresales: 0,
@@ -328,26 +407,28 @@ export default function CreatorLaunchLayout({
 
         {/* Right: Actions, User Profile & Logout */}
         <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-          {/* Creator Follow-Up CRM Directory Button */}
+          {/* Creator Follow-Up CRM Button — Opens /follow-up-crm in a new tab */}
           <button
             type="button"
-            onClick={() => setShowFollowUpCRM(true)}
+            onClick={() => window.open('/follow-up-crm', '_blank')}
             className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 border border-purple-500/30 transition-all cursor-pointer shadow-sm"
-            title="Open Creator Outreach & Follow-Up CRM Directory"
+            title="Open Creator Outreach & Follow-Up CRM in a new tab (/follow-up-crm)"
           >
             <Users className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
             <span>Follow-Up CRM</span>
+            <ExternalLink className="w-3 h-3 text-purple-300/80" />
           </button>
 
-          {/* Admin Pipeline & Exception Lookup Button */}
+          {/* Admin Pipeline & Exception Lookup Button — Opens /admin-error-log in a new tab */}
           <button
             type="button"
-            onClick={() => setShowAdminLookup(true)}
+            onClick={() => window.open('/admin-error-log', '_blank')}
             className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-all cursor-pointer shadow-sm"
-            title="Admin Pipeline Oversight & Error Lookup"
+            title="Open Admin Pipeline Oversight & Error Log in a new tab (/admin-error-log)"
           >
             <ShieldAlert className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
             <span>Admin Error Log</span>
+            <ExternalLink className="w-3 h-3 text-rose-300/80" />
           </button>
 
           <div className="h-4 w-px bg-white/10 hidden md:block" />
@@ -392,10 +473,10 @@ export default function CreatorLaunchLayout({
       {/* Main Content View */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {/* Mobile Section Switcher */}
-        <div className="flex md:hidden items-center p-1 rounded-xl bg-white/[0.03] border border-white/[0.07]">
+        <div className="flex md:hidden items-center p-1 rounded-xl bg-white/[0.03] border border-white/[0.07] gap-1 overflow-x-auto">
           <button
             onClick={() => setActiveSection('section1')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
               activeSection === 'section1' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-400'
             }`}
           >
@@ -410,7 +491,7 @@ export default function CreatorLaunchLayout({
                 setShowLockedModal(true)
               }
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
               activeSection === 'section2' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-400'
             }`}
           >
@@ -559,6 +640,9 @@ export default function CreatorLaunchLayout({
         onSelectCreator={(cid) => {
           setShowFollowUpCRM(false)
           setActiveSection('section1')
+        }}
+        onDeleteCreator={() => {
+          fetchCrmData()
         }}
       />
     </div>

@@ -4,6 +4,7 @@ import {
   HelpCircle, ArrowRight, ShieldCheck, Heart, Loader2
 } from 'lucide-react'
 import { trackVisit } from '../../services/tracker'
+import { updatePageSEO } from '../../utils/seo'
 
 export default function PublicSurveyPage({ slug }) {
   const [project, setProject] = useState(null)
@@ -21,6 +22,14 @@ export default function PublicSurveyPage({ slug }) {
       trackVisit(`/survey/${slug || 'product'}`, updated => setProject(updated))
     } catch (e) {}
   }, [slug])
+
+  useEffect(() => {
+    updatePageSEO({
+      title: project?.name ? `Audience Survey — ${project.name} | Creator Forge` : "Audience Discovery & Research Survey | Creator Forge",
+      description: "Help shape our next software product! Share your biggest workflow challenges in 60 seconds.",
+      image: "/og-image.svg"
+    });
+  }, [project?.name]);
 
   const productName = project?.productName || 'Software Product'
   const creatorName = project?.creatorName || 'Creator'

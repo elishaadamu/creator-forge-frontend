@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07090E"/>
+      <stop offset="50%" stop-color="#0E131F"/>
+      <stop offset="100%" stop-color="#080B11"/>
+    </linearGradient>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#A78BFA"/>
+      <stop offset="50%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#34D399"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+    <radialGradient id="glowTopRight" cx="90%" cy="10%" r="60%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowBottomLeft" cx="10%" cy="90%" r="60%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  <rect width="1200" height="630" fill="url(#glowTopRight)"/>
+  <rect width="1200" height="630" fill="url(#glowBottomLeft)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.07" stroke="#FFFFFF" stroke-width="1">
+    <line x1="100" y1="0" x2="100" y2="630"/>
+    <line x1="200" y1="0" x2="200" y2="630"/>
+    <line x1="300" y1="0" x2="300" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="500" y1="0" x2="500" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="700" y1="0" x2="700" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="900" y1="0" x2="900" y2="630"/>
+    <line x1="1000" y1="0" x2="1000" y2="630"/>
+    <line x1="1100" y1="0" x2="1100" y2="630"/>
+    <line x1="0" y1="100" x2="1200" y2="100"/>
+    <line x1="0" y1="200" x2="1200" y2="200"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="0" y1="400" x2="1200" y2="400"/>
+    <line x1="0" y1="500" x2="1200" y2="500"/>
+  </g>
+
+  <!-- Border line -->
+  <rect x="20" y="20" width="1160" height="590" rx="30" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+
+  <!-- Logo Pill -->
+  <g transform="translate(100, 90)">
+    <rect width="200" height="44" rx="22" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+    <circle cx="24" cy="22" r="8" fill="#10B981"/>
+    <text x="42" y="28" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="14" font-weight="700" letter-spacing="1">CREATOR FORGE</text>
+  </g>
+
+  <!-- Main Headline -->
+  <text x="100" y="240" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="56" font-weight="900" letter-spacing="-1">
+    Turn Your Audience
+  </text>
+  <text x="100" y="315" fill="url(#primaryGrad)" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="56" font-weight="900" letter-spacing="-1">
+    Into a Software Business.
+  </text>
+
+  <!-- Subheading -->
+  <text x="100" y="385" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="22" font-weight="400">
+    Automated discovery, audience intelligence synthesis, tailored SaaS concepts,
+  </text>
+  <text x="100" y="420" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="22" font-weight="400">
+    and zero-capital 50/50 venture partnerships for digital creators.
+  </text>
+
+  <!-- Feature Pills -->
+  <g transform="translate(100, 480)">
+    <!-- Pill 1 -->
+    <rect x="0" y="0" width="220" height="48" rx="14" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.3)"/>
+    <text x="20" y="30" fill="#DDD6FE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="15" font-weight="700">⚡ Automated Outreach</text>
+
+    <!-- Pill 2 -->
+    <rect x="235" y="0" width="230" height="48" rx="14" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.3)"/>
+    <text x="255" y="30" fill="#A7F3D0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="15" font-weight="700">🎯 Audience Intelligence</text>
+
+    <!-- Pill 3 -->
+    <rect x="480" y="0" width="230" height="48" rx="14" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.3)"/>
+    <text x="500" y="30" fill="#FDE68A" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="15" font-weight="700">🚀 50/50 Co-Founder MVP</text>
+  </g>
+</svg>

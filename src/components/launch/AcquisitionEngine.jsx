@@ -118,22 +118,49 @@ export default function AcquisitionEngine({
 
   // Discovered Creators State (Dynamic AI + Apify Pipeline)
   const [creators, setCreators] = useState(() => {
-    if (initialCreators && initialCreators.length > 0) return initialCreators;
-    try {
-      const saved = localStorage.getItem("forge_launch_discovered_creators");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    const deletedIds = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
+      } catch {
+        return [];
       }
-    } catch {}
-    return [];
+    })();
+
+    let list = [];
+    if (initialCreators && initialCreators.length > 0) {
+      list = initialCreators;
+    } else {
+      try {
+        const saved = localStorage.getItem("forge_launch_discovered_creators");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
+        }
+      } catch {}
+    }
+
+    if (deletedIds.length > 0) {
+      list = list.filter((c) => {
+        const cleanHandle = (c.handle || "").toLowerCase().replace(/^@/, "");
+        return (
+          !deletedIds.includes(c.id) &&
+          !deletedIds.includes(cleanHandle) &&
+          !deletedIds.includes(c.handle)
+        );
+      });
+    }
+    return list;
   });
   const [selectedCreatorId, setSelectedCreatorId] = useState(() => {
     try {
+      const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
       const savedCreators = JSON.parse(
         localStorage.getItem("forge_launch_discovered_creators") || "[]",
       );
-      return initialCreators?.[0]?.id || savedCreators?.[0]?.id || null;
+      const candidates = (initialCreators && initialCreators.length > 0 ? initialCreators : savedCreators).filter(
+        (c) => !deletedIds.includes(c.id) && !deletedIds.includes((c.handle || "").replace(/^@/, "").toLowerCase())
+      );
+      return candidates?.[0]?.id || null;
     } catch {
       return null;
     }
@@ -148,10 +175,20 @@ export default function AcquisitionEngine({
   // Keep discovered creators persisted to localStorage so they never vanish on refresh
   useEffect(() => {
     try {
-      if (creators && creators.length > 0) {
+      const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
+      const cleanList = (creators || []).filter((c) => {
+        const cleanHandle = (c.handle || "").toLowerCase().replace(/^@/, "");
+        return (
+          !deletedIds.includes(c.id) &&
+          !deletedIds.includes(cleanHandle) &&
+          !deletedIds.includes(c.handle)
+        );
+      });
+
+      if (cleanList.length > 0) {
         localStorage.setItem(
           "forge_launch_discovered_creators",
-          JSON.stringify(creators),
+          JSON.stringify(cleanList),
         );
       } else {
         localStorage.removeItem("forge_launch_discovered_creators");
@@ -163,6 +200,67 @@ export default function AcquisitionEngine({
       );
     }
   }, [creators]);
+
+  // Real-time synchronization for creator deletion from CRM or other tabs
+  useEffect(() => {
+    const handleCreatorDeleted = (e) => {
+      const targetId = e?.detail?.creatorId;
+      const targetHandle = e?.detail?.handle;
+      const cleanTargetHandle = (targetHandle || "").replace(/^@/, "").toLowerCase();
+
+      setCreators((prev) =>
+        (prev || []).filter((c) => {
+          const cleanHandle = (c.handle || "").replace(/^@/, "").toLowerCase();
+          const matches =
+            c.id === targetId ||
+            c.handle === targetId ||
+            c.handle === targetHandle ||
+            (cleanTargetHandle && cleanHandle === cleanTargetHandle);
+          return !matches;
+        })
+      );
+
+      setSelectedCreatorId((prevId) => {
+        if (prevId === targetId || prevId === targetHandle) return null;
+        return prevId;
+      });
+    };
+
+    const handleStorageChange = (e) => {
+      if (e.key === "forge_launch_discovered_creators" && e.newValue) {
+        try {
+          const updated = JSON.parse(e.newValue);
+          if (Array.isArray(updated)) {
+            setCreators(updated);
+          }
+        } catch (err) {}
+      }
+      if (e.key === "forge_last_deleted_timestamp") {
+        try {
+          const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
+          if (deletedIds.length > 0) {
+            setCreators((prev) =>
+              (prev || []).filter((c) => {
+                const cleanHandle = (c.handle || "").toLowerCase().replace(/^@/, "");
+                return (
+                  !deletedIds.includes(c.id) &&
+                  !deletedIds.includes(cleanHandle) &&
+                  !deletedIds.includes(c.handle)
+                );
+              })
+            );
+          }
+        } catch (err) {}
+      }
+    };
+
+    window.addEventListener("forge_creator_deleted", handleCreatorDeleted);
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("forge_creator_deleted", handleCreatorDeleted);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
 
   // Alert & Notification System State
   const [toasts, setToasts] = useState([]);
@@ -192,20 +290,7 @@ export default function AcquisitionEngine({
     const creatorCount = creators.length;
     const threadCount = realThreads.length;
     try {
-      try {
-        await deleteAllCreators();
-      } catch (err) {
-        console.warn("Backend delete all creators failed or offline:", err);
-      }
-      localStorage.removeItem("forge_launch_discovered_creators");
-      localStorage.removeItem("forge_launch_active_project");
-      localStorage.removeItem("forge_launch_acquisition_step");
-      localStorage.removeItem("forge_launch_real_threads");
-      localStorage.removeItem("forge_launch_pitch_sent_map");
-      localStorage.removeItem("forge_launch_answer_sent_map");
-      localStorage.removeItem("forge_launch_persuasion_sent_map");
-      localStorage.setItem("forge_launch_active_section", "section1");
-      onResetAll?.();
+      setShowDeleteConfirmModal(false);
       setCreators([]);
       setRealThreads([]);
       setSelectedCreatorId(null);
@@ -218,14 +303,29 @@ export default function AcquisitionEngine({
       setActiveStep(1);
       setDiscoveryLog("");
       setOutreachLog("");
-      setShowDeleteConfirmModal(false);
+
+      localStorage.removeItem("forge_launch_discovered_creators");
+      localStorage.removeItem("forge_launch_active_project");
+      localStorage.removeItem("forge_launch_acquisition_step");
+      localStorage.removeItem("forge_launch_real_threads");
+      localStorage.removeItem("forge_launch_pitch_sent_map");
+      localStorage.removeItem("forge_launch_answer_sent_map");
+      localStorage.removeItem("forge_launch_persuasion_sent_map");
+      localStorage.setItem("forge_launch_active_section", "section1");
+      onResetAll?.();
+
+      try {
+        await deleteAllCreators();
+      } catch (err) {
+        console.warn("Backend delete all creators failed or offline:", err);
+      }
 
       // Trigger rich alert toast
       notify(
         "success",
         "Pipeline Reset & Creators Deleted",
         `Successfully wiped ${creatorCount} creators, ${threadCount} email threads, and reset workflow back to Step 1.`,
-        6000
+        4500
       );
     } catch (err) {
       notify(
@@ -402,45 +502,119 @@ export default function AcquisitionEngine({
     );
   };
 
-  // Load existing creators from database on mount & merge
-  // Only sync metadata for actively-discovered creators (never auto-populate creators in the background on mount)
+  // Load existing creators from database on mount — DB is the single source of truth for cross-device persistence
   useEffect(() => {
     import("../../services/opsApi").then(({ getCreators }) => {
       getCreators({ limit: 50 })
         .then((res) => {
           const rawList = Array.isArray(res) ? res : res?.creators || [];
+          const deletedIds = (() => {
+            try {
+              return JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
+            } catch {
+              return [];
+            }
+          })();
+
           if (rawList.length > 0) {
             setCreators((prev) => {
-              if (!prev || prev.length === 0) return []; // Do not populate in the background
-              const dbMap = new Map(rawList.map((item) => [item.id, item]));
-              return prev.map((c) => {
-                const dbItem = dbMap.get(c.id);
-                if (!dbItem) return c;
-                const localStatus = (c.status || "").toLowerCase();
-                const dbStatus = (dbItem.status || "").toLowerCase();
-                // Rejected state is strict and final
-                const resolvedStatus =
-                  localStatus === "rejected" || localStatus === "declined"
-                    ? "rejected"
-                    : dbStatus || c.status;
-                return {
-                  ...c,
-                  email: dbItem.email_public || c.email,
-                  email_public: dbItem.email_public || c.email_public,
-                  status: resolvedStatus,
-                  replyClassification:
-                    dbItem.reply_classification || c.replyClassification,
-                  reply_classification:
-                    dbItem.reply_classification || c.reply_classification,
-                  replyText: dbItem.reply_text || c.replyText,
-                };
+              const formattedDbCreators = rawList
+                .filter((dbItem) => {
+                  const cleanHandle = (dbItem.handle || "").toLowerCase().replace(/^@/, "");
+                  return (
+                    !deletedIds.includes(dbItem.id) &&
+                    !deletedIds.includes(cleanHandle) &&
+                    !deletedIds.includes(dbItem.handle)
+                  );
+                })
+                .map((dbItem) => {
+                  const dbStatus = dbItem.status || "discovered";
+                  return {
+                    id: dbItem.id,
+                    name: dbItem.display_name || dbItem.name || dbItem.handle,
+                    display_name: dbItem.display_name || dbItem.name || dbItem.handle,
+                    handle: dbItem.handle,
+                    platform: dbItem.platform || "youtube",
+                    followers: dbItem.follower_count || 100000,
+                    follower_count: dbItem.follower_count || 100000,
+                    avatar: dbItem.avatar_url || "",
+                    avatar_url: dbItem.avatar_url || "",
+                    bio: dbItem.bio || "",
+                    email: dbItem.email_public || "",
+                    email_public: dbItem.email_public || "",
+                    status: dbStatus,
+                    isApproved: dbStatus === "approved",
+                    isRejected: dbStatus === "rejected",
+                    replyClassification: dbItem.reply_classification,
+                    reply_classification: dbItem.reply_classification,
+                    replyText: dbItem.reply_text,
+                    reply_text: dbItem.reply_text,
+                    creatorScore: dbItem.engagement_score ? Math.round(dbItem.engagement_score * 15) : 88,
+                  };
+                });
+
+              if (!prev || prev.length === 0) {
+                return formattedDbCreators;
+              }
+
+              // Merge: keep active DB creators and preserve any enriched in-memory state
+              const merged = [];
+              const seenKeys = new Set();
+
+              formattedDbCreators.forEach((dbC) => {
+                const cleanHandle = (dbC.handle || "").toLowerCase().replace(/^@/, "");
+                const cleanEmail = (dbC.email || dbC.email_public || "").toLowerCase().trim();
+                const existing = prev.find((p) => {
+                  const pHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
+                  const pEmail = (p.email || p.email_public || "").toLowerCase().trim();
+                  return (
+                    p.id === dbC.id ||
+                    (pHandle && cleanHandle && pHandle === cleanHandle) ||
+                    (pEmail && cleanEmail && pEmail === cleanEmail)
+                  );
+                });
+
+                if (existing) {
+                  merged.push({ ...existing, ...dbC });
+                } else {
+                  merged.push(dbC);
+                }
+                seenKeys.add(dbC.id);
+                if (cleanHandle) seenKeys.add(cleanHandle);
+                if (cleanEmail) seenKeys.add(cleanEmail);
               });
+
+              // Keep in-memory freshly scraped leads that haven't been deleted
+              prev.forEach((p) => {
+                const cleanHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
+                const cleanEmail = (p.email || p.email_public || "").toLowerCase().trim();
+                const isDeleted =
+                  deletedIds.includes(p.id) ||
+                  deletedIds.includes(cleanHandle) ||
+                  deletedIds.includes(p.handle) ||
+                  (cleanEmail && deletedIds.includes(cleanEmail));
+
+                if (!isDeleted && !seenKeys.has(p.id) && (!cleanHandle || !seenKeys.has(cleanHandle))) {
+                  // Only keep if it was a frontend-generated temporary lead (not a stale DB item that was deleted)
+                  const isDbUuid = p.id && /^[0-9a-f-]{36}$/i.test(p.id);
+                  if (!isDbUuid) {
+                    merged.push(p);
+                  }
+                }
+              });
+
+              return merged;
+            });
+
+            setSelectedCreatorId((prevId) => {
+              if (deletedIds.includes(prevId)) return null;
+              return prevId || rawList[0]?.id || null;
             });
           }
         })
         .catch((e) =>
           console.warn(
-            "[AcquisitionEngine] Failed to sync creator metadata:",
+            "[AcquisitionEngine] Failed to sync creator metadata from DB:",
             e,
           ),
         );
@@ -1812,6 +1986,7 @@ export default function AcquisitionEngine({
     }
   });
   const [pollingImap, setPollingImap] = useState(false);
+  const isSyncingImapRef = useRef(false);
   const [imapSyncLog, setImapSyncLog] = useState("");
 
   // ── Helper to match creator with real IMAP thread or simulation ───────────
@@ -2261,14 +2436,14 @@ export default function AcquisitionEngine({
     ); // NEWEST FIRST AT THE TOP
   };
 
-  // Helper to check if creator has given a SOLID NO (explicit unsubscribe / opt-out / manual drop)
+  // Helper to check if creator has given a SOLID NO (explicit unsubscribe / opt-out / not_interested / manual rejection)
   const isCreatorDeclined = (c) => {
     if (!c) return false;
     const status = (c.status || "").toLowerCase();
     if (status === "rejected" || status === "declined" || status === "archived") return true;
 
-    const cls = (c.replyClassification || c.reply_classification || "").toLowerCase();
-    if (cls === "unsubscribe" || cls === "opt_out") return true;
+    const cls = (c.replyClassification || c.reply_classification || c.replyInfo?.classification || "").toLowerCase();
+    if (cls === "not_interested" || cls === "unsubscribe" || cls === "opt_out" || cls === "rejected") return true;
 
     // Check if the creator explicitly requested a solid no / opt-out in their messages
     const msgs = getCreatorThreadMessages(c, realThreads);
@@ -2277,6 +2452,11 @@ export default function AcquisitionEngine({
       return (
         b.includes("unsubscribe") ||
         b.includes("remove me") ||
+        b.includes("not interested") ||
+        b.includes("im not interested") ||
+        b.includes("i'm not interested") ||
+        b.includes("no thanks") ||
+        b.includes("pass on this") ||
         b.includes("stop emailing") ||
         b.includes("stop email") ||
         b.includes("never contact") ||
@@ -2475,67 +2655,16 @@ export default function AcquisitionEngine({
 
   const [isGeneratingStep6Ai, setIsGeneratingStep6Ai] = useState(false);
 
-  // Sync draft template whenever active selectedCreator changes or choice updates
+  // Set clean subject default when creator changes; do NOT pre-generate message automatically (admin types, or clicks Generate AI Draft)
   useEffect(() => {
     if (selectedCreator) {
-      const concepts =
-        selectedCreator.productConcepts ||
-        ensureCreatorConcepts(selectedCreator);
       const cleanHandle = (selectedCreator.handle || "").replace(/^@/, "").trim();
-      const creatorName = selectedCreator.name || selectedCreator.display_name || "there";
-      const firstName = creatorName.split(" ")[0];
-
-      // Check if creator has replied to Step 6 pitch
-      const isPitchSent = Boolean(pitchSentMap[selectedCreator.id]);
-      const currentChoice = aiDetectedChoiceMap[selectedCreator.id];
-
-      if (isPitchSent && currentChoice && currentChoice.decision === "ANSWER_QUESTION") {
-        setCustomPitchSubject(`Re: Co-founding questions regarding ${concepts[0]?.name} (${creatorName})`);
-        setCustomPitchBody(
-          `Hi ${firstName},\n\n` +
-          `Thanks for asking! Under our 50/50 venture model:\n\n` +
-          `• 50% Lifetime Net Recurring Revenue: You receive 50% of all monthly subscription revenue via automated Stripe payouts with zero upfront fees.\n\n` +
-          `• 100% Fully Managed Engineering & Support: Creator Forge funds, designs, hosts, and maintains the entire application 24/7. You never write code or handle tickets.\n\n` +
-          `• Minimal Time Commitment: Under 1–2 hours per month reviewing roadmap features and sharing updates with your audience.\n\n` +
-          `Here are the 3 concepts ready for your review:\n` +
-          concepts.map((c, i) => `${i + 1}. ${c.name} (${c.pricing}) — ${c.tagline}`).join("\n") +
-          `\n\nWhich of these 3 concepts resonates most with your audience?\n\nBest regards,\nThe Creator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP6_ANSWER | CF-CID:${selectedCreator.id} | Handle:@${cleanHandle}]`
-        );
-      } else if (isPitchSent && currentChoice && currentChoice.decision === "PERSUADE") {
-        setCustomPitchSubject(`Re: Simplifying our co-founder model for ${creatorName}`);
-        setCustomPitchBody(
-          `Hi ${firstName},\n\n` +
-          `Totally understand your hesitation! We wanted to clarify that this partnership requires zero capital and zero technical effort from you:\n\n` +
-          `1. Zero Financial Risk: You never invest a dime. We fund 100% of engineering, design, server hosting, and support.\n` +
-          `2. Zero Technical Burden: We build and maintain the entire software stack.\n` +
-          `3. Recurring Cashflow: You earn 50% net monthly recurring revenue from subscribers.\n\n` +
-          `We can build a lightweight MVP for ${concepts[0]?.name} in just 2 weeks. Would you be open to seeing a quick demo before making any decision?\n\nBest regards,\nThe Creator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP6_PERSUADE | CF-CID:${selectedCreator.id} | Handle:@${cleanHandle}]`
-        );
-      } else if (isPitchSent && currentChoice && (currentChoice.decision === "REVIEW_PREVIEW" || currentChoice.decision === "RESEND")) {
-        setCustomPitchSubject(`Re: Quick 60-second preview: ${concepts[0]?.name} for ${creatorName}`);
-        setCustomPitchBody(
-          `Hi ${firstName},\n\n` +
-          `Sounds great—take all the time you need! Here is a 60-second summary of our 3 concepts for quick reference:\n\n` +
-          concepts.map((c, i) => `${i + 1}. ${c.name} (${c.pricing}) — ${c.tagline}`).join("\n") +
-          `\n\n• Creator Forge covers 100% of engineering, hosting, and support at zero cost to you.\n• 50/50 net recurring revenue split.\n\nWhenever you are ready, let us know which one you prefer!\n\nBest regards,\nThe Creator Forge Studio Team\n\n---\nRef: [CF-STAGE:STEP6_PREVIEW | CF-CID:${selectedCreator.id} | Handle:@${cleanHandle}]`
-        );
-      } else {
-        // Initial 3-concept pitch proposal
-        setCustomPitchSubject(`Top 3 software concepts tailored for @${cleanHandle}`);
-        setCustomPitchBody(
-          `Hi ${firstName},\n\nFollowing up as promised! Based on our analysis of your ${selectedCreator.niche || "channel"} audience on ${selectedCreator.platform || "social media"}, here are the top 3 software product concepts we designed for your community:\n\n` +
-          concepts
-            .map(
-              (c, i) =>
-                `${i + 1}. ${c.name} (${c.pricing}) — ${c.tagline}\n   • Solves: ${c.problem} (Score: ${c.opportunityScore}/100)`,
-            )
-            .join("\n\n") +
-          `\n\nUnder our 50/50 partnership, our engineering team will build and deploy the complete MVP at zero cost to you.\n\nTake a look and let us know which concept you'd be most excited to build and launch with us!\n\nBest regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${selectedCreator.id} | Handle:@${cleanHandle}]`
-        );
-      }
+      const creatorName = selectedCreator.name || selectedCreator.display_name || "Creator";
+      setCustomPitchSubject(`Re: Partnering with Creator Forge - ${creatorName} (@${cleanHandle})`);
+      setCustomPitchBody(""); // Empty by default: admin writes direct reply, or clicks Generate AI Draft
       setIsEditingPitch(false);
     }
-  }, [selectedCreator?.id, aiDetectedChoiceMap[selectedCreator?.id]?.decision, pitchSentMap[selectedCreator?.id]?.sentAt]);
+  }, [selectedCreator?.id]);
 
   // On-demand AI draft generation using backend LLM
   const handleRegenerateStep6Draft = async () => {
@@ -2938,112 +3067,129 @@ export default function AcquisitionEngine({
     setTimeout(() => setCopiedEmail(null), 2000);
   };
 
-  const handleApproveCreator = (id) => {
-    const creator = creators.find((c) => c.id === id);
-    const updatedCreators = creators.map((c) =>
-      c.id === id
-        ? {
+  const hasCreatorReceivedReply = (c) => {
+    if (!c) return false;
+    if (c.hasReplied === true) return true;
+    const cls = (c.replyClassification || c.reply_classification || c.replyInfo?.classification || "").toLowerCase();
+    if (cls && cls !== "awaiting_reply" && cls !== "no_email" && cls !== "discovered") return true;
+    if (c.reply_text || c.replyText) return true;
+    const msgs = getCreatorThreadMessages(c, realThreads);
+    const hasInbound = msgs.some((m) => m.is_inbound || m.direction === "inbound" || (m.from_address && !m.from_address.includes("creatorforge") && !m.from_address.includes("admin")));
+    return hasInbound;
+  };
+
+  const handleApproveCreator = async (id) => {
+    if (!id) return;
+
+    // 1. Update local state immediately for instant UI feedback
+    setCreators((prevCreators) =>
+      prevCreators.map((c) => {
+        const isMatch =
+          c.id === id ||
+          (c.handle && id && c.handle.toLowerCase().replace(/^@/, "") === `${id}`.toLowerCase().replace(/^@/, "")) ||
+          (c.email && id && c.email.toLowerCase() === `${id}`.toLowerCase());
+
+        if (isMatch) {
+          return {
             ...c,
             status: "approved",
             isApproved: true,
             approvedAt: new Date().toISOString(),
             productConcepts: ensureCreatorConcepts(c),
-          }
-        : c,
+          };
+        }
+        return c;
+      }),
     );
-    setCreators(updatedCreators);
 
+    // 2. Persist to database (source of truth)
     try {
-      localStorage.setItem(
-        "forge_launch_discovered_creators",
-        JSON.stringify(updatedCreators),
-      );
-    } catch (e) {}
-
-    // Persist to backend database
-    import("../../services/opsApi").then(({ updateCreatorDetails }) => {
-      updateCreatorDetails(id, { status: "approved" }).catch((e) =>
-        console.warn("[AcquisitionEngine] Failed to persist approval status:", e),
-      );
-    });
+      const { updateCreatorDetails } = await import("../../services/opsApi");
+      await updateCreatorDetails(id, { status: "approved" });
+      console.log(`[AcquisitionEngine] Creator ${id} approved in DB.`);
+    } catch (e) {
+      console.warn("[AcquisitionEngine] Failed to persist approval status:", e);
+    }
 
     notify(
       "success",
       "Creator Approved",
-      `${creator?.name || creator?.display_name || "Creator"} approved — generating product concepts and advancing to Audience Analysis.`,
+      `Creator approved — qualified for Step 5 & Step 6 co-launch.`,
       4000,
     );
   };
 
-  const handleRejectCreator = (id) => {
-    const creator = creators.find((c) => c.id === id);
-    const updatedCreators = creators.map((c) =>
-      c.id === id
-        ? {
+  const handleRejectCreator = async (id) => {
+    if (!id) return;
+    let targetCreator = null;
+
+    // 1. Update local state immediately for instant UI feedback
+    setCreators((prevCreators) =>
+      prevCreators.map((c) => {
+        const isMatch =
+          c.id === id ||
+          (c.handle && id && c.handle.toLowerCase().replace(/^@/, "") === `${id}`.toLowerCase().replace(/^@/, "")) ||
+          (c.email && id && c.email.toLowerCase() === `${id}`.toLowerCase());
+
+        if (isMatch) {
+          targetCreator = c;
+          return {
             ...c,
             status: "rejected",
             isApproved: false,
             rejectedAt: new Date().toISOString(),
-          }
-        : c,
+          };
+        }
+        return c;
+      }),
     );
-    setCreators(updatedCreators);
 
+    // 2. Persist to database (source of truth) and send rejection email
     try {
-      localStorage.setItem(
-        "forge_launch_discovered_creators",
-        JSON.stringify(updatedCreators),
-      );
-    } catch (e) {
-      console.warn("[AcquisitionEngine] Failed to persist rejection:", e);
-    }
+      const { updateCreatorDetails, sendDirectEmail } = await import("../../services/opsApi");
+      await updateCreatorDetails(id, { status: "rejected" });
+      console.log(`[AcquisitionEngine] Creator ${id} rejected in DB.`);
 
-    // Persist to backend database
-    import("../../services/opsApi").then(({ updateCreatorDetails }) => {
-      updateCreatorDetails(id, { status: "rejected" }).catch((e) =>
-        console.warn("[AcquisitionEngine] Failed to persist rejection status:", e),
-      );
-    });
+      // Automatically dispatch polite rejection email if email is present
+      if (targetCreator) {
+        const targetEmail = (targetCreator.email || targetCreator.email_public || "").trim();
+        if (targetEmail && targetEmail.includes("@")) {
+          const firstName = (targetCreator.name || targetCreator.display_name || "there").split(" ")[0];
+          const handleClean = (targetCreator.handle || "").replace(/^@/, "");
+          const rejectSubject = `Regarding Creator Forge Partnership - ${firstName} [#${handleClean}]`;
+          const rejectBody = `Hi ${firstName},\n\nThank you for getting back to us and for considering a partnership with Creator Forge.\n\nAfter reviewing our current co-launch roster and active category capacity, we won't be able to move forward with a software project at this time.\n\nWe genuinely appreciate your time and wish you continued success with your channel and community.\n\nBest regards,\nCreator Forge Studio Team`;
+
+          try {
+            await sendDirectEmail(targetEmail, rejectSubject, rejectBody, targetCreator.id);
+            console.log(`[AcquisitionEngine] Rejection notice delivered to ${targetEmail}`);
+          } catch (mailErr) {
+            console.warn("[AcquisitionEngine] Failed to send rejection email:", mailErr);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[AcquisitionEngine] Failed to persist rejection status:", e);
+    }
 
     notify(
       "error",
-      "Creator Rejected",
-      `${creator?.name || creator?.display_name || "Creator"} has been archived. They will not receive further outreach.`,
-      3500,
+      "Creator Rejected & Notified",
+      `Creator archived — polite rejection email sent.`,
+      4000,
     );
 
     // Auto-advance selection to the next active, non-rejected creator
-    if (activeStep >= 5) {
-      const nextQualified = updatedCreators.filter(
-        (c) =>
-          c.id !== id &&
-          (c.status || "").toLowerCase() !== "rejected" &&
-          isCreatorQualifiedForPitch(c),
-      );
-      if (nextQualified.length > 0) {
-        setSelectedCreatorId(nextQualified[0].id);
-      } else {
-        const nextAny = updatedCreators.filter(
-          (c) => c.id !== id && (c.status || "").toLowerCase() !== "rejected",
-        );
-        setSelectedCreatorId(nextAny.length > 0 ? nextAny[0].id : null);
-      }
-    } else {
-      const remaining = updatedCreators.filter(
-        (c) =>
-          c.id !== id &&
-          c.status !== "approved" &&
-          (c.status || "").toLowerCase() !== "rejected",
+    setCreators((current) => {
+      const remaining = current.filter(
+        (c) => c.id !== id && (c.status || "").toLowerCase() !== "rejected",
       );
       if (remaining.length > 0) {
         setSelectedCreatorId(remaining[0].id);
       } else {
-        const anyRemaining = updatedCreators.filter(
-          (c) => c.id !== id && (c.status || "").toLowerCase() !== "rejected",
-        );
-        setSelectedCreatorId(anyRemaining.length > 0 ? anyRemaining[0].id : null);
+        setSelectedCreatorId(null);
       }
-    }
+      return current;
+    });
   };
 
   // ── Step 4: Decision Modal State & Handlers (Accept / Reject with Optional AI Email) ──
@@ -3079,7 +3225,7 @@ export default function AcquisitionEngine({
       isOpen: true,
       creator,
       decisionType,
-      sendEmail: hasEmail,
+      sendEmail: isApprove ? false : hasEmail,
       subject: defaultSubject,
       body: defaultBody,
       isGeneratingAi: false,
@@ -3174,12 +3320,30 @@ export default function AcquisitionEngine({
     });
   };
 
-  const handlePitchAndCreateProject = () => {
+  const handlePitchAndCreateProject = async () => {
     if (!selectedCreator) return;
     const concepts =
       selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
     const concept =
       concepts.find((p) => p.id === selectedConceptId) || concepts[0];
+
+    // Deliver formal partnership kick-off email to the creator
+    const targetEmail = (selectedCreator.email || selectedCreator.email_public || "").trim();
+    if (targetEmail && targetEmail.includes("@")) {
+      const firstName = (selectedCreator.name || selectedCreator.display_name || "there").split(" ")[0];
+      const handleClean = (selectedCreator.handle || "").replace(/^@/, "");
+      const kickoffSubject = `🚀 Partnership Kick-off: Developing ${concept?.name || "your software product"} with Creator Forge`;
+      const kickoffBody = `Hi ${firstName},\n\nGreat news! Our studio engineering team has officially selected and initiated the development project for **${concept?.name || "your custom software platform"}** under our 50/50 venture co-launch agreement.\n\nHere is our current development sprint:\n• Engineering Architecture & MVP specification for ${concept?.name} (${concept?.pricing || "$29-$79/mo"})\n• Setting up your private Co-Founder Portal & shared analytics dashboard\n• Pre-launch validation and community onboarding pipeline\n\nUnder our partnership, Creator Forge covers 100% of the engineering, server infrastructure, billing, and technical operations with zero upfront capital required from you.\n\nWe will share live staging previews and your co-founder portal link shortly. Excited to build this together!\n\nBest regards,\nCreator Forge Studio Team\n\n---\nRef: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handleClean}]`;
+
+      try {
+        const { sendDirectEmail } = await import("../../services/opsApi");
+        await sendDirectEmail(targetEmail, kickoffSubject, kickoffBody, selectedCreator.id);
+        console.log(`[AcquisitionEngine] Project kick-off email dispatched to ${targetEmail}`);
+      } catch (mailErr) {
+        console.warn("[AcquisitionEngine] Failed to dispatch kick-off email:", mailErr);
+      }
+    }
+
     onCreateProject({
       creatorId: selectedCreator.id,
       creatorName: selectedCreator.name || selectedCreator.display_name,
@@ -3203,6 +3367,7 @@ export default function AcquisitionEngine({
       creatorScore: selectedCreator.creatorScore || selectedCreator.score || 85,
       opportunityScore: concept?.opportunityScore || 92,
       selectedConcept: concept,
+      currentPhase: 2,
       validationPlan: {
         customer: concept?.customer || "",
         problem: concept?.problem || "",
@@ -3213,10 +3378,11 @@ export default function AcquisitionEngine({
         threshold: "$5,000 in pre-sales or 50 paid founding reservations",
       },
     });
+
     notify(
       "success",
       "Section 2 Project Initialized",
-      `Launched Co-Launch Project OS for ${selectedCreator.name || selectedCreator.handle} (${concept?.name || "Venture"}). Dual briefing dispatched to admin & creator!`,
+      `Launched Co-Launch Project OS (Phase 2: Build MVP) for ${selectedCreator.name || selectedCreator.handle} (${concept?.name || "Venture"}). Kick-off email dispatched to ${targetEmail || "creator"}!`,
       6000
     );
   };
@@ -3393,6 +3559,8 @@ export default function AcquisitionEngine({
   }, [realThreads]);
 
   const syncImapReplies = async (isManual = false) => {
+    if (isSyncingImapRef.current) return;
+    isSyncingImapRef.current = true;
     const isManualClick = isManual === true;
     setPollingImap(true);
     setImapSyncLog(
@@ -3411,6 +3579,26 @@ export default function AcquisitionEngine({
         setImapSyncLog(
           `[Inbox Synced] ${repliedThreads.length} active reply threads updated and classified.`,
         );
+
+        // Sync incoming replies directly into creators state
+        setCreators((prevCreators) => {
+          if (!prevCreators || prevCreators.length === 0) return prevCreators;
+          return prevCreators.map((c) => {
+            const reply = getCreatorReply(c, threads);
+            if (reply && reply.hasRealReply) {
+              return {
+                ...c,
+                hasReplied: true,
+                replyClassification: reply.classification || c.replyClassification,
+                reply_classification: reply.classification || c.reply_classification,
+                replyText: reply.snippet || c.replyText,
+                reply_text: reply.snippet || c.reply_text,
+              };
+            }
+            return c;
+          });
+        });
+
         // Only trigger an alert toast if user manually clicked a Refresh button
         if (isManualClick) {
           notify(
@@ -3444,6 +3632,7 @@ export default function AcquisitionEngine({
       setImapSyncLog("[IMAP Check] Waiting for creator replies.");
     } finally {
       setPollingImap(false);
+      isSyncingImapRef.current = false;
     }
   };
 
@@ -3452,13 +3641,13 @@ export default function AcquisitionEngine({
     syncImapReplies();
   }, []);
 
-  // Poll regularly while on Step 4, Step 5, or Step 6
+  // Poll regularly while on Step 4, Step 5, or Step 6 (debounced 25s interval)
   useEffect(() => {
     if (activeStep >= 4) {
       syncImapReplies();
       const pollTimer = setInterval(() => {
         syncImapReplies();
-      }, 4000);
+      }, 25000);
       return () => clearInterval(pollTimer);
     }
   }, [activeStep]);
@@ -4211,16 +4400,6 @@ export default function AcquisitionEngine({
               <Pause className="w-3.5 h-3.5 fill-amber-400 flex-shrink-0" />
             )}
             <span>{campaignRunning ? "Engine Active" : "Engine Paused"}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowAdminLookup(true)}
-            className="flex items-center gap-2 px-3.5 h-9 rounded-xl text-xs font-bold transition-all border bg-rose-500/10 border-rose-500/25 text-rose-300 hover:bg-rose-500/20 cursor-pointer shadow-sm whitespace-nowrap flex-shrink-0"
-            title="Open Admin Oversight & Error Log"
-          >
-            <ShieldAlert className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
-            <span>Error & Exception Log</span>
           </button>
         </div>
       </div>
@@ -5779,42 +5958,54 @@ export default function AcquisitionEngine({
                             </div>
 
                             {/* Classification Status Badge */}
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border ${
-                                reply.classification === "interested"
-                                  ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                                  : reply.classification === "question"
-                                    ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
-                                    : reply.classification === "not_interested"
-                                      ? "bg-red-500/15 text-red-300 border-red-500/30"
-                                      : reply.classification === "unsubscribe"
-                                        ? "bg-slate-500/15 text-slate-300 border-slate-500/30"
-                                        : reply.classification === "no_email"
-                                          ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
-                                          : "bg-blue-500/15 text-blue-300 border-blue-500/30"
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  reply.classification === "interested"
-                                    ? "bg-emerald-400"
-                                    : reply.classification === "question"
-                                      ? "bg-amber-400"
-                                      : reply.classification === "not_interested"
-                                        ? "bg-red-400"
-                                        : reply.classification === "unsubscribe"
-                                          ? "bg-slate-400"
-                                          : reply.classification === "no_email"
-                                            ? "bg-amber-400"
-                                            : "bg-blue-400"
-                                }`}
-                              />
-                              <span className="capitalize">
-                                {reply.classification === "no_email"
-                                  ? "No Email"
-                                  : reply.classification.replace("_", " ")}
+                            {isApproved ? (
+                              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                <span>Approved</span>
                               </span>
-                            </span>
+                            ) : isRejected ? (
+                              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border bg-rose-500/15 text-rose-300 border-rose-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                                <span>Rejected</span>
+                              </span>
+                            ) : (
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border ${
+                                  reply.classification === "interested"
+                                    ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                    : reply.classification === "question"
+                                      ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                                      : reply.classification === "not_interested"
+                                        ? "bg-red-500/15 text-red-300 border-red-500/30"
+                                        : reply.classification === "unsubscribe"
+                                          ? "bg-slate-500/15 text-slate-300 border-slate-500/30"
+                                          : reply.classification === "no_email"
+                                            ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                                            : "bg-blue-500/15 text-blue-300 border-blue-500/30"
+                                }`}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    reply.classification === "interested"
+                                      ? "bg-emerald-400"
+                                      : reply.classification === "question"
+                                        ? "bg-amber-400"
+                                        : reply.classification === "not_interested"
+                                          ? "bg-red-400"
+                                          : reply.classification === "unsubscribe"
+                                            ? "bg-slate-400"
+                                            : reply.classification === "no_email"
+                                              ? "bg-amber-400"
+                                              : "bg-blue-400"
+                                  }`}
+                                />
+                                <span className="capitalize">
+                                  {reply.classification === "no_email"
+                                    ? "No Email"
+                                    : reply.classification.replace("_", " ")}
+                                </span>
+                              </span>
+                            )}
                           </div>
 
                           {/* Message snippet bubble */}
@@ -5897,55 +6088,67 @@ export default function AcquisitionEngine({
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <span
-                            className={`text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 ${
-                              activeReviewCreator.replyInfo.classification ===
-                              "interested"
-                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                : activeReviewCreator.replyInfo
-                                      .classification === "question"
-                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                                  : activeReviewCreator.replyInfo
-                                        .classification === "not_interested"
-                                    ? "bg-red-500/10 text-red-400 border-red-500/20"
-                                    : activeReviewCreator.replyInfo
-                                          .classification === "unsubscribe"
-                                      ? "bg-slate-500/10 text-slate-400 border-slate-500/20"
-                                      : activeReviewCreator.replyInfo
-                                            .classification === "no_email"
-                                        ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                                        : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                            }`}
-                          >
+                          {(activeReviewCreator.status === "approved" || activeReviewCreator.isApproved) ? (
+                            <span className="text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                              <span>Approved • Qualified</span>
+                            </span>
+                          ) : (activeReviewCreator.status === "rejected" || activeReviewCreator.isRejected) ? (
+                            <span className="text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 bg-rose-500/10 text-rose-400 border-rose-500/20">
+                              <span className="w-2 h-2 rounded-full bg-rose-400" />
+                              <span>Rejected • Archived</span>
+                            </span>
+                          ) : (
                             <span
-                              className={`w-2 h-2 rounded-full ${
+                              className={`text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 ${
                                 activeReviewCreator.replyInfo.classification ===
                                 "interested"
-                                  ? "bg-emerald-400"
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                                   : activeReviewCreator.replyInfo
                                         .classification === "question"
-                                    ? "bg-amber-400"
+                                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
                                     : activeReviewCreator.replyInfo
                                           .classification === "not_interested"
-                                      ? "bg-red-400"
+                                      ? "bg-red-500/10 text-red-400 border-red-500/20"
                                       : activeReviewCreator.replyInfo
                                             .classification === "unsubscribe"
-                                        ? "bg-slate-400"
+                                        ? "bg-slate-500/10 text-slate-400 border-slate-500/20"
                                         : activeReviewCreator.replyInfo
                                               .classification === "no_email"
-                                          ? "bg-amber-400"
-                                          : "bg-blue-400"
+                                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                          : "bg-blue-500/10 text-blue-400 border-blue-500/20"
                               }`}
-                            />
-                            <span className="capitalize">
-                              {activeReviewCreator.replyInfo.hasRealReply
-                                ? `AI: ${activeReviewCreator.replyInfo.classification.replace("_", " ")}`
-                                : activeReviewCreator.replyInfo
-                                      .classification === "no_email"
-                                  ? "No Email Set"
-                                  : "Awaiting Reply"}
+                            >
+                              <span
+                                className={`w-2 h-2 rounded-full ${
+                                  activeReviewCreator.replyInfo.classification ===
+                                  "interested"
+                                    ? "bg-emerald-400"
+                                    : activeReviewCreator.replyInfo
+                                          .classification === "question"
+                                      ? "bg-amber-400"
+                                      : activeReviewCreator.replyInfo
+                                            .classification === "not_interested"
+                                        ? "bg-red-400"
+                                        : activeReviewCreator.replyInfo
+                                              .classification === "unsubscribe"
+                                          ? "bg-slate-400"
+                                          : activeReviewCreator.replyInfo
+                                                .classification === "no_email"
+                                            ? "bg-amber-400"
+                                            : "bg-blue-400"
+                                }`}
+                              />
+                              <span className="capitalize">
+                                {activeReviewCreator.replyInfo.hasRealReply
+                                  ? `AI: ${activeReviewCreator.replyInfo.classification.replace("_", " ")}`
+                                  : activeReviewCreator.replyInfo
+                                        .classification === "no_email"
+                                    ? "No Email Set"
+                                    : "Awaiting Reply"}
+                              </span>
                             </span>
-                          </span>
+                          )}
                         </div>
                       </div>
 
@@ -6123,41 +6326,49 @@ export default function AcquisitionEngine({
                         <div className="flex items-center gap-2.5">
                           <button
                             type="button"
-                            onClick={() =>
-                              openDecisionModal(activeReviewCreator, "reject")
-                            }
+                            onClick={() => handleRejectCreator(activeReviewCreator.id)}
                             disabled={activeReviewCreator.status === "rejected"}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                               activeReviewCreator.status === "rejected"
                                 ? "bg-rose-500/10 text-rose-400/50 border-rose-500/20 cursor-not-allowed"
-                                : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border-rose-500/30"
+                                : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border-rose-500/30 active:scale-95"
                             }`}
                           >
                             {activeReviewCreator.status === "rejected" ? "Archived (Rejected)" : "Reject Lead"}
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (activeReviewCreator.status === "approved") {
+                          {/* Accept & Advance to Step 5 Button (Strictly only for interested / qualified leads) */}
+                          {activeReviewCreator.status !== "rejected" && activeReviewCreator.replyInfo?.classification !== "not_interested" && activeReviewCreator.replyInfo?.classification !== "unsubscribe" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (activeReviewCreator.status !== "approved") {
+                                  handleApproveCreator(activeReviewCreator.id);
+                                }
                                 setSelectedCreatorId(activeReviewCreator.id);
                                 setActiveStep(5);
-                              } else {
-                                openDecisionModal(activeReviewCreator, "approve");
-                              }
-                            }}
-                            className={`px-5 py-2 rounded-xl text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer border ${
-                              activeReviewCreator.status === "approved"
-                                ? "bg-emerald-700 hover:bg-emerald-600 border-emerald-500/50"
-                                : "bg-emerald-600 hover:bg-emerald-500 border-emerald-500/40"
-                            }`}
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>
-                              {activeReviewCreator.status === "approved"
-                                ? "View Concepts in Step 5"
-                                : "Accept & Advance to Step 5"}
+                              }}
+                              className={`px-5 py-2 rounded-xl text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer border active:scale-95 ${
+                                activeReviewCreator.status === "approved"
+                                  ? "bg-emerald-700 hover:bg-emerald-600 border-emerald-500/50"
+                                  : "bg-emerald-600 hover:bg-emerald-500 border-emerald-500/40"
+                              }`}
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>
+                                {activeReviewCreator.status === "approved"
+                                  ? "View Concepts in Step 5"
+                                  : "Accept & Advance to Step 5"}
+                              </span>
+                            </button>
+                          )}
+
+                          {/* Notice if uninterested */}
+                          {activeReviewCreator.status !== "rejected" && (activeReviewCreator.replyInfo?.classification === "not_interested" || activeReviewCreator.replyInfo?.classification === "unsubscribe") && (
+                            <span className="text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
+                              <span>Uninterested (Blocked from Step 5)</span>
                             </span>
-                          </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -6354,38 +6565,43 @@ export default function AcquisitionEngine({
             )}
 
           {/* Step 5 Audience & Concept Review Status Banner */}
-          <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-950/40 via-[#141c26] to-purple-950/30 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-amber-300">
-                    Audience Analysis & Opportunities Ready
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    • Selected:{" "}
-                    {selectedCreator?.productConcepts?.[0]?.name ||
-                      "Top Concept"}
-                  </span>
+          {(() => {
+            const isDispatched = Boolean(selectedCreator && pitchSentMap[selectedCreator.id]);
+            const sentInfo = selectedCreator ? pitchSentMap[selectedCreator.id] : null;
+
+            return (
+              <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-950/40 via-[#141c26] to-purple-950/30 border border-amber-500/30 flex items-center justify-between gap-3 shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    isDispatched ? "bg-emerald-500/20 border border-emerald-500/30" : "bg-amber-500/20 border border-amber-500/30"
+                  }`}>
+                    {isDispatched ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold ${isDispatched ? "text-emerald-300" : "text-amber-300"}`}>
+                        {isDispatched ? "3-Concept Blueprint Dispatched — Awaiting Creator Reply" : "Audience Analysis & Opportunities Ready"}
+                      </span>
+                      {sentInfo && (
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          • Sent at {sentInfo.time} ({sentInfo.recipient})
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      {isDispatched
+                        ? "The 3 engineered concepts have been emailed to the creator. If the creator has not replied yet, use the follow-up re-send button below, or proceed to Step 6."
+                        : "Review audience intelligence and select one of the top 3 engineered concepts below to dispatch directly to the creator."}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-300">
-                  Review audience intelligence and select one of the top 3 engineered concepts below to proceed to Step 6 pitch.
-                </p>
               </div>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setActiveStep(6)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95"
-              >
-                <span>Proceed to Step 6 Pitch</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+            );
+          })()}
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
             <div>
@@ -6429,26 +6645,55 @@ export default function AcquisitionEngine({
                 </span>
               </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  handleSendBlueprintAndAdvanceToStep6(selectedCreator)
-                }
-                disabled={isSendingPitch}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50"
-                title="Send the 3 product concepts and mockup blueprints directly to the creator's email and advance to Step 6"
-              >
-                {isSendingPitch ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5" />
-                )}
-                <span>
-                  {isSendingPitch
-                    ? "Dispatching..."
-                    : "Send 3-Concept Blueprint & Advance →"}
-                </span>
-              </button>
+              {Boolean(selectedCreator && pitchSentMap[selectedCreator.id]) ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleSendOpportunityPitch(selectedCreator)}
+                    disabled={isSendingPitch}
+                    className="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    title="Send follow-up concept email again to creator"
+                  >
+                    {isSendingPitch ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5" />
+                    )}
+                    <span>
+                      {isSendingPitch ? "Re-sending..." : "Re-send / Follow Up Email"}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveStep(6)}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95"
+                  >
+                    <span>Advance to Step 6 Studio →</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleSendBlueprintAndAdvanceToStep6(selectedCreator)
+                  }
+                  disabled={isSendingPitch}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50"
+                  title="Send the 3 product concepts directly to the creator's email and advance to Step 6"
+                >
+                  {isSendingPitch ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {isSendingPitch
+                      ? "Dispatching..."
+                      : "Send 3 Concepts Email & Advance →"}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -6600,25 +6845,17 @@ export default function AcquisitionEngine({
                     evidence, pricing model, competition & UI mockup preview.
                   </p>
                 </div>
-                <span className="text-[11px] text-purple-300 bg-purple-500/10 px-3 py-1 rounded-lg border border-purple-500/20 font-mono">
-                  Click a card to select for pitch
+                <span className="text-[11px] text-emerald-300 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20 font-mono">
+                  All 3 Concepts Dispatched in Email
                 </span>
               </div>
 
               <div className="grid md:grid-cols-3 gap-5">
                 {selectedCreator.productConcepts.map((concept, index) => {
-                  const isSelected =
-                    selectedConceptId === concept.id ||
-                    (!selectedConceptId && index === 0);
                   return (
                     <div
                       key={concept.id || index}
-                      onClick={() => setSelectedConceptId(concept.id)}
-                      className={`p-5 rounded-2xl border transition-all cursor-pointer space-y-4 flex flex-col justify-between ${
-                        isSelected
-                          ? "bg-[#151926] border-purple-500/80 shadow-md ring-1 ring-purple-500/40"
-                          : "bg-[#161a23] border-white/[0.08] text-slate-300 hover:border-white/20"
-                      }`}
+                      className="p-5 rounded-2xl border border-white/[0.08] bg-[#161a23] text-slate-300 space-y-4 flex flex-col justify-between hover:border-white/20 transition-all"
                     >
                       <div className="space-y-3.5">
                         {/* Header Badge & Opportunity Score */}
@@ -6688,13 +6925,8 @@ export default function AcquisitionEngine({
 
                         {/* Name & Tagline */}
                         <div className="space-y-1">
-                          <h3 className="text-sm font-black text-white tracking-tight flex items-center justify-between">
-                            <span>{concept.name}</span>
-                            {isSelected && (
-                              <span className="text-[10px] font-bold text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-md">
-                                Selected
-                              </span>
-                            )}
+                          <h3 className="text-sm font-black text-white tracking-tight">
+                            {concept.name}
                           </h3>
                           <p className="text-xs text-purple-300 font-semibold">
                             {concept.tagline}
@@ -6780,29 +7012,6 @@ export default function AcquisitionEngine({
                             </span>
                           </div>
                         </div>
-                      </div>
-
-                      <div className="pt-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedConceptId(concept.id);
-                            setActiveStep(6);
-                          }}
-                          className={`w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                            isSelected
-                              ? "bg-purple-600 hover:bg-purple-500 text-white shadow-md"
-                              : "bg-white/[0.06] hover:bg-white/10 text-slate-300"
-                          }`}
-                        >
-                          <span>
-                            {isSelected
-                              ? "Selected • Proceed to Pitch"
-                              : "Select This Concept"}
-                          </span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     </div>
                   );
@@ -6937,223 +7146,293 @@ export default function AcquisitionEngine({
             </div>
           </div>
 
-          {/* Main 2-Column Split: Concepts (Left) vs. Conversation & AI Composer (Right) */}
-          {selectedCreator && (
-            <div className="grid lg:grid-cols-12 gap-6">
-              {/* Left Column (5 cols): 3 Engineered SaaS Concepts */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                    <span>3 Engineered Product Concepts</span>
-                  </h3>
-                  <span className="text-[11px] text-slate-400">
-                    Click to select launch concept
-                  </span>
-                </div>
+          {/* Main 2-Column Split: Decided Project Concept (Left) vs. Conversation & Admin Email Composer (Right) */}
+          {selectedCreator && (() => {
+            const msgs = getCreatorThreadMessages(selectedCreator, realThreads);
+            const pitchSent = Boolean(pitchSentMap[selectedCreator.id]);
+            const detectedChoice = aiDetectedChoiceMap[selectedCreator.id];
+            const concepts = selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
+            const chosenConcept =
+              concepts.find((c) => c.id === selectedConceptId) ||
+              concepts.find((c) => c.id === detectedChoice?.conceptId) ||
+              concepts[0];
 
-                <div className="space-y-3">
-                  {selectedCreator.productConcepts?.map((c, i) => {
-                    const isChosen =
-                      selectedConceptId === c.id ||
-                      (!selectedConceptId && i === 0);
-                    return (
-                      <div
-                        key={c.id || i}
-                        onClick={() => setSelectedConceptId(c.id)}
-                        className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2 relative ${
-                          isChosen
-                            ? "bg-[#181d2a] border-emerald-500/70 shadow-lg ring-1 ring-emerald-500/40"
-                            : "bg-[#121620] border-white/[0.07] hover:border-white/20"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-5 h-5 rounded-md text-xs font-black flex items-center justify-center ${
-                              isChosen ? "bg-emerald-600 text-white" : "bg-white/10 text-slate-300"
-                            }`}>
-                              #{i + 1}
-                            </span>
-                            <span className="text-sm font-bold text-white">
-                              {c.name}
-                            </span>
-                          </div>
-                          <span className="text-xs font-bold text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                            {c.pricing}
-                          </span>
-                        </div>
+            return (
+              <div className="grid lg:grid-cols-12 gap-6">
+                {/* Left Column (5 cols): Decided Project Concept & Partnership Terms */}
+                <div className="lg:col-span-5 space-y-4">
+                  {/* 1. Decided Product Concept Card */}
+                  <div className="p-5 rounded-2xl bg-[#161a24] border border-emerald-500/50 shadow-xl space-y-4 relative overflow-hidden">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-xs flex items-center justify-center">
+                          ✓
+                        </span>
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">
+                          Decided Project Concept
+                        </span>
+                      </div>
+                      <span className="text-xs font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        <span>Score: {chosenConcept?.opportunityScore || 94}/100</span>
+                      </span>
+                    </div>
 
-                        <p className="text-xs text-purple-200">
-                          {c.tagline}
-                        </p>
+                    <div className="space-y-2 border-b border-white/[0.06] pb-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-white tracking-tight">
+                          {chosenConcept?.name}
+                        </h3>
+                        <span className="text-xs font-bold text-emerald-400 font-mono bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/25">
+                          {chosenConcept?.pricing}
+                        </span>
+                      </div>
+                      <p className="text-xs text-purple-300 font-medium">
+                        {chosenConcept?.tagline}
+                      </p>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        <strong className="text-slate-400">Solves:</strong> {chosenConcept?.problem}
+                      </p>
+                    </div>
 
-                        <p className="text-[11px] text-slate-400 leading-snug">
-                          <strong className="text-slate-300">Problem Solved:</strong> {c.problem}
-                        </p>
+                    {/* Target Specs & Status */}
+                    <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                      <div className="p-2 rounded-xl bg-black/40 border border-white/[0.05]">
+                        <span className="text-[10px] text-slate-500 block uppercase font-bold">Target MVP</span>
+                        <span className="font-bold text-slate-200">{chosenConcept?.mvpDifficulty || "2 weeks"}</span>
+                      </div>
+                      <div className="p-2 rounded-xl bg-black/40 border border-white/[0.05]">
+                        <span className="text-[10px] text-slate-500 block uppercase font-bold">Selection Status</span>
+                        <span className="font-bold text-emerald-300 flex items-center justify-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{detectedChoice?.conceptName ? "Confirmed by Creator" : "Ready for Section 2"}</span>
+                        </span>
+                      </div>
+                    </div>
 
-                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-white/[0.04]">
-                          <span className="text-amber-300 font-semibold">
-                            Score: {c.opportunityScore}/100
-                          </span>
-                          <span className="text-slate-300">
-                            MVP: {c.mvpDifficulty || "2 weeks"}
-                          </span>
-                          {isChosen && (
-                            <span className="text-emerald-400 font-bold flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> Selected for Launch
-                            </span>
-                          )}
+                    {/* Concept Switcher Dropdown / Pills (in case admin wants to toggle) */}
+                    {concepts.length > 1 && (
+                      <div className="pt-2 border-t border-white/[0.05] space-y-1.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                          Change Selected Concept:
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {concepts.map((c, i) => {
+                            const isCurrent = (chosenConcept?.id === c.id) || (!chosenConcept && i === 0);
+                            return (
+                              <button
+                                key={c.id || i}
+                                type="button"
+                                onClick={() => setSelectedConceptId(c.id)}
+                                className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer truncate ${
+                                  isCurrent
+                                    ? "bg-purple-600 text-white border-purple-500"
+                                    : "bg-white/[0.03] text-slate-400 border-white/10 hover:text-white"
+                                }`}
+                              >
+                                #{i + 1} {c.name.split(" ")[0]}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>50/50 Co-Founder Terms</span>
+                    )}
                   </div>
-                  <p className="text-[11px] text-slate-300 leading-snug">
-                    Creator Forge builds, hosts, and supports 100% of the software MVP. Revenue is split 50/50 automatically via Stripe.
-                  </p>
-                </div>
-              </div>
 
-              {/* Right Column (7 cols): Conversation & AI Composer */}
-              <div className="lg:col-span-7 space-y-4 flex flex-col justify-between">
-                {/* 1. Live Conversation Thread */}
-                <div className="rounded-xl bg-[#121620] border border-white/[0.08] overflow-hidden space-y-0">
-                  <div className="p-3 bg-[#161a26] border-b border-white/[0.06] flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-white">
-                      <Mail className="w-3.5 h-3.5 text-purple-400" />
-                      <span>Conversation Thread with {selectedCreator?.name || "Creator"}</span>
+                  {/* 2. 50/50 Co-Founder Terms Card */}
+                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200 space-y-2 shadow-sm">
+                    <div className="font-bold flex items-center gap-1.5 text-white">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>50/50 Co-Founder Partnership Terms</span>
                     </div>
-                    <span className="text-[10px] font-mono text-emerald-400">
-                      {getCreatorThreadMessages(selectedCreator, realThreads).length} Messages
-                    </span>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      Creator Forge builds, hosts, and supports 100% of the MVP. Creator provides distribution and feedback. Net subscription profits split 50/50 via automated Stripe payouts.
+                    </p>
                   </div>
 
-                  <div className="p-3 space-y-2.5 max-h-[220px] overflow-y-auto">
-                    {(() => {
-                      const allMsgs = getCreatorThreadMessages(selectedCreator, realThreads);
-                      return allMsgs.length > 0 ? (
-                        allMsgs.map((msg, idx) => {
+                  {/* 3. Creator Profile Quick Summary */}
+                  <div className="p-3.5 rounded-xl bg-[#121620] border border-white/[0.06] text-xs space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Creator Profile
+                    </span>
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Audience:</span>
+                      <strong className="text-white font-mono">{selectedCreator.followerStr || selectedCreator.follower_count || "100K+"}</strong>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Niche:</span>
+                      <strong className="text-purple-300">{selectedCreator.niche || "Creator Economy"}</strong>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Contact Email:</span>
+                      <strong className="text-emerald-400 font-mono text-[11px]">{selectedCreator.email || selectedCreator.email_public || "No email"}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column (7 cols): Live Conversation Thread & Admin Reply Composer */}
+                <div className="lg:col-span-7 space-y-4 flex flex-col justify-between">
+                  {/* 1. Live Conversation Thread */}
+                  <div className="rounded-xl bg-[#121620] border border-white/[0.08] overflow-hidden space-y-0 shadow-lg">
+                    <div className="p-3 bg-[#161a26] border-b border-white/[0.06] flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-bold text-white">
+                        <Mail className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Conversation Thread with {selectedCreator?.name || "Creator"}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-emerald-400">
+                        {msgs.length} Messages Logged
+                      </span>
+                    </div>
+
+                    <div className="p-3 space-y-2.5 max-h-[260px] overflow-y-auto">
+                      {msgs.length > 0 ? (
+                        msgs.map((msg, idx) => {
                           const isFromCreator = !/partnerships@creatorforge\.com/i.test(msg.from_address || "");
                           return (
                             <div
                               key={msg.id || idx}
-                              className={`p-3 rounded-xl border text-xs space-y-1 ${
+                              className={`p-3.5 rounded-xl border text-xs space-y-1.5 shadow-sm ${
                                 isFromCreator
                                   ? "bg-purple-950/20 border-purple-500/30 ml-4"
                                   : "bg-white/[0.02] border-white/[0.06] mr-4"
                               }`}
                             >
                               <div className="flex items-center justify-between text-[11px]">
-                                <span className="font-bold text-white">
-                                  {isFromCreator ? (selectedCreator.name || msg.from_address) : "Creator Forge Studio"}
+                                <span className="font-bold text-white flex items-center gap-1.5">
+                                  <span>{isFromCreator ? (selectedCreator.name || msg.from_address) : "Creator Forge Studio"}</span>
+                                  {isFromCreator && (
+                                    <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                      Creator Reply
+                                    </span>
+                                  )}
                                 </span>
                                 <span className="text-slate-500 font-mono text-[10px]">
                                   {msg.received_at ? new Date(msg.received_at).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "Recently"}
                                 </span>
                               </div>
-                              <p className="text-slate-200 text-xs whitespace-pre-wrap leading-relaxed">
+                              <p className="text-slate-200 text-xs whitespace-pre-wrap leading-relaxed font-sans">
                                 {msg.body}
                               </p>
                             </div>
                           );
                         })
                       ) : (
-                        <div className="p-4 text-center text-xs text-slate-400 italic">
-                          No replies received yet. The draft below is ready to send.
+                        <div className="p-6 text-center text-xs text-slate-400 italic space-y-1">
+                          <Clock className="w-5 h-5 text-slate-600 mx-auto" />
+                          <p>No messages received yet. Write a direct reply below or click Generate AI Draft.</p>
                         </div>
-                      );
-                    })()}
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* 2. AI Response Suggestion & Email Composer */}
-                <div className="p-4 rounded-xl bg-[#121620] border border-white/[0.08] space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                      <div>
-                        <span className="text-xs font-bold text-white block">
-                          AI Response Assistant & Email Composer
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          {currentAiChoice?.reasoning || "Review and edit the AI suggested message below before sending."}
-                        </span>
+                  {/* 2. Admin Direct Email Composer */}
+                  <div className="p-4 rounded-xl bg-[#121620] border border-white/[0.08] space-y-3 shadow-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                        <div>
+                          <span className="text-xs font-bold text-white block">
+                            Admin Direct Email Composer
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            You are chatting directly with {selectedCreator.name || "creator"}. Messages are sent manually by you.
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* TOP ACTION BUTTONS */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={handleRegenerateStep6Draft}
+                          disabled={isGeneratingStep6Ai}
+                          className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 text-xs font-bold border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          title="Generate fresh AI draft tailored to creator's latest response"
+                        >
+                          <Sparkles className={`w-3.5 h-3.5 text-purple-400 ${isGeneratingStep6Ai ? "animate-spin" : ""}`} />
+                          <span>{isGeneratingStep6Ai ? "Generating..." : "Generate AI Draft"}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSendOpportunityPitch()}
+                          disabled={isSendingPitch}
+                          className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
+                        >
+                          {isSendingPitch ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                          <span>{isSendingPitch ? "Sending..." : "Send Email"}</span>
+                        </button>
                       </div>
                     </div>
 
-                    {/* TOP ACTION BUTTONS */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={handleRegenerateStep6Draft}
-                        disabled={isGeneratingStep6Ai}
-                        className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 text-xs font-bold border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        title="Generate fresh AI reply tailored to creator"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 text-purple-400 ${isGeneratingStep6Ai ? "animate-spin" : ""}`} />
-                        <span>{isGeneratingStep6Ai ? "Generating..." : "Regenerate AI Draft"}</span>
-                      </button>
+                    {/* Subject Line Input */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        Subject Line
+                      </label>
+                      <input
+                        type="text"
+                        value={customPitchSubject}
+                        onChange={(e) => setCustomPitchSubject(e.target.value)}
+                        placeholder="Subject..."
+                        className="w-full bg-[#090b0e] border border-white/10 focus:border-purple-500/50 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Message Body Textarea */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        Message Body
+                      </label>
+                      <textarea
+                        rows={6}
+                        value={customPitchBody}
+                        onChange={(e) => setCustomPitchBody(e.target.value)}
+                        placeholder={`Hi ${selectedCreator.name?.split(" ")[0] || "there"}, thanks for replying! We'd love to partner with you on building ${chosenConcept?.name}...`}
+                        className="w-full bg-[#090b0e] border border-white/10 focus:border-purple-500/50 rounded-xl p-3.5 text-xs text-slate-200 font-sans leading-relaxed focus:outline-none resize-none"
+                      />
+                    </div>
+
+                    {/* Quick Suggestion Chips */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mr-1">
+                        Templates:
+                      </span>
+                      {[
+                        `Glad you like ${chosenConcept?.name || "the concept"}! Let's get started`,
+                        "Zero technical effort or time required from you",
+                        "Can we schedule a quick 15-min demo call?",
+                      ].map((suggestion, sIdx) => (
+                        <button
+                          key={sIdx}
+                          type="button"
+                          onClick={() => {
+                            setCustomPitchBody((prev) =>
+                              prev ? `${prev}\n\n${suggestion}` : suggestion
+                            );
+                          }}
+                          className="text-[10px] bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-white/[0.06] transition-all cursor-pointer truncate max-w-[220px]"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Bottom Info Bar */}
+                    <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
+                      <div className="text-[11px] text-slate-400">
+                        Recipient: <span className="text-emerald-300 font-mono font-medium">{selectedCreator.email || selectedCreator.email_public || "No email set"}</span>
+                      </div>
 
                       <button
                         type="button"
                         onClick={() => handleSendOpportunityPitch()}
                         disabled={isSendingPitch}
-                        className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
-                      >
-                        {isSendingPitch ? (
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Send className="w-3.5 h-3.5" />
-                        )}
-                        <span>{isSendingPitch ? "Sending..." : "Send Email"}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Subject Line Input */}
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      Subject Line
-                    </label>
-                    <input
-                      type="text"
-                      value={customPitchSubject}
-                      onChange={(e) => setCustomPitchSubject(e.target.value)}
-                      className="w-full bg-[#090b0e] border border-white/10 focus:border-purple-500/50 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none"
-                    />
-                  </div>
-
-                  {/* Message Body Textarea */}
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      Message Body (Editable)
-                    </label>
-                    <textarea
-                      rows={8}
-                      value={customPitchBody}
-                      onChange={(e) => setCustomPitchBody(e.target.value)}
-                      className="w-full bg-[#090b0e] border border-white/10 focus:border-purple-500/50 rounded-xl p-3.5 text-xs text-slate-200 font-mono leading-relaxed focus:outline-none"
-                    />
-                  </div>
-
-                  {/* Bottom Info Bar */}
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="text-[11px] text-slate-400">
-                      Recipient: <span className="text-emerald-300 font-mono font-medium">{selectedCreator.email || selectedCreator.email_public || "No email set"}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleSendOpportunityPitch()}
-                        disabled={isSendingPitch}
-                        className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 sm:hidden"
+                        className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 sm:hidden"
                       >
                         {isSendingPitch ? (
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -7166,8 +7445,8 @@ export default function AcquisitionEngine({
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
 
@@ -7543,13 +7822,21 @@ export default function AcquisitionEngine({
         creators={creators}
         realThreads={realThreads}
         pitchSentMap={pitchSentMap}
-        onSelectCreator={(cid, targetStep) => {
+        onSelectCreator={(cid, targetStep, conceptId) => {
           setSelectedCreatorId(cid);
+          if (conceptId) setSelectedConceptId(conceptId);
           setShowFollowUpCRM(false);
           setActiveStep(targetStep || 4);
         }}
         onSyncImap={() => syncImapReplies(true)}
-        isSyncingImap={pollingImap}
+        onApproveCreator={handleApproveCreator}
+        onRejectCreator={handleRejectCreator}
+        onDeleteCreator={(creatorId) => {
+          setCreators((prev) => prev.filter((c) => c.id !== creatorId && c.handle !== creatorId));
+          if (selectedCreatorId === creatorId) {
+            setSelectedCreatorId(null);
+          }
+        }}
         onOpenDecisionModal={(c, decision) => {
           setShowFollowUpCRM(false);
           openDecisionModal(c, decision);
