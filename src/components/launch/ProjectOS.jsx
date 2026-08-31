@@ -6,7 +6,7 @@ import {
   FileText, Layout, Megaphone, TrendingUp, Flag, Bot, User, UserCheck,
   Calendar, Clock, CheckCircle, AlertCircle, MessageSquare, Folder,
   DollarSign, PieChart, Users, ChevronRight, Play, Eye, Smartphone, Monitor, Tablet,
-  Code, Terminal, Laptop, Loader2
+  Code, Terminal, Laptop, Loader2, Rocket
 } from 'lucide-react'
 import Phase1Validate from './Phase1Validate'
 import Phase2BuildMVP from './Phase2BuildMVP'
@@ -80,27 +80,33 @@ partnerships@creatorforge.com`
   })
   const [isSendingPortalEmail, setIsSendingPortalEmail] = useState(false)
   const [portalEmailSuccess, setPortalEmailSuccess] = useState(false)
+  const [portalEmailStatus, setPortalEmailStatus] = useState('')
 
   const handleSendPortalEmail = async () => {
     const to = (portalRecipientEmail || targetEmail || '').trim()
     if (!to || !to.includes('@')) {
-      alert('Please enter a valid recipient email address.')
+      setPortalEmailSuccess(false)
+      setPortalEmailStatus('Please enter a valid recipient email address.')
       return
     }
 
     setIsSendingPortalEmail(true)
+    setPortalEmailStatus('')
     try {
       const { sendDirectEmail } = await import('../../services/opsApi')
       await sendDirectEmail(to, portalEmailSubject, portalEmailBody, project.creatorId || project.id)
       setPortalEmailSuccess(true)
+      setPortalEmailStatus(`Portal invitation successfully sent to ${to}!`)
       setShareNotice(`Portal email invitation successfully sent to ${to}!`)
       setTimeout(() => {
         setShareNotice('')
         setPortalEmailSuccess(false)
+        setPortalEmailStatus('')
       }, 4000)
     } catch (err) {
       console.error('Failed to send portal email:', err)
-      alert(err.message || 'Failed to dispatch email. Please verify SMTP credentials.')
+      setPortalEmailSuccess(false)
+      setPortalEmailStatus(err.message || 'Failed to dispatch email. Please verify SMTP credentials.')
     } finally {
       setIsSendingPortalEmail(false)
     }

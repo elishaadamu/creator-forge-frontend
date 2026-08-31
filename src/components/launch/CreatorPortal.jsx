@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   Rocket, CheckCircle2, DollarSign, Copy, Check, Video, MessageSquare,
   Users, ExternalLink, Globe, Sparkles, AlertCircle, ShieldCheck, ArrowRight,
-  TrendingUp, Award, Calendar, CheckSquare, Eye, Smartphone, Send
+  TrendingUp, Award, Calendar, CheckSquare, Eye, Smartphone, Send, FileText
 } from 'lucide-react'
 import { getFrontendUrl } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
