@@ -766,12 +766,24 @@ export default function CreatorFollowUpCRM({
       const replyInfo = getCreatorReplyInfo(c);
       const effectiveStatus = (statusOverrides[c.id] || c.status || "").toLowerCase();
       const isPitched = Boolean(pitchSentMap[c.id]) || effectiveStatus === "pitched";
+      const isPartnered =
+        effectiveStatus === "partnered" ||
+        effectiveStatus === "active" ||
+        effectiveStatus === "building" ||
+        stageMap[c.id]?.step === "section2" ||
+        stageMap[c.id]?.step === 7;
       const isRejected =
         effectiveStatus === "rejected" ||
         effectiveStatus === "declined" ||
         effectiveStatus === "archived";
       const isApproved =
-        effectiveStatus === "approved" && !isRejected;
+        (effectiveStatus === "approved" ||
+          effectiveStatus === "qualified" ||
+          isPartnered ||
+          isPitched ||
+          stageMap[c.id]?.step >= 5 ||
+          stageMap[c.id]?.step === "section2") &&
+        !isRejected;
       const stageInfo = getCreatorPipelineStage(c);
       const stepInfo = getCreatorCurrentStepInfo({ ...c, replyInfo, isApproved, isRejected });
 
@@ -782,6 +794,7 @@ export default function CreatorFollowUpCRM({
         stageInfo,
         stepInfo,
         isPitched,
+        isPartnered,
         isApproved,
         isRejected,
       };
@@ -1358,14 +1371,26 @@ export default function CreatorFollowUpCRM({
                         Status:{" "}
                         <strong
                           className={
-                            reply.hasReply
+                            c.stepInfo?.stepNumber === 7
+                              ? "text-emerald-300 font-bold"
+                              : c.stepInfo?.stepNumber === 6
+                              ? "text-purple-300 font-bold"
+                              : c.isApproved
                               ? "text-emerald-400 font-bold"
+                              : reply.hasReply
+                              ? "text-teal-400 font-bold"
                               : reply.classification === "no_email"
                               ? "text-amber-400 font-bold"
                               : "text-blue-400 font-bold"
                           }
                         >
-                          {reply.hasReply
+                          {c.stepInfo?.stepNumber === 7
+                            ? "Venture Active (Section 2) 🚀"
+                            : c.stepInfo?.stepNumber === 6
+                            ? "Proposal Pitched (Step 6)"
+                            : c.isApproved
+                            ? "Lead Approved (Step 5)"
+                            : reply.hasReply
                             ? "Reply Received"
                             : reply.classification === "no_email"
                             ? "Email Needed"
@@ -1375,25 +1400,35 @@ export default function CreatorFollowUpCRM({
                       <span className="text-slate-400">
                         Sentiment:{" "}
                         <strong className="text-purple-300 font-mono font-bold">
-                          {reply.sentiment || "positive"}
+                          {c.stepInfo?.stepNumber === 7
+                            ? "partnered"
+                            : c.stepInfo?.stepNumber === 6
+                            ? "pitched"
+                            : c.isApproved
+                            ? "qualified"
+                            : reply.sentiment || "positive"}
                         </strong>
                       </span>
                     </div>
                     <p className="text-slate-300 text-[11px] leading-relaxed">
                       <strong className="text-slate-400">Analysis:</strong>{" "}
-                      {reply.reasoning ||
-                        (reply.hasReply
-                          ? c.isApproved
-                            ? "Lead approved! Qualified for Step 5 Audience & Product Synthesis — ready to review tailored concepts."
-                            : "Creator replied to outreach. Awaiting operator review & approval in Step 4 before advancing to Step 5."
-                          : "Autonomous outreach message dispatched. Awaiting inbound creator response.")}
+                      {c.stepInfo?.stepNumber === 7
+                        ? "Co-Launch venture is active in Section 2 (Phase 1: Validation). Tracking pre-order presales, traffic milestones, and human approval gates."
+                        : c.stepInfo?.stepNumber === 6
+                        ? "Opportunity Pitch Deck & 3 SaaS Concepts delivered to creator. Awaiting concept confirmation."
+                        : c.isApproved
+                        ? "Lead approved by studio. Qualified for Step 5 Audience & Product Synthesis — ready to review tailored concepts."
+                        : reply.reasoning ||
+                          (reply.hasReply
+                            ? "Creator replied to outreach. Awaiting operator review & approval in Step 4 before advancing to Step 5."
+                            : "Autonomous outreach message dispatched. Awaiting inbound creator response.")}
                     </p>
                   </div>
 
                   {/* 4. Action Footer */}
                   <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/[0.06] flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {reply.classification === "interested" && !c.isApproved && !c.isRejected && (
+                      {reply.classification === "interested" && !c.isApproved && (c.stepInfo?.stepNumber < 5) && !c.isRejected && (
                         <button
                           type="button"
                           onClick={() => handleDirectApprove(c.id)}
