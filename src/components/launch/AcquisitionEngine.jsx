@@ -77,6 +77,7 @@ export default function AcquisitionEngine({
   });
   const [campaignRunning, setCampaignRunning] = useState(true);
   const [showAdminLookup, setShowAdminLookup] = useState(false);
+  const isInitialLoadDone = useRef(false);
 
   // Step 1: Campaign Controls State
   const [niches, setNiches] = useState([
@@ -170,6 +171,7 @@ export default function AcquisitionEngine({
 
   // Synchronize active step and selected creator across devices
   useEffect(() => {
+    if (!isInitialLoadDone.current) return;
     try {
       localStorage.setItem("forge_launch_acquisition_step", String(activeStep));
       import("../../services/opsApi").then(({ updateWorkflowState }) => {
@@ -537,159 +539,159 @@ export default function AcquisitionEngine({
   // Load existing creators, workflow state, and threads from database on mount — DB is the single source of truth for cross-device persistence
   useEffect(() => {
     let isMounted = true;
-    import("../../services/opsApi").then(({ getCreators, getWorkflowState, getThreads }) => {
-      // 1. Sync global workflow state (step, pitch map, choices) across devices
-      getWorkflowState()
-        .then((ws) => {
-          if (isMounted && ws) {
-            const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-            const urlStep = Number(searchParams?.get('step'));
-            if (!urlStep && ws.active_step && ws.active_step >= 1 && ws.active_step <= 6) {
-              setActiveStep(ws.active_step);
-            }
-            if (ws.selected_creator_id) {
-              setSelectedCreatorId((prev) => prev || ws.selected_creator_id);
-            }
-            if (ws.pitch_sent_map && Object.keys(ws.pitch_sent_map).length > 0) {
-              setPitchSentMap((prev) => ({ ...ws.pitch_sent_map, ...prev }));
-            }
-            if (ws.ai_choice_map && Object.keys(ws.ai_choice_map).length > 0) {
-              setAiDetectedChoiceMap((prev) => ({ ...ws.ai_choice_map, ...prev }));
-            }
-            if (ws.answer_sent_map && Object.keys(ws.answer_sent_map).length > 0) {
-              setAnswerSentMap((prev) => ({ ...ws.answer_sent_map, ...prev }));
-            }
-            if (ws.persuasion_sent_map && Object.keys(ws.persuasion_sent_map).length > 0) {
-              setPersuasionSentMap((prev) => ({ ...ws.persuasion_sent_map, ...prev }));
-            }
+    const fetchGlobalState = async () => {
+      try {
+        const { getCreators, getWorkflowState, getThreads } = await import("../../services/opsApi");
+        
+        // 1. Sync global workflow state (step, pitch map, choices) across devices
+        const ws = await getWorkflowState().catch(() => null);
+        if (isMounted && ws) {
+          const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+          const urlStep = Number(searchParams?.get('step'));
+          if (!urlStep && ws.active_step && ws.active_step >= 1 && ws.active_step <= 6) {
+            setActiveStep(ws.active_step);
           }
-        })
-        .catch(() => {});
-
-      // 2. Sync real threads / IMAP messages across devices
-      getThreads()
-        .then((ths) => {
-          if (isMounted && Array.isArray(ths) && ths.length > 0) {
-            setRealThreads(ths);
+          if (ws.selected_creator_id) {
+            setSelectedCreatorId((prev) => prev || ws.selected_creator_id);
           }
-        })
-        .catch(() => {});
+          if (ws.pitch_sent_map && Object.keys(ws.pitch_sent_map).length > 0) {
+            setPitchSentMap((prev) => ({ ...ws.pitch_sent_map, ...prev }));
+          }
+          if (ws.ai_choice_map && Object.keys(ws.ai_choice_map).length > 0) {
+            setAiDetectedChoiceMap((prev) => ({ ...ws.ai_choice_map, ...prev }));
+          }
+          if (ws.answer_sent_map && Object.keys(ws.answer_sent_map).length > 0) {
+            setAnswerSentMap((prev) => ({ ...ws.answer_sent_map, ...prev }));
+          }
+          if (ws.persuasion_sent_map && Object.keys(ws.persuasion_sent_map).length > 0) {
+            setPersuasionSentMap((prev) => ({ ...ws.persuasion_sent_map, ...prev }));
+          }
+        }
 
-      // 3. Sync creator cohort
-      getCreators({ limit: 50 })
-        .then((res) => {
-          const rawList = Array.isArray(res) ? res : res?.creators || [];
-          const deletedIds = (() => {
-            try {
-              return JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
-            } catch {
-              return [];
+        // 2. Sync real threads / IMAP messages across devices
+        const ths = await getThreads().catch(() => null);
+        if (isMounted && Array.isArray(ths) && ths.length > 0) {
+          setRealThreads(ths);
+        }
+
+        // 3. Sync creator cohort
+        const res = await getCreators({ limit: 50 }).catch(() => null);
+        const rawList = Array.isArray(res) ? res : res?.creators || [];
+        const deletedIds = (() => {
+          try {
+            return JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
+          } catch {
+            return [];
+          }
+        })();
+
+        if (isMounted && rawList.length > 0) {
+          setCreators((prev) => {
+            const formattedDbCreators = rawList
+              .filter((dbItem) => {
+                const cleanHandle = (dbItem.handle || "").toLowerCase().replace(/^@/, "");
+                return (
+                  !deletedIds.includes(dbItem.id) &&
+                  !deletedIds.includes(cleanHandle) &&
+                  !deletedIds.includes(dbItem.handle)
+                );
+              })
+              .map((dbItem) => {
+                const dbStatus = dbItem.status || "discovered";
+                return {
+                  id: dbItem.id,
+                  name: dbItem.display_name || dbItem.name || dbItem.handle,
+                  display_name: dbItem.display_name || dbItem.name || dbItem.handle,
+                  handle: dbItem.handle,
+                  platform: dbItem.platform || "youtube",
+                  followers: dbItem.follower_count || 100000,
+                  follower_count: dbItem.follower_count || 100000,
+                  avatar: dbItem.avatar_url || "",
+                  avatar_url: dbItem.avatar_url || "",
+                  bio: dbItem.bio || "",
+                  email: dbItem.email_public || "",
+                  email_public: dbItem.email_public || "",
+                  status: dbStatus,
+                  isApproved: dbStatus === "approved",
+                  isRejected: dbStatus === "rejected",
+                  replyClassification: dbItem.reply_classification,
+                  reply_classification: dbItem.reply_classification,
+                  replyText: dbItem.reply_text,
+                  reply_text: dbItem.reply_text,
+                  creatorScore: dbItem.engagement_score ? Math.round(dbItem.engagement_score * 15) : 88,
+                };
+              });
+
+            if (!prev || prev.length === 0) {
+              return formattedDbCreators;
             }
-          })();
 
-          if (rawList.length > 0) {
-            setCreators((prev) => {
-              const formattedDbCreators = rawList
-                .filter((dbItem) => {
-                  const cleanHandle = (dbItem.handle || "").toLowerCase().replace(/^@/, "");
-                  return (
-                    !deletedIds.includes(dbItem.id) &&
-                    !deletedIds.includes(cleanHandle) &&
-                    !deletedIds.includes(dbItem.handle)
-                  );
-                })
-                .map((dbItem) => {
-                  const dbStatus = dbItem.status || "discovered";
-                  return {
-                    id: dbItem.id,
-                    name: dbItem.display_name || dbItem.name || dbItem.handle,
-                    display_name: dbItem.display_name || dbItem.name || dbItem.handle,
-                    handle: dbItem.handle,
-                    platform: dbItem.platform || "youtube",
-                    followers: dbItem.follower_count || 100000,
-                    follower_count: dbItem.follower_count || 100000,
-                    avatar: dbItem.avatar_url || "",
-                    avatar_url: dbItem.avatar_url || "",
-                    bio: dbItem.bio || "",
-                    email: dbItem.email_public || "",
-                    email_public: dbItem.email_public || "",
-                    status: dbStatus,
-                    isApproved: dbStatus === "approved",
-                    isRejected: dbStatus === "rejected",
-                    replyClassification: dbItem.reply_classification,
-                    reply_classification: dbItem.reply_classification,
-                    replyText: dbItem.reply_text,
-                    reply_text: dbItem.reply_text,
-                    creatorScore: dbItem.engagement_score ? Math.round(dbItem.engagement_score * 15) : 88,
-                  };
-                });
+            const merged = [];
+            const seenKeys = new Set();
 
-              if (!prev || prev.length === 0) {
-                return formattedDbCreators;
+            formattedDbCreators.forEach((dbC) => {
+              const cleanHandle = (dbC.handle || "").toLowerCase().replace(/^@/, "");
+              const cleanEmail = (dbC.email || dbC.email_public || "").toLowerCase().trim();
+              const existing = prev.find((p) => {
+                const pHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
+                const pEmail = (p.email || p.email_public || "").toLowerCase().trim();
+                return (
+                  p.id === dbC.id ||
+                  (pHandle && cleanHandle && pHandle === cleanHandle) ||
+                  (pEmail && cleanEmail && pEmail === cleanEmail)
+                );
+              });
+
+              if (existing) {
+                merged.push({ ...existing, ...dbC });
+              } else {
+                merged.push(dbC);
               }
-
-              // Merge: keep active DB creators and preserve any enriched in-memory state
-              const merged = [];
-              const seenKeys = new Set();
-
-              formattedDbCreators.forEach((dbC) => {
-                const cleanHandle = (dbC.handle || "").toLowerCase().replace(/^@/, "");
-                const cleanEmail = (dbC.email || dbC.email_public || "").toLowerCase().trim();
-                const existing = prev.find((p) => {
-                  const pHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
-                  const pEmail = (p.email || p.email_public || "").toLowerCase().trim();
-                  return (
-                    p.id === dbC.id ||
-                    (pHandle && cleanHandle && pHandle === cleanHandle) ||
-                    (pEmail && cleanEmail && pEmail === cleanEmail)
-                  );
-                });
-
-                if (existing) {
-                  merged.push({ ...existing, ...dbC });
-                } else {
-                  merged.push(dbC);
-                }
-                seenKeys.add(dbC.id);
-                if (cleanHandle) seenKeys.add(cleanHandle);
-                if (cleanEmail) seenKeys.add(cleanEmail);
-              });
-
-              // Keep in-memory freshly scraped leads that haven't been deleted
-              prev.forEach((p) => {
-                const cleanHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
-                const cleanEmail = (p.email || p.email_public || "").toLowerCase().trim();
-                const isDeleted =
-                  deletedIds.includes(p.id) ||
-                  deletedIds.includes(cleanHandle) ||
-                  deletedIds.includes(p.handle) ||
-                  (cleanEmail && deletedIds.includes(cleanEmail));
-
-                if (!isDeleted && !seenKeys.has(p.id) && (!cleanHandle || !seenKeys.has(cleanHandle))) {
-                  // Only keep if it was a frontend-generated temporary lead (not a stale DB item that was deleted)
-                  const isDbUuid = p.id && /^[0-9a-f-]{36}$/i.test(p.id);
-                  if (!isDbUuid) {
-                    merged.push(p);
-                  }
-                }
-              });
-
-              return merged;
+              seenKeys.add(dbC.id);
+              if (cleanHandle) seenKeys.add(cleanHandle);
+              if (cleanEmail) seenKeys.add(cleanEmail);
             });
 
-            setSelectedCreatorId((prevId) => {
-              if (deletedIds.includes(prevId)) return null;
-              return prevId || rawList[0]?.id || null;
+            prev.forEach((p) => {
+              const cleanHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
+              const cleanEmail = (p.email || p.email_public || "").toLowerCase().trim();
+              const isDeleted =
+                deletedIds.includes(p.id) ||
+                deletedIds.includes(cleanHandle) ||
+                deletedIds.includes(p.handle) ||
+                (cleanEmail && deletedIds.includes(cleanEmail));
+
+              if (!isDeleted && !seenKeys.has(p.id) && (!cleanHandle || !seenKeys.has(cleanHandle))) {
+                const isDbUuid = p.id && /^[0-9a-f-]{36}$/i.test(p.id);
+                if (!isDbUuid) {
+                  merged.push(p);
+                }
+              }
             });
-          }
-        })
-        .catch((e) =>
-          console.warn(
-            "[AcquisitionEngine] Failed to sync creator metadata from DB:",
-            e,
-          ),
-        );
-    });
+
+            return merged;
+          });
+
+          setSelectedCreatorId((prevId) => {
+            if (deletedIds.includes(prevId)) return null;
+            return prevId || rawList[0]?.id || null;
+          });
+        }
+
+        // Enable state synchronizer now that DB fetch has completed
+        isInitialLoadDone.current = true;
+      } catch (err) {
+        console.warn("[AcquisitionEngine] Global state fetch error:", err);
+        isInitialLoadDone.current = true;
+      }
+    };
+
+    fetchGlobalState();
+    const pollTimer = setInterval(fetchGlobalState, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(pollTimer);
+    };
   }, []);
 
   // ── 3-Minute Review & Autonomous Interval Timer ───────────────────────────
@@ -2681,6 +2683,7 @@ export default function AcquisitionEngine({
   }, [activeStep, selectedCreator?.id]);
 
   useEffect(() => {
+    if (!isInitialLoadDone.current) return;
     try {
       localStorage.setItem(
         "forge_launch_pitch_sent_map",
@@ -2695,6 +2698,7 @@ export default function AcquisitionEngine({
   }, [pitchSentMap]);
 
   useEffect(() => {
+    if (!isInitialLoadDone.current) return;
     try {
       localStorage.setItem(
         "forge_launch_persuasion_sent_map",
@@ -2709,6 +2713,7 @@ export default function AcquisitionEngine({
   }, [persuasionSentMap]);
 
   useEffect(() => {
+    if (!isInitialLoadDone.current) return;
     try {
       localStorage.setItem(
         "forge_launch_answer_sent_map",
@@ -2723,6 +2728,7 @@ export default function AcquisitionEngine({
   }, [answerSentMap]);
 
   useEffect(() => {
+    if (!isInitialLoadDone.current) return;
     try {
       localStorage.setItem(
         "forge_launch_ai_choice_map",
