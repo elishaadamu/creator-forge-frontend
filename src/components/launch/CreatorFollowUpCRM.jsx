@@ -80,7 +80,7 @@ export default function CreatorFollowUpCRM({
     import("../../services/opsApi").then(({ getWorkflowState }) => {
       getWorkflowState().then((ws) => {
         if (ws && ws.creator_stage_map && Object.keys(ws.creator_stage_map).length > 0) {
-          setStageMap((prev) => ({ ...ws.creator_stage_map, ...prev }));
+          setStageMap((prev) => ({ ...prev, ...ws.creator_stage_map }));
         }
       }).catch(() => {});
     });
@@ -317,7 +317,23 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    const isPitched = Boolean(pitchSentMap[c.id]) || effectiveStatus === "pitched";
+    const isPartnered =
+      effectiveStatus === "partnered" ||
+      effectiveStatus === "active" ||
+      effectiveStatus === "building" ||
+      stageMap[c.id]?.step === "section2";
+
+    if (isPartnered) {
+      return {
+        stageId: "section2",
+        stageName: "Active Co-Launch Venture",
+        badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold shadow-xs",
+        dotClass: "bg-emerald-400 animate-pulse",
+        description: "Venture greenlit & active in Section 2 (Phase 1: Validation)",
+      };
+    }
+
+    const isPitched = Boolean(pitchSentMap[c.id]) || effectiveStatus === "pitched" || stageMap[c.id]?.step === 6;
     if (isPitched) {
       return {
         stageId: "step6_pitch",

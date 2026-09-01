@@ -2942,7 +2942,7 @@ export default function AcquisitionEngine({
         : pitchBody;
 
     try {
-      const { sendDirectEmail } = await import("../../services/opsApi");
+      const { sendDirectEmail, updateCreatorDetails, updateWorkflowState } = await import("../../services/opsApi");
       await sendDirectEmail(targetEmail, subjectToSend, bodyToSend, cId);
 
       const sentTimeIso = new Date().toISOString();
@@ -2967,6 +2967,19 @@ export default function AcquisitionEngine({
           JSON.stringify(updatedMap),
         );
       } catch {}
+
+      // Persist pitched status to PostgreSQL DB for instant cross-device correlation
+      try {
+        await updateCreatorDetails(cId, { status: "pitched" });
+        await updateWorkflowState({ pitch_sent_map: updatedMap });
+      } catch (err) {
+        console.warn("[AcquisitionEngine] DB pitch sync warning:", err);
+      }
+
+      // Update local creators state
+      setCreators((prev) =>
+        prev.map((c) => (c.id === cId ? { ...c, status: "pitched" } : c))
+      );
 
       notify(
         "success",
@@ -3660,7 +3673,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         map[(selectedCreator.handle || "").replace(/^@/, "").toLowerCase()] = map[selectedCreator.id];
       }
       localStorage.setItem("forge_creator_stage_map", JSON.stringify(map));
-    } catch (e) {}
+
+      // Persist stage map & partnered status to database for instant cross-device synchronization
+      const { updateWorkflowState, updateCreatorDetails } = await import("../../services/opsApi");
+      await updateWorkflowState({ creator_stage_map: map });
+      await updateCreatorDetails(selectedCreator.id, { status: "partnered" });
+    } catch (e) {
+      console.warn("[AcquisitionEngine] DB stage sync warning on launch:", e);
+    }
 
     // Step 4: Finalizing & Opening Dashboard
     setLaunchStepIndex(4);

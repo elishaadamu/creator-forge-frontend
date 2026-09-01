@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import CreatorFollowUpCRM from "./CreatorFollowUpCRM";
-import { getCreators, getThreads, pollInboxReplies, updateCreatorDetails, deleteCreator } from "../../services/opsApi";
+import { getCreators, getThreads, pollInboxReplies, updateCreatorDetails, deleteCreator, getWorkflowState } from "../../services/opsApi";
 import { updatePageSEO } from "../../utils/seo";
 import { Users, ExternalLink, RefreshCw, Rocket, ShieldCheck, CheckCircle, AlertCircle, X } from "lucide-react";
 
 export default function FollowUpCRMPage() {
   const [creators, setCreators] = useState([]);
   const [realThreads, setRealThreads] = useState([]);
+  const [workflowState, setWorkflowState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSyncingImap, setIsSyncingImap] = useState(false);
   const [toast, setToast] = useState(null);
@@ -27,9 +28,10 @@ export default function FollowUpCRMPage() {
   const loadData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     try {
-      const [creatorsRes, threadsRes] = await Promise.allSettled([
+      const [creatorsRes, threadsRes, workflowRes] = await Promise.allSettled([
         getCreators({ limit: 50 }),
         getThreads(),
+        getWorkflowState(),
       ]);
 
       if (creatorsRes.status === "fulfilled" && creatorsRes.value) {
@@ -40,6 +42,9 @@ export default function FollowUpCRMPage() {
       }
       if (threadsRes.status === "fulfilled" && threadsRes.value) {
         setRealThreads(Array.isArray(threadsRes.value) ? threadsRes.value : []);
+      }
+      if (workflowRes.status === "fulfilled" && workflowRes.value) {
+        setWorkflowState(workflowRes.value);
       }
     } catch (err) {
       console.warn("[FollowUpCRMPage] Data load error:", err);
@@ -196,6 +201,7 @@ export default function FollowUpCRMPage() {
             isPage={true}
             creators={creators}
             realThreads={realThreads}
+            pitchSentMap={workflowState?.pitch_sent_map || {}}
             onSelectCreator={(creatorId, targetStep) => {
               if (targetStep === "section2" || targetStep === 7) {
                 window.open(`/launch?section=section2&creator=${encodeURIComponent(creatorId)}`, "_blank");
