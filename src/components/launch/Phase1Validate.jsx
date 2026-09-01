@@ -21,6 +21,7 @@ import {
   updateValidationPlan,
   updateValidationCampaign,
   addProjectReservation,
+  logProjectActivity,
   recordGateDecision,
   getFrontendUrl
 } from '../../services/opsApi'
@@ -256,8 +257,15 @@ export default function Phase1Validate({
       localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
     } catch (e) {}
 
-    // Persist to backend database tables in SQLite
+    // Persist to backend database tables in SQLite / PostgreSQL
     if (project?.id) {
+      logProjectActivity(project.id, {
+        action: 'Validation Plan & Assets Configured',
+        details: `Saved pricing (${plan.pricing || '$49/mo'}), presale target ($${presaleTarget.toLocaleString()}), and validation campaign assets.`,
+        step: 'plan',
+        phase: 1
+      }).catch(e => console.warn('[Phase1] Activity logging warning:', e))
+
       updateValidationPlan(project.id, {
         customer: plan.customer,
         problem: plan.problem,

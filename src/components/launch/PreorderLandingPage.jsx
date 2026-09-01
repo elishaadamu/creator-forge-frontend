@@ -48,22 +48,46 @@ export default function PreorderLandingPage({ slug }) {
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
-    try {
-      const active = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-      setProject(active)
-      trackVisit(`/preorder/${slug || 'product'}`, updated => setProject(updated))
-    } catch (e) {}
+    let isMounted = true
 
-    const handleSync = (e) => {
+    const loadDbProject = async () => {
+      try {
+        const { getProjectBySlug } = await import('../../services/opsApi')
+        if (slug) {
+          const dbProj = await getProjectBySlug(slug)
+          if (isMounted && dbProj) {
+            setProject(dbProj)
+            try {
+              localStorage.setItem('forge_launch_active_project', JSON.stringify(dbProj))
+            } catch (e) {}
+          }
+        }
+      } catch (err) {
+        try {
+          const active = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+          if (isMounted && active && Object.keys(active).length > 0) {
+            setProject(active)
+          }
+        } catch (e) {}
+      }
+    }
+
+    loadDbProject()
+    trackVisit(`/preorder/${slug || 'product'}`, updated => {
+      if (isMounted && updated) setProject(updated)
+    })
+
+    const handleSync = () => {
       try {
         const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        setProject(cur)
+        if (cur && Object.keys(cur).length > 0) setProject(cur)
       } catch (err) {}
     }
 
     window.addEventListener('storage', handleSync)
     window.addEventListener('forge_project_updated', handleSync)
     return () => {
+      isMounted = false
       window.removeEventListener('storage', handleSync)
       window.removeEventListener('forge_project_updated', handleSync)
     }
@@ -106,7 +130,7 @@ export default function PreorderLandingPage({ slug }) {
     setIsProcessing(true)
 
     // Simulate Payment Gateway Processing (Stripe / PayPal)
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsProcessing(false)
       setIsSuccess(true)
 
@@ -128,32 +152,32 @@ export default function PreorderLandingPage({ slug }) {
 
       setSuccessReceipt(receipt)
 
-      // Record to local project state dynamically
+      // 1. Record to local project state dynamically for instantaneous tab sync
+      const urlParams = new URLSearchParams(window.location.search)
+      const refQuery = (urlParams.get('ref') || urlParams.get('utm_source') || '').toLowerCase()
+      let attributedChannel = 'Direct / Other'
+      if (refQuery.includes('instagram')) attributedChannel = 'Instagram Stories'
+      else if (refQuery.includes('tiktok') || refQuery.includes('reels') || refQuery.includes('shorts')) attributedChannel = 'TikTok / Shorts'
+      else if (refQuery.includes('twitter') || refQuery.includes('x_post') || refQuery.includes('tweet')) attributedChannel = 'Twitter / X'
+      else if (refQuery.includes('newsletter') || refQuery.includes('email')) attributedChannel = 'Email Newsletter'
+      else if (refQuery.includes('dm')) attributedChannel = 'Direct Messages'
+
+      const newReservation = {
+        id: `res-${Date.now()}`,
+        name: buyerName.trim(),
+        email: buyerEmail.trim(),
+        amount: selectedTier.price,
+        tier: selectedTier.name,
+        paymentMethod: paymentMethod === 'stripe' ? 'Stripe' : 'PayPal',
+        channel: attributedChannel,
+        txId: txId,
+        date: 'Just now',
+        timestamp: Date.now(),
+        status: 'Paid'
+      }
+
       try {
         const current = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        const urlParams = new URLSearchParams(window.location.search)
-        const refQuery = (urlParams.get('ref') || urlParams.get('utm_source') || '').toLowerCase()
-        let attributedChannel = 'Direct / Other'
-        if (refQuery.includes('instagram')) attributedChannel = 'Instagram Stories'
-        else if (refQuery.includes('tiktok') || refQuery.includes('reels') || refQuery.includes('shorts')) attributedChannel = 'TikTok / Shorts'
-        else if (refQuery.includes('twitter') || refQuery.includes('x_post') || refQuery.includes('tweet')) attributedChannel = 'Twitter / X'
-        else if (refQuery.includes('newsletter') || refQuery.includes('email')) attributedChannel = 'Email Newsletter'
-        else if (refQuery.includes('dm')) attributedChannel = 'Direct Messages'
-
-        const newReservation = {
-          id: `res-${Date.now()}`,
-          name: buyerName.trim(),
-          email: buyerEmail.trim(),
-          amount: selectedTier.price,
-          tier: selectedTier.name,
-          paymentMethod: paymentMethod === 'stripe' ? 'Stripe' : 'PayPal',
-          channel: attributedChannel,
-          txId: txId,
-          date: 'Just now',
-          timestamp: Date.now(),
-          status: 'Paid'
-        }
-
         const existingReservations = Array.isArray(current.reservations) ? current.reservations : []
         const nextReservations = [newReservation, ...existingReservations]
         const nextTotalRevenue = nextReservations.reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
@@ -170,11 +194,34 @@ export default function PreorderLandingPage({ slug }) {
         localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
         setProject(updated)
 
-        // Dispatch sync event for active dashboard tabs
         window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
         window.dispatchEvent(new Event('storage'))
-      } catch (err) {
-        console.error('[Preorder] Failed to persist pre-order state:', err)
+      } catch (err) {}
+
+      // 2. Persist to central Render PostgreSQL database for cross-device & cross-browser synchronization
+      try {
+        const { recordPreorderUniversal } = await import('../../services/opsApi')
+        const dbResult = await recordPreorderUniversal({
+          projectId: project?.id,
+          slug: slug,
+          creatorHandle: project?.creatorHandle,
+          name: buyerName.trim(),
+          email: buyerEmail.trim(),
+          amount: selectedTier.price,
+          tier: selectedTier.name,
+          paymentMethod: paymentMethod === 'stripe' ? 'Stripe' : 'PayPal',
+          channel: attributedChannel,
+          txId: txId
+        })
+        if (dbResult) {
+          setProject(dbResult)
+          try {
+            localStorage.setItem('forge_launch_active_project', JSON.stringify(dbResult))
+            window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: dbResult }))
+          } catch (e) {}
+        }
+      } catch (dbErr) {
+        console.warn('[Preorder] DB persistence completed or logged:', dbErr)
       }
     }, 1200)
   }

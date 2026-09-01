@@ -115,7 +115,40 @@ partnerships@creatorforge.com`
 
   useEffect(() => {
     trackVisit('/dashboard', onUpdateProject)
-  }, [])
+
+    // Background polling from PostgreSQL so cross-device and Vercel payments appear on localhost in real time
+    let isCancelled = false
+    const pollDb = async () => {
+      try {
+        const { getCoLaunchProjects } = await import('../../services/opsApi')
+        const allProjs = await getCoLaunchProjects()
+        if (!isCancelled && Array.isArray(allProjs) && allProjs.length > 0) {
+          const matched = allProjs.find(p => p.id === project?.id) || allProjs[0]
+          if (matched) {
+            onUpdateProject?.(prev => {
+              const curRev = Number(prev?.currentPresales || 0)
+              const newRev = Number(matched.currentPresales || 0)
+              const curResCount = Array.isArray(prev?.reservations) ? prev.reservations.length : 0
+              const newResCount = Array.isArray(matched.reservations) ? matched.reservations.length : 0
+              const curActCount = Array.isArray(prev?.activityLogs) ? prev.activityLogs.length : 0
+              const newActCount = Array.isArray(matched.activityLogs) ? matched.activityLogs.length : 0
+              if (curRev !== newRev || curResCount !== newResCount || curActCount !== newActCount) {
+                return { ...prev, ...matched }
+              }
+              return prev
+            })
+          }
+        }
+      } catch (err) {}
+    }
+
+    pollDb()
+    const timer = setInterval(pollDb, 4000)
+    return () => {
+      isCancelled = true
+      clearInterval(timer)
+    }
+  }, [project?.id])
 
 
   if (!project) {
@@ -186,11 +219,12 @@ partnerships@creatorforge.com`
     setShowPhaseExecutionModal(true)
   }
 
-  const checklistTasks = project.checklist || []
-  const aiActivityList = project.aiActivity || []
+  const checklistTasks = project.checklist || project.creatorTasks || []
+  const rawActivity = project.activityLogs || project.adminActivity || project.aiActivity || []
+  const aiActivityList = Array.isArray(rawActivity) ? rawActivity : []
   const filesList = project.files || []
   const messagesList = project.messages || []
-  const decisionsList = project.decisions || []
+  const decisionsList = project.decisions || project.gateDecisions || []
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
@@ -441,12 +475,19 @@ partnerships@creatorforge.com`
                           </div>
                         ) : (
                           <div className="space-y-1.5 text-slate-300 text-[11px]">
-                            {aiActivityList.slice(0, 4).map((act, idx) => (
-                              <div key={idx} className="flex items-start gap-2">
-                                <span className="text-purple-400">•</span>
-                                <span>{act.message || act}</span>
-                              </div>
-                            ))}
+                            {aiActivityList.slice(0, 4).map((act, idx) => {
+                              const title = typeof act === 'string' ? act : (act.action || act.message || 'System Action')
+                              const details = typeof act === 'object' ? (act.details || '') : ''
+                              return (
+                                <div key={idx} className="flex items-start gap-2 py-0.5">
+                                  <span className="text-purple-400 font-bold shrink-0">•</span>
+                                  <div className="min-w-0">
+                                    <span className="font-medium text-slate-200 block truncate">{title}</span>
+                                    {details && <span className="text-[10px] text-slate-400 block truncate">{details}</span>}
+                                  </div>
+                                </div>
+                              )
+                            })}
                           </div>
                         )}
                       </div>
