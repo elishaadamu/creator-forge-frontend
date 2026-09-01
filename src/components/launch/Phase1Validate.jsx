@@ -480,6 +480,8 @@ export default function Phase1Validate({
           ...(project || {}),
           validationPlan: plan,
           campaignKit: generated,
+          campaignLaunched: true,
+          campaignAssetsGenerated: true,
           creatorTasks: generated.postingSchedule || project?.creatorTasks || [],
           surveyData,
           mockupImage,
@@ -489,6 +491,7 @@ export default function Phase1Validate({
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
         try {
           localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
+          window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
         } catch (e) {}
 
         // Persist immediately to backend database
@@ -841,11 +844,29 @@ export default function Phase1Validate({
     onSelectStep?.(id)
   }
 
+  // Dynamic Telemetry Calculations
+  const totalTraffic = Number(project?.visitors || project?.uniqueVisitors?.length || 0)
+  const totalSignups = Number(project?.telemetry?.signups || (project?.waitlist || []).length || 0)
+  const dynamicConversionRate = totalTraffic > 0
+    ? (reservations.length / totalTraffic) * 100
+    : Number(project?.conversionRate || 0)
+  const dynamicCTR = project?.telemetry?.ctr !== undefined && project?.telemetry?.ctr !== null
+    ? Number(project.telemetry.ctr)
+    : (totalTraffic > 0 && (totalSignups + reservations.length > 0))
+    ? ((totalSignups + reservations.length) / totalTraffic) * 100
+    : 0
+
   const isStep1Done = Boolean(project?.validationPlan?.status === 'ready' || project?.validationPlan?.threshold || project?.planLocked || plan?.threshold)
   const isStep2Done = Boolean(project?.validationCampaign?.reviewStatus === 'approved' || project?.validationCampaign?.review_status === 'approved' || project?.assetsApproved || project?.landingPageApproved)
   const isStep3Done = Boolean(
     project?.campaignLaunched ||
     project?.campaignKit?.launched ||
+    project?.campaignKit?.status === 'ready' ||
+    hasCampaignGenerated ||
+    Boolean(campaignKit?.announcementPost?.trim()) ||
+    Boolean(project?.campaignKit?.announcementPost?.trim()) ||
+    (Array.isArray(campaignKit?.postingSchedule) && campaignKit.postingSchedule.length > 0) ||
+    (Array.isArray(project?.campaignKit?.postingSchedule) && project.campaignKit.postingSchedule.length > 0) ||
     ((project?.campaignKit?.postingSchedule || []).length > 0 && (project?.campaignKit?.postingSchedule || []).every(t => t.done)) ||
     ((project?.creatorTasks || []).length > 0 && (project?.creatorTasks || []).every(t => t.done || t.completed))
   )
@@ -2194,23 +2215,21 @@ export default function Phase1Validate({
               {/* 1. Traffic */}
               <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
                 <span className="text-[9px] text-purple-400 font-bold uppercase tracking-wider block">Traffic</span>
-                <span className="text-base font-extrabold text-white block">{Number(project?.visitors || 0).toLocaleString()}</span>
+                <span className="text-base font-extrabold text-white block">{totalTraffic.toLocaleString()}</span>
                 <span className="text-[9px] text-slate-400">Unique visitors</span>
               </div>
 
               {/* 2. CTR */}
               <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
                 <span className="text-[9px] text-blue-400 font-bold uppercase tracking-wider block">CTR</span>
-                <span className="text-base font-extrabold text-white block">{Number(project?.telemetry?.ctr || 14.8).toFixed(1)}%</span>
+                <span className="text-base font-extrabold text-white block">{dynamicCTR.toFixed(1)}%</span>
                 <span className="text-[9px] text-slate-400">Click-through rate</span>
               </div>
 
               {/* 3. Signups */}
               <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
                 <span className="text-[9px] text-indigo-300 font-bold uppercase tracking-wider block">Signups</span>
-                <span className="text-base font-extrabold text-white block">
-                  {Number(project?.telemetry?.signups || (project?.waitlist || []).length || 0)}
-                </span>
+                <span className="text-base font-extrabold text-white block">{totalSignups.toLocaleString()}</span>
                 <span className="text-[9px] text-slate-400">Waitlist / Leads</span>
               </div>
 
@@ -2231,7 +2250,7 @@ export default function Phase1Validate({
               {/* 6. Conversion */}
               <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
                 <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block">Conversion</span>
-                <span className="text-base font-extrabold text-white block">{Number(project?.conversionRate || 0).toFixed(1)}%</span>
+                <span className="text-base font-extrabold text-white block">{dynamicConversionRate.toFixed(1)}%</span>
                 <span className="text-[9px] text-slate-400">Visitor-to-paid</span>
               </div>
             </div>
@@ -2614,7 +2633,7 @@ export default function Phase1Validate({
               </div>
               <div className="p-3 rounded-xl bg-[#0e1117]/80 border border-white/[0.06] space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Conversion</span>
-                <span className="text-base font-extrabold text-purple-300 block">{Number(project?.conversionRate || (reservations.length > 0 ? 8.3 : 0)).toFixed(1)}%</span>
+                <span className="text-base font-extrabold text-purple-300 block">{dynamicConversionRate.toFixed(1)}%</span>
                 <span className="text-[10px] text-slate-500">Traffic-to-presale</span>
               </div>
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
@@ -2627,7 +2646,7 @@ export default function Phase1Validate({
             <p className="text-xs text-slate-300 leading-relaxed bg-[#0a0c10]/60 p-3 rounded-xl border border-white/[0.04]">
               {isGatePassed || presalesRevenue >= 5000 ? (
                 <span>
-                  🔥 <strong>Validation Successful:</strong> The customer willingness-to-pay threshold of ${presaleTarget.toLocaleString()} was achieved with strong audience demand and an estimated {Number(project?.conversionRate || 8.3).toFixed(1)}% conversion rate. The AI engine recommends immediately advancing to <strong>Phase 2: Build MVP</strong>.
+                  🔥 <strong>Validation Successful:</strong> The customer willingness-to-pay threshold of ${presaleTarget.toLocaleString()} was achieved with strong audience demand and an estimated {dynamicConversionRate.toFixed(1)}% conversion rate. The AI engine recommends immediately advancing to <strong>Phase 2: Build MVP</strong>.
                 </span>
               ) : (
                 <span>
@@ -2655,7 +2674,7 @@ export default function Phase1Validate({
                     targetRevenue: presaleTarget,
                     achievedRevenue: presalesRevenue,
                     backersCount: reservations.length,
-                    conversionRate: Number(project?.conversionRate || 8.3),
+                    conversionRate: Number(dynamicConversionRate.toFixed(1)),
                     gateStatus: 'passed',
                     notes: notes,
                     decidedAt: new Date().toLocaleString()
@@ -2707,7 +2726,7 @@ export default function Phase1Validate({
                     targetRevenue: presaleTarget,
                     achievedRevenue: presalesRevenue,
                     backersCount: reservations.length,
-                    conversionRate: Number(project?.conversionRate || 8.3),
+                    conversionRate: Number(dynamicConversionRate.toFixed(1)),
                     gateStatus: 'iterating',
                     notes: notes,
                     decidedAt: new Date().toLocaleString()
@@ -2751,7 +2770,7 @@ export default function Phase1Validate({
                       targetRevenue: presaleTarget,
                       achievedRevenue: presalesRevenue,
                       backersCount: reservations.length,
-                      conversionRate: Number(project?.conversionRate || 8.3),
+                      conversionRate: Number(dynamicConversionRate.toFixed(1)),
                       gateStatus: 'killed',
                       notes: notes,
                       decidedAt: new Date().toLocaleString()

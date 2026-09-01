@@ -392,7 +392,7 @@ partnerships@creatorforge.com`
   const presaleGoal = derivedGoal > 0 ? derivedGoal : Number(project.presaleTarget || project.targetRevenue || 5000)
   const backersCount = Array.isArray(project.reservations) ? project.reservations.length : Number(project.telemetry?.presalesCount || 0)
   const currentPresales = Number(String(project.currentPresales || 0).replace(/[^0-9.]/g, '')) || (project.reservations || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
-  const conversionRate = Number(project.conversionRate || (project.visitors ? (backersCount / Number(project.visitors)) * 100 : (backersCount > 0 ? 8.3 : 0)))
+  const conversionRate = Number(project.conversionRate || (Number(project.visitors || 0) > 0 ? (backersCount / Number(project.visitors)) * 100 : 0))
   const isGatePassed = currentPresales >= presaleGoal || project.currentPhase > 1 || project.status === 'building'
 
   // Step Completion Guards
@@ -401,6 +401,11 @@ partnerships@creatorforge.com`
   const isStep3Done = Boolean(
     project.campaignLaunched ||
     project.campaignKit?.launched ||
+    project.campaignKit?.status === 'ready' ||
+    Boolean(project.campaignKit?.announcementPost?.trim()) ||
+    Boolean(project.validationCampaign?.productAssets?.announcementPost?.trim()) ||
+    Boolean(project.validationCampaign?.product_assets?.announcementPost?.trim()) ||
+    (Array.isArray(project.campaignKit?.postingSchedule) && project.campaignKit.postingSchedule.length > 0) ||
     ((project.campaignKit?.postingSchedule || []).length > 0 && (project.campaignKit?.postingSchedule || []).every(t => t.done)) ||
     ((project.creatorTasks || []).length > 0 && (project.creatorTasks || []).every(t => t.done || t.completed))
   )
@@ -884,7 +889,7 @@ partnerships@creatorforge.com`
                     const presaleGoal = derivedGoal > 0 ? derivedGoal : Number(project.presaleTarget || project.targetRevenue || 5000)
                     const backersCount = Array.isArray(project.reservations) ? project.reservations.length : Number(project.telemetry?.presalesCount || 0)
                     const currentPresales = Number(String(project.currentPresales || 0).replace(/[^0-9.]/g, '')) || (project.reservations || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
-                    const conversionRate = Number(project.conversionRate || (project.visitors ? (backersCount / Number(project.visitors)) * 100 : (backersCount > 0 ? 8.3 : 0)))
+                    const conversionRate = Number(project.conversionRate || (Number(project.visitors || 0) > 0 ? (backersCount / Number(project.visitors)) * 100 : 0))
                     const isRevenueGoalMet = presaleGoal > 0 && currentPresales >= presaleGoal
                     const isFounderApproved = Number(project.currentPhase || 1) > 1 || project.status === 'building'
                     const isGatePassed = isRevenueGoalMet || isFounderApproved
