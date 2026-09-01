@@ -75,7 +75,20 @@ export default function PreorderLandingPage({ slug }) {
   const tagline = project?.productTagline || 'Autonomous software suite built for high-intent creators and teams.'
   const headline = project?.campaignKit?.landingPageCopy?.headline || `The ${productName} Workspace Built with ${creatorName}`
   const subheadline = project?.campaignKit?.landingPageCopy?.subheadline || tagline
-  const reservationsCount = Array.isArray(project?.reservations) ? project.reservations.length : 0
+  
+  const cfg = project?.campaignKit?.pricingConfig
+  const foundingPrice = Number(cfg?.foundingPrice) || (project?.pricing ? (Number(String(project.pricing).replace(/[^0-9]/g, '')) || 49) : 49)
+  const depositPrice = Number(cfg?.depositPrice) || Math.max(9, Math.round(foundingPrice * 0.2))
+  const perksText = cfg?.perks || '50% Lifetime Price Lock & VIP Alpha Perks'
+
+  useEffect(() => {
+    setSelectedTier(prev => {
+      if (prev.deposit) {
+        return { name: `VIP Deposit ($${depositPrice})`, price: depositPrice, deposit: true }
+      }
+      return { name: `Founding Annual Pass ($${foundingPrice})`, price: foundingPrice, deposit: false }
+    })
+  }, [foundingPrice, depositPrice])
 
   const handleCheckoutSubmit = (e) => {
     e?.preventDefault()
@@ -175,7 +188,7 @@ export default function PreorderLandingPage({ slug }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-slate-100 selection:bg-purple-500 selection:text-white font-sans">
+    <div className="min-h-screen bg-[#07090e] text-slate-100 selection:bg-purple-500 selection:text-white font-sans antialiased overflow-x-hidden">
       {/* Top Launch Notification Banner */}
       <div className="bg-gradient-to-r from-purple-950/90 via-purple-900/70 to-[#07090e] border-b border-purple-500/20 py-2.5 px-4 text-center text-xs">
         <div className="flex items-center justify-center gap-2 font-semibold">
@@ -202,11 +215,11 @@ export default function PreorderLandingPage({ slug }) {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => openCheckout({ name: 'Founding Annual Pass ($99)', price: 99, deposit: false })}
-            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+            onClick={() => openCheckout({ name: `Founding Annual Pass ($${foundingPrice})`, price: foundingPrice, deposit: false })}
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
             <CreditCard className="w-3.5 h-3.5" />
-            <span>Claim Access ($99)</span>
+            <span>Claim Access (${foundingPrice})</span>
           </button>
         </div>
       </header>
@@ -227,49 +240,41 @@ export default function PreorderLandingPage({ slug }) {
         </p>
 
         {/* Action Buttons */}
-        {(() => {
-          const cfg = project?.campaignKit?.pricingConfig
-          const parsedPrice = cfg?.foundingPrice || (project?.pricing ? (Number(String(project.pricing).replace(/[^0-9]/g, '')) || 99) : 99)
-          const depositVal = cfg?.depositPrice || Math.max(9, Math.round(parsedPrice * 0.2))
-          const perksText = cfg?.perks || '50% Lifetime Price Lock & VIP Alpha Perks'
-          return (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
-                <button
-                  onClick={() => openCheckout({ name: `Founding Annual Pass ($${parsedPrice})`, price: parsedPrice, deposit: false })}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/60 transition-all active:scale-95 cursor-pointer"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Claim Founding Access (${parsedPrice})</span>
-                </button>
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
+            <button
+              onClick={() => openCheckout({ name: `Founding Annual Pass ($${foundingPrice})`, price: foundingPrice, deposit: false })}
+              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/60 transition-all active:scale-95 cursor-pointer"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Claim Founding Access (${foundingPrice})</span>
+            </button>
 
-                <button
-                  onClick={() => openCheckout({ name: `Refundable Deposit ($${depositVal})`, price: depositVal, deposit: true })}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#141720] hover:bg-[#1c212e] text-slate-200 border border-white/[0.1] font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Reserve with ${depositVal} Deposit</span>
-                </button>
-              </div>
+            <button
+              onClick={() => openCheckout({ name: `VIP Deposit ($${depositPrice})`, price: depositPrice, deposit: true })}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#141720] hover:bg-[#1c212e] text-slate-200 border border-white/[0.1] font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Reserve with ${depositPrice} Deposit</span>
+            </button>
+          </div>
 
-              {/* Perks Indicators */}
-              <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 pt-2">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>100% Refundable Guarantee</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>{perksText}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>Direct Co-Founder Access</span>
-                </div>
-              </div>
+          {/* Perks Indicators */}
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 pt-2">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>100% Refundable Guarantee</span>
             </div>
-          )
-        })()}
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>{perksText}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>Direct Co-Founder Access</span>
+            </div>
+          </div>
+        </div>
 
         {/* Visual Designed Mockup Showcase (Full, Non-Editable UI Frame) */}
         <div className="pt-6">
@@ -302,9 +307,9 @@ export default function PreorderLandingPage({ slug }) {
             <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
               <Lock className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-white">Zero Risk Guarantee</h3>
+            <h3 className="text-sm font-bold text-white">Direct Co-Founder Line</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              100% full money-back refund guarantee anytime prior to general public release.
+              Join the private VIP Slack & direct alpha advisory channels with {creatorName} & Creator Forge.
             </p>
           </div>
         </div>
@@ -394,28 +399,28 @@ export default function PreorderLandingPage({ slug }) {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => setSelectedTier({ name: 'Founding Annual Pass ($99)', price: 99, deposit: false })}
+                        onClick={() => setSelectedTier({ name: `Founding Annual Pass ($${foundingPrice})`, price: foundingPrice, deposit: false })}
                         className={`p-2 rounded-xl border text-left text-xs transition-all ${
-                          selectedTier.price === 99
+                          !selectedTier.deposit
                             ? 'bg-purple-600/20 border-purple-500 text-white shadow-sm'
                             : 'bg-[#141720] border-white/[0.06] text-slate-400 hover:text-white'
                         }`}
                       >
                         <span className="font-bold block text-white text-[11px]">Founding Pass</span>
-                        <span className="text-emerald-400 font-mono font-bold text-xs">$99</span>
+                        <span className="text-emerald-400 font-mono font-bold text-xs">${foundingPrice}</span>
                       </button>
 
                       <button
                         type="button"
-                        onClick={() => setSelectedTier({ name: 'Refundable Deposit ($19)', price: 19, deposit: true })}
+                        onClick={() => setSelectedTier({ name: `VIP Deposit ($${depositPrice})`, price: depositPrice, deposit: true })}
                         className={`p-2 rounded-xl border text-left text-xs transition-all ${
-                          selectedTier.price === 19
+                          selectedTier.deposit
                             ? 'bg-purple-600/20 border-purple-500 text-white shadow-sm'
                             : 'bg-[#141720] border-white/[0.06] text-slate-400 hover:text-white'
                         }`}
                       >
                         <span className="font-bold block text-white text-[11px]">VIP Deposit</span>
-                        <span className="text-emerald-400 font-mono font-bold text-xs">$19 (Refundable)</span>
+                        <span className="text-emerald-400 font-mono font-bold text-xs">${depositPrice} (Refundable)</span>
                       </button>
                     </div>
                   </div>
