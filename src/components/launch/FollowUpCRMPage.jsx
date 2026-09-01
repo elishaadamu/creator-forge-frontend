@@ -3,6 +3,7 @@ import CreatorFollowUpCRM from "./CreatorFollowUpCRM";
 import { getCreators, getThreads, pollInboxReplies, updateCreatorDetails, deleteCreator, getWorkflowState } from "../../services/opsApi";
 import { updatePageSEO } from "../../utils/seo";
 import { Users, ExternalLink, RefreshCw, Rocket, ShieldCheck, CheckCircle, AlertCircle, X } from "lucide-react";
+import { CRMSkeleton } from "./Section2Skeletons";
 
 export default function FollowUpCRMPage() {
   const [creators, setCreators] = useState([]);
@@ -190,12 +191,7 @@ export default function FollowUpCRMPage() {
       {/* Main Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 space-y-4">
-            <RefreshCw className="w-8 h-8 text-purple-400 animate-spin" />
-            <p className="text-sm font-semibold text-slate-400 font-mono">
-              Connecting to PostgreSQL & Loading CRM Leads...
-            </p>
-          </div>
+          <CRMSkeleton />
         ) : (
           <CreatorFollowUpCRM
             isPage={true}

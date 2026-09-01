@@ -32,6 +32,11 @@ import {
   parseDepositPricingAmount,
   sanitizePricingConfig
 } from '../../utils/pricing'
+import {
+  Phase1ValidateSkeleton,
+  Phase1CampaignGenSkeleton,
+  Phase1ExperimentsGenSkeleton
+} from './Section2Skeletons'
 
 export default function Phase1Validate({
   project,
@@ -1751,8 +1756,10 @@ export default function Phase1Validate({
             </div>
           </div>
 
-          {/* If Campaign Kit has not been generated yet */}
-          {!hasCampaignGenerated ? (
+          {/* If Campaign Kit is actively generating */}
+          {isGeneratingCampaign ? (
+            <Phase1CampaignGenSkeleton />
+          ) : !hasCampaignGenerated ? (
             <div className="p-8 sm:p-12 rounded-2xl bg-[#0e1117] border border-dashed border-white/[0.12] text-center space-y-4 max-w-xl mx-auto my-6 shadow-xl">
               <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center mx-auto text-purple-400 shadow-lg shadow-purple-950/40">
                 <Megaphone className="w-7 h-7" />
@@ -1769,17 +1776,8 @@ export default function Phase1Validate({
                   disabled={isGeneratingCampaign}
                   className="w-full sm:w-auto px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-950/50 active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
-                  {isGeneratingCampaign ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-purple-200" />
-                      <span>Generating Campaign Kit...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 text-purple-300" />
-                      <span>Generate Campaign Kit with AI</span>
-                    </>
-                  )}
+                  <Sparkles className="w-4 h-4 text-purple-300" />
+                  <span>Generate Campaign Kit with AI</span>
                 </button>
               </div>
             </div>
@@ -2462,7 +2460,9 @@ export default function Phase1Validate({
             </div>
 
             {/* Experiments Cards Grid */}
-            {!experimentsData?.experiments || experimentsData.experiments.length === 0 ? (
+            {isAnalyzingExperiments ? (
+              <Phase1ExperimentsGenSkeleton />
+            ) : !experimentsData?.experiments || experimentsData.experiments.length === 0 ? (
               <div className="p-8 text-center text-slate-500 border border-dashed border-white/[0.08] rounded-xl space-y-3">
                 <p>No growth experiments generated yet.</p>
                 <button

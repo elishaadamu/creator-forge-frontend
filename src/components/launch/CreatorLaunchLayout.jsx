@@ -277,7 +277,9 @@ export default function CreatorLaunchLayout({
                   status: resolvedPhase > 1 ? (local?.status || matched.status || 'building') : (matched.status || 'validating'),
                   gateDecisions: (local?.gateDecisions?.length || 0) > (matched.gateDecisions?.length || 0)
                     ? local.gateDecisions
-                    : (matched.gateDecisions || local?.gateDecisions || [])
+                    : (matched.gateDecisions || local?.gateDecisions || []),
+                  projectFiles: (local?.projectFiles?.length || 0) > 0 ? local.projectFiles : (matched.projectFiles || []),
+                  messages: (local?.messages?.length || 0) > 0 ? local.messages : (matched.messages || [])
                 }
                 try {
                   localStorage.setItem('forge_launch_active_project', JSON.stringify(merged))
@@ -319,12 +321,16 @@ export default function CreatorLaunchLayout({
             productTagline: next.productTagline,
             pricing: next.pricing,
             presaleTarget: next.presaleTarget,
+            projectFiles: next.projectFiles || [],
+            messages: next.messages || [],
             metadataInfo: {
               ...(next.metadataInfo || {}),
               activity_logs: next.activityLogs || next.adminActivity || [],
               gate_decisions: next.gateDecisions || [],
               mvpBuildPlan: next.mvpBuildPlan,
               engineeringTasks: next.engineeringTasks,
+              project_files: next.projectFiles || [],
+              messages: next.messages || []
             }
           }).catch(err => console.warn('[CreatorLaunchLayout] updateCoLaunchProject error:', err))
         })
@@ -569,7 +575,7 @@ export default function CreatorLaunchLayout({
       </header>
 
       {/* Main Content View */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+      <main className="flex-1 w-full max-w-[1720px] mx-auto px-3 sm:px-5 py-4 space-y-5">
         {/* Mobile Section Switcher */}
         <div className="flex md:hidden items-center p-1 rounded-xl bg-white/[0.03] border border-white/[0.07] gap-1 overflow-x-auto">
           <button

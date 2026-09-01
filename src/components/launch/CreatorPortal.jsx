@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Rocket, CheckCircle2, DollarSign, Copy, Check, Video, MessageSquare,
   Users, ExternalLink, Globe, Sparkles, AlertCircle, ShieldCheck, ArrowRight,
-  TrendingUp, Award, Calendar, CheckSquare, Eye, Smartphone, Send, FileText
+  TrendingUp, Award, Calendar, CheckSquare, Eye, Smartphone, Send, FileText,
+  CheckCheck, Loader2, MessageCircle
 } from 'lucide-react'
-import { getFrontendUrl } from '../../services/opsApi'
+import { getFrontendUrl, updateCoLaunchProject, getCoLaunchProject, getThreads } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
+import { CreatorPortalSkeleton } from './Section2Skeletons'
 
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
@@ -90,11 +92,152 @@ export default function CreatorPortal({ portalId }) {
     }
   }, [])
 
-  const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'scripts' | 'presales'
+  const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'scripts' | 'presales' | 'messages' | 'strategy'
   const [activeScriptTab, setActiveScriptTab] = useState('post') // 'post' | 'video' | 'dm'
   const [viewDraftTask, setViewDraftTask] = useState(null)
   const [copiedKey, setCopiedKey] = useState(null)
   const [toast, setToast] = useState('')
+  const [creatorReplyText, setCreatorReplyText] = useState('')
+  const [isSendingReply, setIsSendingReply] = useState(false)
+  const [section1Threads, setSection1Threads] = useState([])
+  const chatMessagesEndRef = useRef(null)
+
+  // Load Section 1 outreach and threads
+  useEffect(() => {
+    let isMounted = true
+    const loadThreads = async () => {
+      try {
+        const allThreads = await getThreads()
+        if (isMounted && Array.isArray(allThreads)) {
+          const cId = project?.creatorId
+          const cHandle = (project?.creatorHandle || '').toLowerCase().replace(/^@/, '').trim()
+          const cEmail = (project?.creatorEmail || project?.email_public || '').toLowerCase().trim()
+          const cName = (project?.creatorName || '').toLowerCase().trim()
+
+          const matchingThreads = allThreads.filter(t => {
+            if (!t) return false
+            if (cId && t.creator_id === cId) return true
+            if (cHandle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, '').trim() === cHandle) return true
+            if (cEmail && t.creator_email && t.creator_email.toLowerCase().trim() === cEmail) return true
+            if (cName && cName.length >= 3 && (t.subject || '').toLowerCase().includes(cName)) return true
+            return false
+          })
+
+          const collected = []
+          matchingThreads.forEach(t => {
+            if (t.initial_body || t.body) {
+              collected.push({
+                id: `thread-outreach-${t.id}`,
+                sender: 'admin',
+                senderName: 'Creator Forge Studio',
+                subject: t.subject || 'Partnership Proposal',
+                text: t.initial_body || t.body,
+                time: t.created_at ? new Date(t.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Section 1',
+                status: 'read',
+                isSection1: true
+              })
+            }
+            const replies = t.replies || []
+            replies.forEach(r => {
+              const fromAddr = (r.from_address || '').toLowerCase().trim()
+              const isFromStudio = fromAddr.includes('creatorforge.com') || fromAddr.includes('partnerships') || fromAddr.includes('studio')
+              collected.push({
+                id: `reply-${r.id || Math.random()}`,
+                sender: isFromStudio ? 'admin' : 'creator',
+                senderName: isFromStudio ? 'Creator Forge Studio' : (project?.creatorName || 'You'),
+                subject: r.subject || '',
+                text: r.body || '',
+                time: r.received_at || r.created_at ? new Date(r.received_at || r.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Section 1',
+                status: 'read',
+                isSection1: true
+              })
+            })
+          })
+          setSection1Threads(collected)
+        }
+      } catch (e) {
+        console.warn('[CreatorPortal] Threads error:', e)
+      }
+    }
+    loadThreads()
+    return () => { isMounted = false }
+  }, [project?.creatorId, project?.creatorHandle, project?.creatorEmail])
+
+  // Real-time polling for messages from the Admin Studio
+  useEffect(() => {
+    let isMounted = true
+    if (!project?.id) return
+
+    const pollProject = async () => {
+      try {
+        const fresh = await getCoLaunchProject(project.id)
+        if (isMounted && fresh) {
+          const curCount = Array.isArray(project?.messages) ? project.messages.length : 0
+          const freshCount = Array.isArray(fresh.messages) ? fresh.messages.length : 0
+          if (freshCount !== curCount || fresh.currentPresales !== project.currentPresales) {
+            setProject(fresh)
+            try {
+              localStorage.setItem('forge_launch_active_project', JSON.stringify(fresh))
+            } catch (e) {}
+          }
+        }
+      } catch (e) {}
+    }
+
+    const interval = setInterval(pollProject, 3000)
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [project?.id, project?.messages?.length, project?.currentPresales])
+
+  // Combine real Section 1 messages + Section 2 custom messages
+  const customProjectMessages = Array.isArray(project?.messages) ? project.messages : []
+  const portalDisplayMessages = [...section1Threads, ...customProjectMessages]
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    if (activeTab === 'messages') {
+      chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [portalDisplayMessages.length, activeTab])
+
+  // Handle Creator Sending a Message to Admin Studio
+  const handleSendCreatorMessage = async (e) => {
+    e?.preventDefault?.()
+    const trimmed = creatorReplyText.trim()
+    if (!trimmed || !project) return
+
+    setIsSendingReply(true)
+    const newMsg = {
+      id: `msg-${Date.now()}`,
+      sender: 'creator',
+      senderName: project.creatorName || 'Creator Partner',
+      text: trimmed,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'sent'
+    }
+
+    const updatedMessages = [...customProjectMessages, newMsg]
+    const updatedProject = {
+      ...project,
+      messages: updatedMessages
+    }
+
+    setProject(updatedProject)
+    setCreatorReplyText('')
+    setIsSendingReply(false)
+
+    try {
+      localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProject))
+      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProject }))
+    } catch (err) {}
+
+    if (project.id) {
+      updateCoLaunchProject(project.id, { messages: updatedMessages }).catch(() => {})
+    }
+    showToast('Message sent to Studio!')
+  }
 
   const showToast = (msg) => {
     setToast(msg)
@@ -143,17 +286,7 @@ export default function CreatorPortal({ portalId }) {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#090b0e] text-white flex items-center justify-center p-6">
-        <div className="max-w-md w-full p-8 rounded-2xl bg-[#0e1117] border border-white/[0.08] text-center space-y-4">
-          <Rocket className="w-10 h-10 text-purple-400 mx-auto animate-bounce" />
-          <h2 className="text-lg font-bold">Loading Co-Founder Portal...</h2>
-          <p className="text-xs text-slate-400">
-            Synchronizing live co-launch workspace, campaign kit, and backer dashboard.
-          </p>
-        </div>
-      </div>
-    )
+    return <CreatorPortalSkeleton />
   }
 
   if (!project) {
@@ -299,6 +432,7 @@ export default function CreatorPortal({ portalId }) {
             { id: 'tasks', label: 'Daily Launch Checklist', icon: CheckSquare, count: `${completedTasksCount}/${totalTasksCount}` },
             { id: 'scripts', label: 'Copyable Launch Content', icon: Video },
             { id: 'presales', label: 'Verified Pre-Orders', icon: Users, count: reservations.length },
+            { id: 'messages', label: 'Studio Chat & Messages', icon: MessageSquare, count: portalDisplayMessages.length },
             { id: 'strategy', label: 'Validation Strategy & Plan', icon: FileText },
           ].map(tab => {
             const Icon = tab.icon
@@ -643,7 +777,120 @@ export default function CreatorPortal({ portalId }) {
           </div>
         )}
 
-        {/* TAB 4: VALIDATION STRATEGY & PLAN */}
+        {/* TAB 4: DIRECT MESSAGES & STUDIO CHAT */}
+        {activeTab === 'messages' && (
+          <div className="rounded-2xl bg-[#0b141a] border border-white/[0.1] shadow-2xl overflow-hidden flex flex-col h-[620px] relative font-sans">
+            {/* Header */}
+            <div className="bg-[#1f2c34] px-4 py-3 border-b border-white/[0.08] flex items-center justify-between text-white z-10 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-emerald-500 p-0.5 shadow-md shrink-0 flex items-center justify-center">
+                  <div className="w-full h-full rounded-full bg-[#0d1117] flex items-center justify-center font-bold text-xs text-purple-300">
+                    CF
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-sm text-white truncate">Creator Forge Studio</h3>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shrink-0">
+                      <ShieldCheck className="w-2.5 h-2.5" />
+                      <span>Studio Co-Founder</span>
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
+                    <span className="text-emerald-400 font-medium">Online · Dedicated Tech Team</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Chat Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-[#0b141a] bg-[radial-gradient(#1f2c34_1px,transparent_1px)] [background-size:16px_16px]">
+              {portalDisplayMessages.length === 0 ? (
+                <div className="py-12 px-6 max-w-md mx-auto text-center space-y-3 rounded-2xl bg-[#111b21] border border-white/[0.06]">
+                  <MessageSquare className="w-8 h-8 text-slate-500 mx-auto" />
+                  <h4 className="font-bold text-white text-sm">Direct Channel with Studio</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Send real-time messages, feedback on features, or launch questions directly to your Creator Forge engineering team.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 pt-2">
+                  {portalDisplayMessages.map((msg, idx) => {
+                    // For creator portal: msg.sender === 'creator' is outgoing (right), msg.sender === 'admin' is incoming (left)
+                    const isCreatorOutgoing = msg.sender === 'creator'
+                    return (
+                      <div
+                        key={msg.id || idx}
+                        className={`flex flex-col ${isCreatorOutgoing ? 'items-end' : 'items-start'}`}
+                      >
+                        <div
+                          className={`max-w-[85%] sm:max-w-[70%] rounded-2xl p-3.5 text-xs shadow-md space-y-1.5 relative ${
+                            isCreatorOutgoing
+                              ? 'bg-[#005c4b] text-slate-100 rounded-tr-xs border border-emerald-500/20'
+                              : 'bg-[#202c33] text-slate-200 rounded-tl-xs border border-white/[0.06]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2 pb-0.5 text-[11px]">
+                            <span className={`font-extrabold ${isCreatorOutgoing ? 'text-emerald-300' : 'text-purple-300'}`}>
+                              {isCreatorOutgoing ? (project.creatorName || 'You') : 'Creator Forge Studio'}
+                            </span>
+                            {msg.isSection1 && (
+                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/20 text-slate-300 font-mono">
+                                Outreach
+                              </span>
+                            )}
+                          </div>
+
+                          {msg.subject && (
+                            <div className="font-bold text-white border-b border-white/[0.08] pb-1 text-[11px]">
+                              {msg.subject}
+                            </div>
+                          )}
+
+                          <p className="whitespace-pre-wrap leading-relaxed select-text font-sans text-xs">
+                            {msg.text}
+                          </p>
+
+                          <div className={`flex items-center justify-end gap-1 text-[10px] ${
+                            isCreatorOutgoing ? 'text-emerald-200/70' : 'text-slate-400'
+                          }`}>
+                            <span>{msg.time}</span>
+                            {isCreatorOutgoing && (
+                              <span title="Delivered to Studio">
+                                <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <div ref={chatMessagesEndRef} />
+                </div>
+              )}
+            </div>
+
+            {/* Composer */}
+            <form onSubmit={handleSendCreatorMessage} className="bg-[#1f2c34] p-3 border-t border-white/[0.08] flex items-center gap-2">
+              <input
+                type="text"
+                value={creatorReplyText}
+                onChange={e => setCreatorReplyText(e.target.value)}
+                placeholder="Type a message or question to Creator Forge Studio..."
+                className="flex-1 bg-[#2a3942] text-white text-xs rounded-xl px-4 py-2.5 border border-transparent focus:border-purple-500 focus:outline-none transition-all placeholder:text-slate-400"
+              />
+              <button
+                type="submit"
+                disabled={!creatorReplyText.trim() || isSendingReply}
+                className="p-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+              >
+                {isSendingReply ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 5: VALIDATION STRATEGY & PLAN */}
         {activeTab === 'strategy' && (
           <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
             <div className="border-b border-white/[0.06] pb-3 flex items-center justify-between">

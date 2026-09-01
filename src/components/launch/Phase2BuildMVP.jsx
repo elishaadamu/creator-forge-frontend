@@ -19,6 +19,7 @@ import {
   autoImplementFixesAI
 } from '../../services/ai'
 import { getFrontendUrl } from '../../services/opsApi'
+import { Phase2BuildMVPSkeleton, FeedbackClusterSkeleton } from './Section2Skeletons'
 
 export default function Phase2BuildMVP({ project, api, onUpdateProject, onAdvanceToPhase3 }) {
   const [activeStep, setActiveStep] = useState('plan') // 'plan' | 'build' | 'beta' | 'gate'
@@ -641,8 +642,81 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} â
     a.href = url
     a.download = `MVP_BUILD_PLAN_${(project?.productName || 'product').toUpperCase().replace(/[^A-Z0-9]/g, '_')}.md`
     a.click()
-    URL.revokeObjectURL(url)
     showToast('Downloaded Markdown Product Spec!')
+  }
+
+  const handleSaveToProjectFiles = () => {
+    const spec = buildPlan.productSpec || {}
+    const tech = buildPlan.technicalPlan || {}
+    const scope = buildPlan.scopeBoundaries || {}
+
+    const md = `# MVP PRODUCT & TECHNICAL BUILD PLAN: ${project?.productName || 'Software Product'}
+## Creator Co-Founder: ${project?.creatorName || 'Creator'} | Niche: ${project?.niche || 'Software'}
+
+---
+
+### 1. PRODUCT SPECIFICATION
+- **Target Customer:** ${spec.targetCustomer || 'N/A'}
+- **Core Problem:** ${spec.coreProblem || 'N/A'}
+- **Value Proposition:** ${spec.valueProposition || 'N/A'}
+
+#### Core Features (MVP):
+${(spec.features || []).map(f => `- **${f.name}** (${f.priority}): ${f.description}`).join('\n')}
+
+#### User Flows:
+${(spec.userFlows || []).map(uf => `1. **${uf.step}:** ${uf.action}`).join('\n')}
+
+#### Key Screens:
+${(spec.screens || []).map(s => `- **${s.name}:** ${s.description}`).join('\n')}
+
+---
+
+### 2. DIVISION OF LABOR & ENGINEERING TASKS
+${engineeringTasks.map(t => `- [${t.status}] **${t.title}** (${t.category}) â€” Assigned to: *${t.assignedTo}* [${t.estimate}]`).join('\n')}
+
+---
+
+### 3. BETA TESTING & RECURRING FEEDBACK CLUSTERS
+${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} â€” ${c.severity} Severity)\n  *Fix:* ${c.recommendedAction}`).join('\n')}
+
+---
+
+### 4. AI PRODUCT READINESS REPORT & VERDICT
+- **Score:** ${readinessReport.score}/100
+- **Verdict:** ${readinessReport.verdict} (${readinessReport.confidence} Confidence)
+- **Summary:** ${readinessReport.summary}
+`
+    const fileName = `${(project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '_')}_p2_build_spec.md`
+    const newSpecFile = {
+      id: `saved-p2-spec-${Date.now()}`,
+      name: fileName,
+      folder: 'specs',
+      type: 'md',
+      size: `${(new Blob([md]).size / 1024).toFixed(1)} KB`,
+      updatedAt: 'Saved from Phase 2',
+      content: md
+    }
+
+    const currentFiles = Array.isArray(project?.projectFiles) ? project.projectFiles : []
+    const updatedFiles = [newSpecFile, ...currentFiles.filter(f => f.name !== fileName)]
+
+    const updatedProject = {
+      ...(project || {}),
+      projectFiles: updatedFiles
+    }
+    if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updatedProject }))
+    try {
+      localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProject))
+      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProject }))
+    } catch (e) {}
+
+    if (project?.id) {
+      import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
+        updateCoLaunchProject(project.id, { projectFiles: updatedFiles }).catch(() => {})
+      })
+    }
+
+    showToast(`Saved "${fileName}" to Project Files!`)
   }
 
   const origin = getFrontendUrl()
@@ -765,6 +839,15 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} â
             </button>
 
             <button
+              onClick={handleSaveToProjectFiles}
+              className="px-3 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+              title="Save this build plan into Project Files"
+            >
+              <Save className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Save to Files</span>
+            </button>
+
+            <button
               onClick={handleExportMarkdown}
               className="p-2.5 rounded-xl bg-[#1a1f2c] hover:bg-[#23293b] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold flex items-center gap-1.5"
               title="Download Markdown Spec"
@@ -842,6 +925,9 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} â
 
       {/* STEP 1: PRODUCT + BUILD PLAN */}
       {activeStep === 'plan' && (
+        isGenerating ? (
+          <Phase2BuildMVPSkeleton />
+        ) : (
         <div className="space-y-5">
           {/* Subtabs for Step 1 */}
           <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3">
@@ -1393,13 +1479,23 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} â
 
           {/* Step 1 Footer Action */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
-            <button
-              onClick={handleExportMarkdown}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold flex items-center justify-center gap-2"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export Product Spec (.md)</span>
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={handleSaveToProjectFiles}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <Save className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Save to Project Files</span>
+              </button>
+
+              <button
+                onClick={handleExportMarkdown}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold flex items-center justify-center gap-2"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export Spec (.md)</span>
+              </button>
+            </div>
 
             <button
               onClick={() => setActiveStep('build')}
@@ -1410,6 +1506,7 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} â
             </button>
           </div>
         </div>
+        )
       )}
 
       {/* STEP 2: BUILD MVP (DIVISION OF LABOR, QA, STAGING) */}
@@ -1771,8 +1868,11 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} â
             </button>
           </div>
 
-          {/* SUBTAB 1: AI FEEDBACK CLUSTERS */}
+          {/* SUBTAB 1: AI CLUSTERS */}
           {betaSubtab === 'clusters' && (
+            isClusteringAI ? (
+              <FeedbackClusterSkeleton />
+            ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -1837,6 +1937,7 @@ ${feedbackClusters.map(c => `- **${c.count} users:** ${c.title} (${c.category} â
                 ))}
               </div>
             </div>
+            )
           )}
 
           {/* SUBTAB 2: BETA COHORT INVITES */}

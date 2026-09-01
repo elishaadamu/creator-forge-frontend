@@ -245,6 +245,50 @@ export const generateStep6Response = (params) =>
 export const getWorkflowState = () => req('GET', '/workflow-state')
 export const updateWorkflowState = (data) => req('POST', '/workflow-state', data)
 
+export const uploadMediaToCloudinary = (data) => req('POST', '/upload', data)
+
+export const uploadFormFileToCloudinary = async (file, folder = 'creator_forge', projectId = null) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (folder) formData.append('folder', folder)
+  if (projectId) formData.append('project_id', projectId)
+
+  const res = await fetch('/api/upload/form', {
+    method: 'POST',
+    body: formData
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(err || 'Upload failed')
+  }
+  return res.json()
+}
+
+export const deleteMediaFromCloudinary = async ({ publicId, url, resourceType = 'image', projectId = null, fileId = null }) => {
+  try {
+    const res = await fetch('/api/upload/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        publicId,
+        url,
+        resourceType,
+        projectId,
+        fileId
+      })
+    })
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(err || 'Delete failed')
+    }
+    return res.json()
+  } catch (e) {
+    console.warn('[opsApi] deleteMediaFromCloudinary error:', e)
+    return { success: false, error: e.message }
+  }
+}
+
+
 export const getFrontendUrl = () => {
   const envUrl = import.meta.env?.VITE_FRONTEND_URL
   if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
@@ -252,5 +296,3 @@ export const getFrontendUrl = () => {
   }
   return 'https://creator-forge-frontend.vercel.app'
 }
-
-

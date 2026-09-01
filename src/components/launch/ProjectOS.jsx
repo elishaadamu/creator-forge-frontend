@@ -13,14 +13,80 @@ import Phase2BuildMVP from './Phase2BuildMVP'
 import Phase3Launch from './Phase3Launch'
 import { trackVisit } from '../../services/tracker'
 import { getFrontendUrl, recordGateDecision } from '../../services/opsApi'
+import { ProjectOSSkeleton } from './Section2Skeletons'
+import CreatorWhatsAppChat from './CreatorWhatsAppChat'
+import ProjectFileExplorer from './ProjectFileExplorer'
 
 export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisition, onResetProject }) {
-  const [sidebarTab, setSidebarTab] = useState('overview')
-  const [selectedPhaseStep, setSelectedPhaseStep] = useState('plan')
-  const [showShareModal, setShowShareModal] = useState(false)
-  const [showPhaseExecutionModal, setShowPhaseExecutionModal] = useState(false)
+  const [isLoadingProject, setIsLoadingProject] = useState(() => !project)
 
-  // Lock background body scroll whenever a modal is open to prevent underlying page movement
+  // Initialize sidebarTab from URL search param or localStorage
+  const [sidebarTab, setSidebarTabState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search)
+      const tabParam = sp.get('tab')
+      const validTabs = ['overview', 'tasks', 'metrics', 'files', 'messages', 'decisions']
+      if (tabParam && validTabs.includes(tabParam.toLowerCase())) {
+        return tabParam.toLowerCase()
+      }
+      const saved = localStorage.getItem('forge_project_os_active_tab')
+      if (saved && validTabs.includes(saved.toLowerCase())) {
+        return saved.toLowerCase()
+      }
+    }
+    return 'overview'
+  })
+
+  // Sync sidebar tab state, localStorage, and URL parameter
+  const setSidebarTab = (newTab) => {
+    setSidebarTabState(newTab)
+    try {
+      localStorage.setItem('forge_project_os_active_tab', newTab)
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.set('tab', newTab)
+        window.history.replaceState({}, '', url.toString())
+      }
+    } catch (e) {}
+  }
+
+  // Initialize phase modal & step from URL if present
+  const [selectedPhaseStep, setSelectedPhaseStep] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search)
+      const stepParam = sp.get('step')
+      if (stepParam && ['plan', 'build', 'beta', 'gate', 'campaign', 'launch'].includes(stepParam)) {
+        return stepParam
+      }
+    }
+    return 'plan'
+  })
+
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [showPhaseExecutionModal, setShowPhaseExecutionModal] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search)
+      return sp.get('modal') === 'phase' || Boolean(sp.get('step'))
+    }
+    return false
+  })
+
+  // Listen to popstate or URL changes to sync tab
+  useEffect(() => {
+    const handleLocationChange = () => {
+      if (typeof window !== 'undefined') {
+        const sp = new URLSearchParams(window.location.search)
+        const tabParam = sp.get('tab')
+        if (tabParam && ['overview', 'tasks', 'metrics', 'files', 'messages', 'decisions'].includes(tabParam.toLowerCase())) {
+          setSidebarTabState(tabParam.toLowerCase())
+        }
+      }
+    }
+    window.addEventListener('popstate', handleLocationChange)
+    return () => window.removeEventListener('popstate', handleLocationChange)
+  }, [])
+
+  // Lock background body scroll whenever a modal is open
   useEffect(() => {
     if (showPhaseExecutionModal || showShareModal) {
       const prevOverflow = document.body.style.overflow
@@ -30,6 +96,11 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
       }
     }
   }, [showPhaseExecutionModal, showShareModal])
+  const portalSlug = (project?.creatorHandle || project?.creatorName || 'creator').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+  const portalToken = project?.portalToken || 'cf_sec_live'
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
+  const portalUrl = `${origin}/portal/${portalSlug}?token=${portalToken}`
+
   const [copiedKey, setCopiedKey] = useState(null)
   const [shareNotice, setShareNotice] = useState('')
   const [shareTab, setShareTab] = useState('email') // 'email' | 'preview' | 'link'
@@ -40,10 +111,7 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
     const prodName = project?.productName || 'your custom software platform'
     const pricing = project?.pricing || '$29-$79/mo'
     const tagline = project?.productTagline || 'Tailored software venture'
-    const portalSlug = (project?.creatorHandle || project?.creatorName || 'creator').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
-    const portalToken = project?.portalToken || 'cf_sec_live'
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
-    const mUrl = `${origin}/portal/${portalSlug}?token=${portalToken}`
+    const mUrl = portalUrl
     return `Hi ${firstName},
 
 Exciting milestone! Our venture studio engineering team has officially initiated the active development and co-launch sprint for **${prodName}** under our 50/50 venture co-launch agreement.
@@ -132,14 +200,28 @@ partnerships@creatorforge.com`
               const newResCount = Array.isArray(matched.reservations) ? matched.reservations.length : 0
               const curActCount = Array.isArray(prev?.activityLogs) ? prev.activityLogs.length : 0
               const newActCount = Array.isArray(matched.activityLogs) ? matched.activityLogs.length : 0
-              if (curRev !== newRev || curResCount !== newResCount || curActCount !== newActCount) {
-                return { ...prev, ...matched }
+              const curPhase = Number(prev?.currentPhase || prev?.current_phase || 1)
+              const newPhase = Number(matched.currentPhase || matched.current_phase || (matched.status === 'building' ? 2 : matched.status === 'launched' ? 3 : ((matched.gateDecisions?.length || 0) > 0 ? 2 : 1)))
+              const curFilesCount = Array.isArray(prev?.projectFiles) ? prev.projectFiles.length : 0
+              const newFilesCount = Array.isArray(matched.projectFiles) ? matched.projectFiles.length : 0
+
+              if (curRev !== newRev || curResCount !== newResCount || curActCount !== newActCount || curPhase !== newPhase || newFilesCount > curFilesCount) {
+                return {
+                  ...prev,
+                  ...matched,
+                  projectFiles: (matched.projectFiles && matched.projectFiles.length > 0) ? matched.projectFiles : (prev?.projectFiles || []),
+                  messages: (matched.messages && matched.messages.length > 0) ? matched.messages : (prev?.messages || []),
+                  currentPhase: newPhase,
+                  current_phase: newPhase
+                }
               }
               return prev
             })
           }
         }
-      } catch (err) {}
+      } catch (err) {} finally {
+        if (!isCancelled) setIsLoadingProject(false)
+      }
     }
 
     pollDb()
@@ -150,6 +232,9 @@ partnerships@creatorforge.com`
     }
   }, [project?.id])
 
+  if (isLoadingProject && !project) {
+    return <ProjectOSSkeleton />
+  }
 
   if (!project) {
     return (
@@ -174,7 +259,11 @@ partnerships@creatorforge.com`
     )
   }
 
-  const currentPhase = project.currentPhase || 1
+  const currentPhase = Number(
+    project.currentPhase ||
+    project.current_phase ||
+    (project.status === 'building' ? 2 : project.status === 'launched' ? 3 : ((project.gateDecisions?.length || 0) > 0 ? 2 : 1))
+  )
   const presalesRevenue = Number(project.currentPresales || 0)
 
   // Dynamic presale target derived from validation plan threshold or project
@@ -187,11 +276,7 @@ partnerships@creatorforge.com`
   const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project.presaleTarget || project.targetRevenue || 12500)
   const visitorsCount = Number(project.visitors || 0)
   const daysLeft = project.daysLeft || project.validationPlan?.period || '18 days'
-
-  const portalSlug = (project.creatorHandle || project.creatorName || 'creator').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
-  const portalToken = project.portalToken || 'cf_sec_live'
-  const origin = getFrontendUrl()
-  const magicPortalUrl = `${origin}/portal/${portalSlug}?token=${portalToken}`
+  const magicPortalUrl = portalUrl
 
   const kickoffMessage = `Hey ${project.creatorName || 'there'}! 🎉\n\nYour private Co-Founder Portal for ${project.productName || 'our product'} is live.\n\nYou can track our $${presaleTarget.toLocaleString()} validation milestone, review your revenue share, and check off your daily launch tasks here:\n${magicPortalUrl}\n\nLet's build something massive!`
 
@@ -208,15 +293,25 @@ partnerships@creatorforge.com`
 
   const handleAdvancePhase = (nextPhase) => {
     const updatedStatus = nextPhase === 2 ? 'building' : nextPhase === 3 ? 'launched' : 'validating'
-    onUpdateProject?.(prev => ({
-      ...prev,
+    const updated = {
+      ...(project || {}),
       currentPhase: nextPhase,
+      current_phase: nextPhase,
       status: updatedStatus
+    }
+    onUpdateProject?.(prev => ({
+      ...(prev || {}),
+      ...updated
     }))
+    try {
+      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
+      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
+    } catch (e) {}
     if (project?.id) {
       import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
         updateCoLaunchProject(project.id, {
           currentPhase: nextPhase,
+          current_phase: nextPhase,
           status: updatedStatus
         }).catch(e => console.warn(e))
       })
@@ -252,115 +347,31 @@ partnerships@creatorforge.com`
   }
 
   const openPhaseStep = (stepId) => {
-    setSelectedPhaseStep(stepId || 'plan')
+    const sId = stepId || 'plan'
+    setSelectedPhaseStep(sId)
     setShowPhaseExecutionModal(true)
+    try {
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.set('step', sId)
+        window.history.replaceState({}, '', url.toString())
+      }
+    } catch (e) {}
+  }
+
+  const closePhaseModal = () => {
+    setShowPhaseExecutionModal(false)
+    try {
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.delete('step')
+        url.searchParams.delete('modal')
+        window.history.replaceState({}, '', url.toString())
+      }
+    } catch (e) {}
   }
 
   const [previewingFile, setPreviewingFile] = useState(null)
-  const [customFiles, setCustomFiles] = useState([])
-
-  const defaultProjectFiles = [
-    {
-      id: 'file-1',
-      name: `${(project.productName || 'venture').toLowerCase().replace(/[^a-z0-9]/g, '_')}_validation_plan.md`,
-      title: 'Validation Plan Specification',
-      type: 'Executive Specification',
-      phase: 'Phase 1 • Step 1',
-      size: '148 KB',
-      badge: 'Validated Spec',
-      icon: FileText,
-      color: 'text-purple-400',
-      content: `# ${project.productName || 'Software Venture'} — Validation Plan Specification\n\n## 1. Co-Founding Partnership\n- Creator Partner: ${project.creatorName || 'Creator'}\n- Product Name: ${project.productName || 'Software Product'}\n- Core Niche: ${project.niche || 'Software'}\n\n## 2. Customer & Problem\n- Target Customer: ${project.validationPlan?.customer || project.customer || project.targetAudience || 'Target Audience'}\n- Core Problem Solved: ${project.validationPlan?.problem || project.problem || 'Manual workflow inefficiency'}\n- Product Offer: ${project.validationPlan?.offer || project.productTagline || 'Founding Access'}\n\n## 3. Commercial Economics\n- Pricing: ${project.validationPlan?.pricing || project.pricing || '$49/mo Starter • $79/mo Pro'}\n- Success Threshold: ${project.validationPlan?.threshold || '$5,000 in presales within 14 days'}\n- Validation Window: ${project.validationPlan?.period || '14 days'}\n- Test Methodology: ${project.validationPlan?.testMethod || '1) Co-founder video announcement, 2) 10 user interviews, 3) 48-hour Founding Pre-Order sprint'}`
-    },
-    {
-      id: 'file-2',
-      name: `partnership_term_sheet_${(project.creatorName || 'creator').toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
-      title: '50/50 Co-Founding Term Sheet',
-      type: 'Legal Term Sheet',
-      phase: 'Deal Finalized',
-      badge: 'Signed Agreement',
-      icon: ShieldCheck,
-      color: 'text-emerald-400',
-      content: `# CO-LAUNCH VENTURE PARTNERSHIP TERM SHEET\n\nThis Agreement is entered into between:\n1. Co-Launch Studio (Platform Provider & Engineering Operator)\n2. ${project.creatorName || 'Creator'} (${project.creatorHandle || '@creator'}) (Creator Co-Founder)\n\n## Commercial & Equity Terms\n- Economic Revenue Share: 50% Platform / 50% Creator Co-Founder\n- Payout Frequency: Net 30 Monthly Distributions\n- Governance & Roles:\n  • Platform: Full-stack engineering, AI automation, cloud infra, payments, customer support.\n  • Creator: Audience distribution, social announcements, product feedback, community engagement.\n- Phase 1 Gate: Attaining ${project.validationPlan?.threshold || '$5,000 in pre-orders'} initiates Phase 2 full MVP engineering build.`
-    },
-    {
-      id: 'file-3',
-      name: `14_day_creator_campaign_kit.md`,
-      title: '14-Day Creator Campaign Kit',
-      type: 'Marketing Bundle',
-      phase: 'Phase 1 • Step 3',
-      badge: 'Ready to Post',
-      icon: Megaphone,
-      color: 'text-blue-400',
-      content: `# 14-DAY CREATOR LAUNCH CAMPAIGN CONTENT KIT\n\n## Day 1: VIP Co-Founder Video Announcement\n"Hey guys! For the past few months, my team and I have been secretly building something to solve our biggest headache: ${project.productName}. We are opening 50 Founding Pass spots today..."\n\n## Day 2: Instagram Story Sequence #1 (Problem & Poll)\n- Story 1: "Quick question: how much time do you waste on manual setups every week?" [Poll: 1-3 hrs / 5+ hrs]\n- Story 2: "That's exactly why we built ${project.productName}..."\n\n## Day 4: Dedicated Email Newsletter Blast\nSubject: We built something for you (Founding access inside)\n\n## Day 7: 48-Hour Price Lock Reminder & VIP Pre-order Link`
-    },
-    {
-      id: 'file-4',
-      name: `software_prototype_wireframes.png`,
-      title: 'UI Prototype & Wireframes',
-      type: 'Design System PNG',
-      phase: 'Phase 1 • Step 2',
-      badge: 'Visual Asset',
-      icon: Layout,
-      color: 'text-amber-400',
-      content: `[Visual Asset File: software_prototype_wireframes.png]\n\nHigh-resolution UI layout mockups, widget tree architecture, and live device simulator frames for ${project.productName || 'Software Venture'}.`
-    },
-    {
-      id: 'file-5',
-      name: `flutterflow_app_scaffold.dart`,
-      title: 'Flutter & Dart Starter Scaffold',
-      type: 'Dart Source Code',
-      phase: 'Phase 2 Ready',
-      badge: 'Code Scaffold',
-      icon: Terminal,
-      color: 'text-purple-400',
-      content: `// ${project.productName || 'Venture'} Mobile Scaffold Engine\nimport 'package:flutter/material.dart';\nimport 'package:flutterflow_engine/flutterflow_engine.dart';\n\nvoid main() {\n  WidgetsFlutterBinding.ensureInitialized();\n  runApp(const ${project.productName?.replace(/[^a-zA-Z0-9]/g, '') || 'App'}Root());\n}\n\nclass ${project.productName?.replace(/[^a-zA-Z0-9]/g, '') || 'App'}Root extends StatelessWidget {\n  const ${project.productName?.replace(/[^a-zA-Z0-9]/g, '') || 'App'}Root({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      title: '${project.productName}',\n      theme: ThemeData.dark(),\n      home: const WorkflowDashboardScreen(),\n    );\n  }\n}`
-    },
-    {
-      id: 'file-6',
-      name: `audience_validation_telemetry.csv`,
-      title: 'Audience Feedback & Pre-Orders',
-      type: 'Spreadsheet CSV',
-      phase: 'Live Telemetry',
-      badge: 'Telemetry Feed',
-      icon: BarChart2,
-      color: 'text-emerald-400',
-      content: `Customer Name,Email,Tier,Amount,Attribution Channel,Timestamp,Status\n${(project.reservations || []).map(r => `${r.name || 'Backer'},${r.email || 'user@example.com'},${r.tier || 'Founding Pass'},$${r.amount || 49},${r.channel || 'Direct'},${r.date || 'Recent'},Paid`).join('\n') || 'Jane Doe,jane@example.com,Founding Pass,$49,Instagram Stories,Today,Paid'}`
-    }
-  ]
-
-  const filesList = [...defaultProjectFiles, ...customFiles]
-
-  const handleDownloadFile = (file) => {
-    const blob = new Blob([file.content || ''], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = file.name
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
-  const handleFileUpload = (e) => {
-    const uploaded = Array.from(e.target.files || [])
-    if (uploaded.length === 0) return
-    const newItems = uploaded.map((f, i) => ({
-      id: `uploaded-${Date.now()}-${i}`,
-      name: f.name,
-      title: f.name.replace(/\.[^/.]+$/, ''),
-      type: f.type || 'Custom Asset',
-      phase: 'Custom Upload',
-      size: `${(f.size / 1024).toFixed(1)} KB`,
-      badge: 'User Upload',
-      icon: FileText,
-      color: 'text-blue-400',
-      content: `[Uploaded binary/document: ${f.name} (${f.size} bytes)]`
-    }))
-    setCustomFiles(prev => [...prev, ...newItems])
-  }
-
   const defaultScheduleTasks = [
     { id: 'day-1', day: 1, title: 'Post Instagram Story #1: The Problem Teaser', channel: 'Instagram Stories', done: true, role: 'Creator Task' },
     { id: 'day-2', day: 2, title: 'Post Instagram Story #2: Behind-The-Scenes Co-Founding', channel: 'Instagram Stories', isToday: true, done: false, role: 'Creator Task' },
@@ -393,7 +404,7 @@ partnerships@creatorforge.com`
   const backersCount = Array.isArray(project.reservations) ? project.reservations.length : Number(project.telemetry?.presalesCount || 0)
   const currentPresales = Number(String(project.currentPresales || 0).replace(/[^0-9.]/g, '')) || (project.reservations || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
   const conversionRate = Number(project.conversionRate || (Number(project.visitors || 0) > 0 ? (backersCount / Number(project.visitors)) * 100 : 0))
-  const isGatePassed = currentPresales >= presaleGoal || project.currentPhase > 1 || project.status === 'building'
+  const isGatePassed = currentPresales >= presaleGoal || currentPhase > 1 || project.status === 'building'
 
   // Step Completion Guards
   const isStep1Done = Boolean(project.validationPlan?.status === 'ready' || project.validationPlan?.threshold || project.planLocked)
@@ -410,10 +421,10 @@ partnerships@creatorforge.com`
     ((project.creatorTasks || []).length > 0 && (project.creatorTasks || []).every(t => t.done || t.completed))
   )
   const isStep4Done = Boolean((project.reservations?.length || 0) > 0 || Number(project.currentPresales || 0) > 0)
-  const isStep5Done = Boolean((project.gateDecisions?.length || 0) > 0 || project.currentPhase > 1 || project.status === 'building')
+  const isStep5Done = Boolean((project.gateDecisions?.length || 0) > 0 || currentPhase > 1 || project.status === 'building')
 
   return (
-    <div className="space-y-6 w-full max-w-full overflow-hidden">
+    <div className="space-y-6 w-full max-w-full">
       {/* SECTION 2 HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
         <div>
@@ -438,7 +449,19 @@ partnerships@creatorforge.com`
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Right CTA / Portal Quick Button */}
+        <div className="flex items-center gap-2.5">
+          <a
+            href={portalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 border border-white/[0.08] text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap"
+          >
+            <Rocket className="w-3.5 h-3.5 text-purple-400" />
+            <span>Co-Founder Portal</span>
+            <ExternalLink className="w-3 h-3 text-slate-400" />
+          </a>
+
           <button
             onClick={() => setShowShareModal(true)}
             className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
@@ -450,14 +473,14 @@ partnerships@creatorforge.com`
       </div>
 
       {/* 2-COLUMN MAIN LAYOUT */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="flex flex-col lg:flex-row gap-5 items-start w-full">
         {/* LEFT / CENTER: PROJECT COMMAND CENTER */}
-        <div className="lg:col-span-8 space-y-4">
-          <div className="rounded-2xl bg-[#0e1117] border border-white/[0.1] overflow-hidden shadow-xl flex flex-col md:flex-row min-h-[460px]">
-            {/* Left Mini Sidebar */}
-            <div className="w-full md:w-44 bg-[#0a0c10] border-r border-white/[0.08] p-3 flex flex-col justify-between shrink-0">
+        <div className="flex-1 min-w-0 space-y-4 w-full">
+          <div className="rounded-2xl bg-[#0e1117] border border-white/[0.1] shadow-xl flex flex-col md:flex-row min-h-[520px] items-stretch">
+            {/* Left Mini Sidebar (Always 100% Visible & Sticky) */}
+            <div className="w-full md:w-48 bg-[#0a0c10] border-r border-white/[0.08] p-3.5 flex flex-col justify-between shrink-0 md:sticky md:top-20 md:self-start md:h-[520px] rounded-t-2xl md:rounded-tr-none md:rounded-l-2xl z-10">
               <div className="space-y-1">
-                <div className="px-3 py-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
+                <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
                   Project Command Center
                 </div>
 
@@ -475,7 +498,7 @@ partnerships@creatorforge.com`
                     <button
                       key={tab.id}
                       onClick={() => setSidebarTab(tab.id)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
                         isActive
                           ? 'bg-white/10 text-white shadow-sm border border-white/10'
                           : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
@@ -488,31 +511,34 @@ partnerships@creatorforge.com`
                 })}
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-center space-y-1.5">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Active Phase</span>
-                <div className="flex items-center justify-center gap-1">
-                  {[1, 2, 3].map(p => (
-                    <button
-                      key={p}
-                      onClick={() => handleAdvancePhase(p)}
-                      className={`w-7 h-7 rounded-lg text-xs font-black transition-all ${
-                        currentPhase === p
-                          ? p === 2
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : p === 3
-                            ? 'bg-purple-600 text-white shadow-sm'
-                            : 'bg-emerald-600 text-white shadow-sm'
-                          : 'bg-white/[0.04] text-slate-400 hover:text-white'
-                      }`}
-                      title={`Switch to Phase ${p}`}
-                    >
-                      P{p}
-                    </button>
-                  ))}
+              {/* ACTIVE PHASE PINNED TO BOTTOM */}
+              <div className="mt-auto pt-3">
+                <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center space-y-2">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Active Phase</span>
+                  <div className="flex items-center justify-center gap-1.5">
+                    {[1, 2, 3].map(p => (
+                      <button
+                        key={p}
+                        onClick={() => handleAdvancePhase(p)}
+                        className={`w-8 h-8 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                          currentPhase === p
+                            ? p === 2
+                              ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                              : p === 3
+                              ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40'
+                              : 'bg-emerald-600 text-white shadow-md shadow-emerald-900/40'
+                            : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                        }`}
+                        title={`Switch to Phase ${p}`}
+                      >
+                        P{p}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-extrabold text-white block">
+                    {currentPhase === 1 ? 'Phase 1: Validate' : currentPhase === 2 ? 'Phase 2: Build MVP' : 'Phase 3: Launch'}
+                  </span>
                 </div>
-                <span className="text-[10px] font-extrabold text-white block">
-                  {currentPhase === 1 ? 'Phase 1: Validate' : currentPhase === 2 ? 'Phase 2: Build MVP' : 'Phase 3: Launch'}
-                </span>
               </div>
             </div>
 
@@ -791,87 +817,24 @@ partnerships@creatorforge.com`
                 </div>
               )}
 
-              {/* FILES TAB — VENTURE ASSETS & REPOSITORY */}
+              {/* FILES TAB — INTERACTIVE CODEBASE & REPOSITORY EXPLORER */}
               {sidebarTab === 'files' && (
                 <div className="space-y-4 animate-fade-in text-xs">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                    <div>
-                      <span className="font-bold text-white block">Venture Assets & File Repository</span>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Executive specifications, partnership contracts, launch copy & code scaffolds.
-                      </p>
-                    </div>
-                    <label className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-purple-950/40 shrink-0">
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Upload File</span>
-                      <input type="file" onChange={handleFileUpload} className="hidden" multiple />
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {filesList.map((f, i) => {
-                      const FileIcon = f.icon || FileText
-                      return (
-                        <div
-                          key={f.id || i}
-                          onClick={() => setPreviewingFile(f)}
-                          className="p-3.5 rounded-2xl bg-[#141720] hover:bg-[#1b202d] border border-white/[0.06] hover:border-purple-500/40 transition-all flex items-center justify-between gap-3 cursor-pointer group shadow-sm"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-400 group-hover:scale-105 transition-transform">
-                              <FileIcon className="w-4 h-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-bold text-white group-hover:text-purple-300 transition-colors truncate text-xs">
-                                {f.title || f.name}
-                              </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/[0.06] text-purple-300/80 font-medium">
-                                  {f.phase || 'Venture Asset'}
-                                </span>
-                                <span className="text-[9px] text-slate-500 font-mono">{f.size}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDownloadFile(f)
-                            }}
-                            title="Download Asset"
-                            className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-purple-600/30 text-slate-400 hover:text-white border border-white/[0.08] hover:border-purple-500/40 flex items-center justify-center transition-all shrink-0"
-                          >
-                            <ArrowRight className="w-3.5 h-3.5 rotate-90" />
-                          </button>
-                        </div>
-                      )
-                    })}
-                  </div>
+                  <ProjectFileExplorer
+                    project={project}
+                    onUpdateProject={onUpdateProject}
+                    currentPhase={currentPhase}
+                  />
                 </div>
               )}
 
               {/* MESSAGES TAB */}
               {sidebarTab === 'messages' && (
                 <div className="space-y-3 animate-fade-in text-xs">
-                  <span className="font-bold text-white block">Creator Conversations & Team Notes</span>
-                  {messagesList.length === 0 ? (
-                    <div className="py-8 text-center text-slate-500 text-xs border border-dashed border-white/[0.08] rounded-xl">
-                      No direct messages or team notes recorded yet.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {messagesList.map((m, i) => (
-                        <div key={i} className="p-4 rounded-xl bg-[#141720] border border-white/[0.08] space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-purple-300">{m.sender}</span>
-                            <span className="text-[10px] text-slate-400">{m.date}</span>
-                          </div>
-                          <p className="text-slate-300 leading-relaxed">{m.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <CreatorWhatsAppChat
+                    project={project}
+                    onUpdateProject={onUpdateProject}
+                  />
                 </div>
               )}
 
@@ -1330,8 +1293,8 @@ partnerships@creatorforge.com`
           </div>
         </div>
 
-        {/* RIGHT PANEL: PHASE 1 / PHASE 2 / PHASE 3 WORKSPACE */}
-        <div className="lg:col-span-4 rounded-2xl bg-[#0e1117] border border-white/[0.1] p-5 sm:p-6 space-y-4 shadow-xl">
+        {/* RIGHT PANEL: PHASE 1 / PHASE 2 / PHASE 3 WORKSPACE (STICKY) */}
+        <div className="w-full lg:w-[310px] xl:w-[330px] shrink-0 rounded-2xl bg-[#0e1117] border border-white/[0.1] p-4 sm:p-4.5 space-y-3.5 shadow-xl lg:sticky lg:top-20 lg:self-start">
           {currentPhase === 2 ? (
             /* PHASE 2: BUILD MVP */
             <>
@@ -1619,10 +1582,25 @@ partnerships@creatorforge.com`
               </div>
 
               <button
-                onClick={() => openPhaseStep('plan')}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-emerald-950/40 active:scale-95"
+                onClick={() => {
+                  if (isStep5Done || currentPhase >= 2) {
+                    handleAdvancePhase(2)
+                    setShowPhaseExecutionModal(true)
+                  } else {
+                    openPhaseStep('plan')
+                  }
+                }}
+                className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg active:scale-95 ${
+                  isStep5Done || currentPhase >= 2
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-950/40'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40'
+                }`}
               >
-                <span>Open Phase 1 Workspace</span>
+                <span>
+                  {isStep5Done || currentPhase >= 2
+                    ? 'Advance to Phase 2: Build MVP'
+                    : 'Open Phase 1 Workspace'}
+                </span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </>
@@ -1656,7 +1634,7 @@ partnerships@creatorforge.com`
               </div>
 
               <button
-                onClick={() => setShowPhaseExecutionModal(false)}
+                onClick={closePhaseModal}
                 className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08]"
               >
                 <X className="w-5 h-5" />

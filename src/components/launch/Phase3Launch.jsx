@@ -18,6 +18,7 @@ import {
   buildSmartFallbackPhase3LaunchReport
 } from '../../services/ai'
 import { getFrontendUrl } from '../../services/opsApi'
+import { Phase3LaunchSkeleton, LaunchReportSkeleton } from './Section2Skeletons'
 
 export default function Phase3Launch({ project, api, onUpdateProject }) {
   const [activeStep, setActiveStep] = useState('prep') // 'prep' | 'monitor' | 'manager' | 'report'
@@ -1194,7 +1195,11 @@ ${creatorAssets.newsletterBroadcast?.body}
           )}
 
           {/* 1. Executive Score & Summary */}
-          <div className="p-5 rounded-3xl bg-gradient-to-br from-[#0e1117] via-[#121724] to-[#151c2d] border border-emerald-500/30 shadow-xl space-y-4">
+          {isGeneratingReport ? (
+            <LaunchReportSkeleton />
+          ) : (
+            <>
+              <div className="p-5 rounded-3xl bg-gradient-to-br from-[#0e1117] via-[#121724] to-[#151c2d] border border-emerald-500/30 shadow-xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
@@ -1391,6 +1396,8 @@ ${creatorAssets.newsletterBroadcast?.body}
               ← Back to AI Launch Manager
             </button>
           </div>
+            </>
+          )}
         </div>
       )}
     </div>

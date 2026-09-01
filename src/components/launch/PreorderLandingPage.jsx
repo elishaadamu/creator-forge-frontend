@@ -12,8 +12,10 @@ import {
   parseDepositPricingAmount,
   sanitizePricingConfig
 } from '../../utils/pricing'
+import { PreorderLandingSkeleton } from './Section2Skeletons'
 
 export default function PreorderLandingPage({ slug }) {
+  const [isLoading, setIsLoading] = useState(true)
   const [project, setProject] = useState(() => {
     try {
       const active = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
@@ -74,6 +76,8 @@ export default function PreorderLandingPage({ slug }) {
             setProject(active)
           }
         } catch (e) {}
+      } finally {
+        if (isMounted) setIsLoading(false)
       }
     }
 
@@ -97,6 +101,10 @@ export default function PreorderLandingPage({ slug }) {
       window.removeEventListener('forge_project_updated', handleSync)
     }
   }, [slug])
+
+  if (isLoading && !project) {
+    return <PreorderLandingSkeleton />
+  }
 
   const productName = project?.productName || 'Software Product'
   const creatorName = project?.creatorName || 'Creator Co-Founder'
