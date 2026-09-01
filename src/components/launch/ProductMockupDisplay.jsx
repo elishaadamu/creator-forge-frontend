@@ -27,51 +27,89 @@ export default function ProductMockupDisplay({ project, theme = 'purple' }) {
   const productTagline = project?.productTagline || 'Interactive industry project sandboxes, real-world datasets & data science career accelerator'
   const keyFeatures = project?.keyFeatures || project?.features || project?.selectedConcept?.keyFeatures || []
 
-  // Detect which concept is selected based on naming and tagline
-  const nameLower = (productName + ' ' + productTagline).toLowerCase()
-  const isAI = nameLower.includes('flow') || nameLower.includes('ai') || nameLower.includes('model') || nameLower.includes('copilot') || nameLower.includes('shader') || nameLower.includes('alpha')
-  const isHub = nameLower.includes('hub') || nameLower.includes('datalab') || nameLower.includes('academy') || nameLower.includes('club') || nameLower.includes('sandbox') || nameLower.includes('gamelab')
-  // Otherwise is OS / Toolkit (Concept 1)
+  // Detect which concept is selected based on naming, tagline, and creator niche
+  const nameLower = (productName + ' ' + productTagline + ' ' + niche + ' ' + creatorName).toLowerCase()
+  const isMobileOrFlutter = nameLower.includes('flutter') || nameLower.includes('mobile') || nameLower.includes('dart') || nameLower.includes('ios') || nameLower.includes('android') || nameLower.includes('app')
+  const isDataOrPython = nameLower.includes('datalab') || nameLower.includes('pandas') || nameLower.includes('dataset') || nameLower.includes('kaggle') || nameLower.includes('analytics')
+  const isAIModelTuning = !isMobileOrFlutter && (nameLower.includes('gpu') || nameLower.includes('lora') || nameLower.includes('vram') || nameLower.includes('pytorch') || nameLower.includes('fine-tune'))
+  const isHub = nameLower.includes('hub') || nameLower.includes('academy') || nameLower.includes('club') || nameLower.includes('sandbox') || nameLower.includes('gamelab')
 
   const [activeTab, setActiveTab] = useState(0)
   const [isRunningCode, setIsRunningCode] = useState(false)
 
-  // Archetype dynamic configuration
+  // Default Archetype (Fallback / General SaaS)
   let config = {
-    badgeText: '🧪 Live Interactive Sandbox • v1.0',
+    badgeText: '⚡ Creator Software Workspace • v1.0',
     navTabs: [
-      { label: 'Project Sandboxes', icon: FolderCode },
-      { label: 'Datasets Library', icon: Database },
-      { label: 'Test Suite Runner', icon: Terminal },
-      { label: 'Verified Badges', icon: Award },
+      { label: 'Visual Builder', icon: FolderCode },
+      { label: 'Workflows & APIs', icon: Database },
+      { label: 'Live Sandbox', icon: Terminal },
+      { label: 'Deploy & Export', icon: Award },
     ],
-    activeChallenge: 'Fintech Transaction Fraud Classifier & Alert Pipeline',
-    challengeDetails: 'Dataset: 1.2M raw transaction logs • Imputation, Feature Encoding & SHAP Explainability',
-    fileName: 'fraud_pipeline.py',
+    activeChallenge: `${productName} — Autonomous Workspace Engine`,
+    challengeDetails: `Tailored exclusively for ${creatorName}’s audience & workflows • 1-Click Setup`,
+    fileName: 'workspace_config.json',
     codeLines: [
-      { text: '# 1. Ingest proprietary messy dataset from DataLab Vault', color: 'text-slate-500' },
-      { text: 'import datalab as dl', color: 'text-purple-300' },
-      { text: 'import pandas as pd', color: 'text-purple-300' },
-      { text: 'df = dl.load_dataset("fintech_transactions_v2")', color: 'text-emerald-300' },
-      { text: 'pipeline = dl.models.XGBoostFraudDetector(n_estimators=300)', color: 'text-blue-300' },
-      { text: 'pipeline.fit(df.drop("is_fraud", axis=1), df["is_fraud"])', color: 'text-blue-300' },
-      { text: '# 2. Automated evaluation against industry benchmark test cases', color: 'text-slate-500' },
-      { text: 'benchmark_report = dl.evaluator.grade_model(pipeline)', color: 'text-purple-300' },
+      { text: `// 1. Initialize ${productName} environment for ${creatorName}`, color: 'text-slate-500' },
+      { text: `import { createWorkspace } from '@${productName.toLowerCase().replace(/[^a-z0-9]/g, '')}/engine'`, color: 'text-purple-300' },
+      { text: `const workspace = createWorkspace({ tier: "founding_member", autoScale: true });`, color: 'text-emerald-300' },
+      { text: `// 2. Load proprietary workflows & automation pipelines`, color: 'text-slate-500' },
+      { text: `await workspace.deployAutomations();`, color: 'text-blue-300' },
+      { text: `console.log("Workspace active & synced in 180ms ✅");`, color: 'text-purple-300' },
     ],
-    initialOutput: 'Tests: 14/14 Passed (100%) • F1-Score: 0.942 • Benchmark: Top 5% ✅',
-    completedOutput: 'Execution completed in 240ms • All 14 test cases passed ✅ • Portfolio artifact verified!',
+    initialOutput: 'Environment: Ready • Latency: 18ms • All modules verified for production ✅',
+    completedOutput: 'Workspace launched in 180ms • Verified founding member instance active! 🚀',
     specs: [
-      { label: 'Environment', value: 'Python 3.11 (Conda)' },
-      { label: 'Modules', value: 'Pandas, XGBoost, Torch' },
+      { label: 'Architecture', value: 'Serverless Cloud Edge' },
+      { label: 'Integration', value: `Co-Built with ${creatorName}` },
     ],
     featureCards: [
-      { title: '48 Proprietary Datasets', desc: 'Messy corporate datasets matching real-world engineering take-home challenges.', icon: Database, color: 'text-purple-400' },
-      { title: 'Automated Grading', desc: 'Instant test suite evaluation for algorithmic efficiency, code quality & model accuracy.', icon: CheckCircle2, color: 'text-emerald-400' },
-      { title: 'Verified Portfolio', desc: 'Exportable proof-of-work badges and reproducible GitHub repos for job recruiters.', icon: Award, color: 'text-amber-400' },
+      { title: 'Tailored Workflows', desc: `Specifically built around the bottlenecks of ${creatorName}'s community.`, icon: Database, color: 'text-purple-400' },
+      { title: 'Automated Operations', desc: 'Pre-configured templates that eliminate 80% of manual setup time.', icon: CheckCircle2, color: 'text-emerald-400' },
+      { title: '1-Click Deployment', desc: 'Production-ready cloud architecture running on global edge infrastructure.', icon: Award, color: 'text-amber-400' },
     ]
   }
 
-  if (isAI) {
+  // Archetype 1: FlutterFlow & Mobile App Workspace
+  if (isMobileOrFlutter) {
+    config = {
+      badgeText: '📱 Flutter App Workspace & Visual Builder • v1.0',
+      navTabs: [
+        { label: 'Widget Tree', icon: Boxes },
+        { label: 'Logic & State Flow', icon: Zap },
+        { label: 'API & Supabase', icon: Database },
+        { label: 'Device Simulator', icon: Sparkles },
+      ],
+      activeChallenge: `${productName} — Visual Mobile App Canvas`,
+      challengeDetails: 'Target: Native iOS & Android • Engine: Flutter 3.22 (Dart 3.4) • State: Riverpod & Provider',
+      fileName: 'main_screen.dart',
+      codeLines: [
+        { text: '// 1. Auto-generated reactive Flutter UI screen layout', color: 'text-slate-500' },
+        { text: 'import "package:flutter/material.dart";', color: 'text-purple-300' },
+        { text: 'import "package:flutterflow_engine/flutterflow_engine.dart";', color: 'text-purple-300' },
+        { text: `class ${productName.replace(/[^a-zA-Z0-9]/g, '')}Screen extends StatelessWidget {`, color: 'text-blue-300' },
+        { text: '  @override', color: 'text-slate-500' },
+        { text: '  Widget build(BuildContext context) => Scaffold(', color: 'text-emerald-300' },
+        { text: `    appBar: AppBar(title: Text("${productName}")),`, color: 'text-emerald-300' },
+        { text: '    body: VisualFlowBuilder(autoLayout: true, liveSync: true),', color: 'text-emerald-300' },
+        { text: '  );', color: 'text-emerald-300' },
+        { text: '}', color: 'text-blue-300' },
+        { text: '// 2. Compile to native iOS Swift and Android Kotlin binaries', color: 'text-slate-500' },
+        { text: 'final releaseBuild = await FlutterEngine.compileRelease();', color: 'text-purple-300' },
+      ],
+      initialOutput: 'Flutter 3.22 Engine: Ready • 60 FPS Native Frame Rendering • Zero Frame Drops ✅',
+      completedOutput: 'Native iOS & Android APK/IPA compiled in 380ms • 1-Click App Store Release Ready! 🚀',
+      specs: [
+        { label: 'Framework', value: 'Flutter 3.22 / Dart 3.4' },
+        { label: 'Target Platforms', value: 'iOS & Android Native' },
+      ],
+      featureCards: [
+        { title: 'Visual Logic Flows', desc: 'Build complex state machines, API integrations, and auth flows without writing boilerplate.', icon: Zap, color: 'text-purple-400' },
+        { title: 'Custom Widget Library', desc: '60+ pre-built, responsive mobile components styled for modern app store guidelines.', icon: Boxes, color: 'text-emerald-400' },
+        { title: '1-Click Native Export', desc: 'Instant export to production-ready Dart code, Xcode projects, and Android Studio builds.', icon: Sparkles, color: 'text-amber-400' },
+      ]
+    }
+  } else if (isAIModelTuning) {
     config = {
       badgeText: '🤖 AI Model Tuning & Deployment • v1.0',
       navTabs: [
@@ -104,38 +142,38 @@ export default function ProductMockupDisplay({ project, theme = 'purple' }) {
         { title: 'Serverless Endpoints', desc: 'Deploy optimized model weights to FastAPI microservices instantly.', icon: Zap, color: 'text-amber-400' },
       ]
     }
-  } else if (!isHub) {
-    // Concept 1: OS / Workspace Toolkit
+  } else if (isDataOrPython) {
     config = {
-      badgeText: '⚡ Data Science Pipeline OS • v1.0',
+      badgeText: '🧪 Live Interactive Data Sandbox • v1.0',
       navTabs: [
-        { label: 'Automated EDA', icon: BarChart2 },
-        { label: 'Pandas Pipelines', icon: Code2 },
-        { label: 'Model Benchmarks', icon: Boxes },
-        { label: 'FastAPI Export', icon: Zap },
+        { label: 'Project Sandboxes', icon: FolderCode },
+        { label: 'Datasets Library', icon: Database },
+        { label: 'Test Suite Runner', icon: Terminal },
+        { label: 'Verified Badges', icon: Award },
       ],
-      activeChallenge: 'Automated Exploratory Data Analysis & Feature Pipeline',
-      challengeDetails: 'Input: 450K rows raw CSV • 42 Columns • Auto-imputation, outliers & correlation analysis',
-      fileName: 'eda_pipeline.py',
+      activeChallenge: 'Fintech Transaction Fraud Classifier & Alert Pipeline',
+      challengeDetails: 'Dataset: 1.2M raw transaction logs • Imputation, Feature Encoding & SHAP Explainability',
+      fileName: 'fraud_pipeline.py',
       codeLines: [
-        { text: '# 1. Automated data quality audit & outlier detection', color: 'text-slate-500' },
-        { text: 'import pandas_os as pos', color: 'text-purple-300' },
-        { text: 'raw_df = pos.read_source("customer_churn_raw.csv")', color: 'text-emerald-300' },
-        { text: 'clean_df = pos.auto_impute_missing(raw_df, strategy="knn")', color: 'text-blue-300' },
-        { text: 'features = pos.encode_categorical(clean_df, method="target")', color: 'text-blue-300' },
-        { text: '# 2. Generate benchmark matrix across 6 ML architectures', color: 'text-slate-500' },
-        { text: 'leaderboard = pos.evaluate_all_models(features, target="churn")', color: 'text-purple-300' },
+        { text: '# 1. Ingest proprietary messy dataset from DataLab Vault', color: 'text-slate-500' },
+        { text: 'import datalab as dl', color: 'text-purple-300' },
+        { text: 'import pandas as pd', color: 'text-purple-300' },
+        { text: 'df = dl.load_dataset("fintech_transactions_v2")', color: 'text-emerald-300' },
+        { text: 'pipeline = dl.models.XGBoostFraudDetector(n_estimators=300)', color: 'text-blue-300' },
+        { text: 'pipeline.fit(df.drop("is_fraud", axis=1), df["is_fraud"])', color: 'text-blue-300' },
+        { text: '# 2. Automated evaluation against industry benchmark test cases', color: 'text-slate-500' },
+        { text: 'benchmark_report = dl.evaluator.grade_model(pipeline)', color: 'text-purple-300' },
       ],
-      initialOutput: 'EDA Audit Complete: 42 features analyzed • 0 missing values • Benchmark Leader: LightGBM (AUC: 0.961) ✅',
-      completedOutput: 'FastAPI microservice containerized • Docker image pushed in 410ms! 🚀',
+      initialOutput: 'Tests: 14/14 Passed (100%) • F1-Score: 0.942 • Benchmark: Top 5% ✅',
+      completedOutput: 'Execution completed in 240ms • All 14 test cases passed ✅ • Portfolio artifact verified!',
       specs: [
-        { label: 'Engine Core', value: 'Polars / Pandas Engine' },
-        { label: 'Throughput', value: '1.8M Rows / Sec' },
+        { label: 'Environment', value: 'Python 3.11 (Conda)' },
+        { label: 'Modules', value: 'Pandas, XGBoost, Torch' },
       ],
       featureCards: [
-        { title: 'One-Click EDA Engine', desc: 'Eliminates 80% of repetitive data cleaning and visualization boilerplate.', icon: BarChart2, color: 'text-purple-400' },
-        { title: 'Smart Pipeline Generator', desc: 'Automated categorical encoding, scaling & feature importance scoring.', icon: Code2, color: 'text-emerald-400' },
-        { title: 'FastAPI Microservice Export', desc: 'Turn any trained notebook model into a production REST endpoint with 1 click.', icon: Zap, color: 'text-amber-400' },
+        { title: '48 Proprietary Datasets', desc: 'Messy corporate datasets matching real-world engineering take-home challenges.', icon: Database, color: 'text-purple-400' },
+        { title: 'Automated Grading', desc: 'Instant test suite evaluation for algorithmic efficiency, code quality & model accuracy.', icon: CheckCircle2, color: 'text-emerald-400' },
+        { title: 'Verified Portfolio', desc: 'Exportable proof-of-work badges and reproducible GitHub repos for job recruiters.', icon: Award, color: 'text-amber-400' },
       ]
     }
   }
