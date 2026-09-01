@@ -6,7 +6,7 @@ import {
   FileText, Layout, Megaphone, TrendingUp, Flag, Bot, User, UserCheck,
   Calendar, Clock, CheckCircle, AlertCircle, MessageSquare, Folder,
   DollarSign, PieChart, Users, ChevronRight, Play, Eye, Smartphone, Monitor, Tablet,
-  Code, Terminal, Laptop, Loader2, Rocket
+  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download
 } from 'lucide-react'
 import Phase1Validate from './Phase1Validate'
 import Phase2BuildMVP from './Phase2BuildMVP'
