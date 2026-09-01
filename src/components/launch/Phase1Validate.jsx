@@ -882,9 +882,16 @@ export default function Phase1Validate({
                     <input
                       type="text"
                       value={project?.productName || ''}
-                      onChange={e => onUpdateProject?.(p => ({ ...(p || {}), productName: e.target.value }))}
-                      placeholder="e.g. ClipForge AI"
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-white font-bold outline-none"
+                      onChange={e => {
+                        const val = e.target.value
+                        if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), productName: val }))
+                        try {
+                          const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+                          localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, productName: val }))
+                        } catch (err) {}
+                      }}
+                      placeholder="e.g. FlutterFlow Flow AI"
+                      className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-white font-bold outline-none focus:border-purple-500/50"
                     />
                   </div>
 
@@ -893,9 +900,16 @@ export default function Phase1Validate({
                     <textarea
                       rows={2}
                       value={project?.productTagline || ''}
-                      onChange={e => onUpdateProject?.(p => ({ ...(p || {}), productTagline: e.target.value }))}
-                      placeholder="e.g. Autonomous AI clipping & repurposing suite for long-form creators"
-                      className="w-full mt-1 p-2.5 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-200 outline-none resize-none"
+                      onChange={e => {
+                        const val = e.target.value
+                        if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), productTagline: val }))
+                        try {
+                          const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+                          localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, productTagline: val }))
+                        } catch (err) {}
+                      }}
+                      placeholder="e.g. Autonomous AI workflow engine tailored to mobile app creators"
+                      className="w-full mt-1 p-2.5 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-200 outline-none resize-none focus:border-purple-500/50"
                     />
                   </div>
 
@@ -904,57 +918,87 @@ export default function Phase1Validate({
                       <label className="text-[10px] text-slate-400 block font-bold">Brand Tag / Tone</label>
                       <input
                         type="text"
-                        defaultValue="Modern, Minimal, Dark SaaS"
-                        className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-300 text-xs"
+                        value={project?.brandTone || 'Modern, Minimal, Dark SaaS'}
+                        onChange={e => {
+                          const val = e.target.value
+                          if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), brandTone: val }))
+                          try {
+                            const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+                            localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, brandTone: val }))
+                          } catch (err) {}
+                        }}
+                        className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-300 text-xs outline-none focus:border-purple-500/50"
                       />
                     </div>
                     <div>
                       <label className="text-[10px] text-slate-400 block font-bold">Target Audience</label>
                       <input
                         type="text"
-                        defaultValue={project?.niche || 'Content Creators'}
-                        className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-300 text-xs"
+                        value={project?.targetAudience || project?.niche || 'Mobile Developers & Creators'}
+                        onChange={e => {
+                          const val = e.target.value
+                          if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), targetAudience: val, niche: val }))
+                          try {
+                            const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+                            localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, targetAudience: val, niche: val }))
+                          } catch (err) {}
+                        }}
+                        className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-300 text-xs outline-none focus:border-purple-500/50"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Copy & Pricing Card */}
+                {/* Copy & Pricing Card (Fully Dynamic & Real-time Synced) */}
                 <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
-                  <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">
-                    Product Copy & Pricing Structure
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">
+                      Product Copy & Pricing Structure
+                    </span>
+                    <span className="text-[10px] text-emerald-400/80 font-mono">Live on /preorder</span>
+                  </div>
 
                   <div>
                     <label className="text-[10px] text-slate-400 block font-bold">Hero Headline Copy</label>
                     <input
                       type="text"
-                      value={campaignKit?.landingPageCopy?.headline || ''}
-                      onChange={e => updateCampaignKit('landingPageCopy', { ...(campaignKit?.landingPageCopy || {}), headline: e.target.value })}
+                      value={campaignKit?.landingPageCopy?.headline ?? `The ${project?.productName || 'Software'} Workspace Built with ${project?.creatorName || 'Founding Creator'}`}
+                      onChange={e => {
+                        const val = e.target.value
+                        updateCampaignKit('landingPageCopy', { ...(campaignKit?.landingPageCopy || {}), headline: val })
+                      }}
                       placeholder="e.g. Built for ambitious creators to 10x workflow speed."
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-white font-bold outline-none"
+                      className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-white font-bold outline-none focus:border-emerald-500/50"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] text-slate-400 block font-bold">Founding Annual Price</label>
-                      <div className="flex items-center gap-1 mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08]">
+                      <div className="flex items-center gap-1 mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] focus-within:border-emerald-500/50">
                         <span className="text-slate-400 font-bold">$</span>
                         <input
                           type="number"
-                          defaultValue={99}
+                          value={campaignKit?.pricingConfig?.foundingPrice ?? (project?.pricing ? (Number(String(project.pricing).replace(/[^0-9]/g, '')) || 99) : 99)}
+                          onChange={e => {
+                            const val = Number(e.target.value) || 0
+                            updateCampaignKit('pricingConfig', { ...(campaignKit?.pricingConfig || {}), foundingPrice: val })
+                          }}
                           className="bg-transparent text-white font-bold text-xs outline-none w-full"
                         />
                       </div>
                     </div>
                     <div>
                       <label className="text-[10px] text-slate-400 block font-bold">Refundable Deposit</label>
-                      <div className="flex items-center gap-1 mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08]">
+                      <div className="flex items-center gap-1 mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] focus-within:border-emerald-500/50">
                         <span className="text-slate-400 font-bold">$</span>
                         <input
                           type="number"
-                          defaultValue={19}
+                          value={campaignKit?.pricingConfig?.depositPrice ?? 19}
+                          onChange={e => {
+                            const val = Number(e.target.value) || 0
+                            updateCampaignKit('pricingConfig', { ...(campaignKit?.pricingConfig || {}), depositPrice: val })
+                          }}
                           className="bg-transparent text-white font-bold text-xs outline-none w-full"
                         />
                       </div>
@@ -965,8 +1009,13 @@ export default function Phase1Validate({
                     <label className="text-[10px] text-slate-400 block font-bold">Offer Perks & Guarantee</label>
                     <input
                       type="text"
-                      defaultValue="50% Lifetime Discount + 1-on-1 Alpha Onboarding"
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-300 text-xs"
+                      value={campaignKit?.pricingConfig?.perks ?? `50% Lifetime Discount + 1-on-1 Alpha Onboarding for ${project?.creatorName || 'Founding'} VIPs`}
+                      onChange={e => {
+                        const val = e.target.value
+                        updateCampaignKit('pricingConfig', { ...(campaignKit?.pricingConfig || {}), perks: val })
+                      }}
+                      placeholder="e.g. 50% Lifetime Discount + 1-on-1 Alpha Onboarding"
+                      className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-200 text-xs outline-none focus:border-emerald-500/50"
                     />
                   </div>
                 </div>
