@@ -1553,10 +1553,11 @@ Return JSON:
 }
 
 export function getBaseAppOrigin() {
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin
+  const envUrl = import.meta.env?.VITE_FRONTEND_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+    return envUrl.trim().replace(/\/$/, '');
   }
-  return 'http://localhost:3001'
+  return 'https://creator-forge-frontend.vercel.app';
 }
 
 export function buildSmartFallbackCampaignKit(source) {
@@ -1678,7 +1679,6 @@ export function buildSmartFallbackCampaignKit(source) {
     },
     announcementPost: `🚨 Big announcement! After months of hearing about the nightmare of manual workflows in ${niche}, we're officially building ${product}.\n\n💡 ${tagline}.\n\nWe're accepting only 50 Founding Members for our private Beta at 50% off ($${unitPrice}/yr) + direct 1-on-1 onboarding with me.\n\n👇 Claim a founding spot or reserve with a $${depositVal} refundable deposit:\n${origin}/preorder/${slug}?ref=twitter_post`,
     storySequence: `STORY 1 — PAIN POINT HOOK\nVisual: Selfie video or background video of workflow.\nText: "Quick question for anyone in ${niche}... How many hours do you waste weekly on manual tasks?"\n[STICKER: Interactive Poll -> "1-3 Hours" / "5+ Hours (Help!)"]\n\nSTORY 2 — THE PRODUCT REVEAL\nVisual: Mockup screenshot / screen recording of ${product}.\nText: "That's why @creator and the team are co-building ${product} — ${tagline}."\n\nSTORY 3 — FOUNDING MEMBER OFFER & LINK\nVisual: Founding badge overlay.\nText: "Opening 50 Founding Member spots with lifetime 50% discount ($${unitPrice}/yr) + private beta access."\n[STICKER: Link -> "Claim Founding Pass ↗" -> ${origin}/preorder/${slug}?ref=instagram_story]`,
-    videoScript: `[00:00 - 00:05] HOOK (Visual: High energy to camera, pointing at screen)\n"If you work in ${niche} and you're tired of wasting hours on fragmented tools, stop scrolling."\n\n[00:05 - 00:20] THE PROBLEM (Visual: Frustrated reaction, screen recording)\n"Most existing solutions cost a fortune, crash constantly, and aren't designed for modern creators."\n\n[00:20 - 00:40] THE SOLUTION (Visual: Demo of ${product} interface)\n"That's why we co-founded ${product}. It automates your entire pipeline in one clean workspace."\n\n[00:40 - 00:60] THE OFFER & CTA (Visual: Pointing to link in bio)\n"We're accepting only 50 Founding Members for our alpha with lifetime 50% off at $${unitPrice}/yr. Tap the link in my bio to reserve your spot with a $${depositVal} deposit before it fills up!"`,
     newsletterDraft: `Subject: Why I'm building ${product} (and an invite for you)\n\nHey [First Name],\n\nIf you've been following my content in ${niche}, you know how frustrating manual bottlenecks have been.\n\nToday, I'm thrilled to announce that we are officially co-founding ${product} — ${tagline}.\n\nBefore we start full engineering on the MVP, we are opening a private Founding Member cohort of 50 people.\n\nAs a Founding Member, you get:\n• 50% Lifetime Price Lock ($${unitPrice}/year forever)\n• Direct input on product features & roadmap in our private channel\n• 1-on-1 onboarding session directly with the core team\n• 100% money-back guarantee if validation goals aren't met\n\n👉 Claim your founding member pass ($${unitPrice}) or reserve with a $${depositVal} refundable deposit here:\n${origin}/preorder/${slug}?ref=newsletter\n\nCan't wait to build this with you,\n${creator}`,
     directMessageScript: `Hey [First Name]! Saw your recent post about ${niche} and loved your perspective.\n\nWe're putting together a private founding group for ${product} (${tagline}).\n\nSince you're active in this space, I'd love to give you early access + direct input on the roadmap. Check out the founding pre-order ($${unitPrice}) here: ${origin}/preorder/${slug}?ref=dm_outreach — let me know what you think!`,
     landingPageCopy: {
@@ -1712,7 +1712,18 @@ export async function generateValidationCampaignKitAI(
     projectData?.productTagline ||
     projectData?.description ||
     "High leverage tool";
-  const slug = product.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const slug = (projectData?.slug || product).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const origin = getBaseAppOrigin();
+  const normalizeUrls = (text) => {
+    if (!text || typeof text !== "string") return text;
+    return text
+      .replace(/https?:\/\/[a-zA-Z0-9\-_.]+\.creatorforge\.app\/preorder/gi, `${origin}/preorder/${slug}`)
+      .replace(/https?:\/\/[a-zA-Z0-9\-_.]+\.creatorforge\.app\/launch/gi, `${origin}/p/${slug}`)
+      .replace(/https?:\/\/localhost:\d+\/preorder\/[a-zA-Z0-9\-_]+/gi, `${origin}/preorder/${slug}`)
+      .replace(/https?:\/\/localhost:\d+\/preorder/gi, `${origin}/preorder/${slug}`)
+      .replace(/https?:\/\/localhost:\d+\/p\/[a-zA-Z0-9\-_]+/gi, `${origin}/p/${slug}`)
+      .replace(/https?:\/\/localhost:\d+/gi, origin);
+  };
 
   const system = `You are a viral creator marketing strategist and launch copywriter. You write irresistible, authentic launch assets tailored for creators co-launching software. Return ONLY valid JSON.`;
   const prompt = `Generate a full validation pre-sale campaign kit and 7-day posting schedule for:
@@ -1720,14 +1731,15 @@ Product: ${product}
 Creator: ${creator}
 Niche: ${niche}
 Tagline: ${tagline}
+Target Pre-Order URL: ${origin}/preorder/${slug}
 
 Return JSON with exact keys:
 {
-  "announcementPost": "Full social announcement post for Twitter/YouTube Community with hook, pain point, value, and reservation link",
-  "storySequence": "Complete 3-story Instagram/TikTok sequence with Story 1 (poll sticker), Story 2 (product reveal), Story 3 (link sticker CTA)",
-  "videoScript": "60-second TikTok/Reels/Shorts script with timestamped visual cues, hook, problem, solution, and CTA",
-  "newsletterDraft": "Complete email newsletter draft with Subject line, problem context, founding perks, and reservation link",
-  "directMessageScript": "Personal 1-on-1 DM template for high-value follower outreach",
+  "announcementPost": "Full social announcement post for Twitter/YouTube Community with hook, pain point, value, and reservation link (${origin}/preorder/${slug}?ref=twitter_post)",
+  "storySequence": "Complete 3-story Instagram/TikTok sequence with Story 1 (poll sticker), Story 2 (product reveal), Story 3 (link sticker CTA with ${origin}/preorder/${slug}?ref=instagram_story)",
+  "videoScript": "60-second TikTok/Reels/Shorts script with timestamped visual cues, hook, problem, solution, and CTA (${origin}/preorder/${slug}?ref=tiktok_video)",
+  "newsletterDraft": "Complete email newsletter draft with Subject line, problem context, founding perks, and reservation link (${origin}/preorder/${slug}?ref=newsletter)",
+  "directMessageScript": "Personal 1-on-1 DM template for high-value follower outreach (${origin}/preorder/${slug}?ref=dm_outreach)",
   "postingSchedule": [
     {
       "id": "day-1",
@@ -1812,7 +1824,8 @@ Return JSON with exact keys:
     "reservationText": "Reserve with $19 Deposit",
     "guarantee": "100% money-back guarantee if validation goals are not met."
   }
-}`;
+}
+`;
 
   try {
     const data = await aiTextCall(prompt, system, 4096, signal, true);
@@ -1835,16 +1848,20 @@ Return JSON with exact keys:
       const fallback = buildSmartFallbackCampaignKit(projectData);
       return {
         pricingConfig: resObj.pricingConfig || fallback.pricingConfig,
-        announcementPost: String(
-          resObj.announcementPost || fallback.announcementPost,
+        announcementPost: normalizeUrls(
+          String(resObj.announcementPost || fallback.announcementPost),
         ),
-        storySequence: String(resObj.storySequence || fallback.storySequence),
-        videoScript: String(resObj.videoScript || fallback.videoScript),
-        newsletterDraft: String(
-          resObj.newsletterDraft || fallback.newsletterDraft,
+        storySequence: normalizeUrls(
+          String(resObj.storySequence || fallback.storySequence),
         ),
-        directMessageScript: String(
-          resObj.directMessageScript || fallback.directMessageScript,
+        videoScript: normalizeUrls(
+          String(resObj.videoScript || fallback.videoScript),
+        ),
+        newsletterDraft: normalizeUrls(
+          String(resObj.newsletterDraft || fallback.newsletterDraft),
+        ),
+        directMessageScript: normalizeUrls(
+          String(resObj.directMessageScript || fallback.directMessageScript),
         ),
         landingPageCopy: resObj.landingPageCopy || fallback.landingPageCopy,
         postingSchedule:

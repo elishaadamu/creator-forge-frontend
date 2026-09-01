@@ -106,7 +106,13 @@ export default function PreorderLandingPage({ slug }) {
   const subheadline = project?.campaignKit?.landingPageCopy?.subheadline || tagline
   
   const cfg = project?.campaignKit?.pricingConfig
-  const sanitizedPricing = sanitizePricingConfig(cfg, project?.pricing || project?.validationPlan?.pricing)
+  const sanitizedPricing = sanitizePricingConfig(
+    cfg,
+    project?.pricing ||
+    project?.validationPlan?.pricing ||
+    project?.selectedConcept?.pricing ||
+    project?.concepts?.find(c => c.selected)?.pricing
+  )
   const foundingPrice = sanitizedPricing.foundingPrice
   const depositPrice = sanitizedPricing.depositPrice
   const perksText = cfg?.perks || '50% Lifetime Price Lock & VIP Alpha Perks'

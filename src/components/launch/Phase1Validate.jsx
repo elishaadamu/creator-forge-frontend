@@ -62,11 +62,6 @@ export default function Phase1Validate({
   // Real Project Reservations / Backers state
   const [reservations, setReservations] = useState(() => project?.reservations || [])
 
-  // Dynamic pricing resolution
-  const dynamicMainPrice = parseMainPricingAmount(plan?.pricing || project?.pricing || 49)
-  const dynamicDepositPrice = parseDepositPricingAmount(plan?.pricing || project?.pricing, dynamicMainPrice)
-  const dynamicVipPrice = Math.round(dynamicMainPrice * 2)
-
   // Real Project Validation Plan State
   const [plan, setPlan] = useState(() => project?.validationPlan || {
     customer: '',
@@ -77,6 +72,11 @@ export default function Phase1Validate({
     period: '',
     threshold: ''
   })
+
+  // Dynamic pricing resolution
+  const dynamicMainPrice = parseMainPricingAmount(plan?.pricing || project?.pricing || 49)
+  const dynamicDepositPrice = parseDepositPricingAmount(plan?.pricing || project?.pricing, dynamicMainPrice)
+  const dynamicVipPrice = Math.round(dynamicMainPrice * 2)
 
   // Dynamic presale target derived from validation plan threshold or project
   const parseThresholdAmount = (str) => {
@@ -111,7 +111,14 @@ export default function Phase1Validate({
   })
 
   // Sanitized dynamic pricing configuration
-  const sanitizedPricingConfig = sanitizePricingConfig(campaignKit?.pricingConfig, plan?.pricing || project?.pricing)
+  const sanitizedPricingConfig = sanitizePricingConfig(
+    campaignKit?.pricingConfig,
+    plan?.pricing ||
+    project?.pricing ||
+    project?.validationPlan?.pricing ||
+    project?.selectedConcept?.pricing ||
+    project?.concepts?.find(c => c.selected)?.pricing
+  )
   const activeFoundingPrice = sanitizedPricingConfig.foundingPrice
   const activeDepositPrice = sanitizedPricingConfig.depositPrice
   const activeVipPrice = Math.round(activeFoundingPrice * 2)
@@ -124,6 +131,21 @@ export default function Phase1Validate({
   useEffect(() => {
     setSimBuyerTier(activeFoundingPrice)
   }, [activeFoundingPrice])
+
+  // Check if Campaign Kit has been generated or populated
+  const hasCampaignGenerated = Boolean(
+    campaignKit && (
+      (Array.isArray(campaignKit.postingSchedule) && campaignKit.postingSchedule.length > 0) ||
+      Boolean(campaignKit.announcementPost?.trim()) ||
+      Boolean(campaignKit.storySequence?.trim()) ||
+      Boolean(campaignKit.videoScript?.trim()) ||
+      Boolean(campaignKit.newsletterDraft?.trim())
+    )
+  )
+
+  const todayTask = (campaignKit?.postingSchedule || []).find(t => t.isToday) ||
+    (campaignKit?.postingSchedule || []).find(t => !t.done) ||
+    (campaignKit?.postingSchedule || [])[0]
 
   // Real Project Survey & Research State
   const [surveyData, setSurveyData] = useState(() => {
@@ -262,15 +284,24 @@ export default function Phase1Validate({
       .replace(/https?:\/\/[a-zA-Z0-9\-_.]+\.creatorforge\.app\/preorder/gi, realPreorderUrl)
       .replace(/https?:\/\/[a-zA-Z0-9\-_.]+\.creatorforge\.app\/launch/gi, `${origin}/p/${productSlug}`)
       .replace(/https?:\/\/flutterflowflowai\.creatorforge\.app\/preorder/gi, realPreorderUrl)
+      .replace(/https?:\/\/localhost:\d+\/preorder\/[a-zA-Z0-9\-_]+/gi, realPreorderUrl)
+      .replace(/https?:\/\/localhost:\d+\/preorder/gi, realPreorderUrl)
+      .replace(/https?:\/\/localhost:\d+\/p\/[a-zA-Z0-9\-_]+/gi, `${origin}/p/${productSlug}`)
+      .replace(/https?:\/\/localhost:\d+\/p/gi, `${origin}/p`)
+      .replace(/https?:\/\/localhost:\d+/gi, origin)
   }
 
   useEffect(() => {
     if (campaignKit) {
       const hasOldUrls = Boolean(
         campaignKit.announcementPost?.includes('creatorforge.app') ||
+        campaignKit.announcementPost?.includes('localhost:') ||
         campaignKit.storySequence?.includes('creatorforge.app') ||
+        campaignKit.storySequence?.includes('localhost:') ||
         campaignKit.newsletterDraft?.includes('creatorforge.app') ||
-        campaignKit.directMessageScript?.includes('creatorforge.app')
+        campaignKit.newsletterDraft?.includes('localhost:') ||
+        campaignKit.directMessageScript?.includes('creatorforge.app') ||
+        campaignKit.directMessageScript?.includes('localhost:')
       )
       if (hasOldUrls) {
         const sanitized = {
@@ -1699,106 +1730,128 @@ export default function Phase1Validate({
             </div>
           </div>
 
-          {/* Today's Action Highlight Banner */}
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-[#141824] to-[#0d0f17] border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-purple-950/30">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">
-                  🔥 Today's Mission (Day 2)
-                </span>
-                <span className="text-xs font-bold text-slate-300">Instagram Stories · Pain Point Poll</span>
+          {/* If Campaign Kit has not been generated yet */}
+          {!hasCampaignGenerated ? (
+            <div className="p-8 sm:p-12 rounded-2xl bg-[#0e1117] border border-dashed border-white/[0.12] text-center space-y-4 max-w-xl mx-auto my-6 shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center mx-auto text-purple-400 shadow-lg shadow-purple-950/40">
+                <Megaphone className="w-7 h-7" />
               </div>
-              <h4 className="text-sm font-extrabold text-white">
-                Today: Post Instagram Story #2 (Pain Point Poll & Pre-Order Link)
-              </h4>
-              <p className="text-[11px] text-slate-400">
-                Creator posts the 3-story sequence with interactive poll sticker to drive warm audience to the pre-order page.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => setViewDraftTask({
-                  id: 'day-2',
-                  day: 2,
-                  title: 'Post Instagram Story #2 — Pain Point Poll & Announcement',
-                  channel: 'Instagram Stories',
-                  draftKey: 'storySequence'
-                })}
-                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-950/50 active:scale-95"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>View Draft</span>
-              </button>
-
-              <button
-                onClick={() => handleToggleScheduleTask('day-2')}
-                className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors border ${
-                  campaignKit?.postingSchedule?.find(t => t.id === 'day-2')?.done
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                    : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
-                }`}
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{campaignKit?.postingSchedule?.find(t => t.id === 'day-2')?.done ? 'Completed' : 'Mark Done'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Subtabs Navigation */}
-          <div className="flex items-center gap-1.5 border-b border-white/[0.08] pb-3 overflow-x-auto">
-            {[
-              { id: 'schedule', label: '1. Schedule & Checklist', icon: Calendar },
-              { id: 'post', label: '2. Social Posts', icon: MessageSquare },
-              { id: 'story', label: '3. Stories & Polls', icon: Smartphone },
-              { id: 'video', label: '4. Video Script', icon: Video },
-              { id: 'newsletter', label: '5. Newsletter', icon: Send },
-              { id: 'dm', label: '6. DM Outreach', icon: Users },
-              { id: 'links', label: '7. Tracking Links', icon: Globe },
-            ].map(tab => {
-              const Icon = tab.icon
-              return (
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h4 className="text-base font-bold text-white">Campaign Kit Not Generated Yet</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Generate a complete 7-day multi-channel launch schedule, social copy, story sequences, 60s video scripts, newsletter drafts, and tracking links customized for {project?.creatorName || 'the creator'}.
+                </p>
+              </div>
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
-                  key={tab.id}
-                  onClick={() => setCampaignSubTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                    campaignSubTab === tab.id
-                      ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50 border border-purple-500/60'
-                      : 'text-slate-400 hover:text-white bg-white/[0.03] border border-transparent'
-                  }`}
+                  onClick={generateCampaign}
+                  disabled={isGeneratingCampaign}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-950/50 active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
+                  {isGeneratingCampaign ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-purple-200" />
+                      <span>Generating Campaign Kit...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-purple-300" />
+                      <span>Generate Campaign Kit with AI</span>
+                    </>
+                  )}
                 </button>
-              )
-            })}
-          </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Today's Action Highlight Banner */}
+              {todayTask && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-[#141824] to-[#0d0f17] border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-purple-950/30">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">
+                        🔥 Today's Mission (Day {todayTask.day})
+                      </span>
+                      <span className="text-xs font-bold text-slate-300">{todayTask.channel}</span>
+                    </div>
+                    <h4 className="text-sm font-extrabold text-white">
+                      Today: {todayTask.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-400">
+                      {todayTask.description}
+                    </p>
+                  </div>
 
-          {/* SUBTAB 1: SCHEDULE & CHECKLIST */}
-          {campaignSubTab === 'schedule' && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-white">Creator 7-Day Campaign Checklist</h4>
-                  <p className="text-[11px] text-slate-400">
-                    Step-by-step daily launch actions with ready-to-use drafts for the creator.
-                  </p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setViewDraftTask(todayTask)}
+                      className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-950/50 active:scale-95 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View Draft</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleToggleScheduleTask(todayTask.id)}
+                      className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors border cursor-pointer ${
+                        todayTask.done
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>{todayTask.done ? 'Completed' : 'Mark Done'}</span>
+                    </button>
+                  </div>
                 </div>
-                <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
-                  {campaignKit?.postingSchedule?.filter(t => t.done)?.length || 1} / {campaignKit?.postingSchedule?.length || 7} Completed
-                </span>
+              )}
+
+              {/* Subtabs Navigation */}
+              <div className="flex items-center gap-1.5 border-b border-white/[0.08] pb-3 overflow-x-auto">
+                {[
+                  { id: 'schedule', label: '1. Schedule & Checklist', icon: Calendar },
+                  { id: 'post', label: '2. Social Posts', icon: MessageSquare },
+                  { id: 'story', label: '3. Stories & Polls', icon: Smartphone },
+                  { id: 'video', label: '4. Video Script', icon: Video },
+                  { id: 'newsletter', label: '5. Newsletter', icon: Send },
+                  { id: 'dm', label: '6. DM Outreach', icon: Users },
+                  { id: 'links', label: '7. Tracking Links', icon: Globe },
+                ].map(tab => {
+                  const Icon = tab.icon
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setCampaignSubTab(tab.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                        campaignSubTab === tab.id
+                          ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50 border border-purple-500/60'
+                          : 'text-slate-400 hover:text-white bg-white/[0.03] border border-transparent'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{tab.label}</span>
+                    </button>
+                  )
+                })}
               </div>
 
-              <div className="space-y-2.5">
-                {(campaignKit?.postingSchedule || [
-                  { id: 'day-1', day: 1, title: 'Problem Teaser & Discovery Poll', channel: 'Twitter / X', isToday: false, done: true, draftKey: 'announcementPost', description: 'Post teaser highlighting the bottleneck and survey link.' },
-                  { id: 'day-2', day: 2, title: 'Post Instagram Story #2 — Pain Point Poll & Announcement', channel: 'Instagram Stories', isToday: true, done: false, draftKey: 'storySequence', description: 'Post 3-story sequence with poll sticker and pre-order link.' },
-                  { id: 'day-3', day: 3, title: 'Publish 60-Second Video Demo & Launch Hook', channel: 'TikTok / Reels / Shorts', isToday: false, done: false, draftKey: 'videoScript', description: 'Post 60s short-form demo of the problem and founding offer.' },
-                  { id: 'day-4', day: 4, title: 'Send Deep-Dive Email Newsletter Broadcast', channel: 'Email Newsletter', isToday: false, done: false, draftKey: 'newsletterDraft', description: 'Send dedicated email broadcast to newsletter subscribers.' },
-                  { id: 'day-5', day: 5, title: '1-on-1 VIP DM Outreach to 20 High-Intent Members', channel: 'Direct Messages', isToday: false, done: false, draftKey: 'directMessageScript', description: 'Reach out personally to 20 high-value followers.' },
-                  { id: 'day-6', day: 6, title: 'Share Live Pre-Order Milestones & Survey Insights', channel: 'Stories & Community', isToday: false, done: false, draftKey: 'storySequence', description: 'Share backer numbers and survey results.' },
-                  { id: 'day-7', day: 7, title: 'Final 24-Hour Founding Tier Price Lock Push', channel: 'All Social Channels', isToday: false, done: false, draftKey: 'announcementPost', description: 'Final call before founding cohort closes.' }
-                ]).map((task) => (
+              {/* SUBTAB 1: SCHEDULE & CHECKLIST */}
+              {campaignSubTab === 'schedule' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-white">Creator 7-Day Campaign Checklist</h4>
+                      <p className="text-[11px] text-slate-400">
+                        Step-by-step daily launch actions with ready-to-use drafts for the creator.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+                      {(campaignKit?.postingSchedule || []).filter(t => t.done)?.length || 0} / {(campaignKit?.postingSchedule || []).length} Completed
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {(campaignKit?.postingSchedule || []).map((task) => (
                   <div
                     key={task.id}
                     className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
@@ -2079,6 +2132,9 @@ export default function Phase1Validate({
               </div>
             </div>,
             document.body
+          )}
+
+            </>
           )}
 
           <div className="pt-2 flex justify-end">
