@@ -214,17 +214,123 @@ partnerships@creatorforge.com`
     }))
   }
 
-  const openPhaseStep = (stepId) => {
-    setSelectedPhaseStep(stepId)
-    setShowPhaseExecutionModal(true)
+  const [previewingFile, setPreviewingFile] = useState(null)
+  const [customFiles, setCustomFiles] = useState([])
+
+  const defaultProjectFiles = [
+    {
+      id: 'file-1',
+      name: `${(project.productName || 'venture').toLowerCase().replace(/[^a-z0-9]/g, '_')}_validation_plan_spec.md`,
+      title: 'Validation Plan & Commercial Milestone Spec',
+      type: 'Executive Specification',
+      phase: 'Phase 1 • Step 1',
+      size: '148 KB',
+      badge: 'Validated Spec',
+      icon: FileText,
+      color: 'text-purple-400',
+      content: `# ${project.productName || 'Software Venture'} — Validation Plan Specification\n\n## 1. Co-Founding Partnership\n- Creator Partner: ${project.creatorName || 'Creator'}\n- Product Name: ${project.productName || 'Software Product'}\n- Core Niche: ${project.niche || 'Software'}\n\n## 2. Customer & Problem\n- Target Customer: ${project.validationPlan?.customer || project.customer || project.targetAudience || 'Target Audience'}\n- Core Problem Solved: ${project.validationPlan?.problem || project.problem || 'Manual workflow inefficiency'}\n- Product Offer: ${project.validationPlan?.offer || project.productTagline || 'Founding Access'}\n\n## 3. Commercial Economics\n- Pricing: ${project.validationPlan?.pricing || project.pricing || '$49/mo Starter • $79/mo Pro'}\n- Success Threshold: ${project.validationPlan?.threshold || '$5,000 in presales within 14 days'}\n- Validation Window: ${project.validationPlan?.period || '14 days'}\n- Test Methodology: ${project.validationPlan?.testMethod || '1) Co-founder video announcement, 2) 10 user interviews, 3) 48-hour Founding Pre-Order sprint'}`
+    },
+    {
+      id: 'file-2',
+      name: `creator_co_launch_partnership_agreement_${(project.creatorName || 'creator').toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
+      title: '50/50 Co-Founding Partnership Term Sheet',
+      type: 'Legal Term Sheet',
+      phase: 'Deal Finalized',
+      badge: 'Signed Agreement',
+      icon: ShieldCheck,
+      color: 'text-emerald-400',
+      content: `# CO-LAUNCH VENTURE PARTNERSHIP TERM SHEET\n\nThis Agreement is entered into between:\n1. Co-Launch Studio (Platform Provider & Engineering Operator)\n2. ${project.creatorName || 'Creator'} (${project.creatorHandle || '@creator'}) (Creator Co-Founder)\n\n## Commercial & Equity Terms\n- Economic Revenue Share: 50% Platform / 50% Creator Co-Founder\n- Payout Frequency: Net 30 Monthly Distributions\n- Governance & Roles:\n  • Platform: Full-stack engineering, AI automation, cloud infra, payments, customer support.\n  • Creator: Audience distribution, social announcements, product feedback, community engagement.\n- Phase 1 Gate: Attaining ${project.validationPlan?.threshold || '$5,000 in pre-orders'} initiates Phase 2 full MVP engineering build.`
+    },
+    {
+      id: 'file-3',
+      name: `14_day_creator_campaign_content_kit.md`,
+      title: '14-Day Creator Launch Campaign Content Kit',
+      type: 'Marketing Bundle',
+      phase: 'Phase 1 • Step 3',
+      badge: 'Ready to Post',
+      icon: Megaphone,
+      color: 'text-blue-400',
+      content: `# 14-DAY CREATOR LAUNCH CAMPAIGN CONTENT KIT\n\n## Day 1: VIP Co-Founder Video Announcement\n"Hey guys! For the past few months, my team and I have been secretly building something to solve our biggest headache: ${project.productName}. We are opening 50 Founding Pass spots today..."\n\n## Day 2: Instagram Story Sequence #1 (Problem & Poll)\n- Story 1: "Quick question: how much time do you waste on manual setups every week?" [Poll: 1-3 hrs / 5+ hrs]\n- Story 2: "That's exactly why we built ${project.productName}..."\n\n## Day 4: Dedicated Email Newsletter Blast\nSubject: We built something for you (Founding access inside)\n\n## Day 7: 48-Hour Price Lock Reminder & VIP Pre-order Link`
+    },
+    {
+      id: 'file-4',
+      name: `software_prototype_wireframes_v1.png`,
+      title: 'Interactive Application UI Canvas Mockup',
+      type: 'Design System PNG',
+      phase: 'Phase 1 • Step 2',
+      badge: 'Visual Asset',
+      icon: Layout,
+      color: 'text-amber-400',
+      content: `[Visual Asset File: software_prototype_wireframes_v1.png]\n\nHigh-resolution UI layout mockups, widget tree architecture, and live device simulator frames for ${project.productName || 'Software Venture'}.`
+    },
+    {
+      id: 'file-5',
+      name: `flutterflow_app_starter_scaffold.dart`,
+      title: 'Production Flutter & Dart Starter Scaffold',
+      type: 'Dart Source Code',
+      phase: 'Phase 2 Ready',
+      badge: 'Code Scaffold',
+      icon: Terminal,
+      color: 'text-purple-400',
+      content: `// ${project.productName || 'Venture'} Mobile Scaffold Engine\nimport 'package:flutter/material.dart';\nimport 'package:flutterflow_engine/flutterflow_engine.dart';\n\nvoid main() {\n  WidgetsFlutterBinding.ensureInitialized();\n  runApp(const ${project.productName?.replace(/[^a-zA-Z0-9]/g, '') || 'App'}Root());\n}\n\nclass ${project.productName?.replace(/[^a-zA-Z0-9]/g, '') || 'App'}Root extends StatelessWidget {\n  const ${project.productName?.replace(/[^a-zA-Z0-9]/g, '') || 'App'}Root({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      title: '${project.productName}',\n      theme: ThemeData.dark(),\n      home: const WorkflowDashboardScreen(),\n    );\n  }\n}`
+    },
+    {
+      id: 'file-6',
+      name: `audience_validation_survey_data.csv`,
+      title: 'Audience Feedback & Pre-Order Telemetry Logs',
+      type: 'Spreadsheet CSV',
+      phase: 'Live Telemetry',
+      badge: 'Telemetry Feed',
+      icon: BarChart2,
+      color: 'text-emerald-400',
+      content: `Customer Name,Email,Tier,Amount,Attribution Channel,Timestamp,Status\n${(project.reservations || []).map(r => `${r.name || 'Backer'},${r.email || 'user@example.com'},${r.tier || 'Founding Pass'},$${r.amount || 49},${r.channel || 'Direct'},${r.date || 'Recent'},Paid`).join('\n') || 'Jane Doe,jane@example.com,Founding Pass,$49,Instagram Stories,Today,Paid'}`
+    }
+  ]
+
+  const filesList = [...defaultProjectFiles, ...customFiles]
+
+  const handleDownloadFile = (file) => {
+    const blob = new Blob([file.content || ''], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = file.name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleFileUpload = (e) => {
+    const uploaded = Array.from(e.target.files || [])
+    if (uploaded.length === 0) return
+    const newItems = uploaded.map((f, i) => ({
+      id: `uploaded-${Date.now()}-${i}`,
+      name: f.name,
+      title: f.name.replace(/\.[^/.]+$/, ''),
+      type: f.type || 'Custom Asset',
+      phase: 'Custom Upload',
+      size: `${(f.size / 1024).toFixed(1)} KB`,
+      badge: 'User Upload',
+      icon: FileText,
+      color: 'text-blue-400',
+      content: `[Uploaded binary/document: ${f.name} (${f.size} bytes)]`
+    }))
+    setCustomFiles(prev => [...prev, ...newItems])
   }
 
   const checklistTasks = project.checklist || project.creatorTasks || []
   const rawActivity = project.activityLogs || project.adminActivity || project.aiActivity || []
   const aiActivityList = Array.isArray(rawActivity) ? rawActivity : []
-  const filesList = project.files || []
   const messagesList = project.messages || []
   const decisionsList = project.decisions || project.gateDecisions || []
+
+  // Step Completion Guards
+  const isStep1Done = Boolean(project.validationPlan?.status === 'ready' || project.validationPlan?.threshold || project.customer)
+  const isStep2Done = Boolean(project.validationCampaign?.reviewStatus === 'approved' || project.validationCampaign?.review_status === 'approved' || project.campaignKit?.landingPageCopy)
+  const isStep3Done = Boolean((project.creatorTasks?.length || 0) > 0 || (project.campaignKit?.postingSchedule?.length || 0) > 0)
+  const isStep4Done = Boolean((project.reservations?.length || 0) > 0 || Number(project.currentPresales || 0) > 0)
+  const isStep5Done = Boolean((project.gateDecisions?.length || 0) > 0 || project.currentPhase > 1 || project.status === 'building')
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
@@ -563,30 +669,66 @@ partnerships@creatorforge.com`
                 </div>
               )}
 
-              {/* FILES TAB */}
+              {/* FILES TAB — VENTURE ASSETS & REPOSITORY */}
               {sidebarTab === 'files' && (
-                <div className="space-y-3 animate-fade-in text-xs">
-                  <span className="font-bold text-white block">Project Assets & Research Files</span>
-                  {filesList.length === 0 ? (
-                    <div className="py-8 text-center text-slate-500 text-xs border border-dashed border-white/[0.08] rounded-xl">
-                      No project files saved yet. Generated validation specifications and scripts will appear here.
+                <div className="space-y-4 animate-fade-in text-xs">
+                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
+                    <div>
+                      <span className="font-bold text-white block">Venture Assets & File Repository</span>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Executive specifications, partnership contracts, launch copy, code scaffolds & telemetry feeds.
+                      </p>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {filesList.map((f, i) => (
-                        <div key={i} className="p-3 rounded-xl bg-[#141720] border border-white/[0.06] flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <FileText className="w-4 h-4 text-purple-400" />
-                            <div>
-                              <div className="font-bold text-white">{f.name}</div>
-                              <span className="text-[10px] text-slate-400">{f.type}</span>
+                    <label className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-purple-950/40">
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Upload File</span>
+                      <input type="file" onChange={handleFileUpload} className="hidden" multiple />
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {filesList.map((f, i) => {
+                      const FileIcon = f.icon || FileText
+                      return (
+                        <div
+                          key={f.id || i}
+                          onClick={() => setPreviewingFile(f)}
+                          className="p-3.5 rounded-xl bg-[#141720] hover:bg-[#1b202d] border border-white/[0.06] hover:border-purple-500/40 transition-all flex items-start justify-between gap-2.5 cursor-pointer group"
+                        >
+                          <div className="flex items-start gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0 text-purple-400 group-hover:scale-105 transition-transform">
+                              <FileIcon className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-white group-hover:text-purple-300 transition-colors truncate text-xs">
+                                {f.title || f.name}
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-400 block truncate">{f.name}</span>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/[0.06] text-slate-300">
+                                  {f.phase || 'Venture Asset'}
+                                </span>
+                                <span className="text-[9px] text-slate-500 font-mono">{f.size}</span>
+                              </div>
                             </div>
                           </div>
-                          <span className="text-[10px] text-slate-500 font-mono">{f.size}</span>
+                          <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDownloadFile(f)
+                              }}
+                              title="Download Asset"
+                              className="p-1 rounded-lg hover:bg-white/[0.08] text-slate-400 hover:text-white transition-colors"
+                            >
+                              <ArrowRight className="w-3.5 h-3.5 rotate-90" />
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      )
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -820,31 +962,41 @@ partnerships@creatorforge.com`
                     id: 'plan',
                     num: '1. Validation Plan',
                     desc: 'Define customer, problem, offer, price, test method, success threshold',
-                    icon: FileText
+                    icon: FileText,
+                    isDone: isStep1Done,
+                    badge: isStep1Done ? 'Completed • Locked' : 'Pending'
                   },
                   {
                     id: 'assets',
                     num: '2. Build Validation Assets',
                     desc: 'Landing page, presales, checkout, analytics, emails, surveys, mockups',
-                    icon: Layout
+                    icon: Layout,
+                    isDone: isStep2Done,
+                    badge: isStep2Done ? 'Approved & Live' : 'Draft'
                   },
                   {
                     id: 'campaign',
                     num: '3. Creator Campaign',
                     desc: 'Posts, stories, newsletter, videos, polls, CTAs, images, scripts',
-                    icon: Megaphone
+                    icon: Megaphone,
+                    isDone: isStep3Done,
+                    badge: isStep3Done ? 'Checklist Active' : 'Pending'
                   },
                   {
                     id: 'optimize',
                     num: '4. Run & Optimize',
                     desc: 'Track traffic, presales, revenue, conversion, feedback. AI suggests experiments',
-                    icon: TrendingUp
+                    icon: TrendingUp,
+                    isDone: isStep4Done,
+                    badge: isStep4Done ? `$${presalesRevenue.toLocaleString()} Presales` : 'Live Telemetry'
                   },
                   {
                     id: 'gate',
                     num: '5. Validation Gate',
                     desc: 'PASS → Build MVP | TEST AGAIN → Iterate | FAIL → Kill',
-                    icon: Flag
+                    icon: Flag,
+                    isDone: isStep5Done,
+                    badge: isStep5Done ? 'Gate Decided' : 'Pending Milestone'
                   },
                 ].map(step => {
                   const Icon = step.icon
@@ -852,15 +1004,30 @@ partnerships@creatorforge.com`
                     <div
                       key={step.id}
                       onClick={() => openPhaseStep(step.id)}
-                      className="p-3.5 rounded-xl bg-[#141720] hover:bg-[#1b202c] border border-white/[0.06] hover:border-emerald-500/40 transition-all cursor-pointer group space-y-1"
+                      className={`p-3.5 rounded-xl transition-all cursor-pointer group space-y-1 ${
+                        step.isDone
+                          ? 'bg-emerald-500/[0.04] border border-emerald-500/30 hover:border-emerald-500/60'
+                          : 'bg-[#141720] hover:bg-[#1b202c] border border-white/[0.06] hover:border-emerald-500/40'
+                      }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5 text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">
-                          <Icon className="w-4 h-4 text-emerald-400 shrink-0" />
-                          <span>{step.num}</span>
+                        <div className="flex items-center gap-2.5 text-xs font-bold transition-colors">
+                          {step.isDone ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          ) : (
+                            <Icon className="w-4 h-4 text-emerald-400 shrink-0" />
+                          )}
+                          <span className={`${step.isDone ? 'line-through text-slate-300 font-medium' : 'text-white'}`}>
+                            {step.num}
+                          </span>
+                          {step.isDone && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              ✓ {step.badge}
+                            </span>
+                          )}
                         </div>
                         <span className="text-[10px] font-bold text-slate-400 group-hover:text-white flex items-center gap-0.5">
-                          <span>Open</span>
+                          <span>{step.isDone ? 'Edit (Manual)' : 'Open'}</span>
                           <ChevronRight className="w-3 h-3" />
                         </span>
                       </div>
@@ -1227,6 +1394,65 @@ partnerships@creatorforge.com`
                   className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-bold transition-colors cursor-pointer"
                 >
                   Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* VENTURE FILE PREVIEW MODAL */}
+      {previewingFile && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
+          <div className="max-w-3xl w-full max-h-[85vh] flex flex-col rounded-3xl bg-[#090b0e] border border-white/[0.12] p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>{previewingFile.title}</span>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      {previewingFile.badge || 'Venture Asset'}
+                    </span>
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-400">{previewingFile.name} • {previewingFile.size}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewingFile(null)}
+                className="w-8 h-8 rounded-full bg-white/[0.06] hover:bg-white/[0.12] flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto rounded-xl bg-[#0e1117] border border-white/[0.06] p-4 text-xs font-mono text-slate-200 whitespace-pre-wrap leading-relaxed shadow-inner">
+              {previewingFile.content}
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-white/[0.08] shrink-0">
+              <div className="text-[11px] text-slate-400 font-mono">
+                Stored in Project Vault • Ready for export
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCopy(previewingFile.content, previewingFile.id)}
+                  className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  {copiedKey === previewingFile.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedKey === previewingFile.id ? 'Copied' : 'Copy Text'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadFile(previewingFile)}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-950/40 cursor-pointer"
+                >
+                  <ArrowRight className="w-3.5 h-3.5 rotate-90" />
+                  <span>Download Asset</span>
                 </button>
               </div>
             </div>
