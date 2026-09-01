@@ -1569,6 +1569,23 @@ export function buildSmartFallbackCampaignKit(source) {
   const slug = (source?.slug || product).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const origin = getBaseAppOrigin();
 
+  const rawPricing = String(source?.pricing || source?.revenueModel || source?.validationPlan?.pricing || "$89");
+  const priceMatch = rawPricing.match(/\$(\d+)/);
+  const unitPrice = priceMatch ? Number(priceMatch[1]) : 89;
+
+  let depositVal = Math.max(9, Math.round(unitPrice * 0.2));
+  const depMatch =
+    rawPricing.match(/(?:deposit|reservation)[^\d$]*\$(\d+)/i) ||
+    rawPricing.match(/\$(\d+)[^\d$]*(?:refundable|reservation|deposit)/i);
+  if (depMatch) {
+    depositVal = Number(depMatch[1]);
+  } else {
+    const allPrices = Array.from(rawPricing.matchAll(/\$(\d+)/g)).map((m) => Number(m[1]));
+    if (allPrices.length >= 2 && allPrices[1] < allPrices[0]) {
+      depositVal = allPrices[1];
+    }
+  }
+
   const defaultSchedule = [
     {
       id: "day-1",
@@ -1654,21 +1671,26 @@ export function buildSmartFallbackCampaignKit(source) {
   ];
 
   return {
-    announcementPost: `🚨 Big announcement! After months of hearing about the nightmare of manual workflows in ${niche}, we're officially building ${product}.\n\n💡 ${tagline}.\n\nWe're accepting only 50 Founding Members for our private Beta at 50% off + direct 1-on-1 onboarding with me.\n\n👇 Claim a founding spot or reserve with a $19 refundable deposit:\n${origin}/preorder/${slug}?ref=twitter_post`,
-    storySequence: `STORY 1 — PAIN POINT HOOK\nVisual: Selfie video or background video of workflow.\nText: "Quick question for anyone in ${niche}... How many hours do you waste weekly on manual tasks?"\n[STICKER: Interactive Poll -> "1-3 Hours" / "5+ Hours (Help!)"]\n\nSTORY 2 — THE PRODUCT REVEAL\nVisual: Mockup screenshot / screen recording of ${product}.\nText: "That's why @creator and the team are co-building ${product} — ${tagline}."\n\nSTORY 3 — FOUNDING MEMBER OFFER & LINK\nVisual: Founding badge overlay.\nText: "Opening 50 Founding Member spots with lifetime 50% discount + private beta access."\n[STICKER: Link -> "Claim Founding Pass ↗" -> ${origin}/preorder/${slug}?ref=instagram_story]`,
-    videoScript: `[00:00 - 00:05] HOOK (Visual: High energy to camera, pointing at screen)\n"If you work in ${niche} and you're tired of wasting hours on fragmented tools, stop scrolling."\n\n[00:05 - 00:20] THE PROBLEM (Visual: Frustrated reaction, screen recording)\n"Most existing solutions cost a fortune, crash constantly, and aren't designed for modern creators."\n\n[00:20 - 00:40] THE SOLUTION (Visual: Demo of ${product} interface)\n"That's why we co-founded ${product}. It automates your entire pipeline in one clean workspace."\n\n[00:40 - 00:60] THE OFFER & CTA (Visual: Pointing to link in bio)\n"We're accepting only 50 Founding Members for our alpha with lifetime 50% off. Tap the link in my bio to reserve your spot before it fills up!"`,
-    newsletterDraft: `Subject: Why I'm building ${product} (and an invite for you)\n\nHey [First Name],\n\nIf you've been following my content in ${niche}, you know how frustrating manual bottlenecks have been.\n\nToday, I'm thrilled to announce that we are officially co-founding ${product} — ${tagline}.\n\nBefore we start full engineering on the MVP, we are opening a private Founding Member cohort of 50 people.\n\nAs a Founding Member, you get:\n• 50% Lifetime Price Lock ($99/year forever)\n• Direct input on product features & roadmap in our private channel\n• 1-on-1 onboarding session directly with the core team\n• 100% money-back guarantee if validation goals aren't met\n\n👉 Claim your founding member pass or reserve with a $19 refundable deposit here:\n${origin}/preorder/${slug}?ref=newsletter\n\nCan't wait to build this with you,\n${creator}`,
-    directMessageScript: `Hey [First Name]! Saw your recent post about ${niche} and loved your perspective.\n\nWe're putting together a private founding group for ${product} (${tagline}).\n\nSince you're active in this space, I'd love to give you early access + direct input on the roadmap. Check out the founding pre-order here: ${origin}/preorder/${slug}?ref=dm_outreach — let me know what you think!`,
+    pricingConfig: {
+      foundingPrice: unitPrice,
+      depositPrice: depositVal,
+      perks: `50% Lifetime Discount + 1-on-1 Alpha Onboarding for ${creator} VIPs`,
+    },
+    announcementPost: `🚨 Big announcement! After months of hearing about the nightmare of manual workflows in ${niche}, we're officially building ${product}.\n\n💡 ${tagline}.\n\nWe're accepting only 50 Founding Members for our private Beta at 50% off ($${unitPrice}/yr) + direct 1-on-1 onboarding with me.\n\n👇 Claim a founding spot or reserve with a $${depositVal} refundable deposit:\n${origin}/preorder/${slug}?ref=twitter_post`,
+    storySequence: `STORY 1 — PAIN POINT HOOK\nVisual: Selfie video or background video of workflow.\nText: "Quick question for anyone in ${niche}... How many hours do you waste weekly on manual tasks?"\n[STICKER: Interactive Poll -> "1-3 Hours" / "5+ Hours (Help!)"]\n\nSTORY 2 — THE PRODUCT REVEAL\nVisual: Mockup screenshot / screen recording of ${product}.\nText: "That's why @creator and the team are co-building ${product} — ${tagline}."\n\nSTORY 3 — FOUNDING MEMBER OFFER & LINK\nVisual: Founding badge overlay.\nText: "Opening 50 Founding Member spots with lifetime 50% discount ($${unitPrice}/yr) + private beta access."\n[STICKER: Link -> "Claim Founding Pass ↗" -> ${origin}/preorder/${slug}?ref=instagram_story]`,
+    videoScript: `[00:00 - 00:05] HOOK (Visual: High energy to camera, pointing at screen)\n"If you work in ${niche} and you're tired of wasting hours on fragmented tools, stop scrolling."\n\n[00:05 - 00:20] THE PROBLEM (Visual: Frustrated reaction, screen recording)\n"Most existing solutions cost a fortune, crash constantly, and aren't designed for modern creators."\n\n[00:20 - 00:40] THE SOLUTION (Visual: Demo of ${product} interface)\n"That's why we co-founded ${product}. It automates your entire pipeline in one clean workspace."\n\n[00:40 - 00:60] THE OFFER & CTA (Visual: Pointing to link in bio)\n"We're accepting only 50 Founding Members for our alpha with lifetime 50% off at $${unitPrice}/yr. Tap the link in my bio to reserve your spot with a $${depositVal} deposit before it fills up!"`,
+    newsletterDraft: `Subject: Why I'm building ${product} (and an invite for you)\n\nHey [First Name],\n\nIf you've been following my content in ${niche}, you know how frustrating manual bottlenecks have been.\n\nToday, I'm thrilled to announce that we are officially co-founding ${product} — ${tagline}.\n\nBefore we start full engineering on the MVP, we are opening a private Founding Member cohort of 50 people.\n\nAs a Founding Member, you get:\n• 50% Lifetime Price Lock ($${unitPrice}/year forever)\n• Direct input on product features & roadmap in our private channel\n• 1-on-1 onboarding session directly with the core team\n• 100% money-back guarantee if validation goals aren't met\n\n👉 Claim your founding member pass ($${unitPrice}) or reserve with a $${depositVal} refundable deposit here:\n${origin}/preorder/${slug}?ref=newsletter\n\nCan't wait to build this with you,\n${creator}`,
+    directMessageScript: `Hey [First Name]! Saw your recent post about ${niche} and loved your perspective.\n\nWe're putting together a private founding group for ${product} (${tagline}).\n\nSince you're active in this space, I'd love to give you early access + direct input on the roadmap. Check out the founding pre-order ($${unitPrice}) here: ${origin}/preorder/${slug}?ref=dm_outreach — let me know what you think!`,
     landingPageCopy: {
       headline: `The High-Leverage Platform Built For ${niche}`,
       subheadline: `${tagline}. Co-founded with ${creator} for ambitious creators.`,
       bulletPoints: [
         `Automate repetitive tasks with tailored AI workflows`,
         `Direct Discord access with the engineering team`,
-        `50% lifetime discount locked in forever`,
+        `50% lifetime discount locked in forever ($${unitPrice}/yr)`,
       ],
-      ctaText: "Claim Founding Access ($99)",
-      reservationText: "Reserve with $19 Deposit",
+      ctaText: `Claim Founding Access ($${unitPrice})`,
+      reservationText: `Reserve with $${depositVal} Deposit`,
       guarantee: "100% money-back guarantee.",
     },
     postingSchedule: defaultSchedule,
@@ -1812,6 +1834,7 @@ Return JSON with exact keys:
     ) {
       const fallback = buildSmartFallbackCampaignKit(projectData);
       return {
+        pricingConfig: resObj.pricingConfig || fallback.pricingConfig,
         announcementPost: String(
           resObj.announcementPost || fallback.announcementPost,
         ),

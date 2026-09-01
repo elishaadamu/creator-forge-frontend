@@ -27,6 +27,11 @@ import {
   updateCoLaunchProject,
   getFrontendUrl
 } from '../../services/opsApi'
+import {
+  parseMainPricingAmount,
+  parseDepositPricingAmount,
+  sanitizePricingConfig
+} from '../../utils/pricing'
 
 export default function Phase1Validate({
   project,
@@ -58,11 +63,9 @@ export default function Phase1Validate({
   const [reservations, setReservations] = useState(() => project?.reservations || [])
 
   // Dynamic pricing resolution
-  const parsePricingAmount = (str) => {
-    if (!str) return 49
-    const match = String(str).replace(/,/g, '').match(/\$(\d+)/)
-    return match ? Number(match[1]) : (Number(String(str).replace(/[^0-9]/g, '')) || 49)
-  }
+  const dynamicMainPrice = parseMainPricingAmount(plan?.pricing || project?.pricing || 49)
+  const dynamicDepositPrice = parseDepositPricingAmount(plan?.pricing || project?.pricing, dynamicMainPrice)
+  const dynamicVipPrice = Math.round(dynamicMainPrice * 2)
 
   // Real Project Validation Plan State
   const [plan, setPlan] = useState(() => project?.validationPlan || {
@@ -74,15 +77,6 @@ export default function Phase1Validate({
     period: '',
     threshold: ''
   })
-
-  const dynamicMainPrice = parsePricingAmount(plan?.pricing || project?.pricing || 49)
-  const dynamicDepositPrice = Math.max(9, Math.round(dynamicMainPrice * 0.2))
-  const dynamicVipPrice = Math.round(dynamicMainPrice * 2)
-
-  // Simulated buyer form in Run & Optimize
-  const [simBuyerName, setSimBuyerName] = useState('')
-  const [simBuyerEmail, setSimBuyerEmail] = useState('')
-  const [simBuyerTier, setSimBuyerTier] = useState(() => dynamicMainPrice)
 
   // Dynamic presale target derived from validation plan threshold or project
   const parseThresholdAmount = (str) => {
@@ -115,6 +109,21 @@ export default function Phase1Validate({
       landingPageCopy: null
     }
   })
+
+  // Sanitized dynamic pricing configuration
+  const sanitizedPricingConfig = sanitizePricingConfig(campaignKit?.pricingConfig, plan?.pricing || project?.pricing)
+  const activeFoundingPrice = sanitizedPricingConfig.foundingPrice
+  const activeDepositPrice = sanitizedPricingConfig.depositPrice
+  const activeVipPrice = Math.round(activeFoundingPrice * 2)
+
+  // Simulated buyer form in Run & Optimize
+  const [simBuyerName, setSimBuyerName] = useState('')
+  const [simBuyerEmail, setSimBuyerEmail] = useState('')
+  const [simBuyerTier, setSimBuyerTier] = useState(() => activeFoundingPrice)
+
+  useEffect(() => {
+    setSimBuyerTier(activeFoundingPrice)
+  }, [activeFoundingPrice])
 
   // Real Project Survey & Research State
   const [surveyData, setSurveyData] = useState(() => {
@@ -1124,7 +1133,7 @@ export default function Phase1Validate({
                         <span className="text-slate-400 font-bold">$</span>
                         <input
                           type="number"
-                          value={campaignKit?.pricingConfig?.foundingPrice ?? (project?.pricing ? (Number(String(project.pricing).replace(/[^0-9]/g, '')) || 99) : 99)}
+                          value={activeFoundingPrice}
                           onChange={e => {
                             const val = Number(e.target.value) || 0
                             updateCampaignKit('pricingConfig', { ...(campaignKit?.pricingConfig || {}), foundingPrice: val })
@@ -1139,7 +1148,7 @@ export default function Phase1Validate({
                         <span className="text-slate-400 font-bold">$</span>
                         <input
                           type="number"
-                          value={campaignKit?.pricingConfig?.depositPrice ?? 19}
+                          value={activeDepositPrice}
                           onChange={e => {
                             const val = Number(e.target.value) || 0
                             updateCampaignKit('pricingConfig', { ...(campaignKit?.pricingConfig || {}), depositPrice: val })
@@ -1249,9 +1258,8 @@ export default function Phase1Validate({
 
                   {/* Live Pre-Order Action Buttons */}
                   {(() => {
-                    const priceMatch = (project?.pricing || project?.selectedConcept?.pricing || '$89').match(/\$(\d+)/)
-                    const parsedPrice = priceMatch ? Number(priceMatch[1]) : 89
-                    const depositVal = Math.max(9, Math.round(parsedPrice * 0.2))
+                    const parsedPrice = activeFoundingPrice
+                    const depositVal = activeDepositPrice
                     return (
                       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                         <a
@@ -2340,9 +2348,9 @@ export default function Phase1Validate({
                   onChange={e => setSimBuyerTier(Number(e.target.value))}
                   className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none cursor-pointer"
                 >
-                  <option value={dynamicMainPrice}>Founding Annual (${dynamicMainPrice})</option>
-                  <option value={dynamicDepositPrice}>Refundable Deposit (${dynamicDepositPrice})</option>
-                  <option value={dynamicVipPrice}>VIP Founder Pass (${dynamicVipPrice})</option>
+                  <option value={activeFoundingPrice}>Founding Annual (${activeFoundingPrice})</option>
+                  <option value={activeDepositPrice}>Refundable Deposit (${activeDepositPrice})</option>
+                  <option value={activeVipPrice}>VIP Founder Pass (${activeVipPrice})</option>
                 </select>
                 <button
                   type="submit"

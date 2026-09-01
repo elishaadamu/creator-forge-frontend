@@ -7,6 +7,11 @@ import {
 import ProductMockupDisplay from './ProductMockupDisplay'
 import { trackVisit } from '../../services/tracker'
 import { updatePageSEO } from '../../utils/seo'
+import {
+  parseMainPricingAmount,
+  parseDepositPricingAmount,
+  sanitizePricingConfig
+} from '../../utils/pricing'
 
 export default function PreorderLandingPage({ slug }) {
   const [project, setProject] = useState(() => {
@@ -101,8 +106,9 @@ export default function PreorderLandingPage({ slug }) {
   const subheadline = project?.campaignKit?.landingPageCopy?.subheadline || tagline
   
   const cfg = project?.campaignKit?.pricingConfig
-  const foundingPrice = Number(cfg?.foundingPrice) || (project?.pricing ? (Number(String(project.pricing).replace(/[^0-9]/g, '')) || 49) : 49)
-  const depositPrice = Number(cfg?.depositPrice) || Math.max(9, Math.round(foundingPrice * 0.2))
+  const sanitizedPricing = sanitizePricingConfig(cfg, project?.pricing || project?.validationPlan?.pricing)
+  const foundingPrice = sanitizedPricing.foundingPrice
+  const depositPrice = sanitizedPricing.depositPrice
   const perksText = cfg?.perks || '50% Lifetime Price Lock & VIP Alpha Perks'
 
   useEffect(() => {
