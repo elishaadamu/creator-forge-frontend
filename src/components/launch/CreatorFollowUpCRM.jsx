@@ -144,6 +144,9 @@ export default function CreatorFollowUpCRM({
   // ── 1. Helper to extract reply classification and snippet ───────────────────
   const getCreatorReplyInfo = (c) => {
     if (!c) return { hasReply: false, classification: "", snippet: "", subject: "", time: "-", totalInbound: 0 };
+    const cId = c.id;
+    const email = (c.email || c.email_public || "").toLowerCase().trim();
+    const handle = (c.handle || "").toLowerCase().replace(/^@/, "").trim();
     const cName = (c.name || c.display_name || "").toLowerCase().trim();
 
     // Check database threads with strict creator isolation
