@@ -2104,6 +2104,7 @@ export default function AcquisitionEngine({
     }
 
     // 2. Strict matching against ALL real IMAP threads from Gmail with creator isolation
+    const cName = (c.name || c.display_name || "").toLowerCase().trim();
     const matchingThreads = (threads || []).filter((t) => {
       // Direct Creator ID match (highest precision)
       if (t.creator_id && cId) {
@@ -2117,15 +2118,31 @@ export default function AcquisitionEngine({
           .trim();
         if (cleanThreadHandle === cHandle) return true;
       }
-      // If thread has NO creator_id assigned, match by email
+      // If thread has NO creator_id assigned, check if subject mentions this creator's name or handle
+      if (!t.creator_id) {
+        const tSubject = (t.subject || "").toLowerCase();
+        if (cName && cName.length >= 3 && tSubject.includes(cName)) return true;
+        if (cHandle && cHandle.length >= 3 && tSubject.includes(cHandle)) return true;
+      }
+      // If thread has NO creator_id assigned, match by email ONLY IF it doesn't belong to another creator
       if (!t.creator_id && cEmail && cEmail.includes("@")) {
-        if (t.creator_email && t.creator_email.toLowerCase().trim() === cEmail)
+        const isEmailMatch =
+          (t.creator_email && t.creator_email.toLowerCase().trim() === cEmail) ||
+          (t.recipient_email && t.recipient_email.toLowerCase().trim() === cEmail);
+        if (isEmailMatch) {
+          const tSubj = (t.subject || "").toLowerCase();
+          const otherCreators = (creators || []).filter((other) => other.id !== cId);
+          const belongsToOther = otherCreators.some((other) => {
+            const oName = (other.name || other.display_name || "").toLowerCase().trim();
+            const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
+            return (
+              (oName && oName.length >= 3 && tSubj.includes(oName)) ||
+              (oHandle && oHandle.length >= 3 && tSubj.includes(oHandle))
+            );
+          });
+          if (belongsToOther) return false;
           return true;
-        if (
-          t.recipient_email &&
-          t.recipient_email.toLowerCase().trim() === cEmail
-        )
-          return true;
+        }
       }
       return false;
     });
@@ -2148,9 +2165,10 @@ export default function AcquisitionEngine({
         )
           return false;
 
-        // Check for embedded tracking token: if it explicitly belongs to another creator, isolate it
         const bodyLower = r.body.toLowerCase();
         const subjLower = (r.subject || "").toLowerCase();
+
+        // Check for embedded tracking token: if it explicitly belongs to another creator, isolate it
         if (
           bodyLower.includes("cf-cid:") &&
           !bodyLower.includes(`cf-cid:${cId.toLowerCase()}`)
@@ -2164,6 +2182,21 @@ export default function AcquisitionEngine({
         ) {
           return false;
         }
+
+        // Isolate from other creators sharing this same email address
+        const otherCreators = (creators || []).filter((other) => other.id !== cId);
+        const hasOtherCreatorToken = otherCreators.some((other) => {
+          const oName = (other.name || other.display_name || "").toLowerCase().trim();
+          const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
+          const oId = (other.id || "").toLowerCase();
+          return (
+            (oId && bodyLower.includes(`cf-cid:${oId}`)) ||
+            (oHandle && oHandle.length >= 3 && subjLower.includes(`[#${oHandle}]`)) ||
+            (oName && oName.length >= 4 && subjLower.includes(`idea for ${oName}`)) ||
+            (oName && oName.length >= 4 && subjLower.includes(`outreach to ${oName}`))
+          );
+        });
+        if (hasOtherCreatorToken) return false;
 
         return true;
       })
@@ -2435,14 +2468,27 @@ export default function AcquisitionEngine({
           cHandle &&
           t.creator_handle &&
           t.creator_handle.toLowerCase().replace(/^@/, "").trim() === cHandle
-        )
+        ) {
           isMatch = true;
-        else if (
+        } else if (cName && cName.length >= 3 && (t.subject || "").toLowerCase().includes(cName)) {
+          isMatch = true;
+        } else if (
           cEmail &&
           cEmail.includes("@") &&
           t.creator_email?.toLowerCase().trim() === cEmail
-        )
-          isMatch = true;
+        ) {
+          const tSubj = (t.subject || "").toLowerCase();
+          const otherCreators = (creators || []).filter((other) => other.id !== cId);
+          const belongsToOther = otherCreators.some((other) => {
+            const oName = (other.name || other.display_name || "").toLowerCase().trim();
+            const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
+            return (
+              (oName && oName.length >= 3 && tSubj.includes(oName)) ||
+              (oHandle && oHandle.length >= 3 && tSubj.includes(oHandle))
+            );
+          });
+          if (!belongsToOther) isMatch = true;
+        }
       }
 
       if (isMatch) {
@@ -2482,6 +2528,21 @@ export default function AcquisitionEngine({
         ) {
           return false;
         }
+
+        // Isolate from other creators sharing this same email address
+        const otherCreators = (creators || []).filter((other) => other.id !== cId);
+        const hasOtherCreatorToken = otherCreators.some((other) => {
+          const oName = (other.name || other.display_name || "").toLowerCase().trim();
+          const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
+          const oId = (other.id || "").toLowerCase();
+          return (
+            (oId && bodyLower.includes(`cf-cid:${oId}`)) ||
+            (oHandle && oHandle.length >= 3 && subjLower.includes(`[#${oHandle}]`)) ||
+            (oName && oName.length >= 4 && subjLower.includes(`idea for ${oName}`)) ||
+            (oName && oName.length >= 4 && subjLower.includes(`outreach to ${oName}`))
+          );
+        });
+        if (hasOtherCreatorToken) return false;
 
         return true;
       });
@@ -6490,10 +6551,40 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         )}
 
                         {/* Outreach History Summary */}
-                        <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-1 border-t border-white/[0.04]">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-slate-400 pt-1 border-t border-white/[0.04]">
                           <span className="flex items-center gap-1">
                             <Mail className="w-3 h-3 text-blue-400" />
-                            <strong className="text-slate-200">Email:</strong> {activeReviewCreator.email || activeReviewCreator.email_public || "Not set"}
+                            <strong className="text-slate-200">Email:</strong>
+                            {editingEmailCreatorId === activeReviewCreator.id ? (
+                              <span className="inline-flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                <input
+                                  type="email"
+                                  value={tempEmailValue}
+                                  onChange={e => setTempEmailValue(e.target.value)}
+                                  onKeyDown={e => { if (e.key === 'Enter') saveEditEmail(activeReviewCreator.id, e); if (e.key === 'Escape') cancelEditEmail(e); }}
+                                  className="w-40 px-1.5 py-0.5 rounded bg-white/10 border border-purple-500/40 text-white text-[11px] font-mono focus:outline-none focus:border-purple-400"
+                                  placeholder="creator@email.com"
+                                  autoFocus
+                                />
+                                <button type="button" onClick={e => saveEditEmail(activeReviewCreator.id, e)} className="p-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white" title="Save">
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button type="button" onClick={e => cancelEditEmail(e)} className="p-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-300" title="Cancel">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ) : (activeReviewCreator.email || activeReviewCreator.email_public) ? (
+                              <span className="text-emerald-400 font-mono">{activeReviewCreator.email || activeReviewCreator.email_public}</span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={e => startEditEmail(activeReviewCreator.id, '', e)}
+                                className="text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-0.5 transition-colors cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>Add Email</span>
+                              </button>
+                            )}
                           </span>
                           <span className="text-slate-600">|</span>
                           <span className="flex items-center gap-1">

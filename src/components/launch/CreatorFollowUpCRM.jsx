@@ -144,16 +144,29 @@ export default function CreatorFollowUpCRM({
   // ── 1. Helper to extract reply classification and snippet ───────────────────
   const getCreatorReplyInfo = (c) => {
     if (!c) return { hasReply: false, classification: "", snippet: "", subject: "", time: "-", totalInbound: 0 };
-    const email = (c.email || c.email_public || "").toLowerCase().trim();
-    const handle = (c.handle || "").toLowerCase().replace(/^@/, "").trim();
-    const cId = c.id;
+    const cName = (c.name || c.display_name || "").toLowerCase().trim();
 
-    // Check database threads
+    // Check database threads with strict creator isolation
     const matchedThreads = (realThreads || []).filter((t) => {
       if (!t) return false;
       if (t.creator_id && cId && t.creator_id === cId) return true;
-      if (handle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === handle) return true;
-      if (email && t.creator_email && t.creator_email.toLowerCase().trim() === email) return true;
+      if (!t.creator_id) {
+        if (handle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === handle) return true;
+        if (cName && cName.length >= 3 && (t.subject || "").toLowerCase().includes(cName)) return true;
+        if (email && t.creator_email && t.creator_email.toLowerCase().trim() === email) {
+          const tSubj = (t.subject || "").toLowerCase();
+          const otherCreators = (creators || []).filter((other) => other.id !== cId);
+          const belongsToOther = otherCreators.some((other) => {
+            const oName = (other.name || other.display_name || "").toLowerCase().trim();
+            const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
+            return (
+              (oName && oName.length >= 3 && tSubj.includes(oName)) ||
+              (oHandle && oHandle.length >= 3 && tSubj.includes(oHandle))
+            );
+          });
+          if (!belongsToOther) return true;
+        }
+      }
       return false;
     });
 
@@ -162,7 +175,30 @@ export default function CreatorFollowUpCRM({
       (t.replies || []).forEach((r) => {
         const fromAddr = (r.from_address || "").toLowerCase().trim();
         const isAdmin = fromAddr.includes("partnerships@creatorforge.com") || fromAddr.includes("admin") || r.direction === "outbound";
-        if (!isAdmin) inboundReplies.push(r);
+        if (isAdmin) return;
+
+        const bodyLower = (r.body || "").toLowerCase();
+        const subjLower = (r.subject || "").toLowerCase();
+
+        // Check if reply explicitly belongs to another creator
+        if (bodyLower.includes("cf-cid:") && !bodyLower.includes(`cf-cid:${cId.toLowerCase()}`)) return;
+        if (subjLower.includes("[#") && handle && !subjLower.includes(`[#${handle}]`)) return;
+
+        const otherCreators = (creators || []).filter((other) => other.id !== cId);
+        const hasOtherToken = otherCreators.some((other) => {
+          const oName = (other.name || other.display_name || "").toLowerCase().trim();
+          const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
+          const oId = (other.id || "").toLowerCase();
+          return (
+            (oId && bodyLower.includes(`cf-cid:${oId}`)) ||
+            (oHandle && oHandle.length >= 3 && subjLower.includes(`[#${oHandle}]`)) ||
+            (oName && oName.length >= 4 && subjLower.includes(`idea for ${oName}`)) ||
+            (oName && oName.length >= 4 && subjLower.includes(`outreach to ${oName}`))
+          );
+        });
+        if (hasOtherToken) return;
+
+        inboundReplies.push(r);
       });
     });
 
@@ -380,14 +416,30 @@ export default function CreatorFollowUpCRM({
     if (!c) return [];
     const email = (c.email || c.email_public || "").toLowerCase().trim();
     const handle = (c.handle || "").toLowerCase().replace(/^@/, "").trim();
+    const cName = (c.name || c.display_name || "").toLowerCase().trim();
     const cId = c.id;
 
-    // Find all matching threads for this creator in database
+    // Find all matching threads for this creator in database with strict isolation
     const matchedThreads = (realThreads || []).filter((t) => {
       if (!t) return false;
       if (t.creator_id && cId && t.creator_id === cId) return true;
-      if (handle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === handle) return true;
-      if (email && t.creator_email && t.creator_email.toLowerCase().trim() === email) return true;
+      if (!t.creator_id) {
+        if (handle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === handle) return true;
+        if (cName && cName.length >= 3 && (t.subject || "").toLowerCase().includes(cName)) return true;
+        if (email && t.creator_email && t.creator_email.toLowerCase().trim() === email) {
+          const tSubj = (t.subject || "").toLowerCase();
+          const otherCreators = (creators || []).filter((other) => other.id !== cId);
+          const belongsToOther = otherCreators.some((other) => {
+            const oName = (other.name || other.display_name || "").toLowerCase().trim();
+            const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
+            return (
+              (oName && oName.length >= 3 && tSubj.includes(oName)) ||
+              (oHandle && oHandle.length >= 3 && tSubj.includes(oHandle))
+            );
+          });
+          if (!belongsToOther) return true;
+        }
+      }
       return false;
     });
 
@@ -414,6 +466,29 @@ export default function CreatorFollowUpCRM({
       (t.replies || []).forEach((r) => {
         const fromAddr = (r.from_address || "").toLowerCase().trim();
         const isAdmin = fromAddr.includes("partnerships@creatorforge.com") || fromAddr.includes("admin") || r.direction === "outbound";
+        
+        if (!isAdmin) {
+          const bodyLower = (r.body || "").toLowerCase();
+          const subjLower = (r.subject || "").toLowerCase();
+
+          // Reject if explicitly marked for another creator
+          if (bodyLower.includes("cf-cid:") && !bodyLower.includes(`cf-cid:${cId.toLowerCase()}`)) return;
+          if (subjLower.includes("[#") && handle && !subjLower.includes(`[#${handle}]`)) return;
+
+          const otherCreators = (creators || []).filter((other) => other.id !== cId);
+          const hasOtherToken = otherCreators.some((other) => {
+            const oName = (other.name || other.display_name || "").toLowerCase().trim();
+            const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
+            const oId = (other.id || "").toLowerCase();
+            return (
+              (oId && bodyLower.includes(`cf-cid:${oId}`)) ||
+              (oHandle && oHandle.length >= 3 && subjLower.includes(`[#${oHandle}]`)) ||
+              (oName && oName.length >= 4 && subjLower.includes(`idea for ${oName}`)) ||
+              (oName && oName.length >= 4 && subjLower.includes(`outreach to ${oName}`))
+            );
+          });
+          if (hasOtherToken) return;
+        }
         items.push({
           id: r.id || `reply_${Math.random()}`,
           type: isAdmin ? "outbound_email" : "inbound_reply",
