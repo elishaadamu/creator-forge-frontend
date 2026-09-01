@@ -78,20 +78,6 @@ export default function AcquisitionEngine({
   const [campaignRunning, setCampaignRunning] = useState(true);
   const [showAdminLookup, setShowAdminLookup] = useState(false);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem("forge_launch_acquisition_step", String(activeStep));
-      import("../../services/opsApi").then(({ updateWorkflowState }) => {
-        updateWorkflowState({ active_step: activeStep, selected_creator_id: selectedCreatorId }).catch(() => {});
-      });
-    } catch (error) {
-      console.warn(
-        "[AcquisitionEngine] Failed to persist workflow step:",
-        error,
-      );
-    }
-  }, [activeStep, selectedCreatorId]);
-
   // Step 1: Campaign Controls State
   const [niches, setNiches] = useState([
     "Tech",
@@ -181,6 +167,21 @@ export default function AcquisitionEngine({
   const [copiedEmail, setCopiedEmail] = useState(null);
   const [replyFilter, setReplyFilter] = useState("all");
   const [showFollowUpCRM, setShowFollowUpCRM] = useState(false);
+
+  // Synchronize active step and selected creator across devices
+  useEffect(() => {
+    try {
+      localStorage.setItem("forge_launch_acquisition_step", String(activeStep));
+      import("../../services/opsApi").then(({ updateWorkflowState }) => {
+        updateWorkflowState({ active_step: activeStep, selected_creator_id: selectedCreatorId }).catch(() => {});
+      });
+    } catch (error) {
+      console.warn(
+        "[AcquisitionEngine] Failed to persist workflow step:",
+        error,
+      );
+    }
+  }, [activeStep, selectedCreatorId]);
 
   // Sync step and creator from URL if passed as deep-link query parameters
   useEffect(() => {
