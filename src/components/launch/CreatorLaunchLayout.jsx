@@ -209,12 +209,25 @@ export default function CreatorLaunchLayout({
     return () => window.removeEventListener('popstate', handleUrlSync)
   }, [])
 
-  // Keep section & project in localStorage
+  // Keep section & project in localStorage and clean URL query params
   useEffect(() => {
     try {
       localStorage.setItem('forge_launch_active_section', activeSection)
       if (activeProject) {
         localStorage.setItem('forge_launch_active_project', JSON.stringify(activeProject))
+      }
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        if (activeSection === 'section2') {
+          url.searchParams.set('section', 'section2')
+          url.searchParams.delete('step') // Clean stale Section 1 step number
+          if (activeProject?.id) {
+            url.searchParams.set('project', activeProject.id)
+          }
+        } else {
+          url.searchParams.set('section', 'section1')
+        }
+        window.history.replaceState({}, '', url.toString())
       }
     } catch (e) {
       console.warn('Failed to sync creator launch state to localStorage', e)
