@@ -75,6 +75,17 @@ export default function CreatorFollowUpCRM({
     }
   });
 
+  // Sync stage map from database on mount across devices
+  useEffect(() => {
+    import("../../services/opsApi").then(({ getWorkflowState }) => {
+      getWorkflowState().then((ws) => {
+        if (ws && ws.creator_stage_map && Object.keys(ws.creator_stage_map).length > 0) {
+          setStageMap((prev) => ({ ...ws.creator_stage_map, ...prev }));
+        }
+      }).catch(() => {});
+    });
+  }, []);
+
   const handleOpenStudioForCreator = (creator, targetStep, actionName) => {
     if (!creator) return;
     const stepNum = typeof targetStep === "number" ? targetStep : (targetStep === "section2" ? "section2" : 5);
@@ -90,6 +101,9 @@ export default function CreatorFollowUpCRM({
       }
       localStorage.setItem("forge_creator_stage_map", JSON.stringify(map));
       setStageMap(map);
+      import("../../services/opsApi").then(({ updateWorkflowState }) => {
+        updateWorkflowState({ creator_stage_map: map }).catch(() => {});
+      });
     } catch (e) {}
 
     if (onSelectCreator) {
@@ -111,6 +125,9 @@ export default function CreatorFollowUpCRM({
     setStageMap(newStageMap);
     try {
       localStorage.setItem("forge_creator_stage_map", JSON.stringify(newStageMap));
+      import("../../services/opsApi").then(({ updateWorkflowState }) => {
+        updateWorkflowState({ creator_stage_map: newStageMap }).catch(() => {});
+      });
     } catch {}
     if (onApproveCreator) {
       onApproveCreator(creatorId);

@@ -221,46 +221,52 @@ export default function CreatorLaunchLayout({
     }
   }, [activeSection, activeProject])
 
-  // Synchronize with backend DB: ONLY sync if project was authorized via Admin URL or freshly launched
+  // Synchronize with backend DB: Sync workflow state and active projects across all devices
   useEffect(() => {
     let isMounted = true
-    const syncDbProjects = async () => {
+    const syncDbState = async () => {
       try {
-        const searchParams = new URLSearchParams(window.location.search)
-        const projIdParam = searchParams.get('project')
-        const targetId = projIdParam || activeProject?.id
+        const { getWorkflowState, getCoLaunchProjects } = await import('../../services/opsApi')
+        const [workflowRes, projectsRes] = await Promise.allSettled([
+          getWorkflowState(),
+          getCoLaunchProjects(),
+        ])
 
-        if (!targetId) {
-          // No admin project URL specified -> Section 2 remains strictly locked
-          return
+        if (isMounted && workflowRes.status === 'fulfilled' && workflowRes.value) {
+          const ws = workflowRes.value
+          const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+          const urlSec = searchParams?.get('section')
+          if (!urlSec && ws.active_section) {
+            setActiveSection(ws.active_section)
+          }
         }
 
-        const { getCoLaunchProjects } = await import('../../services/opsApi')
-        const projects = await getCoLaunchProjects()
-        if (isMounted && projects) {
-          const matched = projects.find(p => p.id === targetId)
-          if (matched) {
-            setActiveProject(prev => {
-              if (!prev || prev.id !== matched.id || prev.status !== matched.status) {
-                try {
-                  localStorage.setItem('forge_launch_active_project', JSON.stringify(matched))
-                } catch {}
-                return matched
-              }
-              return prev
-            })
+        if (isMounted && projectsRes.status === 'fulfilled' && projectsRes.value) {
+          const projs = projectsRes.value
+          if (Array.isArray(projs) && projs.length > 0) {
+            const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+            const projIdParam = searchParams?.get('project')
+            const matched = projIdParam ? projs.find(p => p.id === projIdParam) : projs[0]
+            if (matched) {
+              setActiveProject(matched)
+              try {
+                localStorage.setItem('forge_launch_active_project', JSON.stringify(matched))
+              } catch {}
+            }
           }
         }
       } catch (err) {
-        console.warn('[CreatorLaunchLayout] Background project sync error:', err)
+        console.warn('[CreatorLaunchLayout] Cross-device sync error:', err)
       }
     }
 
-    syncDbProjects()
+    syncDbState()
+    const syncInterval = setInterval(syncDbState, 20000)
     return () => {
       isMounted = false
+      clearInterval(syncInterval)
     }
-  }, [activeProject?.id])
+  }, [])
 
   const handleCreateProjectFromConcept = async (newProjData) => {
     const projId = `proj_${Date.now()}`
@@ -394,6 +400,9 @@ export default function CreatorLaunchLayout({
                   const url = new URL(window.location.href)
                   url.searchParams.set('section', 'section1')
                   window.history.replaceState({}, '', url.toString())
+                  import('../../services/opsApi').then(({ updateWorkflowState }) => {
+                    updateWorkflowState({ active_section: 'section1' }).catch(() => {})
+                  })
                 } catch {}
               }}
               className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
@@ -412,6 +421,9 @@ export default function CreatorLaunchLayout({
                   const url = new URL(window.location.href)
                   url.searchParams.set('section', 'section2')
                   window.history.replaceState({}, '', url.toString())
+                  import('../../services/opsApi').then(({ updateWorkflowState }) => {
+                    updateWorkflowState({ active_section: 'section2' }).catch(() => {})
+                  })
                 } catch {}
               }}
               className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${

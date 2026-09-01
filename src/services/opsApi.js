@@ -236,6 +236,9 @@ export const generateAudienceAndConcepts = (params) =>
 export const generateStep6Response = (params) =>
   req('POST', '/autonomous/generate-step6-response', params)
 
+// ── Global Cross-Device Workflow State Sync ─────────────────────────────────
+export const getWorkflowState = () => req('GET', '/workflow-state')
+export const updateWorkflowState = (data) => req('POST', '/workflow-state', data)
 
 export const getFrontendUrl = () => {
   const envUrl = import.meta.env?.VITE_FRONTEND_URL
@@ -244,4 +247,5 @@ export const getFrontendUrl = () => {
   }
   return 'https://creator-forge-frontend.vercel.app'
 }
+
 

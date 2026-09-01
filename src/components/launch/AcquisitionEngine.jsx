@@ -81,13 +81,16 @@ export default function AcquisitionEngine({
   useEffect(() => {
     try {
       localStorage.setItem("forge_launch_acquisition_step", String(activeStep));
+      import("../../services/opsApi").then(({ updateWorkflowState }) => {
+        updateWorkflowState({ active_step: activeStep, selected_creator_id: selectedCreatorId }).catch(() => {});
+      });
     } catch (error) {
       console.warn(
         "[AcquisitionEngine] Failed to persist workflow step:",
         error,
       );
     }
-  }, [activeStep]);
+  }, [activeStep, selectedCreatorId]);
 
   // Step 1: Campaign Controls State
   const [niches, setNiches] = useState([
@@ -530,9 +533,48 @@ export default function AcquisitionEngine({
     );
   };
 
-  // Load existing creators from database on mount — DB is the single source of truth for cross-device persistence
+  // Load existing creators, workflow state, and threads from database on mount — DB is the single source of truth for cross-device persistence
   useEffect(() => {
-    import("../../services/opsApi").then(({ getCreators }) => {
+    let isMounted = true;
+    import("../../services/opsApi").then(({ getCreators, getWorkflowState, getThreads }) => {
+      // 1. Sync global workflow state (step, pitch map, choices) across devices
+      getWorkflowState()
+        .then((ws) => {
+          if (isMounted && ws) {
+            const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+            const urlStep = Number(searchParams?.get('step'));
+            if (!urlStep && ws.active_step && ws.active_step >= 1 && ws.active_step <= 6) {
+              setActiveStep(ws.active_step);
+            }
+            if (ws.selected_creator_id) {
+              setSelectedCreatorId((prev) => prev || ws.selected_creator_id);
+            }
+            if (ws.pitch_sent_map && Object.keys(ws.pitch_sent_map).length > 0) {
+              setPitchSentMap((prev) => ({ ...ws.pitch_sent_map, ...prev }));
+            }
+            if (ws.ai_choice_map && Object.keys(ws.ai_choice_map).length > 0) {
+              setAiDetectedChoiceMap((prev) => ({ ...ws.ai_choice_map, ...prev }));
+            }
+            if (ws.answer_sent_map && Object.keys(ws.answer_sent_map).length > 0) {
+              setAnswerSentMap((prev) => ({ ...ws.answer_sent_map, ...prev }));
+            }
+            if (ws.persuasion_sent_map && Object.keys(ws.persuasion_sent_map).length > 0) {
+              setPersuasionSentMap((prev) => ({ ...ws.persuasion_sent_map, ...prev }));
+            }
+          }
+        })
+        .catch(() => {});
+
+      // 2. Sync real threads / IMAP messages across devices
+      getThreads()
+        .then((ths) => {
+          if (isMounted && Array.isArray(ths) && ths.length > 0) {
+            setRealThreads(ths);
+          }
+        })
+        .catch(() => {});
+
+      // 3. Sync creator cohort
       getCreators({ limit: 50 })
         .then((res) => {
           const rawList = Array.isArray(res) ? res : res?.creators || [];
@@ -2643,6 +2685,11 @@ export default function AcquisitionEngine({
         "forge_launch_pitch_sent_map",
         JSON.stringify(pitchSentMap),
       );
+      if (pitchSentMap && Object.keys(pitchSentMap).length > 0) {
+        import("../../services/opsApi").then(({ updateWorkflowState }) => {
+          updateWorkflowState({ pitch_sent_map: pitchSentMap }).catch(() => {});
+        });
+      }
     } catch {}
   }, [pitchSentMap]);
 
@@ -2652,6 +2699,11 @@ export default function AcquisitionEngine({
         "forge_launch_persuasion_sent_map",
         JSON.stringify(persuasionSentMap),
       );
+      if (persuasionSentMap && Object.keys(persuasionSentMap).length > 0) {
+        import("../../services/opsApi").then(({ updateWorkflowState }) => {
+          updateWorkflowState({ persuasion_sent_map: persuasionSentMap }).catch(() => {});
+        });
+      }
     } catch {}
   }, [persuasionSentMap]);
 
@@ -2661,6 +2713,11 @@ export default function AcquisitionEngine({
         "forge_launch_answer_sent_map",
         JSON.stringify(answerSentMap),
       );
+      if (answerSentMap && Object.keys(answerSentMap).length > 0) {
+        import("../../services/opsApi").then(({ updateWorkflowState }) => {
+          updateWorkflowState({ answer_sent_map: answerSentMap }).catch(() => {});
+        });
+      }
     } catch {}
   }, [answerSentMap]);
 
@@ -2670,6 +2727,11 @@ export default function AcquisitionEngine({
         "forge_launch_ai_choice_map",
         JSON.stringify(aiDetectedChoiceMap),
       );
+      if (aiDetectedChoiceMap && Object.keys(aiDetectedChoiceMap).length > 0) {
+        import("../../services/opsApi").then(({ updateWorkflowState }) => {
+          updateWorkflowState({ ai_choice_map: aiDetectedChoiceMap }).catch(() => {});
+        });
+      }
     } catch {}
   }, [aiDetectedChoiceMap]);
 
