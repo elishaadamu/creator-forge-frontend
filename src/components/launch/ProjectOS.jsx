@@ -214,14 +214,19 @@ partnerships@creatorforge.com`
     }))
   }
 
+  const openPhaseStep = (stepId) => {
+    setSelectedPhaseStep(stepId || 'plan')
+    setShowPhaseExecutionModal(true)
+  }
+
   const [previewingFile, setPreviewingFile] = useState(null)
   const [customFiles, setCustomFiles] = useState([])
 
   const defaultProjectFiles = [
     {
       id: 'file-1',
-      name: `${(project.productName || 'venture').toLowerCase().replace(/[^a-z0-9]/g, '_')}_validation_plan_spec.md`,
-      title: 'Validation Plan & Commercial Milestone Spec',
+      name: `${(project.productName || 'venture').toLowerCase().replace(/[^a-z0-9]/g, '_')}_validation_plan.md`,
+      title: 'Validation Plan Specification',
       type: 'Executive Specification',
       phase: 'Phase 1 • Step 1',
       size: '148 KB',
@@ -232,8 +237,8 @@ partnerships@creatorforge.com`
     },
     {
       id: 'file-2',
-      name: `creator_co_launch_partnership_agreement_${(project.creatorName || 'creator').toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
-      title: '50/50 Co-Founding Partnership Term Sheet',
+      name: `partnership_term_sheet_${(project.creatorName || 'creator').toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
+      title: '50/50 Co-Founding Term Sheet',
       type: 'Legal Term Sheet',
       phase: 'Deal Finalized',
       badge: 'Signed Agreement',
@@ -243,8 +248,8 @@ partnerships@creatorforge.com`
     },
     {
       id: 'file-3',
-      name: `14_day_creator_campaign_content_kit.md`,
-      title: '14-Day Creator Launch Campaign Content Kit',
+      name: `14_day_creator_campaign_kit.md`,
+      title: '14-Day Creator Campaign Kit',
       type: 'Marketing Bundle',
       phase: 'Phase 1 • Step 3',
       badge: 'Ready to Post',
@@ -254,19 +259,19 @@ partnerships@creatorforge.com`
     },
     {
       id: 'file-4',
-      name: `software_prototype_wireframes_v1.png`,
-      title: 'Interactive Application UI Canvas Mockup',
+      name: `software_prototype_wireframes.png`,
+      title: 'UI Prototype & Wireframes',
       type: 'Design System PNG',
       phase: 'Phase 1 • Step 2',
       badge: 'Visual Asset',
       icon: Layout,
       color: 'text-amber-400',
-      content: `[Visual Asset File: software_prototype_wireframes_v1.png]\n\nHigh-resolution UI layout mockups, widget tree architecture, and live device simulator frames for ${project.productName || 'Software Venture'}.`
+      content: `[Visual Asset File: software_prototype_wireframes.png]\n\nHigh-resolution UI layout mockups, widget tree architecture, and live device simulator frames for ${project.productName || 'Software Venture'}.`
     },
     {
       id: 'file-5',
-      name: `flutterflow_app_starter_scaffold.dart`,
-      title: 'Production Flutter & Dart Starter Scaffold',
+      name: `flutterflow_app_scaffold.dart`,
+      title: 'Flutter & Dart Starter Scaffold',
       type: 'Dart Source Code',
       phase: 'Phase 2 Ready',
       badge: 'Code Scaffold',
@@ -276,8 +281,8 @@ partnerships@creatorforge.com`
     },
     {
       id: 'file-6',
-      name: `audience_validation_survey_data.csv`,
-      title: 'Audience Feedback & Pre-Order Telemetry Logs',
+      name: `audience_validation_telemetry.csv`,
+      title: 'Audience Feedback & Pre-Orders',
       type: 'Spreadsheet CSV',
       phase: 'Live Telemetry',
       badge: 'Telemetry Feed',
@@ -672,59 +677,56 @@ partnerships@creatorforge.com`
               {/* FILES TAB — VENTURE ASSETS & REPOSITORY */}
               {sidebarTab === 'files' && (
                 <div className="space-y-4 animate-fade-in text-xs">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
+                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
                     <div>
                       <span className="font-bold text-white block">Venture Assets & File Repository</span>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        Executive specifications, partnership contracts, launch copy, code scaffolds & telemetry feeds.
+                        Executive specifications, partnership contracts, launch copy & code scaffolds.
                       </p>
                     </div>
-                    <label className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-purple-950/40">
+                    <label className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-purple-950/40 shrink-0">
                       <Plus className="w-3.5 h-3.5" />
                       <span>Upload File</span>
                       <input type="file" onChange={handleFileUpload} className="hidden" multiple />
                     </label>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {filesList.map((f, i) => {
                       const FileIcon = f.icon || FileText
                       return (
                         <div
                           key={f.id || i}
                           onClick={() => setPreviewingFile(f)}
-                          className="p-3.5 rounded-xl bg-[#141720] hover:bg-[#1b202d] border border-white/[0.06] hover:border-purple-500/40 transition-all flex items-start justify-between gap-2.5 cursor-pointer group"
+                          className="p-3.5 rounded-2xl bg-[#141720] hover:bg-[#1b202d] border border-white/[0.06] hover:border-purple-500/40 transition-all flex items-center justify-between gap-3 cursor-pointer group shadow-sm"
                         >
-                          <div className="flex items-start gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0 text-purple-400 group-hover:scale-105 transition-transform">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-400 group-hover:scale-105 transition-transform">
                               <FileIcon className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
                               <div className="font-bold text-white group-hover:text-purple-300 transition-colors truncate text-xs">
                                 {f.title || f.name}
                               </div>
-                              <span className="text-[10px] font-mono text-slate-400 block truncate">{f.name}</span>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/[0.06] text-slate-300">
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/[0.06] text-purple-300/80 font-medium">
                                   {f.phase || 'Venture Asset'}
                                 </span>
                                 <span className="text-[9px] text-slate-500 font-mono">{f.size}</span>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDownloadFile(f)
-                              }}
-                              title="Download Asset"
-                              className="p-1 rounded-lg hover:bg-white/[0.08] text-slate-400 hover:text-white transition-colors"
-                            >
-                              <ArrowRight className="w-3.5 h-3.5 rotate-90" />
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDownloadFile(f)
+                            }}
+                            title="Download Asset"
+                            className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-purple-600/30 text-slate-400 hover:text-white border border-white/[0.08] hover:border-purple-500/40 flex items-center justify-center transition-all shrink-0"
+                          >
+                            <ArrowRight className="w-3.5 h-3.5 rotate-90" />
+                          </button>
                         </div>
                       )
                     })}
@@ -1004,34 +1006,37 @@ partnerships@creatorforge.com`
                     <div
                       key={step.id}
                       onClick={() => openPhaseStep(step.id)}
-                      className={`p-3.5 rounded-xl transition-all cursor-pointer group space-y-1 ${
+                      className={`p-3 rounded-xl transition-all cursor-pointer group space-y-1 ${
                         step.isDone
-                          ? 'bg-emerald-500/[0.04] border border-emerald-500/30 hover:border-emerald-500/60'
+                          ? 'bg-emerald-500/[0.04] border border-emerald-500/30 hover:border-emerald-500/60 shadow-sm'
                           : 'bg-[#141720] hover:bg-[#1b202c] border border-white/[0.06] hover:border-emerald-500/40'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5 text-xs font-bold transition-colors">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           {step.isDone ? (
                             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                           ) : (
                             <Icon className="w-4 h-4 text-emerald-400 shrink-0" />
                           )}
-                          <span className={`${step.isDone ? 'line-through text-slate-300 font-medium' : 'text-white'}`}>
+                          <span className="text-xs font-bold text-white truncate">
                             {step.num}
                           </span>
-                          {step.isDone && (
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {step.isDone ? (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                               ✓ {step.badge}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-400 group-hover:text-emerald-300 flex items-center gap-0.5 transition-colors">
+                              <span>Open</span>
+                              <ChevronRight className="w-3 h-3" />
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] font-bold text-slate-400 group-hover:text-white flex items-center gap-0.5">
-                          <span>{step.isDone ? 'Edit (Manual)' : 'Open'}</span>
-                          <ChevronRight className="w-3 h-3" />
-                        </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed pl-6">
+                      <p className="text-[11px] text-slate-400 leading-relaxed pl-6 line-clamp-2">
                         {step.desc}
                       </p>
                     </div>

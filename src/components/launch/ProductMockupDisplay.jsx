@@ -73,7 +73,7 @@ export default function ProductMockupDisplay({ project, theme = 'purple' }) {
   // Archetype 1: FlutterFlow & Mobile App Workspace
   if (isMobileOrFlutter) {
     config = {
-      badgeText: '📱 Flutter App Workspace & Visual Builder • v1.0',
+      badgeText: '📱 Flutter App Workspace • v1.0',
       navTabs: [
         { label: 'Widget Tree', icon: Boxes },
         { label: 'Logic & State Flow', icon: Zap },
@@ -259,24 +259,24 @@ export default function ProductMockupDisplay({ project, theme = 'purple' }) {
   return (
     <div className={`w-full rounded-2xl bg-[#090b0e] border ${currentTheme.border} p-4 sm:p-6 shadow-2xl ${currentTheme.glow} transition-all space-y-4 text-left select-none`}>
       {/* macOS Window Titlebar */}
-      <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500/90 shadow-sm shadow-red-950" />
             <div className="w-2.5 h-2.5 rounded-full bg-amber-500/90 shadow-sm shadow-amber-950" />
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/90 shadow-sm shadow-emerald-950" />
           </div>
-          <div className="px-2.5 py-0.5 rounded-md bg-[#141720] border border-white/[0.06] text-[10px] font-mono text-purple-300 flex items-center gap-1.5">
-            <Globe className="w-3 h-3 text-purple-400" />
-            <span>https://{appUrl}</span>
+          <div className="px-2.5 py-1 rounded-lg bg-[#141720] border border-white/[0.06] text-[10px] font-mono text-purple-300 flex items-center gap-1.5 max-w-[200px] sm:max-w-xs truncate">
+            <Globe className="w-3 h-3 text-purple-400 shrink-0" />
+            <span className="truncate">https://{appUrl}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${currentTheme.badge}`}>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold whitespace-nowrap ${currentTheme.badge}`}>
             {config.badgeText}
           </span>
-          <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
+          <span className="text-[10px] font-mono text-slate-400 whitespace-nowrap hidden lg:inline">
             Co-Built with {creatorName}
           </span>
         </div>
@@ -327,12 +327,12 @@ export default function ProductMockupDisplay({ project, theme = 'purple' }) {
           </div>
 
           {/* Active Sandbox Specs */}
-          <div className="p-2.5 rounded-lg bg-[#0d1017] border border-white/[0.06] space-y-1.5 text-[10px]">
+          <div className="p-2.5 rounded-xl bg-[#0d1017] border border-white/[0.06] space-y-2 text-[10px]">
             <div className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Environment Specs</div>
             {config.specs.map((sp, i) => (
-              <div key={i} className="text-slate-300 font-mono flex items-center justify-between">
-                <span>{sp.label}</span>
-                <span className="text-emerald-400">{sp.value}</span>
+              <div key={i} className="space-y-0.5 border-b border-white/[0.04] pb-1.5 last:border-0 last:pb-0">
+                <div className="text-slate-400 font-mono text-[9px] uppercase">{sp.label}</div>
+                <div className="text-emerald-400 font-mono font-bold text-[10px] break-words">{sp.value}</div>
               </div>
             ))}
           </div>
