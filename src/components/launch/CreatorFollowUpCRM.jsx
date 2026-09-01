@@ -206,7 +206,8 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    if (c.hasReplied || c.replyClassification || c.reply_classification || c.reply_text || c.replyText || overriddenCls) {
+    const hasExplicitRepliedStatus = c.status === "replied" || c.status === "in_review" || c.status === "interested";
+    if (overriddenCls || (hasExplicitRepliedStatus && (c.reply_text || c.replyText))) {
       const cls = (overriddenCls || c.replyClassification || c.reply_classification || "interested").toLowerCase();
       const sentiment = cls === "interested" ? "positive" : cls === "question" ? "questioning" : cls === "not_interested" ? "negative" : "neutral";
       const reasoning = cls === "interested"
@@ -229,7 +230,7 @@ export default function CreatorFollowUpCRM({
     if (!email || !email.includes("@")) {
       return {
         hasReply: false,
-        classification: overriddenCls || "no_email",
+        classification: "no_email",
         sentiment: "neutral",
         reasoning: "No verified public email address found yet. Add manual email address to enable outreach.",
         snippet: "No verified email address found yet.",
@@ -239,13 +240,16 @@ export default function CreatorFollowUpCRM({
       };
     }
 
+    const isContacted = c.status === "contacted" || c.outreachSent;
     return {
       hasReply: false,
-      classification: overriddenCls || "awaiting_reply",
+      classification: isContacted ? "awaiting_reply" : "ready_for_outreach",
       sentiment: "neutral",
-      reasoning: "Autonomous outreach message dispatched. Awaiting inbound creator response.",
-      snippet: "Outreach email sent. Awaiting creator reply.",
-      subject: "Awaiting Reply",
+      reasoning: isContacted
+        ? "Autonomous outreach message dispatched. Awaiting inbound creator response."
+        : "Lead qualified and ready for Step 3 Autonomous Outreach broadcast.",
+      snippet: isContacted ? "Outreach email sent. Awaiting creator reply." : "Ready for outreach dispatch.",
+      subject: isContacted ? "Awaiting Reply" : "Ready for Outreach",
       time: "-",
       totalInbound: 0,
     };

@@ -3693,17 +3693,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           .replace(/\{\{creator_id\}\}/g, c.id)
           .replace(/\{\{product_name\}\}/g, "a high-growth product");
 
+        setOutreachLog(`[Connecting SMTP] Dispatching email to ${cName} (${targetEmail})...`);
         try {
-          // 15-second race timeout per email to prevent hanging
+          // 45-second race timeout per email to accommodate cloud container wakeups & SMTP handshakes
           const sendWithTimeout = Promise.race([
             sendDirectEmail(targetEmail, renderedSubject, renderedBody, c.id),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Request timed out (15s)")), 15000)
+              setTimeout(() => reject(new Error("Request timed out (45s) — verify SMTP credentials on cloud server")), 45000)
             ),
           ]);
 
           await sendWithTimeout;
           sentCount++;
+          setOutreachLog(`[Delivered] Successfully sent outreach email to ${cName} (${targetEmail})!`);
 
           // Mark this individual creator as contacted in local state immediately
           setCreators((prev) =>
