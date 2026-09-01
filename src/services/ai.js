@@ -1552,6 +1552,13 @@ Return JSON:
   ];
 }
 
+export function getBaseAppOrigin() {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin
+  }
+  return 'http://localhost:3001'
+}
+
 export function buildSmartFallbackCampaignKit(source) {
   const product = source?.productName || source?.title || "Software Product";
   const creator =
@@ -1559,7 +1566,8 @@ export function buildSmartFallbackCampaignKit(source) {
   const niche = source?.niche || "Software Workflows";
   const tagline =
     source?.productTagline || `The high-leverage workspace built for ${niche}`;
-  const slug = product.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const slug = (source?.slug || product).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const origin = getBaseAppOrigin();
 
   const defaultSchedule = [
     {
@@ -1646,11 +1654,11 @@ export function buildSmartFallbackCampaignKit(source) {
   ];
 
   return {
-    announcementPost: `🚨 Big announcement! After months of hearing about the nightmare of manual workflows in ${niche}, we're officially building ${product}.\n\n💡 ${tagline}.\n\nWe're accepting only 50 Founding Members for our private Beta at 50% off + direct 1-on-1 onboarding with me.\n\n👇 Claim a founding spot or reserve with a $19 refundable deposit:\nhttps://${slug}.creatorforge.app/preorder?ref=twitter_post`,
-    storySequence: `STORY 1 — PAIN POINT HOOK\nVisual: Selfie video or background video of workflow.\nText: "Quick question for anyone in ${niche}... How many hours do you waste weekly on manual tasks?"\n[STICKER: Interactive Poll -> "1-3 Hours" / "5+ Hours (Help!)"]\n\nSTORY 2 — THE PRODUCT REVEAL\nVisual: Mockup screenshot / screen recording of ${product}.\nText: "That's why @creator and the team are co-building ${product} — ${tagline}."\n\nSTORY 3 — FOUNDING MEMBER OFFER & LINK\nVisual: Founding badge overlay.\nText: "Opening 50 Founding Member spots with lifetime 50% discount + private beta access."\n[STICKER: Link -> "Claim Founding Pass ↗" -> https://${slug}.creatorforge.app/preorder?ref=instagram_story]`,
+    announcementPost: `🚨 Big announcement! After months of hearing about the nightmare of manual workflows in ${niche}, we're officially building ${product}.\n\n💡 ${tagline}.\n\nWe're accepting only 50 Founding Members for our private Beta at 50% off + direct 1-on-1 onboarding with me.\n\n👇 Claim a founding spot or reserve with a $19 refundable deposit:\n${origin}/preorder/${slug}?ref=twitter_post`,
+    storySequence: `STORY 1 — PAIN POINT HOOK\nVisual: Selfie video or background video of workflow.\nText: "Quick question for anyone in ${niche}... How many hours do you waste weekly on manual tasks?"\n[STICKER: Interactive Poll -> "1-3 Hours" / "5+ Hours (Help!)"]\n\nSTORY 2 — THE PRODUCT REVEAL\nVisual: Mockup screenshot / screen recording of ${product}.\nText: "That's why @creator and the team are co-building ${product} — ${tagline}."\n\nSTORY 3 — FOUNDING MEMBER OFFER & LINK\nVisual: Founding badge overlay.\nText: "Opening 50 Founding Member spots with lifetime 50% discount + private beta access."\n[STICKER: Link -> "Claim Founding Pass ↗" -> ${origin}/preorder/${slug}?ref=instagram_story]`,
     videoScript: `[00:00 - 00:05] HOOK (Visual: High energy to camera, pointing at screen)\n"If you work in ${niche} and you're tired of wasting hours on fragmented tools, stop scrolling."\n\n[00:05 - 00:20] THE PROBLEM (Visual: Frustrated reaction, screen recording)\n"Most existing solutions cost a fortune, crash constantly, and aren't designed for modern creators."\n\n[00:20 - 00:40] THE SOLUTION (Visual: Demo of ${product} interface)\n"That's why we co-founded ${product}. It automates your entire pipeline in one clean workspace."\n\n[00:40 - 00:60] THE OFFER & CTA (Visual: Pointing to link in bio)\n"We're accepting only 50 Founding Members for our alpha with lifetime 50% off. Tap the link in my bio to reserve your spot before it fills up!"`,
-    newsletterDraft: `Subject: Why I'm building ${product} (and an invite for you)\n\nHey [First Name],\n\nIf you've been following my content in ${niche}, you know how frustrating manual bottlenecks have been.\n\nToday, I'm thrilled to announce that we are officially co-founding ${product} — ${tagline}.\n\nBefore we start full engineering on the MVP, we are opening a private Founding Member cohort of 50 people.\n\nAs a Founding Member, you get:\n• 50% Lifetime Price Lock ($99/year forever)\n• Direct input on product features & roadmap in our private channel\n• 1-on-1 onboarding session directly with the core team\n• 100% money-back guarantee if validation goals aren't met\n\n👉 Claim your founding member pass or reserve with a $19 refundable deposit here:\nhttps://${slug}.creatorforge.app/preorder?ref=newsletter\n\nCan't wait to build this with you,\n${creator}`,
-    directMessageScript: `Hey [First Name]! Saw your recent post about ${niche} and loved your perspective.\n\nWe're putting together a private founding group for ${product} (${tagline}).\n\nSince you're active in this space, I'd love to give you early access + direct input on the roadmap. Check out the founding pre-order here: https://${slug}.creatorforge.app/preorder?ref=dm_outreach — let me know what you think!`,
+    newsletterDraft: `Subject: Why I'm building ${product} (and an invite for you)\n\nHey [First Name],\n\nIf you've been following my content in ${niche}, you know how frustrating manual bottlenecks have been.\n\nToday, I'm thrilled to announce that we are officially co-founding ${product} — ${tagline}.\n\nBefore we start full engineering on the MVP, we are opening a private Founding Member cohort of 50 people.\n\nAs a Founding Member, you get:\n• 50% Lifetime Price Lock ($99/year forever)\n• Direct input on product features & roadmap in our private channel\n• 1-on-1 onboarding session directly with the core team\n• 100% money-back guarantee if validation goals aren't met\n\n👉 Claim your founding member pass or reserve with a $19 refundable deposit here:\n${origin}/preorder/${slug}?ref=newsletter\n\nCan't wait to build this with you,\n${creator}`,
+    directMessageScript: `Hey [First Name]! Saw your recent post about ${niche} and loved your perspective.\n\nWe're putting together a private founding group for ${product} (${tagline}).\n\nSince you're active in this space, I'd love to give you early access + direct input on the roadmap. Check out the founding pre-order here: ${origin}/preorder/${slug}?ref=dm_outreach — let me know what you think!`,
     landingPageCopy: {
       headline: `The High-Leverage Platform Built For ${niche}`,
       subheadline: `${tagline}. Co-founded with ${creator} for ambitious creators.`,
@@ -3122,19 +3130,20 @@ export function buildSmartFallbackPhase3CreatorAssets(projectData) {
   const product = projectData?.productName || 'Software Product'
   const creator = projectData?.creatorName || 'Creator'
   const niche = projectData?.niche || 'Software'
-  const slug = (projectData?.slug || product).toLowerCase().replace(/[^a-z0-9]/g, '-')
+  const slug = (projectData?.slug || product).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const origin = getBaseAppOrigin()
 
   return {
-    announcementPost: `🚨 IT'S LIVE. After weeks of private beta with our founding backers, ${product} is officially open to the public!\n\nIf you're in ${niche} and tired of wasting 8+ hours every week on manual setup, this was built specifically for you.\n\n⚡ 1-Click automated workflows\n🔒 Lifetime founding discount locked for the next 48 hours\n🎁 100% money-back guarantee\n\nGrab your spot now before founding tier pricing closes 👇\nhttps://${slug}.creatorforge.app/launch?ref=creator_announcement`,
+    announcementPost: `🚨 IT'S LIVE. After weeks of private beta with our founding backers, ${product} is officially open to the public!\n\nIf you're in ${niche} and tired of wasting 8+ hours every week on manual setup, this was built specifically for you.\n\n⚡ 1-Click automated workflows\n🔒 Lifetime founding discount locked for the next 48 hours\n🎁 100% money-back guarantee\n\nGrab your spot now before founding tier pricing closes 👇\n${origin}/p/${slug}?ref=creator_announcement`,
     storySequence: [
       { slide: 1, type: 'Pain Hook', copy: `Be honest... how many hours do you waste weekly on manual ${niche} tasks? (Poll sticker: 1-5h vs 8+ hours)` },
       { slide: 2, type: 'Solution Demo', copy: `We spent the last month co-building ${product} to automate this whole nightmare in 1 click. Watch this 10-second preview 👆` },
-      { slide: 3, type: 'Urgent CTA', copy: `Public launch is officially LIVE! The first 50 people get 50% lifetime discount. Link sticker: https://${slug}.creatorforge.app/launch` }
+      { slide: 3, type: 'Urgent CTA', copy: `Public launch is officially LIVE! The first 50 people get 50% lifetime discount. Link sticker: ${origin}/p/${slug}` }
     ],
     newsletterBroadcast: {
       subject: `It's finally here: Meet ${product} (and why we built it)`,
       preview: `Automating the biggest bottleneck in ${niche}...`,
-      body: `Hey everyone,\n\nOver the past few months, the #1 complaint I kept hearing from this community was how frustrating and time-consuming manual workflows in ${niche} have become.\n\nToday, I'm thrilled to announce that we are officially launching ${product}.\n\nHere is what you can do right now:\n1. Automate your core pipeline in under 60 seconds\n2. Sync directly with your cloud destinations\n3. Save an estimated 8-15 hours every single week\n\nFor the next 48 hours, we are opening up our Founding Member pass at a 50% discount.\n\n👉 Claim your founding pass here: https://${slug}.creatorforge.app/launch?ref=newsletter\n\nThank you for being part of this journey from day one.\n\n— ${creator}`
+      body: `Hey everyone,\n\nOver the past few months, the #1 complaint I kept hearing from this community was how frustrating and time-consuming manual workflows in ${niche} have become.\n\nToday, I'm thrilled to announce that we are officially launching ${product}.\n\nHere is what you can do right now:\n1. Automate your core pipeline in under 60 seconds\n2. Sync directly with your cloud destinations\n3. Save an estimated 8-15 hours every single week\n\nFor the next 48 hours, we are opening up our Founding Member pass at a 50% discount.\n\n👉 Claim your founding pass here: ${origin}/p/${slug}?ref=newsletter\n\nThank you for being part of this journey from day one.\n\n— ${creator}`
     },
     videoScript: {
       hook: `Stop doing this manually in ${niche}. Here's how to automate it in 3 clicks.`,
@@ -3143,10 +3152,10 @@ export function buildSmartFallbackPhase3CreatorAssets(projectData) {
       cta: `Link is in my bio right now. Founding member passes are 50% off for the first 48 hours only.`
     },
     referralLinks: [
-      { channel: 'Instagram Bio / Stories', url: `https://${slug}.creatorforge.app/launch?utm_source=instagram&utm_medium=story&utm_campaign=launch_day1` },
-      { channel: 'TikTok Link in Bio', url: `https://${slug}.creatorforge.app/launch?utm_source=tiktok&utm_medium=video&utm_campaign=launch_day1` },
-      { channel: 'YouTube Description', url: `https://${slug}.creatorforge.app/launch?utm_source=youtube&utm_medium=video_desc&utm_campaign=launch_day1` },
-      { channel: 'Newsletter Broadcast', url: `https://${slug}.creatorforge.app/launch?utm_source=newsletter&utm_medium=email&utm_campaign=launch_broadcast` }
+      { channel: 'Instagram Bio / Stories', url: `${origin}/p/${slug}?utm_source=instagram&utm_medium=story&utm_campaign=launch_day1` },
+      { channel: 'TikTok Link in Bio', url: `${origin}/p/${slug}?utm_source=tiktok&utm_medium=video&utm_campaign=launch_day1` },
+      { channel: 'YouTube Description', url: `${origin}/p/${slug}?utm_source=youtube&utm_medium=video_desc&utm_campaign=launch_day1` },
+      { channel: 'Newsletter Broadcast', url: `${origin}/p/${slug}?utm_source=newsletter&utm_medium=email&utm_campaign=launch_broadcast` }
     ]
   }
 }

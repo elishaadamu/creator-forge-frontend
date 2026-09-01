@@ -5,14 +5,14 @@ import {
   Share2, Copy, Check, ExternalLink, X, ShieldCheck, Mail, Send, Target,
   FileText, Layout, Megaphone, TrendingUp, Flag, Bot, User, UserCheck,
   Calendar, Clock, CheckCircle, AlertCircle, MessageSquare, Folder,
-  DollarSign, PieChart, Users, ChevronRight, Play, Eye, Smartphone, Monitor, Tablet,
-  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download
+  DollarSign, PieChart, Users, ChevronRight, ChevronLeft, Play, Eye, Smartphone, Monitor, Tablet,
+  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download, RefreshCw, Zap
 } from 'lucide-react'
 import Phase1Validate from './Phase1Validate'
 import Phase2BuildMVP from './Phase2BuildMVP'
 import Phase3Launch from './Phase3Launch'
 import { trackVisit } from '../../services/tracker'
-import { getFrontendUrl } from '../../services/opsApi'
+import { getFrontendUrl, recordGateDecision } from '../../services/opsApi'
 
 export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisition, onResetProject }) {
   const [sidebarTab, setSidebarTab] = useState('overview')
@@ -186,7 +186,6 @@ partnerships@creatorforge.com`
   const derivedPlanTarget = parseThresholdAmount(project.validationPlan?.threshold)
   const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project.presaleTarget || project.targetRevenue || 12500)
   const visitorsCount = Number(project.visitors || 0)
-  const conversionRate = Number(project.conversionRate || 0)
   const daysLeft = project.daysLeft || project.validationPlan?.period || '18 days'
 
   const portalSlug = (project.creatorHandle || project.creatorName || 'creator').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
@@ -208,10 +207,48 @@ partnerships@creatorforge.com`
   }
 
   const handleAdvancePhase = (nextPhase) => {
+    const updatedStatus = nextPhase === 2 ? 'building' : nextPhase === 3 ? 'launched' : 'validating'
     onUpdateProject?.(prev => ({
       ...prev,
-      currentPhase: nextPhase
+      currentPhase: nextPhase,
+      status: updatedStatus
     }))
+    if (project?.id) {
+      import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
+        updateCoLaunchProject(project.id, {
+          currentPhase: nextPhase,
+          status: updatedStatus
+        }).catch(e => console.warn(e))
+      })
+    }
+  }
+
+  const formatDecisionTitle = (dec) => {
+    if (!dec) return 'Validation Gate Review'
+    const decisionKey = typeof dec === 'string' ? dec : dec.decision
+    if (decisionKey === 'pass_to_phase2') return 'Phase 1 Gate: Build MVP (Approved)'
+    if (decisionKey === 'iterate_validation') return 'Phase 1 Gate: Iterate & Re-Test Sprint'
+    if (decisionKey === 'kill_project') return 'Phase 1 Gate: Venture Archived & Refunded'
+    if (dec.title) return dec.title
+    return String(decisionKey || 'Decision').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  }
+
+  const formatDecisionDate = (isoStr) => {
+    if (!isoStr) return 'Recent checkpoint'
+    try {
+      const d = new Date(isoStr)
+      if (isNaN(d.getTime())) return String(isoStr)
+      return d.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
+    } catch {
+      return String(isoStr)
+    }
   }
 
   const openPhaseStep = (stepId) => {
@@ -324,11 +361,39 @@ partnerships@creatorforge.com`
     setCustomFiles(prev => [...prev, ...newItems])
   }
 
-  const checklistTasks = project.checklist || project.creatorTasks || []
+  const defaultScheduleTasks = [
+    { id: 'day-1', day: 1, title: 'Post Instagram Story #1: The Problem Teaser', channel: 'Instagram Stories', done: true, role: 'Creator Task' },
+    { id: 'day-2', day: 2, title: 'Post Instagram Story #2: Behind-The-Scenes Co-Founding', channel: 'Instagram Stories', isToday: true, done: false, role: 'Creator Task' },
+    { id: 'day-3', day: 3, title: 'YouTube Video Integration Script (60s Mid-Roll)', channel: 'YouTube / Video', done: false, role: 'Creator Task' },
+    { id: 'day-4', day: 4, title: 'Newsletter Broadcast: Founding Cohort Announcement', channel: 'Email Newsletter', done: false, role: 'Creator Task' },
+    { id: 'day-5', day: 5, title: 'X / Twitter Breakdown Thread', channel: 'Twitter / X', done: false, role: 'Creator Task' },
+    { id: 'day-6', day: 6, title: 'Post Instagram Story #3: Live Backer Progress', channel: 'Instagram Stories', done: false, role: 'Creator Task' },
+    { id: 'day-7', day: 7, title: 'Community Post & Final Call', channel: 'All Channels', done: false, role: 'Creator Task' }
+  ]
+
+  const checklistTasks = (project.campaignKit?.postingSchedule?.length > 0
+    ? project.campaignKit.postingSchedule
+    : (project.creatorTasks?.length > 0
+      ? project.creatorTasks
+      : (project.checklist?.length > 0 ? project.checklist : defaultScheduleTasks)))
+
   const rawActivity = project.activityLogs || project.adminActivity || project.aiActivity || []
   const aiActivityList = Array.isArray(rawActivity) ? rawActivity : []
   const messagesList = project.messages || []
   const decisionsList = project.decisions || project.gateDecisions || []
+
+  // Dynamic Validation Gate Metrics
+  const parseThreshold = (str) => {
+    if (!str) return 0
+    const match = String(str).replace(/,/g, '').match(/\$(\d+)/)
+    return match ? Number(match[1]) : 0
+  }
+  const derivedGoal = parseThreshold(project.validationPlan?.threshold)
+  const presaleGoal = derivedGoal > 0 ? derivedGoal : Number(project.presaleTarget || project.targetRevenue || 5000)
+  const backersCount = Array.isArray(project.reservations) ? project.reservations.length : Number(project.telemetry?.presalesCount || 0)
+  const currentPresales = Number(String(project.currentPresales || 0).replace(/[^0-9.]/g, '')) || (project.reservations || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
+  const conversionRate = Number(project.conversionRate || (project.visitors ? (backersCount / Number(project.visitors)) * 100 : (backersCount > 0 ? 8.3 : 0)))
+  const isGatePassed = currentPresales >= presaleGoal || project.currentPhase > 1 || project.status === 'building'
 
   // Step Completion Guards
   const isStep1Done = Boolean(project.validationPlan?.status === 'ready' || project.validationPlan?.threshold || project.customer)
@@ -442,7 +507,7 @@ partnerships@creatorforge.com`
             </div>
 
             {/* Main Command Center Inner Area */}
-            <div className="flex-1 p-5 sm:p-6 space-y-5 bg-[#0e1117]">
+            <div className="flex-1 min-w-0 p-5 sm:p-6 space-y-5 bg-[#0e1117] overflow-x-hidden">
               {/* Header inside Command Center */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
                 <div className="flex-1 min-w-0">
@@ -632,18 +697,60 @@ partnerships@creatorforge.com`
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {checklistTasks.map((task, idx) => (
-                        <div key={idx} className="p-3 rounded-xl bg-[#141720] border border-white/[0.06] flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <CheckCircle2 className={`w-4 h-4 ${task.completed ? 'text-emerald-400' : 'text-slate-600'}`} />
-                            <div>
-                              <div className={`font-semibold ${task.completed ? 'line-through text-slate-500' : 'text-white'}`}>{task.title || task.text}</div>
-                              <span className="text-[10px] text-purple-300">{task.role || 'Sprint Task'}</span>
+                      {checklistTasks.map((task, idx) => {
+                        const isDone = Boolean(task.done || task.completed)
+                        const isToday = Boolean(task.isToday || (!isDone && task.day === 2))
+                        return (
+                          <div
+                            key={task.id || idx}
+                            onClick={() => openPhaseStep('campaign')}
+                            className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-3 cursor-pointer group ${
+                              isDone
+                                ? 'bg-[#0e1117] border-white/[0.04] opacity-80'
+                                : isToday
+                                ? 'bg-[#151926] border-purple-500/40 shadow-sm shadow-purple-950/40'
+                                : 'bg-[#141720] border-white/[0.06] hover:border-white/15'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-colors ${
+                                isDone
+                                  ? 'bg-emerald-500 border-emerald-400 text-slate-950'
+                                  : isToday
+                                  ? 'border-purple-400 bg-purple-500/20 text-purple-300'
+                                  : 'border-white/20 bg-white/[0.02]'
+                              }`}>
+                                {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : isToday ? <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" /> : null}
+                              </div>
+                              <div className="min-w-0">
+                                <div className={`font-semibold text-xs truncate ${isDone ? 'line-through text-slate-400' : 'text-white'}`}>
+                                  {task.title || task.text}
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] text-purple-300/80 font-mono">{task.channel || task.role || 'Sprint Task'}</span>
+                                  <span className="text-[10px] text-slate-500">•</span>
+                                  <span className="text-[10px] text-slate-400 font-mono">Day {task.day || idx + 1}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="shrink-0">
+                              {isDone ? (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                  ✓ Done
+                                </span>
+                              ) : isToday ? (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">
+                                  🔥 Today's Mission
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-slate-400 bg-white/[0.04] border border-white/[0.08]">
+                                  Queued
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <span className="text-[11px] text-slate-400">{task.due || 'Active'}</span>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -760,25 +867,412 @@ partnerships@creatorforge.com`
 
               {/* DECISIONS TAB */}
               {sidebarTab === 'decisions' && (
-                <div className="space-y-3 animate-fade-in text-xs">
-                  <span className="font-bold text-white block">Decisions Requiring Human Approval</span>
-                  {decisionsList.length === 0 ? (
-                    <div className="py-8 text-center text-slate-500 text-xs border border-dashed border-white/[0.08] rounded-xl">
-                      No decisions pending human approval.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {decisionsList.map((d, i) => (
-                        <div key={i} className="p-4 rounded-xl bg-[#141720] border border-purple-500/30 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-white">{d.title}</span>
-                            <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-full">Pending</span>
+                <div className="space-y-4 animate-fade-in text-xs">
+                  {/* Dynamic Validation Gate Metrics */}
+                  {(() => {
+                    const parseThreshold = (str) => {
+                      if (!str) return 0
+                      const match = String(str).replace(/,/g, '').match(/\$(\d+)/)
+                      return match ? Number(match[1]) : 0
+                    }
+                    const derivedGoal = parseThreshold(project.validationPlan?.threshold)
+                    const presaleGoal = derivedGoal > 0 ? derivedGoal : Number(project.presaleTarget || project.targetRevenue || 5000)
+                    const backersCount = Array.isArray(project.reservations) ? project.reservations.length : Number(project.telemetry?.presalesCount || 0)
+                    const currentPresales = Number(String(project.currentPresales || 0).replace(/[^0-9.]/g, '')) || (project.reservations || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
+                    const conversionRate = Number(project.conversionRate || (project.visitors ? (backersCount / Number(project.visitors)) * 100 : (backersCount > 0 ? 8.3 : 0)))
+                    const isRevenueGoalMet = presaleGoal > 0 && currentPresales >= presaleGoal
+                    const isFounderApproved = Number(project.currentPhase || 1) > 1 || project.status === 'building'
+                    const isGatePassed = isRevenueGoalMet || isFounderApproved
+
+                    return (
+                      <>
+                        {/* Executive Header */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-purple-950/20 via-white/[0.02] to-transparent p-4 rounded-2xl border border-white/[0.08]">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 shadow-lg shadow-purple-950/40">
+                              <ShieldCheck className="w-4.5 h-4.5" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-extrabold text-white text-sm tracking-tight">
+                                  Decisions Requiring Human Approval
+                                </h3>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+                                  Step 5 of 5
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-400 mt-0.5">
+                                Executive validation gate reviews & co-founder milestones.
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-slate-300 leading-relaxed">{d.description}</p>
+                          <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 ${
+                            isRevenueGoalMet
+                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                              : isFounderApproved
+                              ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                              : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isGatePassed ? (isRevenueGoalMet ? 'bg-emerald-400' : 'bg-blue-400') + ' animate-pulse' : 'bg-amber-400'}`} />
+                            {isRevenueGoalMet
+                              ? 'Phase 2 Ready'
+                              : isFounderApproved
+                              ? 'Sprint Active'
+                              : 'Validating'}
+                          </span>
                         </div>
-                      ))}
+
+                        {/* 5. VALIDATION GATE DECISION CARD */}
+                        <div className="relative rounded-2xl bg-gradient-to-b from-[#121624] via-[#0d101a] to-[#080a0f] border border-white/[0.12] p-4 sm:p-5 space-y-4 shadow-2xl shadow-purple-950/30 overflow-hidden">
+                          {/* Top Accent Gradient Bar */}
+                          <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-purple-500 via-indigo-500 to-emerald-400" />
+
+                          {/* Card Title & Checkpoint Badge */}
+                          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-b border-white/[0.06] pb-3.5">
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
+                                <Flag className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-extrabold text-white text-sm tracking-tight">
+                                    5. Validation Gate Checkpoint
+                                  </h4>
+                                  <span className="text-[9px] font-mono font-bold text-purple-300 uppercase px-2 py-0.5 rounded-md bg-purple-500/15 border border-purple-500/30 shrink-0">
+                                    Executive Gate
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                  Pre-Order Demand & Willingness-to-Pay Threshold
+                                </p>
+                              </div>
+                            </div>
+                            <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 ${
+                              isRevenueGoalMet
+                                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                                : isFounderApproved
+                                ? 'bg-blue-500/15 text-blue-300 border-blue-500/40'
+                                : 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+                            }`}>
+                              {isRevenueGoalMet ? (
+                                <>
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                  <span>Validated</span>
+                                </>
+                              ) : isFounderApproved ? (
+                                <>
+                                  <Zap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                  <span>Sprint Active</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  <span>Validating</span>
+                                </>
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Telemetry 4-Cards Cohesive Grid */}
+                          <div className="grid grid-cols-2 gap-2.5 text-center">
+                            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-white/15 transition-all flex flex-col justify-between">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Target Goal</span>
+                              <div className="text-base font-black text-white my-1">
+                                ${presaleGoal.toLocaleString()}
+                              </div>
+                              <span className="text-[9px] text-slate-500 block">Presale threshold</span>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-emerald-500/30 transition-all flex flex-col justify-between">
+                              <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider block">Actual Revenue</span>
+                              <div className="text-base font-black text-emerald-300 my-1">
+                                ${currentPresales.toLocaleString()}
+                              </div>
+                              <span className="text-[9px] text-emerald-400/80 font-medium block">
+                                {backersCount} paying backer{backersCount === 1 ? '' : 's'}
+                              </span>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-purple-500/30 transition-all flex flex-col justify-between">
+                              <span className="text-[9px] font-bold text-purple-300 uppercase tracking-wider block">Conversion Rate</span>
+                              <div className="text-base font-black text-purple-300 my-1">
+                                {conversionRate.toFixed(1)}%
+                              </div>
+                              <span className="text-[9px] text-purple-400/70 block">Traffic-to-order</span>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-white/15 transition-all flex flex-col justify-between">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Gate Status</span>
+                              <div className={`text-base font-black my-1 ${
+                                isRevenueGoalMet ? 'text-emerald-400' : isFounderApproved ? 'text-blue-400' : 'text-amber-400'
+                              }`}>
+                                {isRevenueGoalMet ? 'PASSED' : isFounderApproved ? 'APPROVED' : 'IN PROGRESS'}
+                              </div>
+                              <span className="text-[9px] text-slate-400 block">
+                                {isRevenueGoalMet ? 'Threshold Met' : isFounderApproved ? 'Phase 2 Sprint' : 'Testing Demand'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Sleek Progress Bar */}
+                          <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                              <span className="text-slate-300 font-semibold">Progress Toward Gate</span>
+                              <span className="font-mono font-bold text-[11px] text-white bg-white/[0.05] px-2 py-0.5 rounded-md border border-white/[0.08]">
+                                ${currentPresales.toLocaleString()} / ${presaleGoal.toLocaleString()} • {presaleGoal > 0 ? Math.min(100, Math.round((currentPresales / presaleGoal) * 100)) : 0}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-[#06080d] rounded-full h-2.5 overflow-hidden p-0.5 border border-white/[0.08]">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  isRevenueGoalMet
+                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-sm shadow-emerald-500/50'
+                                    : isFounderApproved
+                                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-sm shadow-blue-500/50'
+                                    : 'bg-gradient-to-r from-purple-500 via-indigo-500 to-amber-500'
+                                }`}
+                                style={{ width: `${presaleGoal > 0 ? Math.min(100, Math.max(currentPresales > 0 ? 3 : 0, Math.round((currentPresales / presaleGoal) * 100))) : 0}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* AI Validation Co-Pilot Assessment */}
+                          <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/30 via-indigo-950/20 to-purple-950/10 border border-purple-500/30 space-y-2 text-slate-200">
+                            <div className="flex flex-wrap items-center justify-between gap-1.5">
+                              <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
+                                <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                <span>AI Executive Assessment</span>
+                              </div>
+                              <span className="text-[9px] font-mono text-purple-300/80 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 shrink-0">
+                                Verified
+                              </span>
+                            </div>
+                            <p className="text-[11px] leading-relaxed text-slate-300">
+                              {isRevenueGoalMet ? (
+                                <span>
+                                  🔥 <strong className="text-white">Target Reached:</strong> Presale target (<strong className="text-emerald-300">${presaleGoal.toLocaleString()}</strong>) validated with <strong className="text-emerald-300">${currentPresales.toLocaleString()}</strong> across <strong className="text-white">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-300">{conversionRate.toFixed(1)}%</strong> conv.). Recommending <strong className="text-emerald-300">Build MVP</strong> for Phase 2.
+                                </span>
+                              ) : isFounderApproved ? (
+                                <span>
+                                  🚀 <strong className="text-white">Founder Greenlit:</strong> Approved for <strong className="text-blue-300">Phase 2: Build MVP</strong> with <strong className="text-emerald-300">${currentPresales.toLocaleString()}</strong> presale revenue, <strong className="text-white">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-300">{conversionRate.toFixed(1)}%</strong> conv.). Pre-orders remain open during development.
+                                </span>
+                              ) : (
+                                <span>
+                                  📊 <strong className="text-white">Validation Underway:</strong> <strong className="text-emerald-300">${currentPresales.toLocaleString()}</strong> in pre-orders, <strong className="text-white">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-300">{conversionRate.toFixed(1)}%</strong> conv.) toward <strong className="text-white">${presaleGoal.toLocaleString()}</strong> target ({presaleGoal > 0 ? Math.min(100, Math.round((currentPresales / presaleGoal) * 100)) : 0}%). Continue campaigns or execute a gate decision below.
+                                </span>
+                              )}
+                            </p>
+                          </div>
+
+                          {/* Executive Co-Founder Action Buttons */}
+                          <div className="space-y-2.5 pt-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                <UserCheck className="w-4 h-4 text-emerald-400" />
+                                <span>Executive Co-Founder Actions:</span>
+                              </span>
+                              <span className="text-[10px] text-slate-400">Click to record gate milestone</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (project?.id) {
+                                    try {
+                                      await recordGateDecision(project.id, {
+                                        decision: 'pass_to_phase2',
+                                        notes: `Validation target passed with $${currentPresales.toLocaleString()} presales and ${backersCount} backers.`
+                                      })
+                                      const { updateCoLaunchProject } = await import('../../services/opsApi')
+                                      await updateCoLaunchProject(project.id, {
+                                        currentPhase: 2,
+                                        currentStep: 'specs',
+                                        status: 'building'
+                                      })
+                                    } catch (e) {
+                                      console.warn(e)
+                                    }
+                                  }
+                                  if (onUpdateProject) {
+                                    onUpdateProject(prev => ({
+                                      ...(prev || {}),
+                                      currentPhase: 2,
+                                      currentStep: 'specs',
+                                      status: 'building',
+                                      gateDecisions: [
+                                        {
+                                          id: `gate_${Date.now()}`,
+                                          decision: 'pass_to_phase2',
+                                          targetRevenue: presaleGoal,
+                                          achievedRevenue: currentPresales,
+                                          backersCount: backersCount,
+                                          conversionRate: conversionRate,
+                                          gateStatus: 'passed',
+                                          notes: `Validation passed with $${currentPresales.toLocaleString()} presales.`,
+                                          decidedAt: new Date().toISOString()
+                                        },
+                                        ...(prev?.gateDecisions || [])
+                                      ]
+                                    }))
+                                  }
+                                  setSelectedPhaseStep('specs')
+                                  setShowPhaseExecutionModal(true)
+                                }}
+                                className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/20 via-emerald-600/30 to-teal-600/20 hover:from-emerald-500/30 hover:to-teal-600/30 text-white border border-emerald-500/40 hover:border-emerald-400 shadow-lg shadow-emerald-950/50 flex flex-col items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer group"
+                              >
+                                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 group-hover:scale-110 group-hover:bg-emerald-500/30 transition-all">
+                                  <CheckCircle2 className="w-4 h-4" />
+                                </div>
+                                <span className="font-extrabold text-xs tracking-wide text-white group-hover:text-emerald-200">
+                                  Build MVP (PASS)
+                                </span>
+                                <span className="text-[10px] text-emerald-200/80">Advance to Phase 2 Sprint</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (project?.id) {
+                                    recordGateDecision(project.id, {
+                                      decision: 'iterate_validation',
+                                      notes: 'Iterating validation with fresh messaging and pricing.'
+                                    }).catch(e => console.warn(e))
+                                  }
+                                  if (onUpdateProject) {
+                                    onUpdateProject(prev => ({
+                                      ...(prev || {}),
+                                      gateDecisions: [
+                                        {
+                                          id: `gate_${Date.now()}`,
+                                          decision: 'iterate_validation',
+                                          targetRevenue: presaleGoal,
+                                          achievedRevenue: currentPresales,
+                                          backersCount: backersCount,
+                                          conversionRate: conversionRate,
+                                          gateStatus: 'iterating',
+                                          notes: 'Iterating validation with fresh messaging and pricing.',
+                                          decidedAt: new Date().toISOString()
+                                        },
+                                        ...(prev?.gateDecisions || [])
+                                      ]
+                                    }))
+                                  }
+                                  setSelectedPhaseStep('optimize')
+                                  setShowPhaseExecutionModal(true)
+                                }}
+                                className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 via-amber-600/15 to-amber-950/20 hover:from-amber-500/20 hover:to-amber-900/30 text-amber-200 border border-amber-500/30 hover:border-amber-400/50 shadow-md shadow-amber-950/30 flex flex-col items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer group"
+                              >
+                                <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300 group-hover:rotate-180 group-hover:bg-amber-500/30 transition-all duration-500">
+                                  <RefreshCw className="w-4 h-4" />
+                                </div>
+                                <span className="font-extrabold text-xs tracking-wide text-amber-200 group-hover:text-amber-100">
+                                  Test Again (Iterate)
+                                </span>
+                                <span className="text-[10px] text-amber-300/80">Run Fresh Experiments</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (window.confirm('Are you sure you want to kill and archive this venture? Pre-order backers will be scheduled for refunds.')) {
+                                    if (project?.id) {
+                                      recordGateDecision(project.id, {
+                                        decision: 'kill_project',
+                                        notes: 'Project failed validation gate threshold.'
+                                      }).catch(e => console.warn(e))
+                                    }
+                                    if (onUpdateProject) {
+                                      onUpdateProject(prev => ({
+                                        ...(prev || {}),
+                                        status: 'archived',
+                                        gateDecisions: [
+                                          {
+                                            id: `gate_${Date.now()}`,
+                                            decision: 'kill_project',
+                                            targetRevenue: presaleGoal,
+                                            achievedRevenue: currentPresales,
+                                            backersCount: backersCount,
+                                            conversionRate: conversionRate,
+                                            gateStatus: 'killed',
+                                            notes: 'Project failed validation gate threshold.',
+                                            decidedAt: new Date().toISOString()
+                                          },
+                                          ...(prev?.gateDecisions || [])
+                                        ]
+                                      }))
+                                    }
+                                  }
+                                }}
+                                className="p-4 rounded-xl bg-gradient-to-br from-rose-500/10 via-rose-600/15 to-rose-950/20 hover:from-rose-500/20 hover:to-rose-900/30 text-rose-200 border border-rose-500/30 hover:border-rose-400/50 shadow-md shadow-rose-950/30 flex flex-col items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer group"
+                              >
+                                <div className="w-8 h-8 rounded-lg bg-rose-500/20 border border-rose-400/30 flex items-center justify-center text-rose-300 group-hover:scale-110 group-hover:bg-rose-500/30 transition-all">
+                                  <X className="w-4 h-4" />
+                                </div>
+                                <span className="font-extrabold text-xs tracking-wide text-rose-200 group-hover:text-rose-100">
+                                  Kill (Archive)
+                                </span>
+                                <span className="text-[10px] text-rose-300/80">Wind Down & Refund</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )
+                  })()}
+
+                  {/* RECORDED DECISION LOGS & AUDIT TRAIL */}
+                  <div className="space-y-2.5 pt-2 border-t border-white/[0.08]">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                          Decision History & Gate Audit Trail
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-500 bg-white/[0.03] px-2 py-0.5 rounded border border-white/[0.06]">
+                        {decisionsList.length} recorded
+                      </span>
                     </div>
-                  )}
+
+                    {decisionsList.length === 0 ? (
+                      <div className="p-4 rounded-xl bg-[#141720]/60 border border-white/[0.06] text-center text-slate-400 text-xs">
+                        No decisions logged yet. Executive gate actions recorded above will appear here.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {decisionsList.map((d, i) => {
+                          const isPassed = d.decision === 'pass_to_phase2' || d.gateStatus === 'passed'
+                          const isIterate = d.decision === 'iterate_validation' || d.gateStatus === 'iterating'
+                          const isKilled = d.decision === 'kill_project' || d.gateStatus === 'killed'
+                          return (
+                            <div key={d.id || i} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.08] space-y-1.5 hover:border-white/15 transition-colors">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className={`w-2 h-2 rounded-full shrink-0 ${isPassed ? 'bg-emerald-400' : isIterate ? 'bg-amber-400' : 'bg-rose-400'}`} />
+                                  <span className="font-bold text-white text-xs truncate">
+                                    {formatDecisionTitle(d)}
+                                  </span>
+                                </div>
+                                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 ${
+                                  isPassed
+                                    ? 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
+                                    : isIterate
+                                    ? 'text-amber-300 bg-amber-500/15 border-amber-500/30'
+                                    : 'text-rose-300 bg-rose-500/15 border-rose-500/30'
+                                }`}>
+                                  {isPassed ? 'Approved & Passed' : isIterate ? 'Iteration Sprint' : isKilled ? 'Archived' : d.status || 'Decided'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-300 leading-relaxed">{d.notes || d.description || 'Executive co-founder decision recorded.'}</p>
+                              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/[0.04] text-[10px] text-slate-500 font-mono">
+                                <span>{formatDecisionDate(d.decidedAt || d.timestamp || d.date)}</span>
+                                {(d.achievedRevenue !== undefined || d.targetRevenue !== undefined) && (
+                                  <span className="text-slate-400 font-sans">
+                                    ${(Number(d.achievedRevenue) || 0).toLocaleString()} / ${(Number(d.targetRevenue) || presaleGoal).toLocaleString()} Presales
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -929,6 +1423,59 @@ partnerships@creatorforge.com`
                 </div>
               </div>
 
+              {/* 4 Step Cards for Phase 3 */}
+              <div className="space-y-2.5">
+                {[
+                  {
+                    id: 'blueprint',
+                    num: '1. Public Launch Blueprint',
+                    desc: 'Go-to-market rollout strategy, multi-channel blast calendar, and pricing tiers',
+                    icon: Megaphone
+                  },
+                  {
+                    id: 'video',
+                    num: '2. Creator Announcement Drop',
+                    desc: 'YouTube mid-roll, Instagram story sequence, and Twitter/X launch breakdown thread',
+                    icon: Play
+                  },
+                  {
+                    id: 'cohort',
+                    num: '3. Community Cohort Onboarding',
+                    desc: `Activate ${Array.isArray(project?.reservations) ? project.reservations.length : 0} founding members into private VIP community channel`,
+                    icon: Users
+                  },
+                  {
+                    id: 'telemetry',
+                    num: '4. Scale & Revenue Telemetry',
+                    desc: 'Real-time MRR, viral conversion rate, customer churn signals, and growth telemetry',
+                    icon: TrendingUp
+                  },
+                ].map(step => {
+                  const Icon = step.icon
+                  return (
+                    <div
+                      key={step.id}
+                      onClick={() => openPhaseStep('launch')}
+                      className="p-3.5 rounded-xl bg-[#141720] hover:bg-[#1b202c] border border-white/[0.06] hover:border-purple-500/40 transition-all cursor-pointer group space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5 text-xs font-bold text-white group-hover:text-purple-300 transition-colors">
+                          <Icon className="w-4 h-4 text-purple-400 shrink-0" />
+                          <span>{step.num}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 group-hover:text-white flex items-center gap-0.5">
+                          <span>Open</span>
+                          <ChevronRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed pl-6">
+                        {step.desc}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+
               <button
                 onClick={() => openPhaseStep('launch')}
                 className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-purple-950/40 active:scale-95"
@@ -966,7 +1513,10 @@ partnerships@creatorforge.com`
                     desc: 'Define customer, problem, offer, price, test method, success threshold',
                     icon: FileText,
                     isDone: isStep1Done,
-                    badge: isStep1Done ? 'Completed • Locked' : 'Pending'
+                    borderDone: 'bg-emerald-500/[0.05] border-emerald-500/35 hover:border-emerald-400/60 shadow-sm shadow-emerald-950/20',
+                    badgeDone: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+                    iconDoneColor: 'text-emerald-400',
+                    badgeText: '✓ Spec & Target Locked'
                   },
                   {
                     id: 'assets',
@@ -974,7 +1524,10 @@ partnerships@creatorforge.com`
                     desc: 'Landing page, presales, checkout, analytics, emails, surveys, mockups',
                     icon: Layout,
                     isDone: isStep2Done,
-                    badge: isStep2Done ? 'Approved & Live' : 'Draft'
+                    borderDone: 'bg-purple-500/[0.05] border-purple-500/35 hover:border-purple-400/60 shadow-sm shadow-purple-950/20',
+                    badgeDone: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+                    iconDoneColor: 'text-purple-400',
+                    badgeText: '⚡ Funnel & Prototype Live'
                   },
                   {
                     id: 'campaign',
@@ -982,7 +1535,10 @@ partnerships@creatorforge.com`
                     desc: 'Posts, stories, newsletter, videos, polls, CTAs, images, scripts',
                     icon: Megaphone,
                     isDone: isStep3Done,
-                    badge: isStep3Done ? 'Checklist Active' : 'Pending'
+                    borderDone: 'bg-blue-500/[0.05] border-blue-500/35 hover:border-blue-400/60 shadow-sm shadow-blue-950/20',
+                    badgeDone: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+                    iconDoneColor: 'text-blue-400',
+                    badgeText: '📣 7-Day Sprint Active'
                   },
                   {
                     id: 'optimize',
@@ -990,7 +1546,10 @@ partnerships@creatorforge.com`
                     desc: 'Track traffic, presales, revenue, conversion, feedback. AI suggests experiments',
                     icon: TrendingUp,
                     isDone: isStep4Done,
-                    badge: isStep4Done ? `$${presalesRevenue.toLocaleString()} Presales` : 'Live Telemetry'
+                    borderDone: 'bg-amber-500/[0.05] border-amber-500/35 hover:border-amber-400/60 shadow-sm shadow-amber-950/20',
+                    badgeDone: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+                    iconDoneColor: 'text-amber-400',
+                    badgeText: `💰 $${presalesRevenue.toLocaleString()} Presales (${(project.reservations || []).length} Backers)`
                   },
                   {
                     id: 'gate',
@@ -998,7 +1557,12 @@ partnerships@creatorforge.com`
                     desc: 'PASS → Build MVP | TEST AGAIN → Iterate | FAIL → Kill',
                     icon: Flag,
                     isDone: isStep5Done,
-                    badge: isStep5Done ? 'Gate Decided' : 'Pending Milestone'
+                    borderDone: isStep5Done
+                      ? 'bg-emerald-500/[0.08] border-emerald-500/50 hover:border-emerald-400/80 shadow-md shadow-emerald-950/30'
+                      : 'bg-[#141720] hover:bg-[#1b202c] border border-white/[0.08] hover:border-emerald-500/40',
+                    badgeDone: isStep5Done ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : '',
+                    iconDoneColor: isStep5Done ? 'text-emerald-400' : 'text-slate-400',
+                    badgeText: isStep5Done ? '🚀 Gate Passed → Build MVP' : 'Open Milestone'
                   },
                 ].map(step => {
                   const Icon = step.icon
@@ -1008,25 +1572,25 @@ partnerships@creatorforge.com`
                       onClick={() => openPhaseStep(step.id)}
                       className={`p-3 rounded-xl transition-all cursor-pointer group space-y-1 ${
                         step.isDone
-                          ? 'bg-emerald-500/[0.04] border border-emerald-500/30 hover:border-emerald-500/60 shadow-sm'
+                          ? step.borderDone
                           : 'bg-[#141720] hover:bg-[#1b202c] border border-white/[0.06] hover:border-emerald-500/40'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           {step.isDone ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <CheckCircle2 className={`w-4 h-4 shrink-0 ${step.iconDoneColor}`} />
                           ) : (
-                            <Icon className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <Icon className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 shrink-0 transition-colors" />
                           )}
-                          <span className="text-xs font-bold text-white truncate">
+                          <span className={`text-xs font-bold truncate ${step.isDone ? 'line-through text-slate-300 decoration-emerald-400/80 decoration-2' : 'text-white'}`}>
                             {step.num}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {step.isDone ? (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                              ✓ {step.badge}
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${step.badgeDone}`}>
+                              {step.badgeText}
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold text-slate-400 group-hover:text-emerald-300 flex items-center gap-0.5 transition-colors">
@@ -1036,7 +1600,7 @@ partnerships@creatorforge.com`
                           )}
                         </div>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed pl-6 line-clamp-2">
+                      <p className={`text-[11px] leading-relaxed pl-6 line-clamp-2 ${step.isDone ? 'line-through text-slate-400/80 decoration-slate-600' : 'text-slate-400'}`}>
                         {step.desc}
                       </p>
                     </div>

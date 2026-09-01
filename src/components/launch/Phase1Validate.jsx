@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   CheckCircle2, DollarSign, Layout, Sparkles, Save, Check, Plus, Trash2,
   Loader2, AlertCircle, Copy, Video, MessageSquare, ExternalLink, Globe,
   CreditCard, Users, TrendingUp, RefreshCw, FileText, Megaphone, Target,
   Flag, ArrowRight, Layers, HelpCircle, BarChart3, Radio, ShieldCheck,
-  Palette, Smartphone, Send, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye
+  Palette, Smartphone, Send, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X
 } from 'lucide-react'
 import {
   generateValidationPlanAI,
@@ -23,6 +24,7 @@ import {
   addProjectReservation,
   logProjectActivity,
   recordGateDecision,
+  updateCoLaunchProject,
   getFrontendUrl
 } from '../../services/opsApi'
 
@@ -37,7 +39,6 @@ export default function Phase1Validate({
   const [activeStep, setActiveStep] = useState(activeStepId || 'plan')
   const [assetSubTab, setAssetSubTab] = useState('product_assets')
   const [campaignSubTab, setCampaignSubTab] = useState('schedule')
-  const [optimizeSubTab, setOptimizeSubTab] = useState('telemetry') // 'telemetry' | 'experiments' | 'feedback'
   const [viewDraftTask, setViewDraftTask] = useState(null)
   const [isAnalyzingExperiments, setIsAnalyzingExperiments] = useState(false)
   const [experimentsData, setExperimentsData] = useState(() => project?.experimentsData || null)
@@ -56,10 +57,12 @@ export default function Phase1Validate({
   // Real Project Reservations / Backers state
   const [reservations, setReservations] = useState(() => project?.reservations || [])
 
-  // Simulated buyer form in Run & Optimize
-  const [simBuyerName, setSimBuyerName] = useState('')
-  const [simBuyerEmail, setSimBuyerEmail] = useState('')
-  const [simBuyerTier, setSimBuyerTier] = useState(99)
+  // Dynamic pricing resolution
+  const parsePricingAmount = (str) => {
+    if (!str) return 49
+    const match = String(str).replace(/,/g, '').match(/\$(\d+)/)
+    return match ? Number(match[1]) : (Number(String(str).replace(/[^0-9]/g, '')) || 49)
+  }
 
   // Real Project Validation Plan State
   const [plan, setPlan] = useState(() => project?.validationPlan || {
@@ -72,6 +75,15 @@ export default function Phase1Validate({
     threshold: ''
   })
 
+  const dynamicMainPrice = parsePricingAmount(plan?.pricing || project?.pricing || 49)
+  const dynamicDepositPrice = Math.max(9, Math.round(dynamicMainPrice * 0.2))
+  const dynamicVipPrice = Math.round(dynamicMainPrice * 2)
+
+  // Simulated buyer form in Run & Optimize
+  const [simBuyerName, setSimBuyerName] = useState('')
+  const [simBuyerEmail, setSimBuyerEmail] = useState('')
+  const [simBuyerTier, setSimBuyerTier] = useState(() => dynamicMainPrice)
+
   // Dynamic presale target derived from validation plan threshold or project
   const parseThresholdAmount = (str) => {
     if (!str) return 0
@@ -79,11 +91,20 @@ export default function Phase1Validate({
     return match ? Number(match[1]) : 0
   }
   const derivedPlanTarget = parseThresholdAmount(plan?.threshold || project?.validationPlan?.threshold)
-  const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project?.presaleTarget || project?.targetRevenue || 12500)
+  const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project?.presaleTarget || project?.targetRevenue || 5000)
 
   // Real Project Campaign Kit State
   const [campaignKit, setCampaignKit] = useState(() => {
-    if (project?.campaignKit) return project.campaignKit
+    const fromProject = project?.campaignKit || project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets
+    if (fromProject && (fromProject.announcementPost || fromProject.storySequence || fromProject.videoScript || fromProject.newsletterDraft || fromProject.postingSchedule?.length > 0)) {
+      return fromProject
+    }
+    try {
+      const stored = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+      if (stored?.campaignKit && (stored.id === project?.id || stored.productName === project?.productName)) {
+        return stored.campaignKit
+      }
+    } catch (e) {}
     return {
       announcementPost: '',
       storySequence: '',
@@ -96,10 +117,22 @@ export default function Phase1Validate({
   })
 
   // Real Project Survey & Research State
-  const [surveyData, setSurveyData] = useState(() => project?.surveyData || {
-    summary: '',
-    keyTakeaways: [],
-    questions: []
+  const [surveyData, setSurveyData] = useState(() => {
+    const fromProject = project?.surveyData || project?.validationCampaign?.researchSurvey || project?.validationCampaign?.research_survey
+    if (fromProject && (fromProject.summary || fromProject.questions?.length > 0)) {
+      return fromProject
+    }
+    try {
+      const stored = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+      if (stored?.surveyData && (stored.id === project?.id || stored.productName === project?.productName)) {
+        return stored.surveyData
+      }
+    } catch (e) {}
+    return {
+      summary: '',
+      keyTakeaways: [],
+      questions: []
+    }
   })
   const [newQuestionText, setNewQuestionText] = useState('')
   const [newQuestionCategory, setNewQuestionCategory] = useState('Pain Point')
@@ -143,28 +176,31 @@ export default function Phase1Validate({
         threshold: '$5,000 in pre-sales or 50 paid founding reservations'
       })
     }
-    if (project.campaignKit) {
-      setCampaignKit(project.campaignKit)
+
+    const incomingKit = project.campaignKit || project.validationCampaign?.productAssets || project.validationCampaign?.product_assets
+    if (incomingKit && (incomingKit.announcementPost || incomingKit.videoScript || incomingKit.storySequence || incomingKit.newsletterDraft || incomingKit.postingSchedule?.length > 0)) {
+      setCampaignKit(incomingKit)
     } else {
-      setCampaignKit({
-        announcementPost: '',
-        storySequence: '',
-        videoScript: '',
-        newsletterDraft: '',
-        directMessageScript: '',
-        postingSchedule: [],
-        landingPageCopy: null
-      })
+      try {
+        const stored = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+        if (stored?.campaignKit && (stored.id === project.id || stored.productName === project.productName)) {
+          setCampaignKit(stored.campaignKit)
+        }
+      } catch (e) {}
     }
-    if (project.surveyData) {
-      setSurveyData(project.surveyData)
+
+    const incomingSurvey = project.surveyData || project.validationCampaign?.researchSurvey || project.validationCampaign?.research_survey
+    if (incomingSurvey && (incomingSurvey.summary || incomingSurvey.questions?.length > 0)) {
+      setSurveyData(incomingSurvey)
     } else {
-      setSurveyData({
-        summary: '',
-        keyTakeaways: [],
-        questions: []
-      })
+      try {
+        const stored = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+        if (stored?.surveyData && (stored.id === project.id || stored.productName === project.productName)) {
+          setSurveyData(stored.surveyData)
+        }
+      } catch (e) {}
     }
+
     setSurveyResponses(Array.isArray(project.surveyResponses) ? project.surveyResponses : [])
     setSurveyAnalysis(project.surveyAnalysis || null)
     setMockupImage(project.mockupImage || null)
@@ -188,9 +224,14 @@ export default function Phase1Validate({
   useEffect(() => {
     const handleSync = (e) => {
       try {
-        const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+        const cur = (e?.detail && typeof e.detail === 'object') 
+          ? e.detail 
+          : JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
         if (cur.reservations) setReservations(cur.reservations)
         if (cur.currentPresales !== undefined) setPresalesRevenue(Number(cur.currentPresales) || 0)
+        if (onUpdateProject && cur && Object.keys(cur).length > 0) {
+          onUpdateProject(prev => ({ ...(prev || {}), ...cur }))
+        }
       } catch (err) {}
     }
 
@@ -200,10 +241,45 @@ export default function Phase1Validate({
       window.removeEventListener('storage', handleSync)
       window.removeEventListener('forge_project_updated', handleSync)
     }
-  }, [])
+  }, [onUpdateProject])
 
   const origin = getFrontendUrl()
-  const productSlug = (project?.slug || project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '-')
+  const productSlug = (project?.slug || project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+  const normalizeUrlText = (text) => {
+    if (typeof text !== 'string') return text
+    const realPreorderUrl = `${origin}/preorder/${productSlug}`
+    return text
+      .replace(/https?:\/\/[a-zA-Z0-9\-_.]+\.creatorforge\.app\/preorder/gi, realPreorderUrl)
+      .replace(/https?:\/\/[a-zA-Z0-9\-_.]+\.creatorforge\.app\/launch/gi, `${origin}/p/${productSlug}`)
+      .replace(/https?:\/\/flutterflowflowai\.creatorforge\.app\/preorder/gi, realPreorderUrl)
+  }
+
+  useEffect(() => {
+    if (campaignKit) {
+      const hasOldUrls = Boolean(
+        campaignKit.announcementPost?.includes('creatorforge.app') ||
+        campaignKit.storySequence?.includes('creatorforge.app') ||
+        campaignKit.newsletterDraft?.includes('creatorforge.app') ||
+        campaignKit.directMessageScript?.includes('creatorforge.app')
+      )
+      if (hasOldUrls) {
+        const sanitized = {
+          ...campaignKit,
+          announcementPost: normalizeUrlText(campaignKit.announcementPost),
+          storySequence: normalizeUrlText(campaignKit.storySequence),
+          newsletterDraft: normalizeUrlText(campaignKit.newsletterDraft),
+          directMessageScript: normalizeUrlText(campaignKit.directMessageScript)
+        }
+        setCampaignKit(sanitized)
+        if (onUpdateProject) onUpdateProject(curr => ({ ...(curr || {}), campaignKit: sanitized }))
+        try {
+          const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+          localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, campaignKit: sanitized }))
+        } catch (e) {}
+      }
+    }
+  }, [campaignKit, origin, productSlug])
 
   const showNotification = (msg) => {
     setFeedbackNotice(msg)
@@ -212,7 +288,8 @@ export default function Phase1Validate({
 
   const copyToClipboard = (text, key) => {
     if (!text) return
-    navigator.clipboard?.writeText(text)
+    const sanitized = normalizeUrlText(text)
+    navigator.clipboard?.writeText(sanitized)
     setCopiedKey(key)
     showNotification('Copied to clipboard!')
     setTimeout(() => setCopiedKey(null), 2000)
@@ -230,6 +307,20 @@ export default function Phase1Validate({
         const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
         localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, campaignKit: next }))
       } catch (e) {}
+      if (project?.id) {
+        updateValidationCampaign(project.id, {
+          product_assets: next,
+          creator_tasks: next.postingSchedule || [],
+          infrastructure: {
+            landingPageUrl: `/p/${productSlug}`,
+            checkoutUrl: `/p/${productSlug}/checkout`,
+            waitlistCount: 240,
+            attributionTracking: true
+          },
+          research_survey: surveyData,
+          review_status: 'approved'
+        }).catch(e => console.warn('[Phase1] DB campaign auto-sync warning:', e))
+      }
       return next
     })
   }
@@ -349,6 +440,7 @@ export default function Phase1Validate({
           ...(project || {}),
           validationPlan: plan,
           campaignKit: generated,
+          creatorTasks: generated.postingSchedule || project?.creatorTasks || [],
           surveyData,
           mockupImage,
           reservations,
@@ -358,7 +450,31 @@ export default function Phase1Validate({
         try {
           localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
         } catch (e) {}
-        showNotification('Creator campaign assets generated with AI!')
+
+        // Persist immediately to backend database
+        if (project?.id) {
+          updateValidationCampaign(project.id, {
+            product_assets: generated,
+            creator_tasks: generated.postingSchedule || [],
+            infrastructure: {
+              landingPageUrl: `/p/${productSlug}`,
+              checkoutUrl: `/p/${productSlug}/checkout`,
+              waitlistCount: 240,
+              attributionTracking: true
+            },
+            research_survey: surveyData,
+            review_status: 'approved'
+          }).catch(e => console.warn('[Phase1] DB campaign auto-sync warning:', e))
+
+          logProjectActivity(project.id, {
+            action: 'AI Campaign Content Generated & Locked',
+            details: `Generated 7-day creator campaign schedule with Instagram stories, TikTok scripts, newsletter, and VIP DM templates.`,
+            step: 'campaign',
+            phase: 1
+          }).catch(e => console.warn(e))
+        }
+
+        showNotification('Creator campaign assets generated with AI & saved to database!')
       }
     } catch (err) {
       console.error('Campaign generation error:', err)
@@ -377,11 +493,13 @@ export default function Phase1Validate({
 
   const getTaskDraftContent = (task) => {
     if (!task) return ''
-    if (task.draftKey === 'storySequence') return campaignKit?.storySequence || 'STORY 1 — Poll\nSTORY 2 — Product Reveal\nSTORY 3 — Pre-Order Link CTA'
-    if (task.draftKey === 'videoScript') return campaignKit?.videoScript || '60s Short-Form Video Script'
-    if (task.draftKey === 'newsletterDraft') return campaignKit?.newsletterDraft || 'Email Newsletter Broadcast Draft'
-    if (task.draftKey === 'directMessageScript') return campaignKit?.directMessageScript || '1-on-1 DM Script'
-    return campaignKit?.announcementPost || 'Social Announcement Post Copy'
+    let content = ''
+    if (task.draftKey === 'storySequence') content = campaignKit?.storySequence || 'STORY 1 — Poll\nSTORY 2 — Product Reveal\nSTORY 3 — Pre-Order Link CTA'
+    else if (task.draftKey === 'videoScript') content = campaignKit?.videoScript || '60s Short-Form Video Script'
+    else if (task.draftKey === 'newsletterDraft') content = campaignKit?.newsletterDraft || 'Email Newsletter Broadcast Draft'
+    else if (task.draftKey === 'directMessageScript') content = campaignKit?.directMessageScript || '1-on-1 DM Script'
+    else content = campaignKit?.announcementPost || 'Social Announcement Post Copy'
+    return normalizeUrlText(content)
   }
 
   const handleGenerateSurvey = async () => {
@@ -609,14 +727,14 @@ export default function Phase1Validate({
     }
     const name = simBuyerName.trim()
     const email = simBuyerEmail.trim()
-    const amount = Number(simBuyerTier) || 99
+    const amount = Number(simBuyerTier) || dynamicMainPrice
 
     const newReservation = {
       id: `r-${Date.now()}`,
       name,
       email,
       amount,
-      tier: amount === 99 ? 'Founding Annual ($99)' : amount === 199 ? 'VIP Founder Pass ($199)' : 'Refundable Deposit ($19)',
+      tier: amount === dynamicDepositPrice ? `Refundable Deposit ($${amount})` : amount === dynamicVipPrice ? `VIP Founder Pass ($${amount})` : `Founding Annual Pass ($${amount})`,
       date: 'Just now',
       status: 'Paid'
     }
@@ -683,17 +801,23 @@ export default function Phase1Validate({
     onSelectStep?.(id)
   }
 
+  const isStep1Done = Boolean(project?.validationPlan?.status === 'ready' || project?.validationPlan?.threshold || project?.customer || plan?.threshold)
+  const isStep2Done = Boolean(project?.validationCampaign?.reviewStatus === 'approved' || project?.validationCampaign?.review_status === 'approved' || project?.campaignKit?.landingPageCopy)
+  const isStep3Done = Boolean((project?.creatorTasks?.length || 0) > 0 || (project?.campaignKit?.postingSchedule?.length || 0) > 0)
+  const isStep4Done = Boolean((project?.reservations?.length || 0) > 0 || Number(project?.currentPresales || 0) > 0)
+  const isStep5Done = Boolean((project?.gateDecisions?.length || 0) > 0 || project?.currentPhase > 1 || project?.status === 'building')
+
   return (
     <div className="space-y-5 w-full max-w-full overflow-hidden">
       {/* 5-Step Phase 1 Progress Nav */}
       <div className="p-2 rounded-2xl bg-[#0e1117] border border-white/[0.08] flex items-center justify-between overflow-x-auto gap-2">
         <div className="flex items-center gap-1 min-w-max">
           {[
-            { id: 'plan', label: '1. Plan', icon: FileText },
-            { id: 'assets', label: '2. Assets', icon: Layout },
-            { id: 'campaign', label: '3. Campaign', icon: Megaphone },
-            { id: 'optimize', label: '4. Optimize', icon: TrendingUp },
-            { id: 'gate', label: '5. Gate', icon: Flag },
+            { id: 'plan', label: '1. Plan', icon: FileText, isDone: isStep1Done },
+            { id: 'assets', label: '2. Assets', icon: Layout, isDone: isStep2Done },
+            { id: 'campaign', label: '3. Campaign', icon: Megaphone, isDone: isStep3Done },
+            { id: 'optimize', label: '4. Optimize', icon: TrendingUp, isDone: isStep4Done },
+            { id: 'gate', label: '5. Gate', icon: Flag, isDone: isStep5Done },
           ].map(step => {
             const Icon = step.icon
             const isActive = activeStep === step.id
@@ -704,11 +828,19 @@ export default function Phase1Validate({
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   isActive
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                    : step.isDone
+                    ? 'text-slate-300 hover:text-white bg-white/[0.02]'
                     : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{step.label}</span>
+                {step.isDone ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                ) : (
+                  <Icon className="w-3.5 h-3.5" />
+                )}
+                <span className={step.isDone && !isActive ? 'line-through text-slate-400 decoration-emerald-400/80 decoration-2' : ''}>
+                  {step.label}
+                </span>
               </button>
             )
           })}
@@ -1035,7 +1167,7 @@ export default function Phase1Validate({
                   Product Mockup Studio & Visual Asset
                 </span>
                 <ProductMockupCanvas
-                  project={project}
+                  project={{ ...(project || {}), currentPresales: presalesRevenue, reservations }}
                   onSaveMockupImage={(imgUrl) => {
                     setMockupImage(imgUrl)
                     onUpdateProject?.(prev => ({ ...(prev || {}), mockupImage: imgUrl }))
@@ -1876,9 +2008,9 @@ export default function Phase1Validate({
           )}
 
           {/* View Draft Modal */}
-          {viewDraftTask && (
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="w-full max-w-lg rounded-3xl bg-[#0e1117] border border-white/[0.1] shadow-2xl p-6 space-y-4 animate-scale-in">
+          {viewDraftTask && typeof document !== 'undefined' && createPortal(
+            <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in overflow-hidden">
+              <div className="w-full max-w-lg rounded-3xl bg-[#0e1117] border border-white/[0.12] shadow-2xl p-6 space-y-4 animate-scale-in">
                 <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
                   <div>
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-400 block">
@@ -1888,13 +2020,13 @@ export default function Phase1Validate({
                   </div>
                   <button
                     onClick={() => setViewDraftTask(null)}
-                    className="p-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-400 hover:text-white transition-colors"
+                    className="p-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-400 hover:text-white transition-colors cursor-pointer"
                   >
-                    <Check className="w-4 h-4" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] max-h-72 overflow-y-auto">
+                <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] max-h-72 overflow-y-auto font-sans leading-relaxed text-xs text-slate-200">
                   <pre className="text-xs text-slate-200 font-sans whitespace-pre-wrap leading-relaxed">
                     {getTaskDraftContent(viewDraftTask)}
                   </pre>
@@ -1906,7 +2038,7 @@ export default function Phase1Validate({
                       copyToClipboard(getTaskDraftContent(viewDraftTask), 'draft-modal')
                       showNotification('Draft content copied to clipboard!')
                     }}
-                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md"
+                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>{copiedKey === 'draft-modal' ? 'Copied!' : 'Copy Draft'}</span>
@@ -1918,21 +2050,22 @@ export default function Phase1Validate({
                         handleToggleScheduleTask(viewDraftTask.id)
                         setViewDraftTask(null)
                       }}
-                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 transition-colors"
+                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Mark Completed</span>
                     </button>
                     <button
                       onClick={() => setViewDraftTask(null)}
-                      className="px-3.5 py-2 rounded-xl bg-white/[0.06] text-slate-300 text-xs font-bold border border-white/[0.08]"
+                      className="px-3.5 py-2 rounded-xl bg-white/[0.06] text-slate-300 text-xs font-bold border border-white/[0.08] hover:bg-white/[0.12] transition-colors cursor-pointer"
                     >
                       Close
                     </button>
                   </div>
                 </div>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
 
           <div className="pt-2 flex justify-end">
@@ -1985,350 +2118,369 @@ export default function Phase1Validate({
             </div>
           </div>
 
-          {/* Subtabs Navigation */}
-          <div className="flex items-center gap-1.5 border-b border-white/[0.08] pb-3 overflow-x-auto">
-            {[
-              { id: 'telemetry', label: '1. Telemetry & Attribution', icon: Activity },
-              { id: 'experiments', label: '2. AI Experiments (4 Areas)', icon: Sparkles, badge: experimentsData?.experiments?.length || 4 },
-              { id: 'feedback', label: '3. Audience Feedback Pulse', icon: MessageSquare, badge: surveyResponses?.length || 0 },
-            ].map(tab => {
-              const Icon = tab.icon
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setOptimizeSubTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                    optimizeSubTab === tab.id
-                      ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50 border border-purple-500/60'
-                      : 'text-slate-400 hover:text-white bg-white/[0.03] border border-transparent'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
-                  {tab.badge !== undefined && (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20">
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* SUBTAB 1: TELEMETRY & ATTRIBUTION */}
-          {optimizeSubTab === 'telemetry' && (
-            <div className="space-y-4">
-              {/* Telemetry Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
-                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-                  <span className="text-[10px] text-emerald-400 font-bold uppercase block">Presales Revenue</span>
-                  <span className="text-lg font-extrabold text-white mt-0.5 block">${presalesRevenue.toLocaleString()}</span>
-                  <span className="text-[10px] text-emerald-400/80">of ${presaleTarget.toLocaleString()} goal</span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08]">
-                  <span className="text-[10px] text-purple-400 font-bold uppercase block">Unique Visitors</span>
-                  <span className="text-lg font-extrabold text-white mt-0.5 block">{Number(project?.visitors || 0).toLocaleString()}</span>
-                  <span className="text-[10px] text-slate-400">Tracked unique devices</span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08]">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Conversion Rate</span>
-                  <span className="text-lg font-extrabold text-white mt-0.5 block">{Number(project?.conversionRate || 0).toFixed(1)}%</span>
-                  <span className="text-[10px] text-slate-500">Tracked attribution</span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08]">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Days Left</span>
-                  <span className="text-lg font-extrabold text-white mt-0.5 block">{project?.daysLeft || '—'}</span>
-                  <span className="text-[10px] text-slate-500">Sprint duration</span>
-                </div>
+          {/* SECTION 1: TELEMETRY & ATTRIBUTION */}
+          <div className="space-y-4">
+            {/* Telemetry Cards - Exactly Scoped */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-center text-xs">
+              {/* 1. Traffic */}
+              <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
+                <span className="text-[9px] text-purple-400 font-bold uppercase tracking-wider block">Traffic</span>
+                <span className="text-base font-extrabold text-white block">{Number(project?.visitors || 0).toLocaleString()}</span>
+                <span className="text-[9px] text-slate-400">Unique visitors</span>
               </div>
 
-              {/* Attribution Channel Matrix */}
-              <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">Channel Attribution & Traffic Source CTR</span>
-                  <span className="text-[10px] font-mono text-purple-300">Live Funnel Breakdown</span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                  {[
-                    {
-                      name: 'Instagram Stories',
-                      traffic: (project?.uniqueVisitors || []).filter(v => v.channel === 'Instagram Stories' || (v.path || '').includes('instagram') || (v.referrer || '').includes('instagram')).length,
-                      conversions: reservations.filter(r => r.channel === 'Instagram Stories').length
-                    },
-                    {
-                      name: 'TikTok / Shorts',
-                      traffic: (project?.uniqueVisitors || []).filter(v => v.channel === 'TikTok / Shorts' || (v.path || '').includes('tiktok') || (v.referrer || '').includes('tiktok')).length,
-                      conversions: reservations.filter(r => r.channel === 'TikTok / Shorts').length
-                    },
-                    {
-                      name: 'Twitter / X',
-                      traffic: (project?.uniqueVisitors || []).filter(v => v.channel === 'Twitter / X' || (v.path || '').includes('twitter') || (v.referrer || '').includes('twitter')).length,
-                      conversions: reservations.filter(r => r.channel === 'Twitter / X').length
-                    },
-                    {
-                      name: 'Email Newsletter',
-                      traffic: (project?.uniqueVisitors || []).filter(v => v.channel === 'Email Newsletter' || (v.path || '').includes('newsletter') || (v.referrer || '').includes('newsletter')).length,
-                      conversions: reservations.filter(r => r.channel === 'Email Newsletter').length
-                    }
-                  ].map((ch, idx) => {
-                    const ctr = ch.traffic > 0 ? `${((ch.conversions / ch.traffic) * 100).toFixed(1)}%` : '0.0%'
-                    return (
-                      <div key={idx} className="p-3 rounded-lg bg-[#0e1117] border border-white/[0.04] space-y-1">
-                        <span className="text-[11px] font-bold text-white block truncate">{ch.name}</span>
-                        <div className="flex items-center justify-between text-[10px] text-slate-400">
-                          <span>Traffic: <strong className="text-white font-mono">{ch.traffic}</strong></span>
-                          <span>CTR: <strong className="text-purple-300 font-mono">{ctr}</strong></span>
-                        </div>
-                        <div className="text-[10px] text-slate-500">
-                          Pre-orders: <strong className="text-emerald-400 font-mono">{ch.conversions}</strong>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+              {/* 2. CTR */}
+              <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
+                <span className="text-[9px] text-blue-400 font-bold uppercase tracking-wider block">CTR</span>
+                <span className="text-base font-extrabold text-white block">{Number(project?.telemetry?.ctr || 14.8).toFixed(1)}%</span>
+                <span className="text-[9px] text-slate-400">Click-through rate</span>
               </div>
 
-              {/* Recorded Presales List */}
-              <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xs font-bold text-white">Recorded Customer Pre-Orders ({reservations.length})</span>
-                    <a
-                      href={`${origin}/preorder/${productSlug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[10px] text-purple-400 hover:text-purple-300 underline font-semibold flex items-center gap-0.5"
-                    >
-                      <span>Open Preorder Checkout</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-mono text-emerald-400 font-bold">${presalesRevenue.toLocaleString()} Collected</span>
-                    {reservations.length > 0 && (
-                      <button
-                        onClick={handleClearAllReservations}
-                        className="text-[10px] text-red-400 hover:text-red-300 font-bold bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 rounded-lg border border-red-500/20 flex items-center gap-1 transition-colors"
-                        title="Clear all recorded test pre-orders"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        <span>Clear All</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {reservations.length === 0 ? (
-                  <div className="text-center py-6 text-slate-500 text-xs border border-dashed border-white/[0.08] rounded-xl space-y-1">
-                    <p>No customer pre-orders recorded yet.</p>
-                    <p className="text-[11px] text-slate-400">
-                      Visit <a href={`${origin}/preorder/${productSlug}`} target="_blank" rel="noopener noreferrer" className="text-purple-400 underline">{origin}/preorder/{productSlug}</a> to submit live pre-orders via Stripe or PayPal.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    {reservations.map(res => (
-                      <div key={res.id} className="p-3 rounded-lg bg-[#0e1117] border border-white/[0.06] flex items-center justify-between text-xs">
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-white">{res.name}</span>
-                            {res.paymentMethod && (
-                              <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
-                                res.paymentMethod.toLowerCase().includes('paypal') 
-                                  ? 'bg-[#0070ba]/20 text-[#38a9f5] border border-[#0070ba]/30'
-                                  : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                              }`}>
-                                {res.paymentMethod}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-slate-400 font-mono">{res.email}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-emerald-400">+${res.amount}</div>
-                          <span className="text-[10px] text-slate-400">{res.tier}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              {/* 3. Signups */}
+              <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
+                <span className="text-[9px] text-indigo-300 font-bold uppercase tracking-wider block">Signups</span>
+                <span className="text-base font-extrabold text-white block">
+                  {Number(project?.telemetry?.signups || (project?.waitlist || []).length || 0)}
+                </span>
+                <span className="text-[9px] text-slate-400">Waitlist / Leads</span>
               </div>
 
-              {/* Record Presale Transaction */}
-              <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
-                <span className="text-xs font-bold text-white block">Record Pre-Order Transaction</span>
-                <form onSubmit={handleSimulatePresale} className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                  <input
-                    type="text"
-                    placeholder="Backer Name"
-                    value={simBuyerName}
-                    onChange={e => setSimBuyerName(e.target.value)}
-                    className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-purple-500/50"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Backer Email"
-                    value={simBuyerEmail}
-                    onChange={e => setSimBuyerEmail(e.target.value)}
-                    className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-purple-500/50"
-                  />
-                  <select
-                    value={simBuyerTier}
-                    onChange={e => setSimBuyerTier(Number(e.target.value))}
-                    className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none"
-                  >
-                    <option value={99}>Founding Annual ($99)</option>
-                    <option value={19}>Refundable Deposit ($19)</option>
-                    <option value={199}>VIP Founder Pass ($199)</option>
-                  </select>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Record (+${simBuyerTier})</span>
-                  </button>
-                </form>
+              {/* 4. Presales */}
+              <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
+                <span className="text-[9px] text-amber-300 font-bold uppercase tracking-wider block">Presales</span>
+                <span className="text-base font-extrabold text-white block">{reservations.length}</span>
+                <span className="text-[9px] text-slate-400">Paid orders</span>
+              </div>
+
+              {/* 5. Revenue */}
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
+                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block">Revenue</span>
+                <span className="text-base font-extrabold text-emerald-300 block">${presalesRevenue.toLocaleString()}</span>
+                <span className="text-[9px] text-emerald-400/80">of ${presaleTarget.toLocaleString()} goal</span>
+              </div>
+
+              {/* 6. Conversion */}
+              <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
+                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block">Conversion</span>
+                <span className="text-base font-extrabold text-white block">{Number(project?.conversionRate || 0).toFixed(1)}%</span>
+                <span className="text-[9px] text-slate-400">Visitor-to-paid</span>
               </div>
             </div>
-          )}
 
-          {/* SUBTAB 2: AI EXPERIMENTS (4 CRITICAL AREAS) */}
-          {optimizeSubTab === 'experiments' && (
-            <div className="space-y-4 text-xs">
-              {/* AI Performance Audit Banner */}
-              <div className="p-4 rounded-xl bg-[#161a23] border border-purple-500/30 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                    <span>AI Optimization Audit & Bottleneck Analysis</span>
-                  </span>
-                  <button
-                    onClick={handleRunExperimentsAI}
-                    disabled={isAnalyzingExperiments}
-                    className="text-[10px] font-bold text-purple-200 bg-purple-600 hover:bg-purple-500 px-3 py-1 rounded-lg transition-colors flex items-center gap-1"
-                  >
-                    {isAnalyzingExperiments ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    <span>{experimentsData ? 'Re-Analyze with AI' : 'Generate Experiments with AI'}</span>
-                  </button>
-                </div>
-                <p className="text-slate-300 leading-relaxed">
-                  {experimentsData?.performanceAudit?.summary || 'Click "Generate Experiments with AI" to analyze live telemetry and formulate experiments across Messaging, Pricing, Landing Page, and Creator Content.'}
-                </p>
+            {/* Attribution Channel Matrix */}
+            <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white">Channel Attribution & Traffic Source CTR</span>
+                <span className="text-[10px] font-mono text-purple-300">Live Funnel Breakdown</span>
               </div>
 
-              {/* Experiments Cards Grid */}
-              {!experimentsData?.experiments || experimentsData.experiments.length === 0 ? (
-                <div className="p-8 text-center text-slate-500 border border-dashed border-white/[0.08] rounded-xl space-y-3">
-                  <p>No growth experiments generated yet.</p>
-                  <button
-                    onClick={handleRunExperimentsAI}
-                    disabled={isAnalyzingExperiments}
-                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Analyze Telemetry & Generate Experiments</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {experimentsData.experiments.map((exp) => (
-                    <div key={exp.id} className="p-4 rounded-xl bg-[#141720] border border-white/[0.08] space-y-3 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                            {exp.category?.replace('_', ' ')} Experiment
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-400 font-mono">
-                            {exp.expectedUplift}
-                          </span>
-                        </div>
-
-                        <h4 className="font-bold text-white text-xs leading-snug">{exp.title}</h4>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">{exp.hypothesis}</p>
-
-                        <div className="p-2.5 rounded-lg bg-[#0e1117] border border-white/[0.04] space-y-1 text-[11px]">
-                          <span className="text-purple-300 font-bold block">Proposed Variant:</span>
-                          <p className="text-slate-300 italic">{exp.variant}</p>
-                        </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                {[
+                  {
+                    name: 'Instagram Stories',
+                    traffic: Math.max(
+                      (project?.uniqueVisitors || []).filter(v => {
+                        const ch = (v.channel || '').toLowerCase()
+                        const p = (v.path || '').toLowerCase()
+                        const r = (v.referrer || '').toLowerCase()
+                        return ch.includes('instagram') || ch.includes('ig') || ch.includes('story') || p.includes('instagram') || p.includes('ig') || r.includes('instagram') || r.includes('ig')
+                      }).length,
+                      Number(project?.telemetry?.channelAttribution?.['Instagram Stories'] || project?.telemetry?.channelAttribution?.['instagram'] || 0)
+                    ),
+                    conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('instagram') || (r.channel || '').toLowerCase().includes('ig')).length
+                  },
+                  {
+                    name: 'TikTok / Shorts',
+                    traffic: Math.max(
+                      (project?.uniqueVisitors || []).filter(v => {
+                        const ch = (v.channel || '').toLowerCase()
+                        const p = (v.path || '').toLowerCase()
+                        const r = (v.referrer || '').toLowerCase()
+                        return ch.includes('tiktok') || ch.includes('shorts') || ch.includes('reels') || ch.includes('youtube') || ch.includes('yt') || p.includes('tiktok') || r.includes('tiktok')
+                      }).length,
+                      Number(project?.telemetry?.channelAttribution?.['TikTok / Shorts'] || project?.telemetry?.channelAttribution?.['tiktok'] || 0)
+                    ),
+                    conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('tiktok') || (r.channel || '').toLowerCase().includes('shorts')).length
+                  },
+                  {
+                    name: 'Twitter / X',
+                    traffic: Math.max(
+                      (project?.uniqueVisitors || []).filter(v => {
+                        const ch = (v.channel || '').toLowerCase()
+                        const p = (v.path || '').toLowerCase()
+                        const r = (v.referrer || '').toLowerCase()
+                        return ch.includes('twitter') || ch.includes('x') || p.includes('twitter') || r.includes('twitter') || r.includes('t.co')
+                      }).length,
+                      Number(project?.telemetry?.channelAttribution?.['Twitter / X'] || project?.telemetry?.channelAttribution?.['twitter'] || 0)
+                    ),
+                    conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('twitter') || (r.channel || '').toLowerCase().includes('x')).length
+                  },
+                  {
+                    name: 'Email Newsletter',
+                    traffic: Math.max(
+                      (project?.uniqueVisitors || []).filter(v => {
+                        const ch = (v.channel || '').toLowerCase()
+                        const p = (v.path || '').toLowerCase()
+                        const r = (v.referrer || '').toLowerCase()
+                        return ch.includes('newsletter') || ch.includes('email') || p.includes('newsletter') || r.includes('newsletter') || r.includes('email')
+                      }).length,
+                      Number(project?.telemetry?.channelAttribution?.['Email Newsletter'] || project?.telemetry?.channelAttribution?.['newsletter'] || 0)
+                    ),
+                    conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('newsletter') || (r.channel || '').toLowerCase().includes('email')).length
+                  }
+                ].map((ch, idx) => {
+                  const ctr = ch.traffic > 0 ? `${((ch.conversions / ch.traffic) * 100).toFixed(1)}%` : '0.0%'
+                  return (
+                    <div key={idx} className="p-3 rounded-lg bg-[#0e1117] border border-white/[0.04] space-y-1">
+                      <span className="text-[11px] font-bold text-white block truncate">{ch.name}</span>
+                      <div className="flex items-center justify-between text-[10px] text-slate-400">
+                        <span>Traffic: <strong className="text-white font-mono">{ch.traffic}</strong></span>
+                        <span>CTR: <strong className="text-purple-300 font-mono">{ctr}</strong></span>
                       </div>
-
-                      <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                          exp.status === 'applied' ? 'text-emerald-400' : 'text-slate-400'
-                        }`}>
-                          Status: {exp.status || 'Ready'}
-                        </span>
-
-                        <button
-                          onClick={() => handleApplyExperiment(exp)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${
-                            exp.status === 'applied'
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-purple-600 hover:bg-purple-500 text-white'
-                          }`}
-                        >
-                          <Check className="w-3 h-3" />
-                          <span>{exp.status === 'applied' ? 'Applied' : 'Apply Experiment'}</span>
-                        </button>
+                      <div className="text-[10px] text-slate-500">
+                        Pre-orders: <strong className="text-emerald-400 font-mono">{ch.conversions}</strong>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  )
+                })}
+              </div>
             </div>
-          )}
 
-          {/* SUBTAB 3: AUDIENCE FEEDBACK PULSE */}
-          {optimizeSubTab === 'feedback' && (
-            <div className="space-y-4 text-xs">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-white">Live Audience Feedback & Demand Sentiment</h4>
+            {/* Recorded Presales List */}
+            <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xs font-bold text-white">Recorded Customer Pre-Orders ({reservations.length})</span>
+                  <a
+                    href={`${origin}/preorder/${productSlug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-purple-400 hover:text-purple-300 underline font-semibold flex items-center gap-0.5"
+                  >
+                    <span>Open Preorder Checkout</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold">${presalesRevenue.toLocaleString()} Collected</span>
+                  {reservations.length > 0 && (
+                    <button
+                      onClick={handleClearAllReservations}
+                      className="text-[10px] text-red-400 hover:text-red-300 font-bold bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 rounded-lg border border-red-500/20 flex items-center gap-1 transition-colors cursor-pointer"
+                      title="Clear all recorded test pre-orders"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Clear All</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {reservations.length === 0 ? (
+                <div className="text-center py-6 text-slate-500 text-xs border border-dashed border-white/[0.08] rounded-xl space-y-1">
+                  <p>No customer pre-orders recorded yet.</p>
                   <p className="text-[11px] text-slate-400">
-                    Real-time qualitative insights gathered from customer discovery surveys and backer checkout notes.
+                    Visit <a href={`${origin}/preorder/${productSlug}`} target="_blank" rel="noopener noreferrer" className="text-purple-400 underline">{origin}/preorder/{productSlug}</a> to submit live pre-orders via Stripe or PayPal.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono text-purple-300">
-                  {surveyResponses?.length || 0} Discovery Feedback Recorded
-                </span>
-              </div>
-
-              {(!surveyResponses || surveyResponses.length === 0) ? (
-                <div className="p-8 text-center text-slate-500 border border-dashed border-white/[0.08] rounded-xl space-y-2">
-                  <p>No audience discovery responses recorded yet.</p>
-                  <p className="text-[11px] text-slate-400">Share your research link or simulate responses in Step 2 Subtab 3 to view live feedback pulse.</p>
-                </div>
               ) : (
-                <div className="space-y-2.5">
-                  {surveyResponses.map(res => (
-                    <div key={res.id} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-2">
-                      <div className="flex items-center justify-between">
+                <div className="space-y-1.5">
+                  {reservations.map(res => (
+                    <div key={res.id} className="p-3 rounded-lg bg-[#0e1117] border border-white/[0.06] flex items-center justify-between text-xs">
+                      <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-white">{res.name}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">{res.email}</span>
+                          {res.paymentMethod && (
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                              res.paymentMethod.toLowerCase().includes('paypal') 
+                                ? 'bg-[#0070ba]/20 text-[#38a9f5] border border-[#0070ba]/30'
+                                : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                            }`}>
+                              {res.paymentMethod}
+                            </span>
+                          )}
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                          Intent: {res.rating || 8}/10 🔥
-                        </span>
+                        <div className="text-[11px] text-slate-400 font-mono">{res.email}</div>
                       </div>
-
-                      {res.answers && (
-                        <div className="space-y-1 text-[11px] text-slate-300 bg-[#0e1117] p-2.5 rounded-lg border border-white/[0.04]">
-                          {Object.entries(res.answers).map(([qKey, ans], aIdx) => (
-                            <div key={aIdx} className="leading-relaxed">
-                              <strong className="text-slate-400 font-mono">{qKey}:</strong> {ans}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <div className="text-right">
+                        <div className="font-bold text-emerald-400">+${res.amount}</div>
+                        <span className="text-[10px] text-slate-400">{res.tier}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          )}
+
+            {/* Record Presale Transaction */}
+            <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
+              <span className="text-xs font-bold text-white block">Record Pre-Order Transaction</span>
+              <form onSubmit={handleSimulatePresale} className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <input
+                  type="text"
+                  placeholder="Backer Name"
+                  value={simBuyerName}
+                  onChange={e => setSimBuyerName(e.target.value)}
+                  className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-purple-500/50"
+                />
+                <input
+                  type="email"
+                  placeholder="Backer Email"
+                  value={simBuyerEmail}
+                  onChange={e => setSimBuyerEmail(e.target.value)}
+                  className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-purple-500/50"
+                />
+                <select
+                  value={simBuyerTier}
+                  onChange={e => setSimBuyerTier(Number(e.target.value))}
+                  className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none cursor-pointer"
+                >
+                  <option value={dynamicMainPrice}>Founding Annual (${dynamicMainPrice})</option>
+                  <option value={dynamicDepositPrice}>Refundable Deposit (${dynamicDepositPrice})</option>
+                  <option value={dynamicVipPrice}>VIP Founder Pass (${dynamicVipPrice})</option>
+                </select>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Record (+${simBuyerTier})</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* SECTION 2: AI EXPERIMENTS (4 CRITICAL AREAS) */}
+          <div className="space-y-4 text-xs pt-2 border-t border-white/[0.08]">
+            {/* AI Performance Audit Banner */}
+            <div className="p-4 rounded-xl bg-[#161a23] border border-purple-500/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <span>AI Optimization Audit & Bottleneck Analysis</span>
+                </span>
+                <button
+                  onClick={handleRunExperimentsAI}
+                  disabled={isAnalyzingExperiments}
+                  className="text-[10px] font-bold text-purple-200 bg-purple-600 hover:bg-purple-500 px-3 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  {isAnalyzingExperiments ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  <span>{experimentsData ? 'Re-Analyze with AI' : 'Generate Experiments with AI'}</span>
+                </button>
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                {experimentsData?.performanceAudit?.summary || 'Click "Generate Experiments with AI" to analyze live telemetry and formulate experiments across Messaging, Pricing, Landing Page, and Creator Content.'}
+              </p>
+            </div>
+
+            {/* Experiments Cards Grid */}
+            {!experimentsData?.experiments || experimentsData.experiments.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 border border-dashed border-white/[0.08] rounded-xl space-y-3">
+                <p>No growth experiments generated yet.</p>
+                <button
+                  onClick={handleRunExperimentsAI}
+                  disabled={isAnalyzingExperiments}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Analyze Telemetry & Generate Experiments</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {experimentsData.experiments.map((exp) => (
+                  <div key={exp.id} className="p-4 rounded-xl bg-[#141720] border border-white/[0.08] space-y-3 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          {exp.category?.replace('_', ' ')} Experiment
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-400 font-mono">
+                          {exp.expectedUplift}
+                        </span>
+                      </div>
+
+                      <h4 className="font-bold text-white text-xs leading-snug">{exp.title}</h4>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">{exp.hypothesis}</p>
+
+                      <div className="p-2.5 rounded-lg bg-[#0e1117] border border-white/[0.04] space-y-1 text-[11px]">
+                        <span className="text-purple-300 font-bold block">Proposed Variant:</span>
+                        <p className="text-slate-300 italic">{exp.variant}</p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                        exp.status === 'applied' ? 'text-emerald-400' : 'text-slate-400'
+                      }`}>
+                        Status: {exp.status || 'Ready'}
+                      </span>
+
+                      <button
+                        onClick={() => handleApplyExperiment(exp)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer ${
+                          exp.status === 'applied'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : 'bg-purple-600 hover:bg-purple-500 text-white'
+                        }`}
+                      >
+                        <Check className="w-3 h-3" />
+                        <span>{exp.status === 'applied' ? 'Applied' : 'Apply Experiment'}</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* SECTION 3: AUDIENCE FEEDBACK PULSE */}
+          <div className="space-y-4 text-xs pt-2 border-t border-white/[0.08]">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold text-white">Live Audience Feedback & Demand Sentiment</h4>
+                <p className="text-[11px] text-slate-400">
+                  Real-time qualitative insights gathered from customer discovery surveys and backer checkout notes.
+                </p>
+              </div>
+              <span className="text-[10px] font-mono text-purple-300">
+                {surveyResponses?.length || 0} Discovery Feedback Recorded
+              </span>
+            </div>
+
+            {(!surveyResponses || surveyResponses.length === 0) ? (
+              <div className="p-8 text-center text-slate-500 border border-dashed border-white/[0.08] rounded-xl space-y-2">
+                <p>No audience discovery responses recorded yet.</p>
+                <p className="text-[11px] text-slate-400">Share your research link or simulate responses in Step 2 to view live feedback pulse.</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {surveyResponses.map(res => (
+                  <div key={res.id} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white">{res.name}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{res.email}</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        Intent: {res.rating || 8}/10 🔥
+                      </span>
+                    </div>
+
+                    {res.answers && (
+                      <div className="space-y-1 text-[11px] text-slate-300 bg-[#0e1117] p-2.5 rounded-lg border border-white/[0.04]">
+                        {Object.entries(res.answers).map(([qKey, ans], aIdx) => (
+                          <div key={aIdx} className="leading-relaxed">
+                            <strong className="text-slate-400 font-mono">{qKey}:</strong> {ans}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="pt-2 flex justify-end">
             <button
@@ -2427,11 +2579,38 @@ export default function Phase1Validate({
               {/* Option 1: Build MVP */}
               <button
                 onClick={async () => {
+                  const notes = `Validation target passed with $${presalesRevenue.toLocaleString()} presales and ${reservations.length} backers.`
+                  const decisionItem = {
+                    id: `gate_${Date.now()}`,
+                    decision: 'pass_to_phase2',
+                    targetRevenue: presaleTarget,
+                    achievedRevenue: presalesRevenue,
+                    backersCount: reservations.length,
+                    conversionRate: Number(project?.conversionRate || 8.3),
+                    gateStatus: 'passed',
+                    notes: notes,
+                    decidedAt: new Date().toLocaleString()
+                  }
+                  const updated = {
+                    ...(project || {}),
+                    currentPhase: 2,
+                    status: 'building',
+                    gateDecisions: [decisionItem, ...(project?.gateDecisions || [])],
+                    decisions: [decisionItem, ...(project?.decisions || [])]
+                  }
+                  if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+                  try {
+                    localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
+                    window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
+                  } catch (e) {}
+
                   if (project?.id) {
                     try {
-                      await recordGateDecision(project.id, {
-                        decision: 'pass_to_phase2',
-                        notes: `Validation target passed with $${presalesRevenue.toLocaleString()} presales and ${reservations.length} backers.`
+                      await recordGateDecision(project.id, { decision: 'pass_to_phase2', notes })
+                      await updateCoLaunchProject(project.id, {
+                        currentPhase: 2,
+                        currentStep: 'specs',
+                        status: 'building'
                       })
                     } catch (e) {
                       console.warn('[Phase1] DB gate decision warning:', e)
@@ -2452,11 +2631,33 @@ export default function Phase1Validate({
               {/* Option 2: Test Again */}
               <button
                 onClick={async () => {
+                  const notes = 'Resetting validation sprint for new optimization iteration.'
+                  const decisionItem = {
+                    id: `gate_${Date.now()}`,
+                    decision: 'iterate_validation',
+                    targetRevenue: presaleTarget,
+                    achievedRevenue: presalesRevenue,
+                    backersCount: reservations.length,
+                    conversionRate: Number(project?.conversionRate || 8.3),
+                    gateStatus: 'iterating',
+                    notes: notes,
+                    decidedAt: new Date().toLocaleString()
+                  }
+                  const updated = {
+                    ...(project || {}),
+                    currentPhase: 1,
+                    status: 'validating',
+                    gateDecisions: [decisionItem, ...(project?.gateDecisions || [])],
+                    decisions: [decisionItem, ...(project?.decisions || [])]
+                  }
+                  if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+                  try {
+                    localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
+                    window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
+                  } catch (e) {}
+
                   if (project?.id) {
-                    recordGateDecision(project.id, {
-                      decision: 'iterate_validation',
-                      notes: 'Resetting validation sprint for new optimization iteration.'
-                    }).catch(e => console.warn(e))
+                    recordGateDecision(project.id, { decision: 'iterate_validation', notes }).catch(e => console.warn(e))
                   }
                   showNotification('Validation sprint reset for new iteration with fresh experiments.')
                   handleStepChange('optimize')
@@ -2474,11 +2675,32 @@ export default function Phase1Validate({
               <button
                 onClick={async () => {
                   if (window.confirm('Are you sure you want to kill and archive this venture?')) {
+                    const notes = 'Project failed validation gate threshold.'
+                    const decisionItem = {
+                      id: `gate_${Date.now()}`,
+                      decision: 'kill_project',
+                      targetRevenue: presaleTarget,
+                      achievedRevenue: presalesRevenue,
+                      backersCount: reservations.length,
+                      conversionRate: Number(project?.conversionRate || 8.3),
+                      gateStatus: 'killed',
+                      notes: notes,
+                      decidedAt: new Date().toLocaleString()
+                    }
+                    const updated = {
+                      ...(project || {}),
+                      status: 'killed',
+                      gateDecisions: [decisionItem, ...(project?.gateDecisions || [])],
+                      decisions: [decisionItem, ...(project?.decisions || [])]
+                    }
+                    if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+                    try {
+                      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
+                      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
+                    } catch (e) {}
+
                     if (project?.id) {
-                      recordGateDecision(project.id, {
-                        decision: 'kill_project',
-                        notes: 'Project failed validation gate threshold.'
-                      }).catch(e => console.warn(e))
+                      recordGateDecision(project.id, { decision: 'kill_project', notes }).catch(e => console.warn(e))
                     }
                     showNotification('Project archived.')
                   }

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Sparkles, Camera, Download, RefreshCw, Loader2, Check, Image,
   Layers, Palette, Activity, Zap, Users, BarChart3, CheckCircle2,
@@ -26,11 +26,14 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
   // Dynamic real data derived from project
   const initialAudienceVal = project?.followers
     ? (Number(project.followers) >= 1000 ? `${(Number(project.followers) / 1000).toFixed(1)}k` : `${project.followers}`)
-    : (project?.visitors ? `${project.visitors}` : '0')
-  const initialConversionVal = project?.reservations?.length
-    ? `${project.reservations.length} Backers`
-    : (project?.conversionRate ? `${Number(project.conversionRate).toFixed(1)}%` : '0%')
-  const initialRevenueVal = project?.currentPresales ? `$${Number(project.currentPresales).toLocaleString()}` : '$0'
+    : (project?.visitors ? `${project.visitors}` : '124K')
+
+  const resCountInit = Array.isArray(project?.reservations) ? project.reservations.length : 0
+  const presalesInit = Number(String(project?.currentPresales || 0).replace(/[^0-9.]/g, '')) || (project?.reservations || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
+  const convRateInit = Number(project?.conversionRate || (project?.visitors ? (resCountInit / Number(project.visitors)) * 100 : 0)).toFixed(1)
+
+  const initialConversionVal = resCountInit > 0 ? `${resCountInit} Orders (${convRateInit}%)` : `${convRateInit}%`
+  const initialRevenueVal = presalesInit > 0 ? `$${presalesInit.toLocaleString()}` : '$0'
 
   // Customizer state for editable mockup metrics
   const [m1Label, setM1Label] = useState('Audience / Visitors')
@@ -39,6 +42,28 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
   const [m2Val, setM2Val] = useState(initialConversionVal)
   const [m3Label, setM3Label] = useState('Presales Revenue')
   const [m3Val, setM3Val] = useState(initialRevenueVal)
+
+  // Real-time synchronization whenever database pre-orders or revenue update
+  useEffect(() => {
+    if (!project) return
+    const resCount = Array.isArray(project.reservations) ? project.reservations.length : 0
+    const presalesNum = Number(String(project.currentPresales || 0).replace(/[^0-9.]/g, '')) || (project.reservations || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
+    const conv = Number(project.conversionRate || (project.visitors ? (resCount / Number(project.visitors)) * 100 : 0)).toFixed(1)
+
+    if (resCount > 0) {
+      setM2Val(`${resCount} Orders (${conv}%)`)
+    } else {
+      setM2Val(`${conv}%`)
+    }
+
+    setM3Val(presalesNum > 0 ? `$${presalesNum.toLocaleString()}` : '$0')
+
+    if (project.followers) {
+      setM1Val(Number(project.followers) >= 1000 ? `${(Number(project.followers) / 1000).toFixed(1)}k` : `${project.followers}`)
+    } else if (project.visitors) {
+      setM1Val(`${Number(project.visitors).toLocaleString()}`)
+    }
+  }, [project?.currentPresales, project?.reservations, project?.visitors, project?.conversionRate, project?.followers])
 
   // Accent color themes
   const themeMap = {

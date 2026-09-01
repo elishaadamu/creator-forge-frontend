@@ -97,14 +97,20 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
     let channel = 'Direct / Other'
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
-      const refQuery = urlParams.get('ref') || urlParams.get('utm_source') || urlParams.get('source')
+      const refQuery = urlParams.get('ref') || urlParams.get('utm_source') || urlParams.get('utm') || urlParams.get('source') || urlParams.get('channel')
       if (refQuery) {
         rawRef = refQuery.toLowerCase()
-        if (rawRef.includes('instagram')) channel = 'Instagram Stories'
-        else if (rawRef.includes('tiktok') || rawRef.includes('reels') || rawRef.includes('shorts')) channel = 'TikTok / Shorts'
-        else if (rawRef.includes('twitter') || rawRef.includes('x_post') || rawRef.includes('tweet')) channel = 'Twitter / X'
-        else if (rawRef.includes('newsletter') || rawRef.includes('email')) channel = 'Email Newsletter'
-        else if (rawRef.includes('dm')) channel = 'Direct Messages'
+        if (rawRef.includes('instagram') || rawRef.includes('ig') || rawRef.includes('story') || rawRef.includes('insta')) {
+          channel = 'Instagram Stories'
+        } else if (rawRef.includes('tiktok') || rawRef.includes('reels') || rawRef.includes('shorts') || rawRef.includes('youtube') || rawRef.includes('yt')) {
+          channel = 'TikTok / Shorts'
+        } else if (rawRef.includes('twitter') || rawRef.includes('x_post') || rawRef.includes('tweet') || rawRef.includes('x')) {
+          channel = 'Twitter / X'
+        } else if (rawRef.includes('newsletter') || rawRef.includes('email') || rawRef.includes('broadcast') || rawRef.includes('mail')) {
+          channel = 'Email Newsletter'
+        } else if (rawRef.includes('dm') || rawRef.includes('outreach')) {
+          channel = 'Direct Messages'
+        }
       } else if (document.referrer) {
         try {
           const refUrl = new URL(document.referrer)
@@ -117,13 +123,15 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
     }
 
     if (existingIndex >= 0) {
-      // Returning visitor on same device -> do NOT increase count, just update pageviews and lastSeen
+      // Returning visitor on same device -> update pageviews, lastSeen, and specific campaign channel
+      const prevChannel = updatedVisitors[existingIndex].channel
+      const effectiveChannel = (channel !== 'Direct / Other') ? channel : (prevChannel || channel)
       updatedVisitors[existingIndex] = {
         ...updatedVisitors[existingIndex],
         lastSeen: now,
         pageviews: (updatedVisitors[existingIndex].pageviews || 1) + 1,
         path: pagePath,
-        channel: updatedVisitors[existingIndex].channel || channel,
+        channel: effectiveChannel,
         referrer: rawRef
       }
     } else {
@@ -157,16 +165,39 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
       { desktop: 0, mobile: 0, tablet: 0 }
     )
 
+    // Compute live channel attribution breakdown
+    const channelAttribution = updatedVisitors.reduce((acc, v) => {
+      const ch = v.channel || 'Direct / Other'
+      acc[ch] = (acc[ch] || 0) + 1
+      return acc
+    }, {})
+
     const updatedProject = {
       ...activeProject,
       visitors: uniqueCount,
       uniqueVisitors: updatedVisitors,
       conversionRate: Number(conversionRate),
       deviceBreakdown: breakdown,
+      channelAttribution: channelAttribution,
       lastVisitorTimestamp: now
     }
 
     localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProject))
+    try {
+      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProject }))
+    } catch (e) {}
+
+    // Persist visit to backend database
+    import('./opsApi').then(({ recordVisitUniversal }) => {
+      recordVisitUniversal({
+        projectId: activeProject.id,
+        slug: activeProject.productName ? activeProject.productName.toLowerCase().replace(/ /g, '-') : undefined,
+        channel: channel,
+        ref: rawRef,
+        path: pagePath
+      }).catch(err => console.warn('[Tracker] DB visit sync warning:', err))
+    }).catch(() => {})
+
     if (onProjectUpdate) {
       onProjectUpdate(updatedProject)
     }

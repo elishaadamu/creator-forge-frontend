@@ -261,10 +261,29 @@ export default function CreatorLaunchLayout({
             const projIdParam = searchParams?.get('project')
             const matched = projIdParam ? projs.find(p => p.id === projIdParam) : projs[0]
             if (matched) {
-              setActiveProject(matched)
-              try {
-                localStorage.setItem('forge_launch_active_project', JSON.stringify(matched))
-              } catch {}
+              setActiveProject(prev => {
+                const local = prev || (typeof localStorage !== 'undefined' ? (() => {
+                  try {
+                    return JSON.parse(localStorage.getItem('forge_launch_active_project') || 'null')
+                  } catch {
+                    return null
+                  }
+                })() : null)
+                const resolvedPhase = Math.max(Number(matched.currentPhase || 1), Number(local?.currentPhase || 1))
+                const merged = {
+                  ...matched,
+                  ...(local?.id === matched.id ? local : {}),
+                  currentPhase: resolvedPhase,
+                  status: resolvedPhase > 1 ? (local?.status || matched.status || 'building') : (matched.status || 'validating'),
+                  gateDecisions: (local?.gateDecisions?.length || 0) > (matched.gateDecisions?.length || 0)
+                    ? local.gateDecisions
+                    : (matched.gateDecisions || local?.gateDecisions || [])
+                }
+                try {
+                  localStorage.setItem('forge_launch_active_project', JSON.stringify(merged))
+                } catch {}
+                return merged
+              })
             }
           }
         }
@@ -280,6 +299,39 @@ export default function CreatorLaunchLayout({
       clearInterval(syncInterval)
     }
   }, [])
+
+  const handleUpdateActiveProject = (updater) => {
+    setActiveProject(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      if (!next) return next
+      try {
+        localStorage.setItem('forge_launch_active_project', JSON.stringify(next))
+      } catch (e) {}
+
+      // Persist to backend database tables in SQLite
+      if (next.id) {
+        import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
+          updateCoLaunchProject(next.id, {
+            currentPhase: next.currentPhase,
+            currentStep: next.currentStep,
+            status: next.status,
+            productName: next.productName,
+            productTagline: next.productTagline,
+            pricing: next.pricing,
+            presaleTarget: next.presaleTarget,
+            metadataInfo: {
+              ...(next.metadataInfo || {}),
+              activity_logs: next.activityLogs || next.adminActivity || [],
+              gate_decisions: next.gateDecisions || [],
+              mvpBuildPlan: next.mvpBuildPlan,
+              engineeringTasks: next.engineeringTasks,
+            }
+          }).catch(err => console.warn('[CreatorLaunchLayout] updateCoLaunchProject error:', err))
+        })
+      }
+      return next
+    })
+  }
 
   const handleCreateProjectFromConcept = async (newProjData) => {
     const projId = `proj_${Date.now()}`
@@ -571,7 +623,7 @@ export default function CreatorLaunchLayout({
           <ProjectOS
             project={activeProject}
             api={api}
-            onUpdateProject={setActiveProject}
+            onUpdateProject={handleUpdateActiveProject}
             onGoToAcquisition={() => setActiveSection('section1')}
             onResetProject={handleResetProject}
           />

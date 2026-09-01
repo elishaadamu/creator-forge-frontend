@@ -154,13 +154,19 @@ export default function PreorderLandingPage({ slug }) {
 
       // 1. Record to local project state dynamically for instantaneous tab sync
       const urlParams = new URLSearchParams(window.location.search)
-      const refQuery = (urlParams.get('ref') || urlParams.get('utm_source') || '').toLowerCase()
+      const refQuery = (urlParams.get('ref') || urlParams.get('utm_source') || urlParams.get('utm') || urlParams.get('source') || urlParams.get('channel') || '').toLowerCase()
       let attributedChannel = 'Direct / Other'
-      if (refQuery.includes('instagram')) attributedChannel = 'Instagram Stories'
-      else if (refQuery.includes('tiktok') || refQuery.includes('reels') || refQuery.includes('shorts')) attributedChannel = 'TikTok / Shorts'
-      else if (refQuery.includes('twitter') || refQuery.includes('x_post') || refQuery.includes('tweet')) attributedChannel = 'Twitter / X'
-      else if (refQuery.includes('newsletter') || refQuery.includes('email')) attributedChannel = 'Email Newsletter'
-      else if (refQuery.includes('dm')) attributedChannel = 'Direct Messages'
+      if (refQuery.includes('instagram') || refQuery.includes('ig') || refQuery.includes('story') || refQuery.includes('insta')) {
+        attributedChannel = 'Instagram Stories'
+      } else if (refQuery.includes('tiktok') || refQuery.includes('reels') || refQuery.includes('shorts') || refQuery.includes('youtube') || refQuery.includes('yt')) {
+        attributedChannel = 'TikTok / Shorts'
+      } else if (refQuery.includes('twitter') || refQuery.includes('x_post') || refQuery.includes('tweet') || refQuery.includes('x')) {
+        attributedChannel = 'Twitter / X'
+      } else if (refQuery.includes('newsletter') || refQuery.includes('email') || refQuery.includes('broadcast') || refQuery.includes('mail')) {
+        attributedChannel = 'Email Newsletter'
+      } else if (refQuery.includes('dm') || refQuery.includes('outreach')) {
+        attributedChannel = 'Direct Messages'
+      }
 
       const newReservation = {
         id: `res-${Date.now()}`,
