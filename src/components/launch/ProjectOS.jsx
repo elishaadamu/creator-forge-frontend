@@ -396,9 +396,14 @@ partnerships@creatorforge.com`
   const isGatePassed = currentPresales >= presaleGoal || project.currentPhase > 1 || project.status === 'building'
 
   // Step Completion Guards
-  const isStep1Done = Boolean(project.validationPlan?.status === 'ready' || project.validationPlan?.threshold || project.customer)
-  const isStep2Done = Boolean(project.validationCampaign?.reviewStatus === 'approved' || project.validationCampaign?.review_status === 'approved' || project.campaignKit?.landingPageCopy)
-  const isStep3Done = Boolean((project.creatorTasks?.length || 0) > 0 || (project.campaignKit?.postingSchedule?.length || 0) > 0)
+  const isStep1Done = Boolean(project.validationPlan?.status === 'ready' || project.validationPlan?.threshold || project.planLocked)
+  const isStep2Done = Boolean(project.validationCampaign?.reviewStatus === 'approved' || project.validationCampaign?.review_status === 'approved' || project.assetsApproved || project.landingPageApproved)
+  const isStep3Done = Boolean(
+    project.campaignLaunched ||
+    project.campaignKit?.launched ||
+    ((project.campaignKit?.postingSchedule || []).length > 0 && (project.campaignKit?.postingSchedule || []).every(t => t.done)) ||
+    ((project.creatorTasks || []).length > 0 && (project.creatorTasks || []).every(t => t.done || t.completed))
+  )
   const isStep4Done = Boolean((project.reservations?.length || 0) > 0 || Number(project.currentPresales || 0) > 0)
   const isStep5Done = Boolean((project.gateDecisions?.length || 0) > 0 || project.currentPhase > 1 || project.status === 'building')
 
