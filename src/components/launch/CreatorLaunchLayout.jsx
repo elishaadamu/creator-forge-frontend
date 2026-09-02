@@ -279,7 +279,15 @@ export default function CreatorLaunchLayout({
                     ? local.gateDecisions
                     : (matched.gateDecisions || local?.gateDecisions || []),
                   projectFiles: (local?.projectFiles?.length || 0) > 0 ? local.projectFiles : (matched.projectFiles || []),
-                  messages: (local?.messages?.length || 0) > 0 ? local.messages : (matched.messages || [])
+                  messages: (local?.messages?.length || 0) > 0 ? local.messages : (matched.messages || []),
+                  mvpBuildPlan: matched.mvpBuildPlan || local?.mvpBuildPlan,
+                  engineeringTasks: (matched.engineeringTasks?.length || 0) > 0 ? matched.engineeringTasks : (local?.engineeringTasks || []),
+                  qaResults: matched.qaResults || local?.qaResults,
+                  betaFeedback: (matched.betaFeedback?.length || 0) > 0 ? matched.betaFeedback : (local?.betaFeedback || []),
+                  feedbackClusters: (matched.feedbackClusters?.length || 0) > 0 ? matched.feedbackClusters : (local?.feedbackClusters || []),
+                  readinessReport: matched.readinessReport || local?.readinessReport,
+                  appliedPatches: (matched.appliedPatches?.length || 0) > 0 ? matched.appliedPatches : (local?.appliedPatches || []),
+                  mvpVersion: matched.mvpVersion || local?.mvpVersion || 'v1.0.0-MVP'
                 }
                 try {
                   localStorage.setItem('forge_launch_active_project', JSON.stringify(merged))

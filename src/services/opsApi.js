@@ -294,5 +294,8 @@ export const getFrontendUrl = () => {
   if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
     return envUrl.trim().replace(/\/$/, '')
   }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin.replace(/\/$/, '')
+  }
   return 'https://creator-forge-frontend.vercel.app'
 }

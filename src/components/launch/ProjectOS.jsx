@@ -50,13 +50,17 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
     } catch (e) {}
   }
 
-  // Initialize phase modal & step from URL if present
+  // Initialize phase modal & step from URL or localStorage if present
   const [selectedPhaseStep, setSelectedPhaseStep] = useState(() => {
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search)
       const stepParam = sp.get('step')
       if (stepParam && ['plan', 'build', 'beta', 'gate', 'campaign', 'launch'].includes(stepParam)) {
         return stepParam
+      }
+      const savedP2 = localStorage.getItem('forge_p2_active_step')
+      if (savedP2 && ['plan', 'build', 'beta', 'gate'].includes(savedP2)) {
+        return savedP2
       }
     }
     return 'plan'
@@ -423,6 +427,57 @@ partnerships@creatorforge.com`
   const isStep4Done = Boolean((project.reservations?.length || 0) > 0 || Number(project.currentPresales || 0) > 0)
   const isStep5Done = Boolean((project.gateDecisions?.length || 0) > 0 || currentPhase > 1 || project.status === 'building')
 
+  const isLiveLaunch = Boolean(
+    project.launchStatus === 'LIVE' ||
+    project.isLive === true ||
+    project.status === 'LIVE' ||
+    project.status === 'launched' ||
+    currentPhase === 3 ||
+    Boolean(project.phase3Strategy?.productionLive || project.phase3Strategy?.launchStatus === 'LIVE') ||
+    Boolean(project.launchReport || project.decisionNotice)
+  )
+
+  const isP1Done = Boolean(
+    currentPhase > 1 ||
+    project.currentPhase > 1 ||
+    isGatePassed ||
+    Number(project.currentPresales || 0) > 0 ||
+    (project.reservations && project.reservations.length > 0) ||
+    project.status === 'building' ||
+    project.status === 'launched' ||
+    project.status === 'LIVE'
+  )
+
+  const isP2Done = Boolean(
+    currentPhase >= 3 ||
+    project.currentPhase >= 3 ||
+    project.status === 'launched' ||
+    project.status === 'LIVE' ||
+    isLiveLaunch ||
+    Boolean(project.mvpBuildPlan && (project.mvpBuildPlan.productSpec || project.mvpBuildPlan.technicalPlan)) ||
+    (Array.isArray(project.projectFiles) && project.projectFiles.length > 0) ||
+    (Array.isArray(project.engineeringTasks) && project.engineeringTasks.some(t => t.status === 'Completed' || t.status === 'done' || t.executedAt)) ||
+    project.launchReadinessReport ||
+    project.readinessReport
+  )
+
+  const isP3Done = Boolean(
+    isLiveLaunch ||
+    project.launchStatus === 'LIVE' ||
+    project.isLive === true ||
+    project.status === 'LIVE' ||
+    project.status === 'launched' ||
+    Boolean(project.launchReport || project.decisionNotice)
+  )
+
+  const activePhaseTasks = currentPhase === 3
+    ? ((project.phase3Strategy?.opsChecklist || []).concat(project.phase3Strategy?.creatorChecklist || []).length > 0
+        ? (project.phase3Strategy?.opsChecklist || []).concat(project.phase3Strategy?.creatorChecklist || [])
+        : checklistTasks)
+    : currentPhase === 2
+    ? (Array.isArray(project.engineeringTasks) && project.engineeringTasks.length > 0 ? project.engineeringTasks : checklistTasks)
+    : checklistTasks
+
   return (
     <div className="space-y-6 w-full max-w-full">
       {/* SECTION 2 HEADER */}
@@ -514,29 +569,56 @@ partnerships@creatorforge.com`
               {/* ACTIVE PHASE PINNED TO BOTTOM */}
               <div className="mt-auto pt-3">
                 <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center space-y-2">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Active Phase</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                    {isLiveLaunch ? '🚀 Live Launch' : 'Active Phase'}
+                  </span>
                   <div className="flex items-center justify-center gap-1.5">
-                    {[1, 2, 3].map(p => (
-                      <button
-                        key={p}
-                        onClick={() => handleAdvancePhase(p)}
-                        className={`w-8 h-8 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                          currentPhase === p
-                            ? p === 2
-                              ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
-                              : p === 3
-                              ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40'
-                              : 'bg-emerald-600 text-white shadow-md shadow-emerald-900/40'
-                            : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
-                        }`}
-                        title={`Switch to Phase ${p}`}
-                      >
-                        P{p}
-                      </button>
-                    ))}
+                    {[1, 2, 3].map(p => {
+                      const isDone = p === 1 ? isP1Done : p === 2 ? isP2Done : isP3Done
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => handleAdvancePhase(p)}
+                          className={`relative w-8 h-8 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
+                            currentPhase === p
+                              ? p === 2
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                                : p === 3
+                                ? isLiveLaunch
+                                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/50'
+                                  : 'bg-purple-600 text-white shadow-md shadow-purple-900/40'
+                                : 'bg-emerald-600 text-white shadow-md shadow-emerald-900/40'
+                              : isDone
+                              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20'
+                              : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                          }`}
+                          title={`Switch to Phase ${p}${isDone ? ' (Completed)' : ''}`}
+                        >
+                          <span className={isDone ? 'line-through text-slate-200 decoration-emerald-400 decoration-2 font-black' : ''}>
+                            P{p}
+                          </span>
+                          {isDone && (
+                            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center text-[8px] font-black shadow-xs">
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
-                  <span className="text-[10px] font-extrabold text-white block">
-                    {currentPhase === 1 ? 'Phase 1: Validate' : currentPhase === 2 ? 'Phase 2: Build MVP' : 'Phase 3: Launch'}
+                  <span className="text-[10px] font-extrabold text-white flex items-center justify-center gap-1.5 pt-0.5">
+                    {isLiveLaunch ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                        <span className="text-emerald-400">Live Launch ✓</span>
+                      </>
+                    ) : currentPhase === 1 ? (
+                      'Phase 1: Validate'
+                    ) : currentPhase === 2 ? (
+                      'Phase 2: Build MVP'
+                    ) : (
+                      'Phase 3: Launch'
+                    )}
                   </span>
                 </div>
               </div>
@@ -565,14 +647,27 @@ partnerships@creatorforge.com`
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-xs ${
-                    currentPhase === 2
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-xs flex items-center gap-1.5 ${
+                    isLiveLaunch
+                      ? 'text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 shadow-emerald-950/50'
+                      : currentPhase === 2
                       ? 'text-blue-400 bg-blue-500/10 border border-blue-500/20'
                       : currentPhase === 3
                       ? 'text-purple-400 bg-purple-500/10 border border-purple-500/20'
                       : 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
                   }`}>
-                    {currentPhase === 1 ? 'Phase 1: Validate' : currentPhase === 2 ? 'Phase 2: Build MVP' : 'Phase 3: Launch'}
+                    {isLiveLaunch ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>🚀 Live Launch</span>
+                      </>
+                    ) : currentPhase === 1 ? (
+                      'Phase 1: Validate'
+                    ) : currentPhase === 2 ? (
+                      'Phase 2: Build MVP'
+                    ) : (
+                      'Phase 3: Launch'
+                    )}
                   </span>
                 </div>
               </div>
@@ -582,17 +677,21 @@ partnerships@creatorforge.com`
                 <div className="space-y-5 animate-fade-in">
                   {/* Top 4 KPI Cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    {/* 1. Presales */}
+                    {/* 1. Presales / Live Revenue */}
                     <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Presales</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                        {currentPhase === 3 ? 'Live Revenue' : 'Presales'}
+                      </span>
                       <div className="text-lg sm:text-xl font-extrabold text-white">
                         ${presalesRevenue.toLocaleString()}
                       </div>
-                      <span className="text-[10px] text-slate-400 block">of ${presaleTarget.toLocaleString()} goal</span>
+                      <span className="text-[10px] text-slate-400 block">
+                        {currentPhase === 3 ? 'Total processed revenue' : `of $${presaleTarget.toLocaleString()} goal`}
+                      </span>
                       <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden mt-1">
                         <div
                           className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                          style={{ width: `${presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 0}%` }}
+                          style={{ width: `${presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 100}%` }}
                         />
                       </div>
                     </div>
@@ -608,20 +707,33 @@ partnerships@creatorforge.com`
 
                     {/* 3. Conversion */}
                     <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Conversion</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                        {currentPhase === 3 ? 'Paid Conversion' : 'Conversion'}
+                      </span>
                       <div className="text-lg sm:text-xl font-extrabold text-white">
                         {conversionRate.toFixed(1)}%
                       </div>
                       <span className="text-[10px] text-slate-500">Tracked rate</span>
                     </div>
 
-                    {/* 4. Days Left */}
+                    {/* 4. Days Left / Production Status */}
                     <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Days Left</span>
-                      <div className="text-lg sm:text-xl font-extrabold text-white">
-                        {daysLeft}
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                        {isLiveLaunch ? 'Production Status' : 'Days Left'}
+                      </span>
+                      <div className="text-lg sm:text-xl font-extrabold text-white flex items-center gap-1.5">
+                        {isLiveLaunch ? (
+                          <>
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                            <span className="text-emerald-400">Live</span>
+                          </>
+                        ) : (
+                          daysLeft
+                        )}
                       </div>
-                      <span className="text-[10px] text-slate-500">Validation window</span>
+                      <span className="text-[10px] text-slate-500">
+                        {isLiveLaunch ? '99.98% Uptime • Live Funnel' : 'Validation window'}
+                      </span>
                     </div>
                   </div>
 
@@ -633,26 +745,32 @@ partnerships@creatorforge.com`
                         <div className="flex items-center justify-between border-b border-white/[0.06] pb-2 mb-2.5">
                           <span className="font-bold text-white text-xs flex items-center gap-1.5">
                             <CheckSquare className="w-3.5 h-3.5 text-purple-400" />
-                            <span>Validation Sprint Tasks</span>
+                            <span>
+                              {currentPhase === 3 ? 'Launch & Growth Tasks' : currentPhase === 2 ? 'MVP Engineering Tasks' : 'Validation Sprint Tasks'}
+                            </span>
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono font-bold bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.06]">
-                            {checklistTasks.length} total
+                            {activePhaseTasks.length} total
                           </span>
                         </div>
-                        {checklistTasks.length === 0 ? (
+                        {activePhaseTasks.length === 0 ? (
                           <div className="py-3 text-center text-slate-400 text-xs space-y-1">
                             <p className="text-slate-300 font-medium">No tasks logged yet</p>
-                            <p className="text-[10px] text-slate-500">Tasks generate automatically during Phase 1 Validation.</p>
+                            <p className="text-[10px] text-slate-500">Tasks generate automatically during this phase.</p>
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            {checklistTasks.slice(0, 3).map((task, idx) => (
+                            {activePhaseTasks.slice(0, 3).map((task, idx) => (
                               <div key={idx} className="flex items-center justify-between text-slate-200">
                                 <span className="flex items-center gap-2 truncate">
-                                  <span>{task.completed ? '✅' : '📍'}</span>
-                                  <span className="font-medium truncate">{task.title || task.text}</span>
+                                  <span>{task.done || task.completed || task.status === 'Completed' ? '✅' : '📍'}</span>
+                                  <span className={`font-medium truncate ${task.done || task.completed || task.status === 'Completed' ? 'line-through text-slate-400' : ''}`}>
+                                    {task.title || task.name || task.text}
+                                  </span>
                                 </span>
-                                <span className="text-[11px] text-slate-400 shrink-0 ml-2">{task.due || 'Pending'}</span>
+                                <span className="text-[11px] text-slate-400 shrink-0 ml-2">
+                                  {task.due || (task.done || task.completed || task.status === 'Completed' ? 'Done' : 'Pending')}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -1322,45 +1440,71 @@ partnerships@creatorforge.com`
                     id: 'plan',
                     num: '1. Product + Build Plan',
                     desc: 'Product spec, user flows, tech stack, schema, acceptance criteria & scope boundaries',
-                    icon: FileText
+                    icon: FileText,
+                    isDone: Boolean(project?.mvpBuildPlan && (project.mvpBuildPlan.productSpec || project.mvpBuildPlan.technicalPlan))
                   },
                   {
                     id: 'build',
                     num: '2. Engineering Build',
                     desc: 'FastAPI backend, React frontend, database migrations, and async AI worker pipeline',
-                    icon: Terminal
+                    icon: Terminal,
+                    isDone: Boolean(project?.projectFiles?.length > 0 || (Array.isArray(project?.engineeringTasks) && project.engineeringTasks.length > 0 && project.engineeringTasks.some(t => t.status === 'Completed' || t.status === 'done')))
                   },
                   {
                     id: 'beta',
                     num: '3. Beta Testing',
                     desc: `Invite ${Array.isArray(project?.reservations) ? project.reservations.length : 0} founding pre-order backers for private beta QA`,
-                    icon: Laptop
+                    icon: Laptop,
+                    isDone: Boolean((project?.betaFeedback && project.betaFeedback.length > 0) || (project?.reservations && project.reservations.length > 0))
                   },
                   {
                     id: 'gate',
                     num: '4. MVP Launch Gate',
                     desc: 'Verify acceptance criteria, zero critical errors, approve & advance to Phase 3',
-                    icon: ShieldCheck
+                    icon: ShieldCheck,
+                    isDone: Boolean(project?.launchReadinessReport || project?.status === 'ready_for_phase3' || project?.currentPhase > 2)
                   },
                 ].map(step => {
                   const Icon = step.icon
+                  const isDone = step.isDone
                   return (
                     <div
                       key={step.id}
                       onClick={() => openPhaseStep(step.id)}
-                      className="p-3.5 rounded-xl bg-[#141720] hover:bg-[#1b202c] border border-white/[0.06] hover:border-blue-500/40 transition-all cursor-pointer group space-y-1"
+                      className={`p-3.5 rounded-xl border transition-all cursor-pointer group space-y-1 ${
+                        isDone
+                          ? 'bg-emerald-950/15 border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-950/25'
+                          : 'bg-[#141720] hover:bg-[#1b202c] border-white/[0.06] hover:border-blue-500/40'
+                      }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5 text-xs font-bold text-white group-hover:text-blue-300 transition-colors">
-                          <Icon className="w-4 h-4 text-blue-400 shrink-0" />
-                          <span>{step.num}</span>
+                        <div className="flex items-center gap-2.5 text-xs font-bold transition-colors">
+                          {isDone ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          ) : (
+                            <Icon className="w-4 h-4 text-blue-400 shrink-0" />
+                          )}
+                          <span className={isDone ? 'line-through text-slate-300 decoration-emerald-400/80 decoration-2' : 'text-white group-hover:text-blue-300'}>
+                            {step.num}
+                          </span>
                         </div>
-                        <span className="text-[10px] font-bold text-slate-400 group-hover:text-white flex items-center gap-0.5">
-                          <span>Open</span>
-                          <ChevronRight className="w-3 h-3" />
+                        <span className={`text-[10px] font-bold flex items-center gap-1 ${
+                          isDone ? 'text-emerald-400' : 'text-slate-400 group-hover:text-white'
+                        }`}>
+                          {isDone ? (
+                            <>
+                              <span>✓ Done</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </>
+                          ) : (
+                            <>
+                              <span>Open</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </>
+                          )}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed pl-6">
+                      <p className={`text-[11px] leading-relaxed pl-6 ${isDone ? 'line-through text-slate-400/80 decoration-slate-600' : 'text-slate-400'}`}>
                         {step.desc}
                       </p>
                     </div>
@@ -1400,46 +1544,83 @@ partnerships@creatorforge.com`
               <div className="space-y-2.5">
                 {[
                   {
-                    id: 'blueprint',
-                    num: '1. Public Launch Blueprint',
-                    desc: 'Go-to-market rollout strategy, multi-channel blast calendar, and pricing tiers',
-                    icon: Megaphone
+                    id: 'prep',
+                    num: '1. Prepare Launch',
+                    desc: 'Strategy, channels, offers, creator marketing assets, production infra & verified checklists',
+                    icon: Calendar,
+                    isDone: Boolean(
+                      project?.launchStrategy &&
+                      (project.launchStrategy.creatorChecklist || []).length > 0 &&
+                      (project.launchStrategy.creatorChecklist || []).every(t => Boolean(t.done)) &&
+                      (project.launchStrategy.opsChecklist || []).length > 0 &&
+                      (project.launchStrategy.opsChecklist || []).every(t => Boolean(t.done))
+                    )
                   },
                   {
-                    id: 'video',
-                    num: '2. Creator Announcement Drop',
-                    desc: 'YouTube mid-roll, Instagram story sequence, and Twitter/X launch breakdown thread',
-                    icon: Play
+                    id: 'monitor',
+                    num: '2. Launch + Monitor',
+                    desc: 'Live production telemetry, customer conversion funnel, and channel attribution breakdown',
+                    icon: TrendingUp,
+                    isDone: Boolean(project?.launchStatus === 'LIVE' && ((project?.launchTelemetry?.revenue || 0) > 0 || (project?.launchTelemetry?.customers || 0) > 0))
                   },
                   {
-                    id: 'cohort',
-                    num: '3. Community Cohort Onboarding',
-                    desc: `Activate ${Array.isArray(project?.reservations) ? project.reservations.length : 0} founding members into private VIP community channel`,
-                    icon: Users
+                    id: 'manager',
+                    num: '3. AI Launch Manager',
+                    desc: 'Autonomous telemetry sweep, growth optimization engine, and real-time CRO interventions',
+                    icon: Sparkles,
+                    isDone: Boolean(
+                      (project?.dispatchedActions || []).length > 0 &&
+                      (project?.launchManagerData?.automatedActions || []).length > 0 &&
+                      (project.launchManagerData.automatedActions || []).every(a => (project.dispatchedActions || []).includes(a.id))
+                    )
                   },
                   {
-                    id: 'telemetry',
-                    num: '4. Scale & Revenue Telemetry',
-                    desc: 'Real-time MRR, viral conversion rate, customer churn signals, and growth telemetry',
-                    icon: TrendingUp
+                    id: 'report',
+                    num: '4. Launch Report + Decision',
+                    desc: 'Commercial score, CAC economics, executive milestone verdict, and scale/pivot decision gate',
+                    icon: ShieldCheck,
+                    isDone: Boolean((project?.launchReport?.score || 0) > 0 && project?.decisionNotice)
                   },
                 ].map(step => {
                   const Icon = step.icon
+                  const isDone = step.isDone
                   return (
                     <div
                       key={step.id}
-                      onClick={() => openPhaseStep('launch')}
-                      className="p-3.5 rounded-xl bg-[#141720] hover:bg-[#1b202c] border border-white/[0.06] hover:border-purple-500/40 transition-all cursor-pointer group space-y-1"
+                      onClick={() => {
+                        try {
+                          localStorage.setItem('forge_p3_active_step', step.id)
+                        } catch (e) {}
+                        openPhaseStep(step.id)
+                      }}
+                      className={`p-3.5 rounded-xl border transition-all cursor-pointer group space-y-1 ${
+                        isDone
+                          ? 'bg-[#141720] hover:bg-[#1b202c] border-emerald-500/30'
+                          : 'bg-[#141720] hover:bg-[#1b202c] border-white/[0.06] hover:border-purple-500/40'
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5 text-xs font-bold text-white group-hover:text-purple-300 transition-colors">
-                          <Icon className="w-4 h-4 text-purple-400 shrink-0" />
-                          <span>{step.num}</span>
+                          {isDone ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          ) : (
+                            <Icon className="w-4 h-4 text-purple-400 shrink-0" />
+                          )}
+                          <span className={isDone ? 'line-through text-slate-300 decoration-emerald-400/80 decoration-2' : ''}>
+                            {step.num}
+                          </span>
                         </div>
-                        <span className="text-[10px] font-bold text-slate-400 group-hover:text-white flex items-center gap-0.5">
-                          <span>Open</span>
-                          <ChevronRight className="w-3 h-3" />
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {isDone && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-normal">
+                              Done
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-slate-400 group-hover:text-white flex items-center gap-0.5">
+                            <span>Open</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </span>
+                        </div>
                       </div>
                       <p className="text-[11px] text-slate-400 leading-relaxed pl-6">
                         {step.desc}
@@ -1450,10 +1631,15 @@ partnerships@creatorforge.com`
               </div>
 
               <button
-                onClick={() => openPhaseStep('launch')}
-                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-purple-950/40 active:scale-95"
+                onClick={() => {
+                  try {
+                    localStorage.setItem('forge_p3_active_step', 'prep')
+                  } catch (e) {}
+                  openPhaseStep('prep')
+                }}
+                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-purple-950/40 active:scale-95 cursor-pointer"
               >
-                <span>Open Phase 3 Workspace</span>
+                <span>Open Phase 3 Launch Workspace</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </>
@@ -1645,6 +1831,11 @@ partnerships@creatorforge.com`
               <Phase2BuildMVP
                 project={project}
                 api={api}
+                activeStepId={selectedPhaseStep}
+                onSelectStep={(step) => {
+                  setSelectedPhaseStep(step)
+                  openPhaseStep(step)
+                }}
                 onUpdateProject={onUpdateProject}
                 onAdvanceToPhase3={() => {
                   setShowPhaseExecutionModal(false)

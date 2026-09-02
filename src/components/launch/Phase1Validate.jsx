@@ -909,7 +909,7 @@ export default function Phase1Validate({
                 ) : (
                   <Icon className="w-3.5 h-3.5" />
                 )}
-                <span className={step.isDone && !isActive ? 'line-through text-slate-400 decoration-emerald-400/80 decoration-2' : ''}>
+                <span className={step.isDone ? 'line-through text-slate-400 decoration-emerald-400/80 decoration-2' : ''}>
                   {step.label}
                 </span>
               </button>

@@ -500,3 +500,140 @@ export function CRMSkeleton() {
     </div>
   )
 }
+
+/**
+ * 12. Phase 3 Launch Strategy & Schedule Skeleton
+ */
+export function Phase3StrategySkeleton() {
+  return (
+    <div className="space-y-4 animate-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
+          <Skeleton rounded="rounded-full" className="w-32 h-3" variant="purple" />
+          <Skeleton rounded="rounded-lg" className="w-40 h-7" />
+          <Skeleton rounded="rounded-full" className="w-full h-3" />
+          <Skeleton rounded="rounded-xl" className="w-full h-10" variant="purple" />
+        </div>
+        <div className="md:col-span-2 p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
+          <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
+            <Skeleton rounded="rounded-full" className="w-44 h-3.5" variant="blue" />
+            <Skeleton rounded="rounded-full" className="w-28 h-3" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton rounded="rounded-full" className="w-28 h-3.5" />
+                  <Skeleton rounded="rounded" className="w-12 h-4" variant="purple" />
+                </div>
+                <Skeleton rounded="rounded-full" className="w-full h-2.5" />
+                <Skeleton rounded="rounded-full" className="w-3/4 h-2.5" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
+        <Skeleton rounded="rounded-full" className="w-56 h-3.5" variant="emerald" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {[1, 2].map(i => (
+            <div key={i} className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Skeleton rounded="rounded-full" className="w-32 h-4" />
+                <Skeleton rounded="rounded-lg" className="w-20 h-6" variant="emerald" />
+              </div>
+              <Skeleton rounded="rounded-full" className="w-48 h-3" />
+              <Skeleton rounded="rounded-lg" className="w-full h-8" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 13. Phase 3 Creator Assets Skeleton
+ */
+export function Phase3AssetsSkeleton() {
+  return (
+    <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4 animate-fade-in">
+      <div className="flex items-center justify-between border-b border-white/[0.07] pb-3">
+        <div className="flex items-center gap-2">
+          {[1, 2, 3, 4, 5].map(i => (
+            <Skeleton key={i} rounded="rounded-xl" className="w-24 h-7" />
+          ))}
+        </div>
+        <SkeletonButton width={130} height={32} variant="purple" />
+      </div>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Skeleton rounded="rounded-full" className="w-48 h-4" />
+          <Skeleton rounded="rounded-lg" className="w-20 h-7" />
+        </div>
+        <div className="p-5 rounded-xl bg-[#090b0e] border border-white/[0.06] space-y-2">
+          <Skeleton rounded="rounded-full" className="w-full h-3" />
+          <Skeleton rounded="rounded-full" className="w-4/5 h-3" />
+          <Skeleton rounded="rounded-full" className="w-3/5 h-3" />
+          <Skeleton rounded="rounded-full" className="w-2/3 h-3" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 14. Phase 3 Infrastructure Skeleton
+ */
+export function Phase3InfraSkeleton() {
+  return (
+    <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4 animate-fade-in">
+      <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+        <Skeleton rounded="rounded-full" className="w-64 h-4" variant="emerald" />
+        <Skeleton rounded="rounded-full" className="w-24 h-3.5" variant="emerald" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[1, 2, 3, 4, 5, 6].map(i => (
+          <div key={i} className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-2">
+            <div className="flex items-center justify-between">
+              <Skeleton rounded="rounded-full" className="w-28 h-3.5" />
+              <Skeleton rounded="rounded" className="w-14 h-4" variant="emerald" />
+            </div>
+            <Skeleton rounded="rounded-full" className="w-full h-2.5" />
+            <Skeleton rounded="rounded-full" className="w-3/4 h-2" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 15. Phase 3 Checklists Skeleton
+ */
+export function Phase3ChecklistsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+      {[1, 2].map(col => (
+        <div key={col} className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
+          <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+            <Skeleton rounded="rounded-full" className="w-40 h-4" variant={col === 1 ? 'purple' : 'blue'} />
+            <Skeleton rounded="rounded-full" className="w-24 h-3" />
+          </div>
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="p-3 rounded-xl bg-[#141720] border border-white/[0.06] flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 w-full">
+                  <SkeletonCircle size={16} />
+                  <Skeleton rounded="rounded-full" className="w-4/5 h-3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
