@@ -85,6 +85,16 @@ export default function FollowUpCRMPage() {
   };
 
   const handleApproveCreator = async (creatorId) => {
+    const target = (creators || []).find((c) => c.id === creatorId || c.handle === creatorId);
+    const isAiInterested =
+      target?.replyInfo?.classification === "interested" ||
+      ["qualified", "interested"].includes((target?.reply_classification || target?.replyClassification || "").toLowerCase());
+
+    if (!isAiInterested && target?.status !== "approved") {
+      notify("warning", "Approval Blocked", "Creator cannot be approved until AI flags their reply as interested.");
+      return;
+    }
+
     setCreators((prev) =>
       prev.map((c) => (c.id === creatorId || c.handle === creatorId ? { ...c, status: "approved" } : c))
     );

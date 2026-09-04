@@ -21,12 +21,21 @@ function proxyAvatars(obj) {
   return res
 }
 
-async function req(method, path, body) {
+async function req(method, path, body, customSignal = null) {
   const aiKeys = loadAiKeys()
   const scrapeKeys = loadKeys()
   // 5-minute timeout for heavy endpoints (discover-creators with 50 creators, Apify)
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 300000)
+
+  if (customSignal) {
+    if (customSignal.aborted) {
+      controller.abort()
+    } else {
+      customSignal.addEventListener('abort', () => controller.abort())
+    }
+  }
+
   const opts = {
     method,
     signal: controller.signal,
@@ -53,6 +62,11 @@ async function req(method, path, body) {
   } catch (e) {
     clearTimeout(timeoutId)
     if (e.name === 'AbortError') {
+      if (customSignal?.aborted) {
+        const abortErr = new Error('Request cancelled by user')
+        abortErr.name = 'AbortError'
+        throw abortErr
+      }
       throw new Error('Request timed out — the backend is still processing. Please try again with fewer creators.')
     }
     throw e
@@ -207,12 +221,17 @@ export const runAutonomousBatch = (id, limit, payload = {}) => {
 }
 export const runAutonomousFollowups = (id) => req('POST', `/autonomous/run-followups${id ? '?campaign_id=' + id : ''}`)
 export const previewAutonomousTemplate = (data) => req('POST', '/autonomous/preview', data)
-export const discoverAutonomousCreators = (data) => req('POST', '/autonomous/discover-creators', data || {})
+export const discoverAutonomousCreators = (data, signal = null) => req('POST', '/autonomous/discover-creators', data || {}, signal)
+export const stopAutonomousDiscovery = () => req('POST', '/autonomous/stop-discovery', {})
 export const getFollowupSchedulerStatus = () => req('GET', '/autonomous/followup-scheduler/status')
 
 
 // ── Apify Business Email Scraper ──────────────────────────────────────────────
 export const findEmailWithApify = (params) => req('POST', '/creators/apify/find-email', params)
+
+// ── Hunter.io Email Finder & Verifier ─────────────────────────────────────────
+export const findEmailWithHunter = (params) => req('POST', '/creators/hunter/find-email', params)
+export const verifyEmailWithHunter = (params) => req('POST', '/creators/hunter/verify-email', params)
 
 // ── Co-Launch Projects & 5-Step Validation Workflow ─────────────────────────
 export const getCoLaunchProjects = () => req('GET', '/projects')
@@ -223,6 +242,7 @@ export const updateValidationPlan = (id, plan) => req('PUT', `/projects/${id}/pl
 export const updateValidationCampaign = (id, campaign) => req('PUT', `/projects/${id}/campaign`, campaign)
 export const getCreatorCampaignTasks = (id) => req('GET', `/projects/${id}/creator-tasks`)
 export const updateCreatorCampaignTask = (id, taskId, updates) => req('PATCH', `/projects/${id}/creator-tasks/${taskId}`, updates)
+export const sendTaskReminder = (id, taskId) => req('POST', `/projects/${id}/remind-task/${taskId}`)
 export const addProjectReservation = (id, reservation) => req('POST', `/projects/${id}/reservations`, reservation)
 export const recordPreorderUniversal = (data) => req('POST', '/projects/record-preorder', data)
 export const recordVisitUniversal = (data) => req('POST', '/projects/record-visit', data)
@@ -244,6 +264,7 @@ export const generateStep6Response = (params) =>
 // ── Global Cross-Device Workflow State Sync ─────────────────────────────────
 export const getWorkflowState = () => req('GET', '/workflow-state')
 export const updateWorkflowState = (data) => req('POST', '/workflow-state', data)
+export const resetWorkflowState = () => req('DELETE', '/workflow-state')
 
 export const uploadMediaToCloudinary = (data) => req('POST', '/upload', data)
 

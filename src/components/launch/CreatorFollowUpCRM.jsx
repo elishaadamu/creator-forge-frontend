@@ -112,6 +112,19 @@ export default function CreatorFollowUpCRM({
   };
 
   const handleDirectApprove = (creatorId) => {
+    const target = (creators || []).find((c) => c.id === creatorId || c.handle === creatorId);
+    const rInfo = target ? getCreatorReplyInfo(target) : null;
+    const isAiInterested =
+      rInfo?.classification === "interested" ||
+      ["qualified", "interested"].includes((target?.replyClassification || target?.reply_classification || "").toLowerCase());
+
+    if (!isAiInterested && target?.status !== "approved") {
+      if (onNotify) {
+        onNotify("warning", "Approval Blocked", "Creator cannot be approved until AI flags their reply as interested.");
+      }
+      return;
+    }
+
     setStatusOverrides((prev) => ({ ...prev, [creatorId]: "approved" }));
     const newStageMap = {
       ...stageMap,
@@ -669,7 +682,7 @@ export default function CreatorFollowUpCRM({
         if (text.includes("concept 1") || text.includes("concept 2") || text.includes("concept 3") || text.includes("go for concept") || text.includes("choose concept") || text.includes("partnering with creator forge") || text.includes("3 concepts") || text.includes("proposal deck")) {
           hasConceptInThread = true;
         }
-        if (text.includes("co-founder portal live") || (text.includes("developing") && text.includes("creator forge")) || text.includes("project os")) {
+        if (text.includes("co-founder portal live") || text.includes("project os initialized") || text.includes("kick-off confirmed")) {
           hasKickoffInThread = true;
         }
       }
@@ -687,7 +700,7 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    if (hasActiveLaunchedProject || hasKickoffInThread) {
+    if (hasActiveLaunchedProject) {
       return {
         stepNumber: 7,
         stepKey: "section2",
@@ -699,8 +712,8 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    // Step 6: Explicitly in Step 6, or pitch sent, or concept selected in thread
-    if (explicitTracked?.step === 6 || isPitched || hasConceptInThread) {
+    // Step 6: Explicitly in Step 6, or pitch sent
+    if (explicitTracked?.step === 6 || isPitched || (hasConceptInThread && isApproved)) {
       return {
         stepNumber: 6,
         stepKey: "step6",
@@ -1018,8 +1031,32 @@ export default function CreatorFollowUpCRM({
         if (creator.id && !deletedIds.includes(creator.id)) deletedIds.push(creator.id);
         if (cleanHandle && !deletedIds.includes(cleanHandle)) deletedIds.push(cleanHandle);
         if (creator.handle && !deletedIds.includes(creator.handle)) deletedIds.push(creator.handle);
-        localStorage.setItem("forge_deleted_creator_ids", JSON.stringify(deletedIds));
-        localStorage.setItem("forge_last_deleted_timestamp", Date.now().toString());
+        // Clean up threads for this creator in localStorage
+        try {
+          const storedThreads = JSON.parse(localStorage.getItem("forge_launch_real_threads") || "[]");
+          const filteredThreads = storedThreads.filter(
+            (t) =>
+              t.creator_id !== targetId &&
+              t.creator_id !== creator.id &&
+              (t.creator_handle || "").replace(/^@/, "").toLowerCase() !== cleanHandle
+          );
+          localStorage.setItem("forge_launch_real_threads", JSON.stringify(filteredThreads));
+        } catch (err) {}
+
+        // Clean up AI choices and pitch history for this creator in localStorage
+        try {
+          const storedChoices = JSON.parse(localStorage.getItem("forge_launch_ai_choice_map") || "{}");
+          delete storedChoices[creator.id];
+          delete storedChoices[targetId];
+          delete storedChoices[cleanHandle];
+          localStorage.setItem("forge_launch_ai_choice_map", JSON.stringify(storedChoices));
+
+          const storedPitches = JSON.parse(localStorage.getItem("forge_launch_pitch_sent_map") || "{}");
+          delete storedPitches[creator.id];
+          delete storedPitches[targetId];
+          delete storedPitches[cleanHandle];
+          localStorage.setItem("forge_launch_pitch_sent_map", JSON.stringify(storedPitches));
+        } catch (err) {}
       } catch (e) {
         console.warn("LocalStorage update error on creator delete:", e);
       }

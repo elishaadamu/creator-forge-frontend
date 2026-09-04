@@ -6,7 +6,7 @@ import {
   ChevronDown, User, Copy, Plus, X, MessageSquare, Flame,
   Rocket, Star, ArrowRight, CornerDownLeft, RefreshCw, AlertCircle
 } from 'lucide-react'
-import { getFrontendUrl, getThreads } from '../../services/opsApi'
+import { getFrontendUrl, getThreads, sendDirectEmail } from '../../services/opsApi'
 
 // Module-level cache so leaving and returning to the Messages tab NEVER flashes a loading spinner
 const globalThreadsCache = new Map()
@@ -23,6 +23,32 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
   const preorderUrl = `${origin}/preorder/${project?.productSlug || portalSlug}`
 
   const creatorKey = project?.creatorId || project?.creatorHandle || 'default_creator'
+
+  const [targetCreatorEmail, setTargetCreatorEmail] = useState(() => {
+    return (project?.creatorEmail || project?.email_public || project?.email || 'elishadamu97@gmail.com').trim()
+  })
+  const [isEditingEmail, setIsEditingEmail] = useState(false)
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [emailStatusNotice, setEmailStatusNotice] = useState('')
+
+  useEffect(() => {
+    const cEmail = (project?.creatorEmail || project?.email_public || project?.email || '').trim()
+    if (cEmail && cEmail !== targetCreatorEmail) {
+      setTargetCreatorEmail(cEmail)
+    } else if (!targetCreatorEmail || targetCreatorEmail === 'elishadamu97@gmail.com') {
+      if (project?.creatorId) {
+        import('../../services/opsApi').then(({ getCreator }) => {
+          getCreator(project.creatorId).then(c => {
+            if (c?.email_public || c?.email) {
+              const em = (c.email_public || c.email).trim()
+              setTargetCreatorEmail(em)
+              onUpdateProject?.(prev => ({ ...(prev || {}), creatorEmail: em }))
+            }
+          }).catch(() => {})
+        })
+      }
+    }
+  }, [project?.creatorEmail, project?.email_public, project?.email, project?.creatorId])
 
   const [realSection1Messages, setRealSection1Messages] = useState(() => {
     return globalThreadsCache.get(creatorKey) || []
@@ -180,10 +206,12 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
     }
   }
 
-  // Handle Send Message
-  const handleSendMessage = (textToSend) => {
+  // Handle Send Message & Dispatch Direct Email
+  const handleSendMessage = async (textToSend) => {
     const trimmed = (textToSend || inputText).trim()
     if (!trimmed) return
+
+    const destEmail = (targetCreatorEmail || project?.creatorEmail || project?.email_public || project?.email || 'elishadamu97@gmail.com').trim()
 
     const newMsg = {
       id: `msg-${Date.now()}`,
@@ -191,13 +219,40 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
       senderName: 'Creator Forge Studio',
       text: trimmed,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'sent'
+      status: destEmail ? 'delivering' : 'sent',
+      emailedTo: destEmail || null
     }
 
     const updated = [...customProjectMessages, newMsg]
     syncMessages(updated)
     setInputText('')
     setShowAttachMenu(false)
+
+    // Dispatch real email to creator's inbox via Google SMTP / Brevo
+    if (destEmail && destEmail.includes('@')) {
+      setIsSendingEmail(true)
+      setEmailStatusNotice(`Dispatching email to ${destEmail}...`)
+      try {
+        const emailSubject = `💬 Studio Update for ${project?.productName || 'Software Venture'}: ${trimmed.slice(0, 45)}...`
+        const emailBody = `Hi ${creatorFirstName},\n\nYou have a new message from the Creator Forge Studio team regarding **${project?.productName || 'our software venture'}**:\n\n---\n"${trimmed}"\n---\n\nYou can reply directly to this email to respond to the team, or access your private Co-Founder Portal here:\n${portalUrl}\n\nBest regards,\n**The Creator Forge Studio Team**\npartnerships@creatorforge.com`
+
+        await sendDirectEmail(destEmail, emailSubject, emailBody, project?.creatorId || project?.id)
+
+        const finalized = updated.map(m => m.id === newMsg.id ? { ...m, status: 'delivered', emailedTo: destEmail } : m)
+        syncMessages(finalized)
+        setEmailStatusNotice(`✓ Delivered directly to ${destEmail}`)
+        setTimeout(() => setEmailStatusNotice(''), 4500)
+      } catch (err) {
+        console.error('Failed to email creator:', err)
+        setEmailStatusNotice(`⚠️ Saved to chat, email delivery issue: ${err.message || 'SMTP error'}`)
+        setTimeout(() => setEmailStatusNotice(''), 6000)
+      } finally {
+        setIsSendingEmail(false)
+      }
+    } else {
+      setEmailStatusNotice('⚠️ Message saved to portal. Add creator email above to deliver directly to their inbox.')
+      setTimeout(() => setEmailStatusNotice(''), 5000)
+    }
   }
 
   // Handle saving meeting notes
@@ -281,6 +336,57 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
         </div>
       </div>
 
+      {/* Recipient Email & Direct Inbox Delivery Bar */}
+      <div className="px-4 py-2 bg-[#111b21] border-b border-white/[0.06] flex items-center justify-between gap-3 text-xs flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[11px] text-slate-400 font-medium">Delivering messages to:</span>
+          {isEditingEmail ? (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="email"
+                value={targetCreatorEmail}
+                onChange={(e) => setTargetCreatorEmail(e.target.value)}
+                placeholder="creator@email.com"
+                className="px-2.5 py-0.5 rounded-lg bg-black/40 border border-emerald-500/40 text-emerald-300 font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditingEmail(false)
+                  onUpdateProject?.(prev => ({ ...(prev || {}), creatorEmail: targetCreatorEmail }))
+                }}
+                className="px-2 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] cursor-pointer"
+              >
+                Save
+              </button>
+            </div>
+          ) : (
+            <span className="font-mono font-semibold text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 truncate max-w-xs">
+              {targetCreatorEmail || 'elishadamu97@gmail.com'}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsEditingEmail(!isEditingEmail)}
+            className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer"
+          >
+            {isEditingEmail ? 'Cancel' : 'Change'}
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {emailStatusNotice && (
+            <span className="text-[10px] font-bold text-emerald-400 animate-fade-in">
+              {emailStatusNotice}
+            </span>
+          )}
+          <span className="text-[10px] text-emerald-400/90 font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Direct SMTP Delivery Active</span>
+          </span>
+        </div>
+      </div>
+
       {/* ── 2. WHATSAPP CHAT CANVAS ── */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-[#0b141a] bg-[radial-gradient(#1f2c34_1px,transparent_1px)] [background-size:16px_16px]">
         {/* Date / Channel Badge */}
@@ -355,13 +461,18 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
                       {msg.text}
                     </p>
 
-                    <div className={`flex items-center justify-end gap-1 text-[10px] ${
+                    <div className={`flex items-center justify-end gap-1.5 text-[10px] ${
                       isOutgoing ? 'text-emerald-200/70' : 'text-slate-400'
                     }`}>
+                      {isOutgoing && msg.emailedTo && (
+                        <span className="text-[9px] text-emerald-300/80 font-mono">
+                          ✉️ {msg.emailedTo}
+                        </span>
+                      )}
                       <span>{msg.time}</span>
                       {isOutgoing && (
-                        <span title="Delivered & Read">
-                          <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />
+                        <span title={msg.status === 'delivering' ? 'Delivering via SMTP...' : 'Delivered directly to inbox'}>
+                          <CheckCheck className={`w-3.5 h-3.5 ${msg.status === 'delivering' ? 'text-amber-400 animate-pulse' : 'text-[#53bdeb]'}`} />
                         </span>
                       )}
                     </div>

@@ -28,30 +28,35 @@ import {
   Phase3InfraSkeleton,
   Phase3ChecklistsSkeleton
 } from './Section2Skeletons'
+import { getPhase3StepGuards } from '../../utils/stepGuards'
 
 export default function Phase3Launch({ project, api, onUpdateProject }) {
-  // Step & Subtab state with localStorage & URL persistence
+  // Step & Subtab state with database & URL persistence
   const [activeStep, setActiveStepState] = useState(() => {
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search)
       const s = sp.get('step') || sp.get('p3_step')
       if (s && ['prep', 'monitor', 'manager', 'report'].includes(s)) return s
-      const saved = localStorage.getItem('forge_p3_active_step')
-      if (saved && ['prep', 'monitor', 'manager', 'report'].includes(saved)) return saved
     }
+    const dbStep = project?.currentStep || project?.current_step
+    if (dbStep && ['prep', 'monitor', 'manager', 'report'].includes(dbStep)) return dbStep
     return 'prep'
   })
 
   const setActiveStep = (newStep) => {
     setActiveStepState(newStep)
-    try {
-      localStorage.setItem('forge_p3_active_step', newStep)
-      if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
+      try {
         const url = new URL(window.location.href)
         url.searchParams.set('step', newStep)
         window.history.replaceState({}, '', url.toString())
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
+    if (project?.id) {
+      import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
+        updateCoLaunchProject(project.id, { currentStep: newStep }).catch(e => console.warn('[Phase3] DB step sync warning:', e))
+      }).catch(() => {})
+    }
   }
 
   const [prepSubtab, setPrepSubtabState] = useState(() => {
@@ -680,42 +685,35 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
       {/* Main 4 Steps Stepper Navigation */}
       <div className="flex items-center justify-between p-1.5 rounded-2xl bg-[#0e1117] border border-white/[0.08] overflow-x-auto">
         <div className="flex items-center gap-1.5 min-w-max">
-          {[
-            {
-              id: 'prep',
-              label: '1. Prepare Launch',
-              icon: Calendar,
-              isDone: Boolean(
-                strategy &&
-                (strategy.creatorChecklist || []).length > 0 &&
-                (strategy.creatorChecklist || []).every(t => Boolean(t.done)) &&
-                (strategy.opsChecklist || []).length > 0 &&
-                (strategy.opsChecklist || []).every(t => Boolean(t.done))
-              )
-            },
-            {
-              id: 'monitor',
-              label: '2. Launch + Monitor',
-              icon: TrendingUp,
-              isDone: Boolean(isLive && ((telemetry.revenue || 0) > 0 || (telemetry.customers || 0) > 0))
-            },
-            {
-              id: 'manager',
-              label: '3. AI Launch Manager',
-              icon: Sparkles,
-              isDone: Boolean(
-                (dispatchedActions || []).length > 0 &&
-                (launchManager?.automatedActions || []).length > 0 &&
-                (launchManager.automatedActions || []).every(a => (dispatchedActions || []).includes(a.id))
-              )
-            },
-            {
-              id: 'report',
-              label: '4. Launch Report + Decision',
-              icon: ShieldCheck,
-              isDone: Boolean(launchReport && (launchReport.score || 0) > 0 && decisionNotice)
-            },
-          ].map(tab => {
+          {(() => {
+            const p3Guards = getPhase3StepGuards(project, { strategy, telemetry, launchManager, launchReport, decisionNotice })
+            return [
+              {
+                id: 'prep',
+                label: '1. Prepare Launch',
+                icon: Calendar,
+                isDone: p3Guards.isStep1Done
+              },
+              {
+                id: 'monitor',
+                label: '2. Launch + Monitor',
+                icon: TrendingUp,
+                isDone: p3Guards.isStep2Done
+              },
+              {
+                id: 'manager',
+                label: '3. AI Launch Manager',
+                icon: Sparkles,
+                isDone: p3Guards.isStep3Done
+              },
+              {
+                id: 'report',
+                label: '4. Launch Report + Decision',
+                icon: ShieldCheck,
+                isDone: p3Guards.isStep4Done
+              },
+            ]
+          })().map(tab => {
             const Icon = tab.icon
             const isActive = activeStep === tab.id
             const isDone = tab.isDone
@@ -736,7 +734,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                 ) : (
                   <Icon className="w-3.5 h-3.5 shrink-0" />
                 )}
-                <span className={isDone ? 'line-through text-slate-300 decoration-emerald-400/80 decoration-2' : ''}>
+                <span className={isDone ? 'text-slate-200 font-semibold' : ''}>
                   {tab.label}
                 </span>
                 {isDone && (

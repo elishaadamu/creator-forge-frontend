@@ -2370,7 +2370,12 @@ export function buildSmartFallbackMVPBuildPlan(projectData) {
     projectData?.validationPlan?.problem || projectData?.problemStatement || `Bottlenecks and lack of interactive practice in ${niche}`;
   const offer =
     projectData?.validationPlan?.offer || projectData?.productTagline || `The complete ${product} platform`;
-  const pricing = projectData?.validationPlan?.pricing || "$99/year Founding Pass";
+  const pricing =
+    projectData?.selectedConcept?.pricing ||
+    projectData?.pricing ||
+    projectData?.validationPlan?.pricing ||
+    projectData?.validation_plan?.pricing ||
+    "$49/mo";
 
   const cleanProb = problem.toLowerCase();
   const cleanProd = product.toLowerCase();
@@ -2684,6 +2689,12 @@ export async function generateMVPProductBuildPlanAI(
     projectData?.validationPlan?.offer ||
     projectData?.productTagline ||
     "Autonomous workflow suite";
+  const pricing =
+    projectData?.selectedConcept?.pricing ||
+    projectData?.pricing ||
+    projectData?.validationPlan?.pricing ||
+    projectData?.validation_plan?.pricing ||
+    "$49/mo";
   const takeaways = (projectData?.surveyData?.keyTakeaways || []).join("; ");
 
   const system = `You are a Principal Software Architect, VP of Product, and Technical Co-Founder. You formulate exhaustive, production-grade Product Specifications and Technical Build Plans for an early-stage SaaS MVP based strictly on real validation inputs. Return ONLY valid JSON.`;
@@ -2694,6 +2705,7 @@ Niche: ${niche}
 Validated Customer Target: ${customer}
 Validated Core Problem: ${problem}
 Validated Offer: ${offer}
+Validated Pricing Model: ${pricing}
 Discovery Insights: ${takeaways || "Validated via presales pledges"}
 Validated Demand: $${presales} in presales from ${backers} founding backers.
 

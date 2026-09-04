@@ -23,6 +23,7 @@ import { getFrontendUrl } from '../../services/opsApi'
 import { Phase2BuildMVPSkeleton, FeedbackClusterSkeleton } from './Section2Skeletons'
 import CloudCodeStudio from './CloudCodeStudio'
 import AutomatedQASuite from './AutomatedQASuite'
+import { getPhase2StepGuards } from '../../utils/stepGuards'
 
 export default function Phase2BuildMVP({
   project,
@@ -33,18 +34,17 @@ export default function Phase2BuildMVP({
   onAdvanceToPhase3
 }) {
   const [activeStep, setActiveStepState] = useState(() => {
+    if (activeStepId && ['plan', 'build', 'beta', 'gate'].includes(activeStepId)) {
+      return activeStepId
+    }
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search)
       const s = sp.get('step')
       if (s && ['plan', 'build', 'beta', 'gate'].includes(s)) return s
-      const saved = localStorage.getItem('forge_p2_active_step')
-      if (saved && ['plan', 'build', 'beta', 'gate'].includes(saved)) return saved
     }
-    if (activeStepId && ['plan', 'build', 'beta', 'gate'].includes(activeStepId)) {
-      return activeStepId
-    }
-    if (project?.lastActiveStep && ['plan', 'build', 'beta', 'gate'].includes(project.lastActiveStep)) {
-      return project.lastActiveStep
+    const dbStep = project?.currentStep || project?.current_step
+    if (dbStep && ['plan', 'build', 'beta', 'gate'].includes(dbStep)) {
+      return dbStep
     }
     return 'plan'
   })
@@ -52,14 +52,19 @@ export default function Phase2BuildMVP({
   const setActiveStep = (newStep) => {
     setActiveStepState(newStep)
     if (onSelectStep) onSelectStep(newStep)
-    try {
-      localStorage.setItem('forge_p2_active_step', newStep)
-      if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
+      try {
         const url = new URL(window.location.href)
         url.searchParams.set('step', newStep)
         window.history.replaceState({}, '', url.toString())
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
+    // Direct persistence to PostgreSQL database
+    if (project?.id) {
+      import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
+        updateCoLaunchProject(project.id, { currentStep: newStep }).catch(e => console.warn('[Phase2] DB step sync warning:', e))
+      }).catch(() => {})
+    }
   }
 
   // Synchronize when activeStepId prop changes
@@ -1256,35 +1261,35 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
       {/* Main 4 Steps Stepper Navigation */}
       <div className="flex items-center justify-between p-1.5 rounded-2xl bg-[#0e1117] border border-white/[0.08] overflow-x-auto">
         <div className="flex items-center gap-1.5 min-w-max">
-          {[
-            {
-              id: 'plan',
-              label: '1. Product + Build Plan',
-              icon: FileText,
-              isDone: Boolean(
-                (buildPlan && (buildPlan.productSpec || buildPlan.technicalPlan)) ||
-                (project?.mvpBuildPlan && (project.mvpBuildPlan.productSpec || project.mvpBuildPlan.technicalPlan))
-              )
-            },
-            {
-              id: 'build',
-              label: '2. Build MVP',
-              icon: Code,
-              isDone: Boolean(project?.projectFiles?.length > 0 || (engineeringTasks.length > 0 && engineeringTasks.some(t => t.status === 'Completed' || t.status === 'done' || Boolean(t.executedAt))))
-            },
-            {
-              id: 'beta',
-              label: '3. Beta Test',
-              icon: Laptop,
-              isDone: Boolean((project?.betaFeedback && project.betaFeedback.length > 0) || (project?.reservations && project.reservations.length > 0) || betaCohort.length > 0)
-            },
-            {
-              id: 'gate',
-              label: '4. Iterate + Launch Gate',
-              icon: ShieldCheck,
-              isDone: Boolean(project?.launchReadinessReport || project?.readinessReport || project?.status === 'ready_for_phase3' || project?.currentPhase > 2)
-            },
-          ].map(tab => {
+          {(() => {
+            const p2Guards = getPhase2StepGuards(project, { buildPlan, engineeringTasks, feedbackClusters })
+            return [
+              {
+                id: 'plan',
+                label: '1. Product + Build Plan',
+                icon: FileText,
+                isDone: p2Guards.isStep1Done
+              },
+              {
+                id: 'build',
+                label: '2. Build MVP',
+                icon: Code,
+                isDone: p2Guards.isStep2Done
+              },
+              {
+                id: 'beta',
+                label: '3. Beta Test',
+                icon: Laptop,
+                isDone: p2Guards.isStep3Done
+              },
+              {
+                id: 'gate',
+                label: '4. Iterate + Launch Gate',
+                icon: ShieldCheck,
+                isDone: p2Guards.isStep4Done
+              },
+            ]
+          })().map(tab => {
             const Icon = tab.icon
             const isActive = activeStep === tab.id
             const isDone = tab.isDone
@@ -1305,7 +1310,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 ) : (
                   <Icon className="w-3.5 h-3.5 shrink-0" />
                 )}
-                <span className={isDone ? 'line-through text-slate-300 decoration-emerald-400/80 decoration-2' : ''}>
+                <span className={isDone ? 'text-slate-200 font-semibold' : ''}>
                   {tab.label}
                 </span>
                 {isDone && (
@@ -1413,7 +1418,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   }`}
                 >
                   {sub.isDone && <Check className="w-3 h-3 text-emerald-400" />}
-                  <span className={sub.isDone ? 'line-through text-slate-300 decoration-emerald-400/80 decoration-2' : ''}>
+                  <span className={sub.isDone ? 'text-slate-200 font-semibold' : ''}>
                     {sub.label}
                   </span>
                 </button>
@@ -2590,7 +2595,10 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               ← Back to Build
             </button>
             <button
-              onClick={() => setActiveStep('gate')}
+              onClick={async () => {
+                setActiveStep('gate')
+                await handleSavePlan(buildPlan, engineeringTasks, { betaTestingCompleted: true })
+              }}
               className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-950/50 transition-all active:scale-95"
             >
               <span>Proceed to 4. Iterate + Launch Gate</span>

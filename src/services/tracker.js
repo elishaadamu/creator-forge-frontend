@@ -79,13 +79,25 @@ export function getOrCreateClientId() {
 export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
   if (typeof window === 'undefined') return null
 
+  // 1. Exclude internal admin workspaces and dashboards from customer traffic
+  if (!pagePath || pagePath.includes('/dashboard') || pagePath.includes('/admin')) {
+    return null
+  }
+
   try {
     const activeProject = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
     const clientId = getOrCreateClientId()
     const fingerprint = getDeviceFingerprint()
     const deviceType = getDeviceType()
 
-    const rawVisitors = activeProject.uniqueVisitors || []
+    // 2. Session refresh guard: page refresh in same tab/session is NOT a new visitor
+    const sessionSeenKey = `forge_session_visited_${activeProject.id || 'proj'}_${pagePath}`
+    const isRefreshInSession = Boolean(sessionStorage.getItem(sessionSeenKey))
+    try {
+      sessionStorage.setItem(sessionSeenKey, 'true')
+    } catch (e) {}
+
+    const rawVisitors = Array.isArray(activeProject.uniqueVisitors) ? activeProject.uniqueVisitors : []
     const existingIndex = rawVisitors.findIndex(v => v.id === clientId || v.fingerprint === fingerprint)
 
     const now = Date.now()
@@ -134,7 +146,7 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
         channel: effectiveChannel,
         referrer: rawRef
       }
-    } else {
+    } else if (!isRefreshInSession) {
       // Brand new unique device visitor
       isNew = true
       const newVisitor = {
@@ -151,7 +163,7 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
       updatedVisitors.push(newVisitor)
     }
 
-    const uniqueCount = updatedVisitors.length
+    const uniqueCount = Math.max(1, updatedVisitors.length)
     const reservationsCount = Array.isArray(activeProject.reservations) ? activeProject.reservations.length : 0
     const conversionRate = uniqueCount > 0 ? ((reservationsCount / uniqueCount) * 100).toFixed(1) : 0
 
@@ -182,19 +194,30 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
       lastVisitorTimestamp: now
     }
 
-    localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProject))
     try {
+      localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProject))
       window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProject }))
     } catch (e) {}
 
-    // Persist visit to backend database
+    // Persist visit to backend database with client deduplication tokens
     import('./opsApi').then(({ recordVisitUniversal }) => {
       recordVisitUniversal({
         projectId: activeProject.id,
         slug: activeProject.productName ? activeProject.productName.toLowerCase().replace(/ /g, '-') : undefined,
         channel: channel,
         ref: rawRef,
-        path: pagePath
+        path: pagePath,
+        clientId: clientId,
+        fingerprint: fingerprint,
+        isNewVisitor: isNew
+      }).then(serverRes => {
+        if (serverRes && onProjectUpdate) {
+          onProjectUpdate(prev => ({
+            ...(prev || {}),
+            visitors: serverRes.visitors ?? prev?.visitors,
+            conversionRate: serverRes.conversionRate ?? prev?.conversionRate
+          }))
+        }
       }).catch(err => console.warn('[Tracker] DB visit sync warning:', err))
     }).catch(() => {})
 

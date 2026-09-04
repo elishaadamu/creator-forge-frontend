@@ -43,6 +43,10 @@ import {
   Lightbulb,
   Radio,
   Globe,
+  Loader2,
+  User,
+  UserCheck,
+  Lock,
 } from "lucide-react";
 import { deleteAllCreators } from "../../services/opsApi";
 import { buildSmartFallbackPlan } from "../../services/ai";
@@ -57,6 +61,9 @@ export default function AcquisitionEngine({
   onCreateProject,
   onGoToProjectOS,
   onResetAll,
+  initialActiveStep = null,
+  initialSelectedCreatorId = null,
+  onActiveStepChange = null,
 }) {
   const [activeStep, setActiveStep] = useState(() => {
     try {
@@ -75,9 +82,58 @@ export default function AcquisitionEngine({
       return 1;
     }
   });
-  const [campaignRunning, setCampaignRunning] = useState(true);
+
+  // Operational Mode: 'human' (Operator Review) vs 'autonomous' (Hands-Free AI)
+  const [pipelineMode, setPipelineMode] = useState(() => {
+    try {
+      return localStorage.getItem("forge_pipeline_mode") || "human";
+    } catch {
+      return "human";
+    }
+  });
+
+  const handleSetPipelineMode = (mode) => {
+    setPipelineMode(mode);
+    try {
+      localStorage.setItem("forge_pipeline_mode", mode);
+    } catch (e) {}
+    if (mode === "human") {
+      setTimerPaused(true);
+      setCampaignRunning(false);
+    } else {
+      setTimerPaused(false);
+      setCampaignRunning(true);
+    }
+  };
+
+  const [campaignRunning, setCampaignRunning] = useState(() => {
+    try {
+      const mode = localStorage.getItem("forge_pipeline_mode") || "human";
+      return mode === "autonomous";
+    } catch {
+      return false;
+    }
+  });
   const [showAdminLookup, setShowAdminLookup] = useState(false);
   const isInitialLoadDone = useRef(false);
+
+  useEffect(() => {
+    if (initialActiveStep && initialActiveStep >= 1 && initialActiveStep <= 6) {
+      setActiveStep(initialActiveStep);
+    }
+  }, [initialActiveStep]);
+
+  useEffect(() => {
+    if (onActiveStepChange) {
+      onActiveStepChange(activeStep);
+    }
+  }, [activeStep, onActiveStepChange]);
+
+  useEffect(() => {
+    if (initialSelectedCreatorId) {
+      setSelectedCreatorId(initialSelectedCreatorId);
+    }
+  }, [initialSelectedCreatorId]);
 
   // Step 1: Campaign Controls State
   const [niches, setNiches] = useState([
@@ -164,6 +220,7 @@ export default function AcquisitionEngine({
   });
   const [selectedConceptId, setSelectedConceptId] = useState(null);
   const [discovering, setDiscovering] = useState(false);
+  const discoveryAbortRef = useRef(null);
   const [discoveryLog, setDiscoveryLog] = useState("");
   const [copiedEmail, setCopiedEmail] = useState(null);
   const [replyFilter, setReplyFilter] = useState("all");
@@ -184,6 +241,24 @@ export default function AcquisitionEngine({
       );
     }
   }, [activeStep, selectedCreatorId]);
+
+  // Auto-abort any in-flight discovery when operator navigates beyond Step 2
+  useEffect(() => {
+    if (activeStep > 2 && (discovering || discoveryAbortRef.current)) {
+      if (discoveryAbortRef.current) {
+        try {
+          discoveryAbortRef.current.abort();
+        } catch (e) {}
+        discoveryAbortRef.current = null;
+      }
+      setDiscovering(false);
+      try {
+        import("../../services/opsApi").then(({ stopAutonomousDiscovery }) => {
+          stopAutonomousDiscovery().catch(() => {});
+        });
+      } catch (e) {}
+    }
+  }, [activeStep, discovering]);
 
   // Sync step and creator from URL if passed as deep-link query parameters
   useEffect(() => {
@@ -333,23 +408,43 @@ export default function AcquisitionEngine({
       setAutoAdvancedIds(new Set());
       autoAdvancedIdsRef.current = new Set();
       setAiDetectedChoiceMap({});
+      setPitchSentMap({});
+      setAnswerSentMap({});
+      setPersuasionSentMap({});
       setHasAutoCreatedProject(false);
       setActiveStep(1);
       setDiscoveryLog("");
       setOutreachLog("");
 
+      // Deep wipe of all launch persistence keys in localStorage
       localStorage.removeItem("forge_launch_discovered_creators");
       localStorage.removeItem("forge_launch_active_project");
       localStorage.removeItem("forge_launch_acquisition_step");
+      localStorage.removeItem("forge_launch_active_step");
       localStorage.removeItem("forge_launch_real_threads");
       localStorage.removeItem("forge_launch_pitch_sent_map");
       localStorage.removeItem("forge_launch_answer_sent_map");
       localStorage.removeItem("forge_launch_persuasion_sent_map");
+      localStorage.removeItem("forge_launch_ai_choice_map");
+      localStorage.removeItem("forge_launch_creator_stage_map");
+      localStorage.removeItem("forge_deleted_creator_ids");
+      localStorage.removeItem("forge_last_deleted_timestamp");
       localStorage.setItem("forge_launch_active_section", "section1");
       onResetAll?.();
 
       try {
         await deleteAllCreators();
+        const { resetWorkflowState } = await import("../../services/opsApi");
+        await resetWorkflowState().catch(() => {});
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set("section", "section1");
+          url.searchParams.set("step", "1");
+          url.searchParams.delete("project");
+          url.searchParams.delete("creator");
+          url.searchParams.delete("creatorId");
+          window.history.replaceState({}, "", url.toString());
+        } catch (e) {}
       } catch (err) {
         console.warn("Backend delete all creators failed or offline:", err);
       }
@@ -372,21 +467,6 @@ export default function AcquisitionEngine({
     }
   };
 
-  const toggleCampaignRunning = () => {
-    setCampaignRunning((prev) => {
-      const next = !prev;
-      notify(
-        next ? "success" : "warning",
-        next ? "Acquisition Engine Active" : "Acquisition Engine Paused",
-        next
-          ? "Autonomous workers are actively scouting leads, sending outreach, and polling replies."
-          : "Autonomous background processing has been temporarily paused.",
-        4000
-      );
-      return next;
-    });
-  };
-
   // Email Modification State
   const [editingEmailCreatorId, setEditingEmailCreatorId] = useState(null);
   const [tempEmailValue, setTempEmailValue] = useState("");
@@ -400,32 +480,55 @@ export default function AcquisitionEngine({
     setTempEmailValue(currentEmail || "");
   };
 
-  const saveEditEmail = async (creatorId, e) => {
-    if (e) {
+  const saveEditEmail = async (creatorId, e, explicitValue = null) => {
+    if (e && e.stopPropagation) {
       e.stopPropagation();
       e.preventDefault();
     }
-    const newEmail = tempEmailValue.trim();
+    const targetId = creatorId || editingEmailCreatorId;
+    if (!targetId) return;
 
-    // 1. Update local state immediately
-    setCreators((prev) =>
-      prev.map((c) => {
-        if (c.id === creatorId) {
-          return { ...c, email: newEmail, email_public: newEmail };
+    const newEmail = (explicitValue !== null ? explicitValue : tempEmailValue).trim();
+
+    // 1. Update local state immediately (both in React state and in localStorage)
+    setCreators((prev) => {
+      const updated = prev.map((c) => {
+        const matchId = c.id === targetId;
+        const cleanTarget = String(targetId).toLowerCase().replace(/^@/, "");
+        const cleanHandle = String(c.handle || "").toLowerCase().replace(/^@/, "");
+        const matchHandle = cleanTarget && cleanHandle && cleanTarget === cleanHandle;
+        if (matchId || matchHandle) {
+          return {
+            ...c,
+            email: newEmail,
+            email_public: newEmail,
+            email_verified: Boolean(newEmail && newEmail.includes("@")),
+          };
         }
         return c;
-      }),
-    );
-    setEditingEmailCreatorId(null);
+      });
+      try {
+        localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
 
-    // 2. Persist to DB if backend creator
-    try {
-      const { updateCreatorDetails } = await import("../../services/opsApi");
-      await updateCreatorDetails(creatorId, { email_public: newEmail });
-      notify("success", "Email Updated", `Contact email updated to ${newEmail || "empty"}.`, 3500);
-    } catch (err) {
-      console.warn("[AcquisitionEngine] Failed to save email to DB:", err);
-      notify("warning", "Saved Locally", `Email updated in session: ${newEmail}`, 3500);
+    setEditingEmailCreatorId(null);
+    setTempEmailValue("");
+
+    // 2. Persist to DB if creator exists on backend
+    if (newEmail) {
+      try {
+        const { updateCreatorDetails } = await import("../../services/opsApi");
+        await updateCreatorDetails(targetId, {
+          email_public: newEmail,
+          email: newEmail,
+        });
+        notify("success", "Email Updated", `Contact email updated to ${newEmail}.`, 3000);
+      } catch (err) {
+        console.warn("[AcquisitionEngine] Failed to save email to DB:", err);
+        notify("warning", "Saved Locally", `Email updated in session: ${newEmail}`, 3000);
+      }
     }
   };
 
@@ -441,6 +544,127 @@ export default function AcquisitionEngine({
   // Apify business email lookup state and handler
   const [findingApifyId, setFindingApifyId] = useState(null);
   const [apifyStatusMsg, setApifyStatusMsg] = useState({});
+
+  // Hunter.io Email Finder & Verifier state
+  const [hunterLoadingId, setHunterLoadingId] = useState(null);
+  const [hunterActionType, setHunterActionType] = useState(null); // 'find' | 'verify'
+  const [hunterDataMap, setHunterDataMap] = useState({});
+
+  const handleHunterFindEmail = async (creator, e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setHunterLoadingId(creator.id);
+    setHunterActionType('find');
+    try {
+      const { findEmailWithHunter } = await import("../../services/opsApi");
+      const res = await findEmailWithHunter({
+        creator_id: creator.id,
+        full_name: creator.display_name || creator.name,
+        auto_save: true,
+      });
+
+      if (res && res.success && res.email) {
+        setCreators((prev) =>
+          prev.map((c) => {
+            if (c.id === creator.id) {
+              return {
+                ...c,
+                email: res.email,
+                email_public: res.email,
+                email_verified: true,
+                hunter_score: res.score,
+                hunter_status: res.verification_status || 'valid',
+              };
+            }
+            return c;
+          })
+        );
+        setHunterDataMap((prev) => ({
+          ...prev,
+          [creator.id]: res,
+        }));
+        notify(
+          'success',
+          'Hunter.io Email Found!',
+          `Found: ${res.email} (Confidence: ${res.score}%, Status: ${res.verification_status || 'verified'})`,
+          4500
+        );
+      } else {
+        notify(
+          'warning',
+          'Hunter.io Search Completed',
+          res?.error || `No business email found on Hunter.io for ${creator.display_name || creator.name}. Try social scrape or manual edit.`,
+          4000
+        );
+      }
+    } catch (err) {
+      console.warn('[Hunter.io Find Error]:', err);
+      notify('error', 'Hunter.io Error', err.message || 'Failed to search Hunter.io API', 3500);
+    } finally {
+      setHunterLoadingId(null);
+      setHunterActionType(null);
+    }
+  };
+
+  const handleHunterVerifyEmail = async (creator, e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const targetEmail = (creator.email || creator.email_public || "").trim();
+    if (!targetEmail) {
+      notify('warning', 'No Email', 'Please provide or find an email address first.', 3000);
+      return;
+    }
+
+    setHunterLoadingId(creator.id);
+    setHunterActionType('verify');
+    try {
+      const { verifyEmailWithHunter } = await import("../../services/opsApi");
+      const res = await verifyEmailWithHunter({
+        email: targetEmail,
+        creator_id: creator.id,
+        auto_save: true,
+      });
+
+      if (res && res.success) {
+        setHunterDataMap((prev) => ({
+          ...prev,
+          [creator.id]: res,
+        }));
+        setCreators((prev) =>
+          prev.map((c) => {
+            if (c.id === creator.id) {
+              return {
+                ...c,
+                email_verified: res.deliverable,
+                hunter_score: res.score,
+                hunter_status: res.status,
+              };
+            }
+            return c;
+          })
+        );
+        const deliverableText = res.deliverable ? 'Deliverable ✓' : 'Risky / Undeliverable';
+        notify(
+          res.deliverable ? 'success' : 'warning',
+          `Hunter.io: ${deliverableText}`,
+          `Score: ${res.score}% | Status: ${res.status} | SMTP: ${res.smtp_check ? 'Passed' : 'Failed'} | MX: ${res.mx_records ? 'Valid' : 'Missing'}`,
+          5000
+        );
+      } else {
+        notify('error', 'Verification Failed', res?.error || 'Hunter could not verify this email.', 3500);
+      }
+    } catch (err) {
+      console.warn('[Hunter.io Verify Error]:', err);
+      notify('error', 'Verification Error', err.message || 'Failed to connect to Hunter verifier.', 3500);
+    } finally {
+      setHunterLoadingId(null);
+      setHunterActionType(null);
+    }
+  };
 
   const handleApifyFindEmail = async (creator, e) => {
     if (e) {
@@ -570,8 +794,13 @@ export default function AcquisitionEngine({
 
         // 2. Sync real threads / IMAP messages across devices
         const ths = await getThreads().catch(() => null);
-        if (isMounted && Array.isArray(ths) && ths.length > 0) {
+        if (isMounted && Array.isArray(ths)) {
           setRealThreads(ths);
+          if (ths.length === 0) {
+            try {
+              localStorage.removeItem("forge_launch_real_threads");
+            } catch (e) {}
+          }
         }
 
         // 3. Sync creator cohort
@@ -585,8 +814,18 @@ export default function AcquisitionEngine({
           }
         })();
 
-        if (isMounted && rawList.length > 0) {
-          setCreators((prev) => {
+        if (isMounted) {
+          if (Array.isArray(res) && rawList.length === 0) {
+            // DB is completely empty (all creators wiped) — prune local state & storage completely
+            setCreators([]);
+            setSelectedCreatorId(null);
+            setAiDetectedChoiceMap({});
+            try {
+              localStorage.removeItem("forge_launch_discovered_creators");
+              localStorage.removeItem("forge_launch_ai_choice_map");
+            } catch (e) {}
+          } else if (rawList.length > 0) {
+            setCreators((prev) => {
             const formattedDbCreators = rawList
               .filter((dbItem) => {
                 const cleanHandle = (dbItem.handle || "").toLowerCase().replace(/^@/, "");
@@ -607,18 +846,28 @@ export default function AcquisitionEngine({
                   followers: dbItem.follower_count || 100000,
                   follower_count: dbItem.follower_count || 100000,
                   avatar: dbItem.avatar_url || "",
-                  avatar_url: dbItem.avatar_url || "",
                   bio: dbItem.bio || "",
-                  email: dbItem.email_public || "",
-                  email_public: dbItem.email_public || "",
+                  email: dbItem.email_public || dbItem.email || ((dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)?.[0] || ""),
+                  email_public: dbItem.email_public || dbItem.email || ((dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)?.[0] || ""),
+                  email_verified: Boolean(dbItem.email_verified || dbItem.email_public || (dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)),
                   status: dbStatus,
                   isApproved: dbStatus === "approved",
                   isRejected: dbStatus === "rejected",
                   replyClassification: dbItem.reply_classification,
                   reply_classification: dbItem.reply_classification,
                   replyText: dbItem.reply_text,
-                  reply_text: dbItem.reply_text,
-                  creatorScore: dbItem.engagement_score ? Math.round(dbItem.engagement_score * 15) : 88,
+                  creatorScore: (() => {
+                    if (dbItem.score) return Math.min(99, Math.max(50, Number(dbItem.score)));
+                    if (dbItem.creatorScore) return Math.min(99, Math.max(50, Number(dbItem.creatorScore)));
+                    if (dbItem.engagement_score) {
+                      // engagement_score is stored as an engagement rate % (e.g., 7.2, 5.2, 3.9)
+                      const engRate = Number(dbItem.engagement_score);
+                      const engPts = Math.min(22, Math.max(5, Math.round(engRate * 3.0)));
+                      const emailPts = (dbItem.email_public || dbItem.email) ? 8 : 0;
+                      return Math.min(98, Math.max(60, 68 + engPts + emailPts));
+                    }
+                    return 85;
+                  })(),
                 };
               });
 
@@ -643,7 +892,17 @@ export default function AcquisitionEngine({
               });
 
               if (existing) {
-                merged.push({ ...existing, ...dbC });
+                // User manual email edits take priority over un-refreshed DB polling values
+                const userEmail = (existing.email || existing.email_public || "").trim();
+                const dbEmail = (dbC.email || dbC.email_public || "").trim();
+                const resolvedEmail = userEmail || dbEmail;
+                merged.push({
+                  ...existing,
+                  ...dbC,
+                  email: resolvedEmail,
+                  email_public: resolvedEmail,
+                  email_verified: Boolean(resolvedEmail && resolvedEmail.includes("@")),
+                });
               } else {
                 merged.push(dbC);
               }
@@ -677,13 +936,14 @@ export default function AcquisitionEngine({
             return prevId || rawList[0]?.id || null;
           });
         }
-
-        // Enable state synchronizer now that DB fetch has completed
-        isInitialLoadDone.current = true;
-      } catch (err) {
-        console.warn("[AcquisitionEngine] Global state fetch error:", err);
-        isInitialLoadDone.current = true;
       }
+
+      // Enable state synchronizer now that DB fetch has completed
+      isInitialLoadDone.current = true;
+    } catch (err) {
+      console.warn("[AcquisitionEngine] Global state fetch error:", err);
+      isInitialLoadDone.current = true;
+    }
     };
 
     fetchGlobalState();
@@ -695,8 +955,8 @@ export default function AcquisitionEngine({
   }, []);
 
   // ── 3-Minute Review & Autonomous Interval Timer ───────────────────────────
-  // ── 3-Minute Review & Autonomous Interval Timer (Background-Proof & Wall-Clock Synced) ──
-  const [countdownSeconds, setCountdownSeconds] = useState(180); // 3 minutes = 180s
+  // ── 30-Second Review & Auto-Advance Timer (Background-Proof & Wall-Clock Synced) ──
+  const [countdownSeconds, setCountdownSeconds] = useState(30); // 30s countdown
   const [timerPaused, setTimerPaused] = useState(false);
 
   // Handle Pause / Resume toggle cleanly
@@ -733,7 +993,7 @@ export default function AcquisitionEngine({
       } catch {}
 
       if (!target || isNaN(target) || target <= Date.now()) {
-        target = Date.now() + 180 * 1000;
+        target = Date.now() + 30 * 1000;
         try {
           localStorage.setItem("forge_step2_timer_target", target.toString());
         } catch {}
@@ -747,6 +1007,20 @@ export default function AcquisitionEngine({
           try {
             localStorage.removeItem("forge_step2_timer_target");
           } catch {}
+          if (editingEmailCreatorId && tempEmailValue.trim()) {
+            saveEditEmail(editingEmailCreatorId, null, tempEmailValue.trim());
+          }
+          // Explicitly halt active discovery when auto-advancing to Step 3
+          if (discoveryAbortRef.current) {
+            try { discoveryAbortRef.current.abort(); } catch (e) {}
+            discoveryAbortRef.current = null;
+          }
+          setDiscovering(false);
+          try {
+            import("../../services/opsApi").then(({ stopAutonomousDiscovery }) => {
+              stopAutonomousDiscovery().catch(() => {});
+            });
+          } catch (e) {}
           setActiveStep(3);
         }
       };
@@ -826,6 +1100,7 @@ export default function AcquisitionEngine({
     autoAdvancedIdsRef.current = new Set();
     setDiscoveryLog("");
     try {
+      localStorage.removeItem("forge_step2_timer_target");
       localStorage.removeItem("forge_launch_discovered_creators");
       localStorage.removeItem("forge_launch_real_threads");
       localStorage.removeItem("forge_launch_pitch_sent_map");
@@ -833,11 +1108,21 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_launch_active_step");
       localStorage.removeItem("forge_launch_acquisition_step");
     } catch (e) {}
+    setCountdownSeconds(30);
     setActiveStep(1);
   };
 
   // Autonomous Engine Start & Discovery Trigger (AI + Apify)
   const handleStartEngine = async () => {
+    // Abort any prior in-flight request
+    if (discoveryAbortRef.current) {
+      try { discoveryAbortRef.current.abort(); } catch (e) {}
+      discoveryAbortRef.current = null;
+    }
+
+    const controller = new AbortController();
+    discoveryAbortRef.current = controller;
+
     // 1. Immediately wipe previous batch state so Step 2 renders completely fresh
     setCreators([]);
     setSelectedCreatorId(null);
@@ -862,7 +1147,7 @@ export default function AcquisitionEngine({
     try {
       localStorage.removeItem("forge_step2_timer_target");
     } catch (e) {}
-    setCountdownSeconds(180);
+    setCountdownSeconds(30);
     const targetCount = creatorsBatchCount || 3;
     const activeNiches =
       niches.length > 0 ? niches : ["Tech", "Software", "SaaS"];
@@ -885,16 +1170,35 @@ export default function AcquisitionEngine({
         target_count: targetCount,
         platforms: selectedPlatforms,
         geography: selectedGeography,
-      });
+      }, controller.signal);
+
+      if (controller.signal.aborted) {
+        console.log("[Discovery] Aborted cleanly — preserving current state.");
+        return;
+      }
 
       if (res && res.creators && res.creators.length > 0) {
-        setCreators(res.creators);
-        setSelectedCreatorId(res.creators[0].id);
-        const emailsFound = res.creators.filter((c) =>
+        const enrichedCreators = res.creators.map((c) => {
+          const bioEmailMatch = (c.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+          const autoEmail = c.email || c.email_public || (bioEmailMatch ? bioEmailMatch[0].trim() : "");
+          return {
+            ...c,
+            email: autoEmail,
+            email_public: autoEmail,
+            email_verified: Boolean(c.email_verified || autoEmail),
+          };
+        });
+        setCreators(enrichedCreators);
+        setSelectedCreatorId(enrichedCreators[0].id);
+        const emailsFound = enrichedCreators.filter((c) =>
           (c.email || c.email_public || "").includes("@"),
         ).length;
         setDiscoveryLog(
-          `[Discovery Complete] Identified & enriched ${res.creators.length} creators (${emailsFound} verified business contacts). Review profiles before autonomous dispatch.`,
+          `[Discovery Complete] Identified & enriched ${enrichedCreators.length} creators (${emailsFound} verified business contacts). Review profiles before autonomous dispatch.`,
+        );
+      } else if (res?.status === "stopped") {
+        setDiscoveryLog(
+          `[Discovery] Scouting stopped. Retained all creators discovered before halt.`,
         );
       } else {
         setDiscoveryLog(
@@ -902,13 +1206,45 @@ export default function AcquisitionEngine({
         );
       }
     } catch (e) {
+      if (e.name === "AbortError" || controller.signal.aborted) {
+        console.log("[Discovery] Request was aborted cleanly by operator.");
+        setDiscoveryLog((prev) => `${prev ? prev + "\n" : ""}[Stopped] Scouting stopped by operator.`);
+        return;
+      }
       console.warn(e);
       setDiscoveryLog(
         `[Notice] Discovery note: ${e.message || "Scouted creators."}`,
       );
     } finally {
+      if (discoveryAbortRef.current === controller) {
+        discoveryAbortRef.current = null;
+      }
       setDiscovering(false);
     }
+  };
+
+  // Immediate halt to active discovery (keeps currently discovered creators intact)
+  const handleStopDiscovery = async () => {
+    if (discoveryAbortRef.current) {
+      try {
+        discoveryAbortRef.current.abort();
+      } catch (e) {}
+      discoveryAbortRef.current = null;
+    }
+    setDiscovering(false);
+    try {
+      const { stopAutonomousDiscovery } = await import("../../services/opsApi");
+      await stopAutonomousDiscovery().catch(() => {});
+    } catch (e) {}
+    notify(
+      "info",
+      "Scouting Stopped",
+      `Discovery halted — retaining all ${creators.length} creators found so far.`
+    );
+    setDiscoveryLog(
+      (prev) =>
+        `${prev ? prev + "\n" : ""}[Stopped] Scouting stopped by operator. Keeping current ${creators.length} creators.`
+    );
   };
 
   // ── Helper to ensure all creators have tailored, rich product concepts ───────
@@ -2674,12 +3010,32 @@ export default function AcquisitionEngine({
     if (status === "rejected" || status === "declined" || status === "archived") return false;
 
     // 1. Creator was explicitly approved by human operator in Step 4
-    if (status === "approved") return true;
+    if (status === "approved" || c.isApproved) return true;
 
-    // 2. Creator already has an Opportunity Pitch sent or recorded
+    // 2. Creator was explicitly selected to advance to Step 5 or 6
+    if (selectedCreatorId && (c.id === selectedCreatorId || c.handle === selectedCreatorId)) return true;
+
+    // 3. Check persistent localStorage stage map
+    try {
+      const stageMap = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+      if (stageMap[c.id]?.step >= 5 || (c.handle && stageMap[c.handle.replace(/^@/, "").toLowerCase()]?.step >= 5)) {
+        return true;
+      }
+    } catch (e) {}
+
+    // 4. In Step 5 or 6, creator's reply was classified as interested / qualified by AI
+    const rInfo = c.replyInfo || getCreatorReply(c);
+    if (
+      rInfo?.classification === "interested" ||
+      ["qualified", "interested"].includes((c.replyClassification || c.reply_classification || "").toLowerCase())
+    ) {
+      return true;
+    }
+
+    // 5. Creator already has an Opportunity Pitch sent or recorded
     if (pitchSentMap[c.id]) return true;
 
-    // 3. Creator's thread contains an existing Step 6 pitch message
+    // 6. Creator's thread contains an existing Step 6 pitch message
     const msgs = getCreatorThreadMessages(c, realThreads);
     const hasPitchThread = msgs.some((m) => {
       const s = (m.subject || "").toLowerCase();
@@ -2687,7 +3043,6 @@ export default function AcquisitionEngine({
     });
     if (hasPitchThread) return true;
 
-    // All unapproved leads require explicit human review in Step 4
     return false;
   };
 
@@ -2710,7 +3065,10 @@ export default function AcquisitionEngine({
   const rawSelectedCreator =
     activeStep >= 5
       ? interestedCreators.find((c) => c.id === selectedCreatorId) ||
+        interestedCreators.find((c) => selectedCreatorId && (c.handle === selectedCreatorId || c.email === selectedCreatorId)) ||
         interestedCreators[0] ||
+        (selectedCreatorId ? creators.find((c) => c.id === selectedCreatorId) : null) ||
+        creators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
         null
       : creators.find((c) => c.id === selectedCreatorId && (c.status || "").toLowerCase() !== "rejected") ||
         creators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
@@ -3276,16 +3634,41 @@ export default function AcquisitionEngine({
     return hasInbound;
   };
 
-  const handleApproveCreator = async (id) => {
-    if (!id) return;
+  const handleApproveCreator = async (id, creatorParam = null) => {
+    if (!id && !creatorParam) return;
+
+    // Strict Gate: creator cannot be approved until the AI flagged it as interested
+    const target = creatorParam || creators.find(
+      (c) =>
+        c.id === id ||
+        (c.handle && id && c.handle.toLowerCase().replace(/^@/, "") === `${id}`.toLowerCase().replace(/^@/, "")) ||
+        (c.email && id && c.email.toLowerCase() === `${id}`.toLowerCase())
+    );
+    const rInfo = target ? (target.replyInfo || getCreatorReply(target)) : null;
+    const isAiInterested =
+      rInfo?.classification === "interested" ||
+      ["qualified", "interested"].includes((target?.replyClassification || target?.reply_classification || "").toLowerCase());
+
+    if (!isAiInterested && target?.status !== "approved") {
+      notify(
+        "warning",
+        "Approval Blocked",
+        "Creator cannot be approved until AI flags their reply as interested.",
+        5000
+      );
+      return;
+    }
+
+    const targetId = target?.id || id;
 
     // 1. Update local state immediately for instant UI feedback
     setCreators((prevCreators) =>
       prevCreators.map((c) => {
         const isMatch =
+          c.id === targetId ||
           c.id === id ||
-          (c.handle && id && c.handle.toLowerCase().replace(/^@/, "") === `${id}`.toLowerCase().replace(/^@/, "")) ||
-          (c.email && id && c.email.toLowerCase() === `${id}`.toLowerCase());
+          (c.handle && (c.handle === target?.handle || c.handle === id)) ||
+          (c.email && (c.email === target?.email || c.email === id));
 
         if (isMatch) {
           return {
@@ -3293,18 +3676,33 @@ export default function AcquisitionEngine({
             status: "approved",
             isApproved: true,
             approvedAt: new Date().toISOString(),
-            productConcepts: ensureCreatorConcepts(c),
+            productConcepts: c.productConcepts?.length ? c.productConcepts : ensureCreatorConcepts(c),
           };
         }
         return c;
       }),
     );
 
-    // 2. Persist to database (source of truth)
+    // 2. Persist to stage map
+    try {
+      const map = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+      map[targetId] = {
+        step: 5,
+        stepNumber: 5,
+        actionName: "Step 5 Product Studio",
+        updatedAt: new Date().toISOString(),
+      };
+      if (target?.handle) {
+        map[target.handle.replace(/^@/, "").toLowerCase()] = map[targetId];
+      }
+      localStorage.setItem("forge_creator_stage_map", JSON.stringify(map));
+    } catch (e) {}
+
+    // 3. Persist to database (source of truth)
     try {
       const { updateCreatorDetails } = await import("../../services/opsApi");
-      await updateCreatorDetails(id, { status: "approved" });
-      console.log(`[AcquisitionEngine] Creator ${id} approved in DB.`);
+      await updateCreatorDetails(targetId, { status: "approved" });
+      console.log(`[AcquisitionEngine] Creator ${targetId} approved in DB.`);
     } catch (e) {
       console.warn("[AcquisitionEngine] Failed to persist approval status:", e);
     }
@@ -3513,13 +3911,11 @@ export default function AcquisitionEngine({
     }
 
     if (decisionType === "approve") {
-      handleApproveCreator(creator.id);
+      handleApproveCreator(creator.id, creator);
       setSelectedCreatorId(creator.id);
       setActiveStep(5);
-      // Automatically synthesize AI audience research, dispatch 3-concept blueprint, and advance to Step 6
-      setTimeout(() => {
-        handleAutoSynthesizeAndAdvance(creator);
-      }, 600);
+      // Synthesize AI concepts and audience intelligence for Step 5 review without auto-advancing past Step 5
+      handleSynthesizeStep5Ai(creator);
     } else {
       handleRejectCreator(creator.id);
     }
@@ -3538,10 +3934,35 @@ export default function AcquisitionEngine({
 
   const handlePitchAndCreateProject = async () => {
     if (!selectedCreator) return;
+
+    // Strict Gate: No approval to ProjectOS until creator confirms full commitment
+    const detectedChoice = aiDetectedChoiceMap[selectedCreator.id];
+    const isCommittedChoice = detectedChoice?.decision === "CREATE_PROJECT" || detectedChoice?.decision === "COMMITTED";
+    const isAlreadyLaunched = ["launched", "active_project"].includes((selectedCreator.status || "").toLowerCase());
+    const hasFullCommitment = Boolean(
+      isCommittedChoice ||
+      selectedCreator.isCommitted === true ||
+      isAlreadyLaunched
+    );
+
+    if (!hasFullCommitment) {
+      notify(
+        "warning",
+        "Promotion Blocked",
+        "Cannot approve project to ProjectOS until creator confirms full commitment (explicit concept selection or agreement).",
+        5500
+      );
+      return;
+    }
+
     const concepts =
       selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
     const concept =
-      concepts.find((p) => p.id === selectedConceptId) || concepts[0];
+      concepts.find((p) => p.id === selectedConceptId) ||
+      concepts.find((p) => p.id === detectedChoice?.conceptId) ||
+      concepts.find((p) => p.id === selectedCreator.selectedConceptId) ||
+      concepts.find((p) => p.id === selectedCreator.selected_concept_id) ||
+      concepts[0];
 
     setIsLaunchingProject(true);
     setLaunchStepIndex(1);
@@ -3654,6 +4075,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       mockup: concept?.mockup || {},
       creatorScore: selectedCreator.creatorScore || selectedCreator.score || 85,
       opportunityScore: concept?.opportunityScore || 92,
+      selectedConceptId: concept?.id,
       selectedConcept: concept,
       presaleTarget: parsedTargetVal,
       targetRevenue: parsedTargetVal,
@@ -3687,7 +4109,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     await new Promise((r) => setTimeout(r, 600));
 
     if (onGoToProjectOS) {
-      onGoToProjectOS();
+      onGoToProjectOS(selectedCreator);
     }
 
     setIsLaunchingProject(false);
@@ -3719,7 +4141,27 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     if (sendingBulk) return;
     setSendingBulk(true);
 
-    const uncontactedList = creators.filter((c) => {
+    let activeList = creators;
+    if (editingEmailCreatorId && tempEmailValue.trim()) {
+      const draftEmail = tempEmailValue.trim();
+      const targetId = editingEmailCreatorId;
+      await saveEditEmail(targetId, null, draftEmail);
+      activeList = creators.map((c) => {
+        const cleanTarget = String(targetId).toLowerCase().replace(/^@/, "");
+        const cleanHandle = String(c.handle || "").toLowerCase().replace(/^@/, "");
+        if (c.id === targetId || (cleanTarget && cleanHandle && cleanTarget === cleanHandle)) {
+          return {
+            ...c,
+            email: draftEmail,
+            email_public: draftEmail,
+            email_verified: Boolean(draftEmail && draftEmail.includes("@")),
+          };
+        }
+        return c;
+      });
+    }
+
+    const uncontactedList = activeList.filter((c) => {
       const email = (c.email || c.email_public || "").trim();
       if (!email.includes("@")) return false;
       return forceAll ? true : !isCreatorContacted(c);
@@ -3838,13 +4280,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           6000
         );
         setOutreachLog(
-          `[Error] Outreach dispatch failed: ${errors.join(" | ")}. Please verify SMTP credentials in Settings.`,
+          `[Error] Outreach dispatch failed: ${errors.join(" | ")}. Transitioning to Step 4...`,
         );
+        if (autoAdvance) {
+          setTimeout(() => {
+            setActiveStep(4);
+          }, 1500);
+        }
       }
     } catch (e) {
       console.warn("[AcquisitionEngine] Outreach error:", e);
       setOutreachLog(
-        `[Notice] Outreach notice: ${e.message || "Dispatched outreach"}.`,
+        `[Notice] Outreach notice: ${e.message || "Dispatched outreach"}. Transitioning to Step 4...`,
       );
       notify(
         "error",
@@ -3852,14 +4299,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         e.message || "An unexpected error occurred during dispatch.",
         5000
       );
+      if (autoAdvance) {
+        setTimeout(() => {
+          setActiveStep(4);
+        }, 1500);
+      }
     } finally {
       setSendingBulk(false);
     }
   };
 
-  // Autonomous auto-send on reaching Step 3 (Strictly ONLY if uncontacted creators exist)
+  // Auto-send emails on reaching Step 3 & advance to Step 4 for replies
   useEffect(() => {
-    if (activeStep === 3 && campaignRunning && !sendingBulk) {
+    if (activeStep === 3 && !sendingBulk && creators.length > 0) {
       const hasUncontacted = creators.some((c) => {
         const email = (c.email || c.email_public || "").trim();
         return email.includes("@") && !isCreatorContacted(c);
@@ -3869,9 +4321,17 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           handleSendBulkOutreach({ autoAdvance: true });
         }, 900);
         return () => clearTimeout(timer);
+      } else {
+        setOutreachLog(
+          "[Outreach Queue] All creators in this batch have already received emails. Transitioning to Step 4 for creator replies...",
+        );
+        const timer = setTimeout(() => {
+          setActiveStep(4);
+        }, 1200);
+        return () => clearTimeout(timer);
       }
     }
-  }, [activeStep, campaignRunning]);
+  }, [activeStep, creators.length, sendingBulk]);
 
   // ── Creator reply notification & state update function (Strict Human Review Gate) ─
   const triggerAutoAdvance = (creator, reply) => {
@@ -3899,20 +4359,20 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     import("../../services/opsApi").then(({ updateCreatorDetails }) => {
       updateCreatorDetails(creator.id, {
         reply_classification: reply?.classification || "interested",
-        reply_text: reply?.text || "Creator responded — awaiting human review in Step 4",
+        reply_text: reply?.text || "Creator responded — awaiting review in Step 4",
       }).catch((e) => console.warn(e));
     });
 
     // Select this creator ONLY if no creator is currently selected
     setSelectedCreatorId((prev) => (prev ? prev : creator.id));
 
-    // Notify human of incoming response (does NOT change activeStep)
+    // Notify of incoming response (does NOT change activeStep)
     const cName =
       creator.name || creator.display_name || creator.handle || "Creator";
     notify(
       "info",
       "New Creator Response",
-      `${cName} replied: "${(reply?.text || "Interested").slice(0, 45)}..." — Ready for Human Review in Step 4.`,
+      `${cName} replied: "${(reply?.text || "Interested").slice(0, 45)}..." — Ready for review in Step 4.`,
       4500,
     );
   };
@@ -4734,7 +5194,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           <div className="flex items-center gap-2.5">
             <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
               <Zap className="w-5 h-5 text-purple-400 fill-purple-400" />
-              <span>Autonomous Creator Acquisition Engine</span>
+              <span>Creator Acquisition Engine</span>
             </h1>
             <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
               Live Real-Data
@@ -4742,7 +5202,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           </div>
           <p className="text-xs text-slate-400">
             Real-time creator discovery, verified contact extraction, AI product
-            concepts, and autonomous outreach orchestration.
+            concepts, and outreach orchestration.
           </p>
         </div>
 
@@ -4756,27 +5216,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             <Trash2 className="w-3.5 h-3.5 flex-shrink-0" />
             <span>{isDeletingAll ? "Deleting..." : "Delete All Leads"}</span>
           </button>
-
-          <button
-            onClick={toggleCampaignRunning}
-            className={`flex items-center gap-2 px-3.5 h-9 rounded-xl text-xs font-bold transition-all border whitespace-nowrap flex-shrink-0 cursor-pointer ${
-              campaignRunning
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                : "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
-            }`}
-          >
-            {campaignRunning ? (
-              <Play className="w-3.5 h-3.5 fill-emerald-400 flex-shrink-0" />
-            ) : (
-              <Pause className="w-3.5 h-3.5 fill-amber-400 flex-shrink-0" />
-            )}
-            <span>{campaignRunning ? "Engine Active" : "Engine Paused"}</span>
-          </button>
         </div>
       </div>
 
       {/* Phase Navigation */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none sm:grid sm:grid-cols-3 lg:grid-cols-6">
         {[
           {
             step: 1,
@@ -4794,7 +5238,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           },
           {
             step: 3,
-            label: "3. Autonomous Outreach",
+            label: "3. Direct Outreach",
             icon: Send,
             textColor: "text-cyan-400",
             activeBg: "bg-cyan-500/15 border-cyan-500/40 text-white",
@@ -4827,7 +5271,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             <button
               key={item.step}
               onClick={() => setActiveStep(item.step)}
-              className={`flex flex-col items-start p-3 rounded-xl text-left transition-all border cursor-pointer ${
+              className={`flex flex-col items-start p-3 rounded-xl text-left transition-all border cursor-pointer shrink-0 min-w-[135px] sm:min-w-0 sm:w-auto ${
                 isActive
                   ? item.activeBg
                   : "bg-[#0e1117] border-white/[0.06] text-slate-400 hover:border-white/[0.14] hover:text-white"
@@ -4850,24 +5294,21 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           <div className="md:col-span-2 space-y-6">
             {/* Parameters Card */}
             <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
-              <div className="border-b border-white/[0.07] pb-3.5 flex items-center justify-between">
+              <div className="border-b border-white/[0.07] pb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h2 className="text-sm font-bold text-white flex items-center gap-2">
                   <Target className="w-4 h-4 text-purple-400" />
-                  <span>Campaign Parameters & Autonomous Targeting</span>
+                  <span>Campaign Parameters & Lead Discovery</span>
                 </h2>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={handleStartFresh}
-                    className="text-[11px] font-bold text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/10 border border-white/10 px-2.5 py-1 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                    className="text-[11px] font-bold text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/10 border border-white/10 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
                     title="Clear cached creators and start completely fresh"
                   >
                     <RefreshCw className="w-3 h-3 text-purple-400" />
                     <span>Reset Fresh</span>
                   </button>
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
-                    Autonomous Mode
-                  </span>
                 </div>
               </div>
 
@@ -5048,7 +5489,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <div className="flex items-center justify-between">
                     <label className="text-xs text-purple-300 font-bold flex items-center gap-1.5">
                       <Cpu className="w-3.5 h-3.5 text-purple-400" />
-                      <span>Autonomous Creator Count</span>
+                      <span>Batch Discovery Count</span>
                     </label>
                     <span className="text-xs font-black text-white bg-purple-600 px-2 py-0.5 rounded-md">
                       {creatorsBatchCount} Creators
@@ -5322,20 +5763,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5 sticky top-20">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  Campaign Control
+                  Campaign Summary
                 </h4>
-                <button
-                  type="button"
-                  onClick={toggleCampaignRunning}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                    campaignRunning
-                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                      : "bg-amber-500/15 border-amber-500/40 text-amber-300"
-                  }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${campaignRunning ? "bg-emerald-400 animate-ping" : "bg-amber-400"}`} />
-                  <span>{campaignRunning ? "Campaign Running" : "Campaign Paused"}</span>
-                </button>
               </div>
 
               <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-3 text-xs">
@@ -5384,15 +5813,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 text-purple-200" />
-                    <span>Run Autonomous Discovery</span>
+                    <Search className="w-4 h-4 text-purple-200" />
+                    <span>Start Lead Discovery</span>
                   </>
                 )}
               </button>
 
               <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-                Triggers autonomous audience analysis, profile evaluation &
-                verified business contact discovery.
+                Scouts and enriches qualifying creator candidate profiles for your review and approval in Step 2.
               </p>
             </div>
           </div>
@@ -5418,16 +5846,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <span>Find & Qualify Creators</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Review discovered creator profiles and verified contact emails before launching autonomous outreach.
+                Review discovered creator profiles and verified contact emails before launching outreach.
               </p>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
-              {creators.length > 0 && (
+              {creators.length > 0 && !discovering && (
                 <div className="h-9 px-3 rounded-xl bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono flex items-center gap-2 shadow-sm whitespace-nowrap">
                   <Clock className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
                   <span>
-                    Auto-Dispatch in:{" "}
+                    Auto-Advance to Step 3 in:{" "}
                     <strong className="text-white">{formatCountdown(countdownSeconds)}</strong>
                   </span>
                   <button
@@ -5440,23 +5868,43 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
               )}
 
-              <button
-                onClick={handleStartEngine}
-                disabled={discovering}
-                className="h-9 px-3.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-200 hover:text-white font-semibold text-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer border border-white/10 whitespace-nowrap active:scale-95"
-                title="Re-run discovery"
-              >
-                <RefreshCw
-                  className={`w-3.5 h-3.5 text-indigo-400 ${discovering ? "animate-spin" : ""}`}
-                />
-                <span>{discovering ? "Scouting..." : "Re-Discover"}</span>
-              </button>
+              {discovering ? (
+                <button
+                  type="button"
+                  onClick={handleStopDiscovery}
+                  className="h-9 px-3.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-sm"
+                  title="Stop discovery early and keep currently scouted creators"
+                >
+                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Stop Scouting ({creators.length} Found)</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleStartEngine}
+                  disabled={discovering}
+                  className="h-9 px-3.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-200 hover:text-white font-semibold text-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer border border-white/10 whitespace-nowrap active:scale-95"
+                  title="Re-run discovery"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 text-indigo-400 ${discovering ? "animate-spin" : ""}`}
+                  />
+                  <span>{discovering ? "Scouting..." : "Re-Discover"}</span>
+                </button>
+              )}
 
               <button
-                onClick={() => setActiveStep(3)}
+                onClick={() => {
+                  if (editingEmailCreatorId && tempEmailValue.trim()) {
+                    saveEditEmail(editingEmailCreatorId, null, tempEmailValue.trim());
+                  }
+                  if (discovering || discoveryAbortRef.current) {
+                    handleStopDiscovery();
+                  }
+                  setActiveStep(3);
+                }}
                 className="h-9 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-indigo-500/40 shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
               >
-                <span>Proceed to Outreach Wave</span>
+                <span>Proceed to Step 3: Outreach Wave</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -5474,17 +5922,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           {creators.length === 0 ? (
             <div className="text-center py-16 text-slate-500 text-xs space-y-4">
               <p>
-                No creators discovered yet. Click Engine Start to run autonomous
-                discovery.
+                No creators discovered yet. Click Start Discovery to find matching creators.
               </p>
               <button
                 onClick={handleStartEngine}
                 disabled={discovering}
-                className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs inline-flex items-center gap-2"
+                className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer shadow-md"
               >
-                <Zap className="w-4 h-4 text-amber-300" />
+                <Search className="w-4 h-4 text-purple-200" />
                 <span>
-                  Start Autonomous Discovery ({creatorsBatchCount} Creators)
+                  Start Lead Discovery ({creatorsBatchCount} Creators)
                 </span>
               </button>
             </div>
@@ -5534,7 +5981,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         : platformSlug === "tiktok"
                           ? `https://www.tiktok.com/@${cleanHandle}`
                           : `https://twitter.com/${cleanHandle}`);
-                  const hasEmail = Boolean(c.email_public || c.email);
+                  const bioEmailMatch = (c.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+                  const effectiveEmail = c.email_public || c.email || (bioEmailMatch ? bioEmailMatch[0].trim() : "");
+                  const hasEmail = Boolean(effectiveEmail);
 
                   return (
                     <div
@@ -5667,6 +6116,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               onChange={(e) =>
                                 setTempEmailValue(e.target.value)
                               }
+                              onBlur={(e) => {
+                                if (tempEmailValue.trim()) {
+                                  saveEditEmail(c.id, e);
+                                }
+                              }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") saveEditEmail(c.id, e);
                                 if (e.key === "Escape") cancelEditEmail(e);
@@ -5700,40 +6154,57 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <Mail className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                                     <span className="font-mono text-emerald-400 truncate">
-                                      {c.email_public || c.email}
+                                      {effectiveEmail}
                                     </span>
-                                    {c.email_verified ? (
+                                    {(c.hunter_score || hunterDataMap[c.id]?.score) ? (
+                                      <span
+                                        className="text-[9px] font-extrabold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap"
+                                        title={`Hunter.io Verification: Score ${c.hunter_score || hunterDataMap[c.id]?.score}%, Status: ${c.hunter_status || hunterDataMap[c.id]?.status}`}
+                                      >
+                                        <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                        <span>{c.hunter_score || hunterDataMap[c.id]?.score}% Valid</span>
+                                      </span>
+                                    ) : (
                                       <span
                                         className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded"
                                         title="Verified Business Contact"
                                       >
                                         <span className="flex items-center gap-0.5"><Check className="w-2.5 h-2.5 text-emerald-400" /> Verified</span>
                                       </span>
-                                    ) : null}
+                                    )}
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleCopyEmail(
-                                          c.email_public || c.email,
-                                        );
+                                        handleCopyEmail(effectiveEmail);
                                       }}
                                       className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
                                       title="Copy Email"
                                     >
-                                      {copiedEmail ===
-                                      (c.email_public || c.email) ? (
+                                      {copiedEmail === effectiveEmail ? (
                                         <Check className="w-3.5 h-3.5 text-emerald-400" />
                                       ) : (
                                         <Copy className="w-3.5 h-3.5" />
                                       )}
                                     </button>
                                     <button
+                                      onClick={(e) => handleHunterVerifyEmail({ ...c, email: effectiveEmail, email_public: effectiveEmail }, e)}
+                                      disabled={hunterLoadingId === c.id}
+                                      className="p-1 text-slate-400 hover:text-emerald-300 rounded hover:bg-white/10 transition-colors disabled:opacity-50"
+                                      title="Verify deliverability with Hunter.io"
+                                    >
+                                      {hunterLoadingId === c.id && hunterActionType === 'verify' ? (
+                                        <RefreshCw className="w-3 h-3 text-emerald-400 animate-spin" />
+                                      ) : (
+                                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                      )}
+                                    </button>
+                                    <button
                                       onClick={(e) =>
                                         startEditEmail(
                                           c.id,
-                                          c.email_public || c.email,
+                                          effectiveEmail,
                                           e,
                                         )
                                       }
@@ -5748,29 +6219,29 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                   <button
                                     type="button"
-                                    onClick={(e) => handleApifyFindEmail(c, e)}
-                                    disabled={findingApifyId === c.id}
-                                    className="p-1.5 px-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-300 hover:text-white flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50"
-                                    title="Search directory for verified contact"
+                                    onClick={(e) => handleHunterFindEmail(c, e)}
+                                    disabled={hunterLoadingId === c.id}
+                                    className="p-1.5 px-3 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 hover:border-purple-500/40 text-purple-300 hover:text-white flex items-center gap-1.5 text-[11px] font-semibold transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                                    title="Auto-search bio, Hunter.io B2B, and social directory for verified contact"
                                   >
-                                    {findingApifyId === c.id ? (
-                                      <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
+                                    {hunterLoadingId === c.id && hunterActionType === 'find' ? (
+                                      <RefreshCw className="w-3 h-3 animate-spin text-purple-400" />
                                     ) : (
-                                      <Zap className="w-3 h-3 text-emerald-400" />
+                                      <Sparkles className="w-3 h-3 text-purple-400" />
                                     )}
                                     <span>
-                                      {findingApifyId === c.id
-                                        ? "Finding..."
-                                        : "Find Business Email"}
+                                      {hunterLoadingId === c.id && hunterActionType === 'find'
+                                        ? "Searching..."
+                                        : "Auto-Find Email"}
                                     </span>
                                   </button>
                                   <button
                                     type="button"
                                     onClick={(e) => startEditEmail(c.id, "", e)}
-                                    className="p-1.5 px-2 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 hover:border-purple-500/40 text-purple-300 hover:text-white flex items-center gap-1 text-[11px] font-semibold transition-all cursor-pointer"
-                                    title="Add or update email address"
+                                    className="p-1.5 px-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/15 text-slate-400 hover:text-white flex items-center gap-1 text-[11px] font-medium transition-all cursor-pointer"
+                                    title="Manually enter email address"
                                   >
-                                    <Pencil className="w-2.5 h-2.5 text-purple-400" />
+                                    <Pencil className="w-2.5 h-2.5 text-slate-400" />
                                     <span>Edit</span>
                                   </button>
                                 </div>
@@ -5823,34 +6294,33 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
               <h2 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
                 <Send className="w-4 h-4 text-blue-400" />
-                <span>Autonomous Outreach Queue</span>
+                <span>Personalized Outreach Queue</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Send personalized outreach emails, track opens & replies, and
-                automatically schedule 7-day follow-ups.
+                Review personalized outreach drafts, confirm verified contacts, and dispatch email waves to creators.
               </p>
             </div>
 
             <div className="flex items-center gap-2.5">
               <button
-                onClick={handleSendBulkOutreach}
+                onClick={() => handleSendBulkOutreach({ autoAdvance: true })}
                 disabled={sendingBulk || creators.length === 0}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 transition-all disabled:opacity-50 shadow-md"
+                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 transition-all disabled:opacity-50 shadow-md cursor-pointer"
               >
                 <Send
                   className={`w-3.5 h-3.5 ${sendingBulk ? "animate-pulse" : ""}`}
                 />
                 <span>
                   {sendingBulk
-                    ? "Sending Email Batch..."
-                    : `Dispatch Bulk Wave (${creators.length} Creators)`}
+                    ? "Dispatching Emails..."
+                    : `Dispatch Email Wave (${creators.length} Creators)`}
                 </span>
               </button>
               <button
                 onClick={() => setActiveStep(4)}
-                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all"
+                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95"
               >
-                <span>Advance to Replies</span>
+                <span>Proceed to Step 4: Creator Replies</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -5942,6 +6412,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 onChange={(e) =>
                                   setTempEmailValue(e.target.value)
                                 }
+                                onBlur={(e) => {
+                                  if (tempEmailValue.trim()) {
+                                    saveEditEmail(c.id, e);
+                                  }
+                                }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") saveEditEmail(c.id, e);
                                   if (e.key === "Escape") cancelEditEmail(e);
@@ -6581,6 +7056,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                   type="email"
                                   value={tempEmailValue}
                                   onChange={e => setTempEmailValue(e.target.value)}
+                                  onBlur={e => {
+                                    if (tempEmailValue.trim()) {
+                                      saveEditEmail(activeReviewCreator.id, e);
+                                    }
+                                  }}
                                   onKeyDown={e => { if (e.key === 'Enter') saveEditEmail(activeReviewCreator.id, e); if (e.key === 'Escape') cancelEditEmail(e); }}
                                   className="w-40 px-1.5 py-0.5 rounded bg-white/10 border border-purple-500/40 text-white text-[11px] font-mono focus:outline-none focus:border-purple-400"
                                   placeholder="creator@email.com"
@@ -6707,11 +7187,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         )}
                       </div>
 
-                      {/* Human Review Actions */}
+                      {/* Review Actions */}
                       <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                            Human Review
+                            Lead Decision
                           </span>
                           {activeReviewCreator.status === "approved" && (
                             <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
@@ -6737,39 +7217,70 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           >
                             {activeReviewCreator.status === "rejected" ? "Archived (Rejected)" : "Reject Lead"}
                           </button>
-                          {/* Accept & Advance to Step 5 Button (Strictly only for interested / qualified leads) */}
-                          {activeReviewCreator.status !== "rejected" && activeReviewCreator.replyInfo?.classification !== "not_interested" && activeReviewCreator.replyInfo?.classification !== "unsubscribe" && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (activeReviewCreator.status !== "approved") {
-                                  handleApproveCreator(activeReviewCreator.id);
-                                }
-                                setSelectedCreatorId(activeReviewCreator.id);
-                                setActiveStep(5);
-                              }}
-                              className={`px-5 py-2 rounded-xl text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer border active:scale-95 ${
-                                activeReviewCreator.status === "approved"
-                                  ? "bg-emerald-700 hover:bg-emerald-600 border-emerald-500/50"
-                                  : "bg-emerald-600 hover:bg-emerald-500 border-emerald-500/40"
-                              }`}
-                            >
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span>
-                                {activeReviewCreator.status === "approved"
-                                  ? "View Concepts in Step 5"
-                                  : "Accept & Advance to Step 5"}
-                              </span>
-                            </button>
-                          )}
+                          {/* Accept & Advance to Step 5 Button (Strictly requires AI to flag as interested) */}
+                          {activeReviewCreator.status !== "rejected" && (() => {
+                            const rInfo = activeReviewCreator.replyInfo || getCreatorReply(activeReviewCreator);
+                            const isAiInterested =
+                              rInfo?.classification === "interested" ||
+                              ["qualified", "interested"].includes((activeReviewCreator.replyClassification || activeReviewCreator.reply_classification || "").toLowerCase());
+                            const isApproved = activeReviewCreator.status === "approved";
+                            const canApproveOrAdvance = isAiInterested || isApproved;
+                            const isDeclined = rInfo?.classification === "not_interested" || rInfo?.classification === "unsubscribe";
 
-                          {/* Notice if uninterested */}
-                          {activeReviewCreator.status !== "rejected" && (activeReviewCreator.replyInfo?.classification === "not_interested" || activeReviewCreator.replyInfo?.classification === "unsubscribe") && (
-                            <span className="text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                              <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
-                              <span>Uninterested (Blocked from Step 5)</span>
-                            </span>
-                          )}
+                            if (isDeclined) {
+                              return (
+                                <span className="text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                                  <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
+                                  <span>Uninterested (Blocked from Step 5)</span>
+                                </span>
+                              );
+                            }
+
+                            return (
+                              <button
+                                type="button"
+                                disabled={!canApproveOrAdvance}
+                                onClick={() => {
+                                  if (!canApproveOrAdvance) {
+                                    notify("warning", "Approval Blocked", "Creator cannot be approved until AI flags their reply as interested.");
+                                    return;
+                                  }
+                                  handleApproveCreator(activeReviewCreator.id, activeReviewCreator);
+                                  setSelectedCreatorId(activeReviewCreator.id);
+                                  setActiveStep(5);
+                                  handleSynthesizeStep5Ai(activeReviewCreator);
+                                }}
+                                className={`px-5 py-2 rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5 border ${
+                                  !canApproveOrAdvance
+                                    ? "bg-slate-800/80 text-slate-400 border-white/[0.08] cursor-not-allowed opacity-75"
+                                    : isApproved
+                                      ? "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500/50 cursor-pointer active:scale-95"
+                                      : "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/40 cursor-pointer active:scale-95"
+                                }`}
+                                title={
+                                  !canApproveOrAdvance
+                                    ? "Locked: Creator cannot be approved until AI flags their inbound reply as interested"
+                                    : "Accept lead and advance to Step 5 Product Studio"
+                                }
+                              >
+                                {!canApproveOrAdvance ? (
+                                  <>
+                                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>Awaiting AI Interest Flag 🔒</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span>
+                                      {isApproved
+                                        ? "View Concepts in Step 5"
+                                        : "Accept & Advance to Step 5"}
+                                    </span>
+                                  </>
+                                )}
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -6807,7 +7318,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     </span>
                   </p>
                   <p className="text-[11px] text-emerald-400/90 font-medium">
-                    Approved by Human Review — Product Concepts & Audience Intelligence Ready.
+                    Approved — Product Concepts & Audience Intelligence Ready.
                   </p>
                 </div>
               </div>
@@ -7091,7 +7602,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <span>
                     {isSendingPitch
                       ? "Dispatching..."
-                      : "Send 3 Concepts & Advance →"}
+                      : "Send 3 Concepts & Advance to Step 6 →"}
                   </span>
                 </button>
               )}
@@ -7616,7 +8127,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       <button
                         type="button"
                         onClick={() => {
-                          if (onGoToProjectOS) onGoToProjectOS();
+                          if (onGoToProjectOS) onGoToProjectOS(selectedCreator);
                         }}
                         className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold border border-emerald-500/40 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
                       >
@@ -7627,19 +8138,82 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   );
                 }
 
-                return (
-                  <button
-                    type="button"
-                    onClick={() => handlePitchAndCreateProject()}
-                    className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold border border-emerald-500/40 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
-                  >
-                    <Rocket className="w-3.5 h-3.5 text-emerald-200" />
-                    <span>Create Project</span>
-                  </button>
-                );
+                return null;
               })()}
             </div>
           </div>
+
+          {/* Admin Promotion Review Gate Banner */}
+          {(() => {
+            const detectedChoice = selectedCreator ? aiDetectedChoiceMap[selectedCreator.id] : null;
+            const isCommittedChoice = detectedChoice?.decision === "CREATE_PROJECT" || detectedChoice?.decision === "COMMITTED";
+            const isAlreadyLaunched = Boolean(
+              selectedCreator?.project_id ||
+              ["launched", "active_project"].includes((selectedCreator?.status || "").toLowerCase())
+            );
+            const hasFullCommitment = Boolean(
+              isCommittedChoice ||
+              selectedCreator?.isCommitted === true ||
+              isAlreadyLaunched
+            );
+
+            return (
+              <div className={`p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-md transition-all ${
+                hasFullCommitment
+                  ? "bg-gradient-to-r from-purple-950/40 via-[#161a24] to-emerald-950/30 border-emerald-500/40"
+                  : "bg-[#121620] border-white/[0.08]"
+              }`}>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                      hasFullCommitment
+                        ? "text-emerald-400 bg-emerald-500/15 border-emerald-500/30"
+                        : "text-amber-400 bg-amber-500/15 border-amber-500/30"
+                    }`}>
+                      {hasFullCommitment ? "Commitment Confirmed" : "Commitment Gate Locked"}
+                    </span>
+                    <span className="text-xs font-bold text-white">
+                      Step 6 Final Promotion Gate
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    {hasFullCommitment
+                      ? "Full commitment confirmed by creator! Click below to dispatch the official kickoff email and initialize the project in Section 2 (ProjectOS)."
+                      : "Review the decided concept, proposal deck, and creator feedback below. Promotion to ProjectOS remains locked until the creator provides full commitment."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    disabled={!hasFullCommitment}
+                    onClick={() => handlePitchAndCreateProject()}
+                    className={`h-9 px-4 rounded-xl text-xs font-bold border shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      hasFullCommitment
+                        ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/40 cursor-pointer active:scale-95 shadow-emerald-500/20"
+                        : "bg-slate-800/80 text-slate-400 border-white/[0.08] cursor-not-allowed opacity-75"
+                    }`}
+                    title={
+                      hasFullCommitment
+                        ? "Creator has confirmed full commitment. Promote to ProjectOS."
+                        : "Locked: Creator must confirm full commitment (explicit concept selection or co-launch agreement) before promotion to ProjectOS"
+                    }
+                  >
+                    {hasFullCommitment ? (
+                      <>
+                        <Rocket className="w-3.5 h-3.5 text-emerald-200" />
+                        <span>Promote to Creator Dashboard & Send Kickoff Email 🚀</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Awaiting Full Creator Commitment 🔒</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Main 2-Column Split: Decided Project Concept (Left) vs. Conversation & Admin Email Composer (Right) */}
           {selectedCreator && (() => {
@@ -7761,6 +8335,71 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <div className="flex items-center justify-between text-slate-300">
                       <span>Contact Email:</span>
                       <strong className="text-emerald-400 font-mono text-[11px]">{selectedCreator.email || selectedCreator.email_public || "No email"}</strong>
+                    </div>
+
+                    {/* Hunter.io Intelligence Block in Drawer */}
+                    <div className="pt-2 border-t border-white/[0.06] space-y-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-bold text-amber-300 flex items-center gap-1">
+                          <Target className="w-3 h-3 text-amber-400" />
+                          <span>Hunter.io Intelligence</span>
+                        </span>
+                        {(hunterDataMap[selectedCreator.id]?.score || selectedCreator.hunter_score) ? (
+                          <span className="text-[10px] font-black text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                            {hunterDataMap[selectedCreator.id]?.score || selectedCreator.hunter_score}% Deliverable
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {(selectedCreator.email || selectedCreator.email_public) ? (
+                        <div className="space-y-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => handleHunterVerifyEmail(selectedCreator, e)}
+                            disabled={hunterLoadingId === selectedCreator.id}
+                            className="w-full py-1.5 px-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:text-white flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            {hunterLoadingId === selectedCreator.id && hunterActionType === 'verify' ? (
+                              <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
+                            ) : (
+                              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                            )}
+                            <span>Verify Deliverability (Hunter.io)</span>
+                          </button>
+                          {hunterDataMap[selectedCreator.id] && (
+                            <div className="p-2 rounded-lg bg-black/40 border border-white/[0.05] text-[10px] space-y-1 text-slate-300">
+                              <div className="flex justify-between">
+                                <span>Status:</span>
+                                <strong className="text-emerald-400 uppercase">{hunterDataMap[selectedCreator.id].status}</strong>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>SMTP Check:</span>
+                                <strong className={hunterDataMap[selectedCreator.id].smtp_check ? "text-emerald-400" : "text-amber-400"}>
+                                  {hunterDataMap[selectedCreator.id].smtp_check ? "Passed" : "Blocked/Failed"}
+                                </strong>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Public Sources:</span>
+                                <strong className="text-white">{hunterDataMap[selectedCreator.id].sources_count || (hunterDataMap[selectedCreator.id].sources || []).length} web sources</strong>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => handleHunterFindEmail(selectedCreator, e)}
+                          disabled={hunterLoadingId === selectedCreator.id}
+                          className="w-full py-1.5 px-2.5 rounded-lg bg-gradient-to-r from-amber-500/15 to-orange-500/15 hover:from-amber-500/25 hover:to-orange-500/25 border border-amber-500/35 text-amber-300 hover:text-white flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          {hunterLoadingId === selectedCreator.id && hunterActionType === 'find' ? (
+                            <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
+                          ) : (
+                            <Target className="w-3.5 h-3.5 text-amber-400" />
+                          )}
+                          <span>Find Business Email (Hunter.io)</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -8322,7 +8961,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           if (conceptId) setSelectedConceptId(conceptId);
           setShowFollowUpCRM(false);
           if (targetStep === "section2" || targetStep === 7) {
-            if (onGoToProjectOS) onGoToProjectOS();
+            if (onGoToProjectOS) onGoToProjectOS(cid);
           } else {
             setActiveStep(Number(targetStep) || 4);
           }
@@ -8330,10 +8969,46 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         onSyncImap={() => syncImapReplies(true)}
         onApproveCreator={handleApproveCreator}
         onRejectCreator={handleRejectCreator}
-        onDeleteCreator={(creatorId) => {
-          setCreators((prev) => prev.filter((c) => c.id !== creatorId && c.handle !== creatorId));
-          if (selectedCreatorId === creatorId) {
+        onDeleteCreator={async (creatorId) => {
+          const targetCreator = (creators || []).find((c) => c.id === creatorId || c.handle === creatorId);
+          const cleanHandle = (targetCreator?.handle || creatorId || "").replace(/^@/, "").toLowerCase();
+
+          setCreators((prev) =>
+            (prev || []).filter(
+              (c) =>
+                c.id !== creatorId &&
+                c.handle !== creatorId &&
+                (c.handle || "").replace(/^@/, "").toLowerCase() !== cleanHandle
+            )
+          );
+          setRealThreads((prev) =>
+            (prev || []).filter((t) => {
+              if (t.creator_id === creatorId) return false;
+              if (t.creator_handle && t.creator_handle.replace(/^@/, "").toLowerCase() === cleanHandle) return false;
+              return true;
+            })
+          );
+          setPitchSentMap((prev) => {
+            const next = { ...prev };
+            delete next[creatorId];
+            delete next[cleanHandle];
+            return next;
+          });
+          setAiDetectedChoiceMap((prev) => {
+            const next = { ...prev };
+            delete next[creatorId];
+            delete next[cleanHandle];
+            return next;
+          });
+          if (selectedCreatorId === creatorId || selectedCreatorId === cleanHandle) {
             setSelectedCreatorId(null);
+          }
+
+          try {
+            const { deleteCreator } = await import("../../services/opsApi");
+            await deleteCreator(creatorId);
+          } catch (e) {
+            console.warn("deleteCreator API notice:", e);
           }
         }}
         onOpenDecisionModal={(c, decision) => {
@@ -8633,100 +9308,145 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         </div>
       )}
 
-      {/* ── High-Tech Cinematic Project Launch & Dashboard Initialization Overlay ── */}
+      {/* ── Precision Workspace Provisioning Modal (Linear / Vercel Aesthetic) ── */}
       {isLaunchingProject && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-200 overflow-hidden">
-          <div className="w-full max-w-lg rounded-3xl bg-gradient-to-b from-[#141824] to-[#0b0e14] border border-purple-500/30 shadow-[0_0_80px_rgba(168,85,247,0.25)] p-8 text-center space-y-6 relative overflow-hidden overscroll-contain">
-            {/* Ambient Background Glow */}
-            <div className="absolute -top-24 -left-24 w-48 h-48 bg-purple-600/30 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-600/30 rounded-full blur-3xl pointer-events-none" />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150 overflow-hidden">
+          {(() => {
+            const concepts = selectedCreator?.productConcepts || (selectedCreator ? ensureCreatorConcepts(selectedCreator) : []);
+            const concept = concepts?.find((p) => p.id === selectedConceptId) || concepts?.[0];
+            const cleanHandle = (selectedCreator?.handle || "partner").replace(/^@/, "");
+            const creatorDisplayName = selectedCreator?.name || selectedCreator?.display_name || `@${cleanHandle}`;
 
-            {/* Glowing Icon Animation */}
-            <div className="relative mx-auto w-20 h-20 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 p-[2px] shadow-lg shadow-purple-900/50">
-              <div className="w-full h-full rounded-2xl bg-[#0e1117] flex items-center justify-center">
-                <Rocket className="w-10 h-10 text-purple-400 animate-bounce" />
-              </div>
-            </div>
+            return (
+              <div className="w-full max-w-md rounded-2xl bg-[#0c0e14] border border-white/[0.1] shadow-2xl p-6 text-left space-y-5 relative overflow-hidden">
+                {/* Hairline subtle top glow */}
+                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
 
-            <div className="space-y-2">
-              <span className="text-[11px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
-                Initializing Co-Launch Venture OS
-              </span>
-              <h2 className="text-xl font-black text-white">
-                Launching Project for {selectedCreator?.name || selectedCreator?.handle}
-              </h2>
-              <p className="text-xs text-slate-400">
-                Synthesizing architecture, telemetry, validation gates, and opening Section 2: Project OS...
-              </p>
-            </div>
-
-            {/* Step Checkpoints */}
-            <div className="space-y-2.5 text-left bg-[#0e1117]/80 rounded-2xl p-4 border border-white/[0.06]">
-              {[
-                { id: 1, text: "Binding Selected Concept Specs & Data Architecture" },
-                { id: 2, text: "Dispatching Co-Founder Portal Magic Link via SMTP" },
-                { id: 3, text: "Synthesizing AI Validation Milestones & Targets" },
-                { id: 4, text: "Opening Section 2: Project OS Dashboard Workspace" },
-              ].map((step) => {
-                const isComplete = launchStepIndex > step.id;
-                const isCurrent = launchStepIndex === step.id;
-                return (
-                  <div key={step.id} className="flex items-center gap-3 text-xs">
-                    {isComplete ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                    ) : isCurrent ? (
-                      <RefreshCw className="w-4 h-4 text-purple-400 animate-spin flex-shrink-0" />
+                {/* Partner Header */}
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-shrink-0">
+                    {selectedCreator?.avatar ? (
+                      <img
+                        src={selectedCreator.avatar}
+                        alt=""
+                        className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                      />
                     ) : (
-                      <div className="w-4 h-4 rounded-full border border-slate-700 flex-shrink-0" />
+                      <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center font-bold text-slate-300 text-sm">
+                        {creatorDisplayName.charAt(0).toUpperCase()}
+                      </div>
                     )}
-                    <span
-                      className={`font-semibold ${
-                        isComplete
-                          ? "text-emerald-300"
-                          : isCurrent
-                          ? "text-white font-bold"
-                          : "text-slate-500"
-                      }`}
-                    >
-                      {step.text}
+                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#0c0e14] flex items-center justify-center">
+                      <Rocket className="w-2 h-2 text-[#0c0e14]" />
                     </span>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        Initializing Workspace
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-500">
+                        {launchStepIndex} / 4
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-white tracking-tight truncate mt-0.5">
+                      {creatorDisplayName}
+                    </h3>
+                  </div>
+                </div>
 
-            {/* Dynamic Progress Bar */}
-            <div className="space-y-1.5">
-              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-emerald-400 transition-all duration-300 rounded-full shadow-[0_0_12px_rgba(52,211,153,0.5)]"
-                  style={{
-                    width: `${
-                      launchStepIndex === 1
-                        ? 25
-                        : launchStepIndex === 2
-                        ? 50
-                        : launchStepIndex === 3
-                        ? 75
-                        : 100
-                    }%`,
-                  }}
-                />
+                {/* Real Venture Specs */}
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Concept</span>
+                    <p className="font-semibold text-slate-200 truncate mt-0.5">
+                      {concept?.name || "Co-Launch Venture"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Terms</span>
+                    <p className="font-semibold text-emerald-400 font-mono truncate mt-0.5">
+                      50 / 50 Net Split
+                    </p>
+                  </div>
+                  <div className="col-span-2 pt-2 border-t border-white/[0.04]">
+                    <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Co-Founder Portal Link</span>
+                    <p className="font-mono text-[11px] text-slate-400 truncate mt-0.5 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                      <span>{selectedCreator?.email || selectedCreator?.email_public || "Direct Magic Link Generated"}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Linear-Style Provisioning Checklist */}
+                <div className="space-y-2 py-1">
+                  {[
+                    { id: 1, text: "Configuring product architecture & concept specs" },
+                    { id: 2, text: "Generating secure Co-Founder Portal access" },
+                    { id: 3, text: "Initializing validation telemetry & revenue milestones" },
+                    { id: 4, text: "Connecting Project OS workspace" },
+                  ].map((step) => {
+                    const isComplete = launchStepIndex > step.id;
+                    const isCurrent = launchStepIndex === step.id;
+                    return (
+                      <div
+                        key={step.id}
+                        className={`flex items-center gap-2.5 text-xs transition-colors duration-200 ${
+                          isComplete
+                            ? "text-slate-300"
+                            : isCurrent
+                            ? "text-white font-medium"
+                            : "text-slate-600"
+                        }`}
+                      >
+                        <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                          {isComplete ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          ) : isCurrent ? (
+                            <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
+                          ) : (
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
+                          )}
+                        </div>
+                        <span className="truncate">{step.text}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Segmented Micro-Progress Indicator */}
+                <div className="space-y-2 pt-1 border-t border-white/[0.06]">
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[1, 2, 3, 4].map((idx) => (
+                      <div
+                        key={idx}
+                        className={`h-1 rounded-full transition-all duration-300 ${
+                          launchStepIndex >= idx
+                            ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]"
+                            : "bg-white/[0.06]"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>
+                        {launchStepIndex === 1
+                          ? "Binding specifications..."
+                          : launchStepIndex === 2
+                          ? "Deploying founder portal..."
+                          : launchStepIndex === 3
+                          ? "Setting up validation gates..."
+                          : "Opening workspace..."}
+                      </span>
+                    </span>
+                    <span>{launchStepIndex * 25}%</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
-                <span>Phase: Co-Launch Deployment</span>
-                <span>
-                  {launchStepIndex === 1
-                    ? "25%"
-                    : launchStepIndex === 2
-                    ? "50%"
-                    : launchStepIndex === 3
-                    ? "75%"
-                    : "100% Ready"}
-                </span>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>,
         document.body
       )}

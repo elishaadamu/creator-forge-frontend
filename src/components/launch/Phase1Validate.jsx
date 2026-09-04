@@ -5,7 +5,7 @@ import {
   Loader2, AlertCircle, Copy, Video, MessageSquare, ExternalLink, Globe,
   CreditCard, Users, TrendingUp, RefreshCw, FileText, Megaphone, Target,
   Flag, ArrowRight, Layers, HelpCircle, BarChart3, Radio, ShieldCheck,
-  Palette, Smartphone, Send, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X
+  Palette, Smartphone, Send, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell
 } from 'lucide-react'
 import {
   generateValidationPlanAI,
@@ -25,7 +25,8 @@ import {
   logProjectActivity,
   recordGateDecision,
   updateCoLaunchProject,
-  getFrontendUrl
+  getFrontendUrl,
+  sendTaskReminder
 } from '../../services/opsApi'
 import {
   parseMainPricingAmount,
@@ -37,6 +38,7 @@ import {
   Phase1CampaignGenSkeleton,
   Phase1ExperimentsGenSkeleton
 } from './Section2Skeletons'
+import { getPhase1StepGuards } from '../../utils/stepGuards'
 
 export default function Phase1Validate({
   project,
@@ -539,6 +541,42 @@ export default function Phase1Validate({
     showNotification('Daily task status updated!')
   }
 
+  const [remindingTaskId, setRemindingTaskId] = useState(null)
+
+  const handleSendTaskReminder = async (task) => {
+    if (!task || !project?.id) return
+    setRemindingTaskId(task.id)
+    try {
+      const res = await sendTaskReminder(project.id, task.id)
+      if (res && res.status === 'sent') {
+        showNotification(`Reminder email sent to ${project.creatorName || 'creator'} (${res.sentTo?.join(', ') || project.creatorEmail || 'creator'})!`)
+      } else {
+        showNotification(`Reminder logged for ${project.creatorName || 'creator'}!`)
+      }
+    } catch (err) {
+      console.warn('[Phase1] Failed to dispatch task reminder:', err)
+      showNotification(`Reminder notification logged for ${project.creatorName || 'creator'}.`)
+    } finally {
+      setRemindingTaskId(null)
+    }
+  }
+
+  const handleWhatsAppNudge = (task) => {
+    const creatorName = project?.creatorName || 'Hey'
+    const portalSlug = (project?.creatorHandle || project?.creatorName || 'creator').replace(/[@ ]/g, '').toLowerCase()
+    const portalUrl = `${window.location.origin}/portal/${portalSlug}`
+    const text = `Hey ${creatorName}! Quick heads-up: our Day ${task.day || task.dayNumber || 1} co-launch mission for ${project?.productName || 'our product'} (${task.channel}) is ready to post. Here is your draft & link: ${portalUrl}. Let me know once it's live!`
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text)
+      showNotification('WhatsApp nudge message copied to clipboard!')
+    }
+    const phone = (project?.creatorPhone || '').replace(/[^0-9]/g, '')
+    if (phone) {
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank')
+    }
+  }
+
   const getTaskDraftContent = (task) => {
     if (!task) return ''
     let content = ''
@@ -843,7 +881,7 @@ export default function Phase1Validate({
     showNotification('Pre-orders cleared.')
   }
 
-  const isGatePassed = presalesRevenue >= presaleTarget
+  const isGatePassed = Boolean(presaleTarget > 0 && presalesRevenue >= presaleTarget && reservations.length > 0)
   const handleStepChange = (id) => {
     setActiveStep(id)
     onSelectStep?.(id)
@@ -861,28 +899,19 @@ export default function Phase1Validate({
     ? ((totalSignups + reservations.length) / totalTraffic) * 100
     : 0
 
-  const isStep1Done = Boolean(project?.validationPlan?.status === 'ready' || project?.validationPlan?.threshold || project?.planLocked || plan?.threshold)
-  const isStep2Done = Boolean(project?.validationCampaign?.reviewStatus === 'approved' || project?.validationCampaign?.review_status === 'approved' || project?.assetsApproved || project?.landingPageApproved)
-  const isStep3Done = Boolean(
-    project?.campaignLaunched ||
-    project?.campaignKit?.launched ||
-    project?.campaignKit?.status === 'ready' ||
-    hasCampaignGenerated ||
-    Boolean(campaignKit?.announcementPost?.trim()) ||
-    Boolean(project?.campaignKit?.announcementPost?.trim()) ||
-    (Array.isArray(campaignKit?.postingSchedule) && campaignKit.postingSchedule.length > 0) ||
-    (Array.isArray(project?.campaignKit?.postingSchedule) && project.campaignKit.postingSchedule.length > 0) ||
-    ((project?.campaignKit?.postingSchedule || []).length > 0 && (project?.campaignKit?.postingSchedule || []).every(t => t.done)) ||
-    ((project?.creatorTasks || []).length > 0 && (project?.creatorTasks || []).every(t => t.done || t.completed))
-  )
-  const isStep4Done = Boolean((project?.reservations?.length || 0) > 0 || Number(project?.currentPresales || 0) > 0)
-  const isStep5Done = Boolean((project?.gateDecisions?.length || 0) > 0 || project?.currentPhase > 1 || project?.status === 'building')
+  const {
+    isStep1Done,
+    isStep2Done,
+    isStep3Done,
+    isStep4Done,
+    isStep5Done
+  } = getPhase1StepGuards(project)
 
   return (
     <div className="space-y-5 w-full max-w-full overflow-hidden">
       {/* 5-Step Phase 1 Progress Nav */}
-      <div className="p-2 rounded-2xl bg-[#0e1117] border border-white/[0.08] flex items-center justify-between overflow-x-auto gap-2">
-        <div className="flex items-center gap-1 min-w-max">
+      <div className="p-2 rounded-2xl bg-[#0e1117] border border-white/[0.08] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none min-w-0">
           {[
             { id: 'plan', label: '1. Plan', icon: FileText, isDone: isStep1Done },
             { id: 'assets', label: '2. Assets', icon: Layout, isDone: isStep2Done },
@@ -896,7 +925,7 @@ export default function Phase1Validate({
               <button
                 key={step.id}
                 onClick={() => handleStepChange(step.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
                     : step.isDone
@@ -909,7 +938,7 @@ export default function Phase1Validate({
                 ) : (
                   <Icon className="w-3.5 h-3.5" />
                 )}
-                <span className={step.isDone ? 'line-through text-slate-400 decoration-emerald-400/80 decoration-2' : ''}>
+                <span className={step.isDone ? 'text-slate-200 font-semibold' : ''}>
                   {step.label}
                 </span>
               </button>
@@ -917,9 +946,9 @@ export default function Phase1Validate({
           })}
         </div>
 
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400 shrink-0">
-          <DollarSign className="w-3.5 h-3.5" />
-          <span>${presalesRevenue.toLocaleString()} / ${presaleTarget.toLocaleString()}</span>
+        <div className="flex items-center justify-between sm:justify-end gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400 shrink-0">
+          <span className="text-[10px] text-emerald-400/80 uppercase font-mono sm:hidden">Target Goal:</span>
+          <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" /> ${presalesRevenue.toLocaleString()} / ${presaleTarget.toLocaleString()}</span>
         </div>
       </div>
 
@@ -1686,7 +1715,7 @@ export default function Phase1Validate({
           <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/[0.08]">
             <div className="flex items-center gap-2 text-xs text-emerald-400">
               <ShieldCheck className="w-4 h-4 shrink-0" />
-              <span>Human Review: Verify assets, copy, mockups & infrastructure</span>
+              <span>Verification: Verify assets, copy, mockups & infrastructure</span>
             </div>
             <button
               onClick={() => {
@@ -1784,46 +1813,92 @@ export default function Phase1Validate({
           ) : (
             <>
               {/* Today's Action Highlight Banner */}
-              {todayTask && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-[#141824] to-[#0d0f17] border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-purple-950/30">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">
-                        🔥 Today's Mission (Day {todayTask.day})
-                      </span>
-                      <span className="text-xs font-bold text-slate-300">{todayTask.channel}</span>
+              {todayTask && (() => {
+                const campaignStartDate = project?.validationCampaign?.createdAt || project?.created_at || project?.createdAt
+                const currentCampaignDay = campaignStartDate
+                  ? Math.max(1, Math.floor((Date.now() - new Date(campaignStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                  : 1
+                const isTodayTaskOverdue = !todayTask.done && todayTask.day < currentCampaignDay
+
+                return (
+                  <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg ${
+                    isTodayTaskOverdue
+                      ? 'bg-gradient-to-r from-amber-950/50 via-[#1c1815] to-[#0d0f17] border-amber-500/40 shadow-amber-950/30'
+                      : 'bg-gradient-to-r from-purple-950/40 via-[#141824] to-[#0d0f17] border-purple-500/30 shadow-purple-950/30'
+                  }`}>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        {isTodayTaskOverdue ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 text-amber-400" />
+                            <span>⚠️ Missed Mission · Day {todayTask.day}</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">
+                            🔥 Today's Mission (Day {todayTask.day})
+                          </span>
+                        )}
+                        <span className="text-xs font-bold text-slate-300">{todayTask.channel}</span>
+                      </div>
+                      <h4 className="text-sm font-extrabold text-white">
+                        {isTodayTaskOverdue ? 'Overdue Action: ' : 'Today: '}{todayTask.title}
+                      </h4>
+                      <p className="text-[11px] text-slate-400">
+                        {todayTask.description}
+                      </p>
                     </div>
-                    <h4 className="text-sm font-extrabold text-white">
-                      Today: {todayTask.title}
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      {todayTask.description}
-                    </p>
-                  </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => setViewDraftTask(todayTask)}
-                      className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-950/50 active:scale-95 cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>View Draft</span>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                      {isTodayTaskOverdue && (
+                        <>
+                          <button
+                            onClick={() => handleSendTaskReminder(todayTask)}
+                            disabled={remindingTaskId === todayTask.id}
+                            className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-bold border border-amber-500/40 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                            title="Send email reminder to creator"
+                          >
+                            {remindingTaskId === todayTask.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Bell className="w-3.5 h-3.5 text-amber-400" />
+                            )}
+                            <span>{remindingTaskId === todayTask.id ? 'Sending...' : 'Remind Creator'}</span>
+                          </button>
 
-                    <button
-                      onClick={() => handleToggleScheduleTask(todayTask.id)}
-                      className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors border cursor-pointer ${
-                        todayTask.done
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                          : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
-                      }`}
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>{todayTask.done ? 'Completed' : 'Mark Done'}</span>
-                    </button>
+                          <button
+                            onClick={() => handleWhatsAppNudge(todayTask)}
+                            className="px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-xs font-bold border border-emerald-500/30 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                            title="Copy WhatsApp Nudge message"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>WhatsApp Nudge</span>
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        onClick={() => setViewDraftTask(todayTask)}
+                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-950/50 active:scale-95 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>View Draft</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleScheduleTask(todayTask.id)}
+                        className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors border cursor-pointer ${
+                          todayTask.done
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{todayTask.done ? 'Completed' : 'Mark Done'}</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )
+              })()}
 
               {/* Subtabs Navigation */}
               <div className="flex items-center gap-1.5 border-b border-white/[0.08] pb-3 overflow-x-auto">
@@ -1870,65 +1945,112 @@ export default function Phase1Validate({
                   </div>
 
                   <div className="space-y-2.5">
-                    {(campaignKit?.postingSchedule || []).map((task) => (
-                  <div
-                    key={task.id}
-                    className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                      task.isToday
-                        ? 'bg-[#141824] border-purple-500/40 shadow-sm shadow-purple-950/40'
-                        : task.done
-                        ? 'bg-[#0e1117] border-white/[0.04] opacity-80'
-                        : 'bg-[#11141c] border-white/[0.06]'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <button
-                        onClick={() => handleToggleScheduleTask(task.id)}
-                        className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
-                          task.done
-                            ? 'bg-emerald-500 border-emerald-400 text-slate-950'
-                            : 'border-white/[0.2] bg-white/[0.02] hover:border-purple-400'
-                        }`}
-                      >
-                        {task.done && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                      </button>
+                    {(() => {
+                      const campaignStartDate = project?.validationCampaign?.createdAt || project?.created_at || project?.createdAt
+                      const currentCampaignDay = campaignStartDate
+                        ? Math.max(1, Math.floor((Date.now() - new Date(campaignStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                        : 1
 
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                            task.isToday
-                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                              : task.done
-                              ? 'bg-emerald-500/10 text-emerald-400'
-                              : 'bg-white/[0.06] text-slate-400'
-                          }`}>
-                            {task.isToday ? 'Today · Day ' + task.day : 'Day ' + task.day}
-                          </span>
-                          <span className="text-[10px] font-bold text-slate-400 font-mono">
-                            {task.channel}
-                          </span>
-                        </div>
-                        <h5 className={`text-xs font-bold ${task.done ? 'line-through text-slate-400' : 'text-white'}`}>
-                          {task.title}
-                        </h5>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">
-                          {task.description}
-                        </p>
-                      </div>
-                    </div>
+                      return (campaignKit?.postingSchedule || []).map((task) => {
+                        const isOverdue = !task.done && task.day < currentCampaignDay
 
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                      <button
-                        onClick={() => setViewDraftTask(task)}
-                        className="px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 text-xs font-bold border border-purple-500/30 flex items-center gap-1 transition-colors"
-                      >
-                        <Eye className="w-3 h-3" />
-                        <span>View Draft</span>
-                      </button>
-                    </div>
+                        return (
+                          <div
+                            key={task.id}
+                            className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                              isOverdue
+                                ? 'bg-amber-950/20 border-amber-500/40 shadow-sm shadow-amber-950/30'
+                                : task.isToday
+                                ? 'bg-[#141824] border-purple-500/40 shadow-sm shadow-purple-950/40'
+                                : task.done
+                                ? 'bg-[#0e1117] border-white/[0.04] opacity-80'
+                                : 'bg-[#11141c] border-white/[0.06]'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <button
+                                onClick={() => handleToggleScheduleTask(task.id)}
+                                className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                                  task.done
+                                    ? 'bg-emerald-500 border-emerald-400 text-slate-950'
+                                    : 'border-white/[0.2] bg-white/[0.02] hover:border-purple-400'
+                                }`}
+                              >
+                                {task.done && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                              </button>
+
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {isOverdue ? (
+                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                                      <AlertCircle className="w-3 h-3 text-amber-400" />
+                                      <span>Missed · Day {task.day}</span>
+                                    </span>
+                                  ) : (
+                                    <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                      task.isToday
+                                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                                        : task.done
+                                        ? 'bg-emerald-500/10 text-emerald-400'
+                                        : 'bg-white/[0.06] text-slate-400'
+                                    }`}>
+                                      {task.isToday ? 'Today · Day ' + task.day : 'Day ' + task.day}
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] font-bold text-slate-400 font-mono">
+                                    {task.channel}
+                                  </span>
+                                </div>
+                                <h5 className={`text-xs font-bold ${task.done ? 'line-through text-slate-400' : 'text-white'}`}>
+                                  {task.title}
+                                </h5>
+                                <p className="text-[11px] text-slate-400 leading-relaxed">
+                                  {task.description}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center flex-wrap">
+                              {isOverdue && (
+                                <>
+                                  <button
+                                    onClick={() => handleSendTaskReminder(task)}
+                                    disabled={remindingTaskId === task.id}
+                                    className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-bold border border-amber-500/40 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                                    title="Send email reminder to creator"
+                                  >
+                                    {remindingTaskId === task.id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Bell className="w-3 h-3 text-amber-400" />
+                                    )}
+                                    <span>{remindingTaskId === task.id ? 'Sending...' : 'Remind Creator'}</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleWhatsAppNudge(task)}
+                                    className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-xs font-bold border border-emerald-500/30 flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                                    title="Copy WhatsApp Nudge message"
+                                  >
+                                    <MessageSquare className="w-3 h-3 text-emerald-400" />
+                                    <span className="hidden sm:inline">WhatsApp Nudge</span>
+                                  </button>
+                                </>
+                              )}
+
+                              <button
+                                onClick={() => setViewDraftTask(task)}
+                                className="px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 text-xs font-bold border border-purple-500/30 flex items-center gap-1 transition-colors"
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>View Draft</span>
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })
+                    })()}
                   </div>
-                ))}
-              </div>
             </div>
           )}
 
@@ -2590,11 +2712,11 @@ export default function Phase1Validate({
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>5. Validation Gate Checkpoint</span>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase border ${
-                  isGatePassed || presalesRevenue >= 5000
+                  isGatePassed
                     ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                     : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                 }`}>
-                  Result: {isGatePassed || presalesRevenue >= 5000 ? 'PASS' : 'TEST AGAIN'}
+                  Result: {isGatePassed ? 'PASS' : 'TEST AGAIN'}
                 </span>
               </h3>
               <p className="text-xs text-slate-400">
@@ -2602,9 +2724,9 @@ export default function Phase1Validate({
               </p>
             </div>
             <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-              isGatePassed || presalesRevenue >= 5000 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-extrabold' : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+              isGatePassed ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-extrabold' : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
             }`}>
-              Gate Status: {isGatePassed || presalesRevenue >= 5000 ? 'PASS (Ready for MVP Build)' : `${presaleTarget > 0 ? Math.round((presalesRevenue/presaleTarget)*100) : 0}% of Goal`}
+              Gate Status: {isGatePassed ? 'PASS (Ready for MVP Build)' : `${presaleTarget > 0 ? Math.round((presalesRevenue/presaleTarget)*100) : 0}% of Goal`}
             </span>
           </div>
 
@@ -2638,13 +2760,13 @@ export default function Phase1Validate({
               </div>
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
                 <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Result</span>
-                <span className="text-base font-extrabold text-emerald-400 block">{isGatePassed || presalesRevenue >= 5000 ? 'PASS' : 'IN PROGRESS'}</span>
-                <span className="text-[10px] text-emerald-400/80">{isGatePassed || presalesRevenue >= 5000 ? 'Demand Proven' : 'Awaiting Target'}</span>
+                <span className="text-base font-extrabold text-emerald-400 block">{isGatePassed ? 'PASS' : 'IN PROGRESS'}</span>
+                <span className="text-[10px] text-emerald-400/80">{isGatePassed ? 'Demand Proven' : 'Awaiting Target'}</span>
               </div>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed bg-[#0a0c10]/60 p-3 rounded-xl border border-white/[0.04]">
-              {isGatePassed || presalesRevenue >= 5000 ? (
+              {isGatePassed ? (
                 <span>
                   🔥 <strong>Validation Successful:</strong> The customer willingness-to-pay threshold of ${presaleTarget.toLocaleString()} was achieved with strong audience demand and an estimated {dynamicConversionRate.toFixed(1)}% conversion rate. The AI engine recommends immediately advancing to <strong>Phase 2: Build MVP</strong>.
                 </span>

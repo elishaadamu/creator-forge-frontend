@@ -402,7 +402,7 @@ export default function CreatorPortal({ portalId }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 text-xs pt-2">
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
               <span className="text-[10px] text-slate-400 uppercase font-bold block">Your 50% Profit Share</span>
               <span className="text-sm font-extrabold text-emerald-400 mt-0.5 block">${creatorRevenueShare.toLocaleString()}</span>
@@ -419,7 +419,7 @@ export default function CreatorPortal({ portalId }) {
               <span className="text-[10px] text-slate-400 uppercase font-bold block">Sprint Tasks</span>
               <span className="text-sm font-extrabold text-purple-300 mt-0.5 block">{completedTasksCount} / {totalTasksCount} done</span>
             </div>
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+            <div className="col-span-2 sm:col-span-1 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
               <span className="text-[10px] text-slate-400 uppercase font-bold block">Conversion Funnel</span>
               <span className="text-sm font-extrabold text-white mt-0.5 block">{Number(project.conversionRate || 0).toFixed(1)}%</span>
             </div>
@@ -427,7 +427,7 @@ export default function CreatorPortal({ portalId }) {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3 overflow-x-auto">
+        <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3 overflow-x-auto scrollbar-none">
           {[
             { id: 'tasks', label: 'Daily Launch Checklist', icon: CheckSquare, count: `${completedTasksCount}/${totalTasksCount}` },
             { id: 'scripts', label: 'Copyable Launch Content', icon: Video },
@@ -441,7 +441,7 @@ export default function CreatorPortal({ portalId }) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   isActive
                     ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50'
                     : 'text-slate-400 hover:text-white bg-[#0e1117] border border-white/[0.06]'
@@ -517,48 +517,65 @@ export default function CreatorPortal({ portalId }) {
             </div>
 
             <div className="space-y-2.5">
-              {schedule.map(item => {
-                const isDone = item.done || item.completed
-                return (
-                  <div
-                    key={item.id}
-                    className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
-                      item.isToday
-                        ? 'bg-[#141824] border-purple-500/40 shadow-sm shadow-purple-950/40'
-                        : isDone
-                        ? 'bg-emerald-950/10 border-emerald-500/30 text-slate-400'
-                        : 'bg-[#141720] border-white/[0.06] hover:border-purple-500/40 text-white'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <button
-                        onClick={() => toggleChecklist(item.id)}
-                        className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
-                          isDone ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'border-slate-600 bg-transparent'
-                        }`}
-                      >
-                        {isDone && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                      </button>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                            item.isToday
-                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                              : isDone
-                              ? 'bg-emerald-500/10 text-emerald-400'
-                              : 'bg-white/[0.06] text-slate-400'
-                          }`}>
-                            {item.day ? `Day ${item.day}` : 'Task'}
-                          </span>
-                          {item.channel && (
-                            <span className="text-[10px] font-bold text-slate-400 font-mono">
-                              {item.channel}
-                            </span>
-                          )}
-                        </div>
-                        <h5 className={`text-xs font-bold ${isDone ? 'line-through text-slate-400' : 'text-white'}`}>
-                          {item.title || item.text}
-                        </h5>
+              {(() => {
+                const campaignStartDate = project?.validationCampaign?.createdAt || project?.created_at || project?.createdAt
+                const currentCampaignDay = campaignStartDate
+                  ? Math.max(1, Math.floor((Date.now() - new Date(campaignStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                  : 1
+
+                return schedule.map(item => {
+                  const isDone = item.done || item.completed
+                  const isOverdue = !isDone && item.day && item.day < currentCampaignDay
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
+                        isOverdue
+                          ? 'bg-amber-950/20 border-amber-500/40 shadow-sm shadow-amber-950/30'
+                          : item.isToday
+                          ? 'bg-[#141824] border-purple-500/40 shadow-sm shadow-purple-950/40'
+                          : isDone
+                          ? 'bg-emerald-950/10 border-emerald-500/30 text-slate-400'
+                          : 'bg-[#141720] border-white/[0.06] hover:border-purple-500/40 text-white'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <button
+                          onClick={() => toggleChecklist(item.id)}
+                          className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                            isDone ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'border-slate-600 bg-transparent'
+                          }`}
+                        >
+                          {isDone && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        </button>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {isOverdue ? (
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3 text-amber-400" />
+                                <span>Missed · Ready to Post</span>
+                              </span>
+                            ) : (
+                              <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                item.isToday
+                                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                                  : isDone
+                                  ? 'bg-emerald-500/10 text-emerald-400'
+                                  : 'bg-white/[0.06] text-slate-400'
+                              }`}>
+                                {item.day ? `Day ${item.day}` : 'Task'}
+                              </span>
+                            )}
+                            {item.channel && (
+                              <span className="text-[10px] font-bold text-slate-400 font-mono">
+                                {item.channel}
+                              </span>
+                            )}
+                          </div>
+                          <h5 className={`text-xs font-bold ${isDone ? 'line-through text-slate-400' : 'text-white'}`}>
+                            {item.title || item.text}
+                          </h5>
                         {item.description && (
                           <p className="text-[11px] text-slate-400 leading-relaxed">
                             {item.description}
@@ -578,7 +595,8 @@ export default function CreatorPortal({ portalId }) {
                     </div>
                   </div>
                 )
-              })}
+              })
+            })()}
             </div>
           </div>
         )}

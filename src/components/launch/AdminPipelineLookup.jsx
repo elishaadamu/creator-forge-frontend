@@ -26,6 +26,8 @@ import {
   Radio,
   Zap,
   CheckCheck,
+  Target,
+  ShieldCheck,
 } from 'lucide-react'
 
 export default function AdminPipelineLookup({
@@ -95,6 +97,58 @@ export default function AdminPipelineLookup({
     } catch (err) {
       onNotify?.('warning', 'Saved Locally', `Email updated in current session: ${trimmed}`, 3500)
       setEditingEmailId(null)
+    }
+  }
+
+  const [hunterLoadingId, setHunterLoadingId] = useState(null)
+  const [hunterStatusMap, setHunterStatusMap] = useState({})
+
+  const handleHunterFindEmail = async (creator, e) => {
+    if (e) e.stopPropagation()
+    setHunterLoadingId(creator.id)
+    try {
+      const { findEmailWithHunter } = await import('../../services/opsApi')
+      const res = await findEmailWithHunter({
+        creator_id: creator.id,
+        full_name: creator.display_name || creator.name,
+        auto_save: true,
+      })
+      if (res && res.success && res.email) {
+        creator.email = res.email
+        creator.email_public = res.email
+        setHunterStatusMap(prev => ({ ...prev, [creator.id]: res }))
+        onNotify?.('success', 'Hunter.io Email Found!', `Found: ${res.email} (${res.score}% confidence)`, 4500)
+      } else {
+        onNotify?.('warning', 'Hunter.io Search', res?.error || 'No business email found on Hunter.io.', 3500)
+      }
+    } catch (err) {
+      onNotify?.('error', 'Hunter.io Error', err.message || 'Failed to search Hunter.', 3500)
+    } finally {
+      setHunterLoadingId(null)
+    }
+  }
+
+  const handleHunterVerifyEmail = async (creator, e) => {
+    if (e) e.stopPropagation()
+    const email = (creator.email || creator.email_public || '').trim()
+    if (!email) return
+    setHunterLoadingId(creator.id)
+    try {
+      const { verifyEmailWithHunter } = await import('../../services/opsApi')
+      const res = await verifyEmailWithHunter({ email, creator_id: creator.id, auto_save: true })
+      if (res && res.success) {
+        setHunterStatusMap(prev => ({ ...prev, [creator.id]: res }))
+        onNotify?.(
+          res.deliverable ? 'success' : 'warning',
+          `Hunter.io: ${res.deliverable ? 'Deliverable ✓' : 'Risky'}`,
+          `Score: ${res.score}% | Status: ${res.status} | SMTP: ${res.smtp_check ? 'Passed' : 'Failed'}`,
+          4500
+        )
+      }
+    } catch (err) {
+      onNotify?.('error', 'Hunter Verification Error', err.message, 3500)
+    } finally {
+      setHunterLoadingId(null)
     }
   }
 
@@ -590,32 +644,68 @@ export default function AdminPipelineLookup({
                               {creator.handle}
                             </span>
 
-                            {/* Contact Email Chip */}
+                            {/* Contact Email Chip & Hunter.io Actions */}
                             {creator.email || creator.email_public ? (
-                              <button
-                                onClick={(e) => handleCopyEmail(e, creator.email || creator.email_public, creator.id)}
-                                className="group/email flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.06] transition-colors cursor-pointer"
-                                title="Click to copy email address"
-                              >
-                                <Mail className="w-3 h-3 text-purple-400" />
-                                <span>{creator.email || creator.email_public}</span>
-                                {copiedEmailId === creator.id ? (
-                                  <Check className="w-3 h-3 text-emerald-400" />
-                                ) : (
-                                  <Copy className="w-3 h-3 opacity-0 group-hover/email:opacity-100 transition-opacity text-slate-400" />
-                                )}
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={(e) => handleCopyEmail(e, creator.email || creator.email_public, creator.id)}
+                                  className="group/email flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.06] transition-colors cursor-pointer"
+                                  title="Click to copy email address"
+                                >
+                                  <Mail className="w-3 h-3 text-purple-400" />
+                                  <span>{creator.email || creator.email_public}</span>
+                                  {copiedEmailId === creator.id ? (
+                                    <Check className="w-3 h-3 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="w-3 h-3 opacity-0 group-hover/email:opacity-100 transition-opacity text-slate-400" />
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleHunterVerifyEmail(creator, e)}
+                                  disabled={hunterLoadingId === creator.id}
+                                  className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
+                                  title="Verify deliverability via Hunter.io v2"
+                                >
+                                  {hunterLoadingId === creator.id ? (
+                                    <RefreshCw className="w-2.5 h-2.5 text-emerald-400 animate-spin" />
+                                  ) : (
+                                    <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
+                                  )}
+                                  <span>
+                                    {hunterStatusMap[creator.id]?.score
+                                      ? `${hunterStatusMap[creator.id].score}% Valid`
+                                      : 'Verify (Hunter)'}
+                                  </span>
+                                </button>
+                              </div>
                             ) : (
-                              <button
-                                onClick={() => {
-                                  setEditingEmailId(creator.id)
-                                  setInlineEmailValue('')
-                                }}
-                                className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/25 hover:bg-rose-500/20 transition-all cursor-pointer"
-                              >
-                                <Plus className="w-3 h-3" />
-                                <span>Add Email</span>
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleHunterFindEmail(creator, e)}
+                                  disabled={hunterLoadingId === creator.id}
+                                  className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-gradient-to-r from-amber-500/15 to-orange-500/15 text-amber-300 border border-amber-500/30 hover:from-amber-500/25 hover:to-orange-500/25 transition-all cursor-pointer disabled:opacity-50"
+                                  title="Find corporate email via Hunter.io API"
+                                >
+                                  {hunterLoadingId === creator.id ? (
+                                    <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
+                                  ) : (
+                                    <Target className="w-3 h-3 text-amber-400" />
+                                  )}
+                                  <span>Hunter.io Finder</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingEmailId(creator.id)
+                                    setInlineEmailValue('')
+                                  }}
+                                  className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-white/[0.04] text-slate-300 border border-white/[0.08] hover:bg-white/[0.08] transition-all cursor-pointer"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span>Manual</span>
+                                </button>
+                              </div>
                             )}
                           </div>
 
