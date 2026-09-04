@@ -366,3 +366,72 @@
     display: none !important;
   }
 }
+
+/* Radar Scanner & Cycling Scouting Animations */
+@keyframes radar-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes radar-ping-slow {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes scan-beam-vertical {
+  0% {
+    top: 0%;
+    opacity: 0.8;
+  }
+  50% {
+    top: 100%;
+    opacity: 0.3;
+  }
+  100% {
+    top: 0%;
+    opacity: 0.8;
+  }
+}
+
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-radar-sweep {
+  animation: radar-sweep 2.8s linear infinite;
+}
+
+.animate-radar-ping-slow {
+  animation: radar-ping-slow 2.2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+.animate-scan-beam-vertical {
+  animation: scan-beam-vertical 2.4s ease-in-out infinite;
+}
+
+.animate-gradient-flow {
+  background-size: 200% 200%;
+  animation: gradient-flow 3s ease infinite;
+}
+

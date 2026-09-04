@@ -55,6 +55,8 @@ import CreatorFollowUpCRM from "./CreatorFollowUpCRM";
 import ActionNotificationToast from "../ui/ActionNotificationToast";
 import ConfirmationModal from "../ui/ConfirmationModal";
 import FormattedMarkdownBody from "./FormattedMarkdownBody";
+import ScoutingCyclingAnimation from "./ScoutingCyclingAnimation";
+import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from "../../utils/expiringStorage";
 
 // Category-tailored high-res visual mockup screenshots for creator proposals
 export const CONCEPT_CATEGORY_IMAGES = {
@@ -103,7 +105,7 @@ export default function AcquisitionEngine({
       const stepParam = Number(searchParams?.get('step'));
       if (stepParam >= 1 && stepParam <= 6) return stepParam;
       const savedStep = Number(
-        localStorage.getItem("forge_launch_acquisition_step"),
+        getExpiringItem("forge_launch_acquisition_step"),
       );
       if (savedStep >= 1 && savedStep <= 6) return savedStep;
       return 1;
@@ -222,7 +224,7 @@ export default function AcquisitionEngine({
   const [creators, setCreators] = useState(() => {
     const deletedIds = (() => {
       try {
-        return JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
+        return getExpiringItem("forge_deleted_creator_ids", []);
       } catch {
         return [];
       }
@@ -233,10 +235,9 @@ export default function AcquisitionEngine({
       list = initialCreators;
     } else {
       try {
-        const saved = localStorage.getItem("forge_launch_discovered_creators");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
+        const saved = getExpiringItem("forge_launch_discovered_creators");
+        if (saved && Array.isArray(saved) && saved.length > 0) {
+          list = saved;
         }
       } catch {}
     }
@@ -259,10 +260,8 @@ export default function AcquisitionEngine({
       const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       const creatorParam = searchParams?.get('creator') || searchParams?.get('creatorId');
       if (creatorParam) return creatorParam;
-      const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
-      const savedCreators = JSON.parse(
-        localStorage.getItem("forge_launch_discovered_creators") || "[]",
-      );
+      const deletedIds = getExpiringItem("forge_deleted_creator_ids", []);
+      const savedCreators = getExpiringItem("forge_launch_discovered_creators", []);
       const candidates = (initialCreators && initialCreators.length > 0 ? initialCreators : savedCreators).filter(
         (c) => !deletedIds.includes(c.id) && !deletedIds.includes((c.handle || "").replace(/^@/, "").toLowerCase())
       );
@@ -282,7 +281,7 @@ export default function AcquisitionEngine({
   // Synchronize active step and selected creator across devices
   useEffect(() => {
     try {
-      localStorage.setItem("forge_launch_acquisition_step", String(activeStep));
+      setExpiringItem("forge_launch_acquisition_step", String(activeStep), ONE_HOUR_MS);
       import("../../services/opsApi").then(({ updateWorkflowState }) => {
         updateWorkflowState({ active_step: activeStep, selected_creator_id: selectedCreatorId }).catch(() => {});
       });
@@ -333,10 +332,10 @@ export default function AcquisitionEngine({
     return () => window.removeEventListener('popstate', handleUrlSync);
   }, []);
 
-  // Keep discovered creators persisted to localStorage so they never vanish on refresh
+  // Keep discovered creators persisted to expiring storage (1 hour TTL) so they never vanish on refresh
   useEffect(() => {
     try {
-      const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
+      const deletedIds = getExpiringItem("forge_deleted_creator_ids", []);
       const cleanList = (creators || []).filter((c) => {
         const cleanHandle = (c.handle || "").toLowerCase().replace(/^@/, "");
         return (
@@ -347,16 +346,17 @@ export default function AcquisitionEngine({
       });
 
       if (cleanList.length > 0) {
-        localStorage.setItem(
+        setExpiringItem(
           "forge_launch_discovered_creators",
-          JSON.stringify(cleanList),
+          cleanList,
+          ONE_HOUR_MS,
         );
       } else {
-        localStorage.removeItem("forge_launch_discovered_creators");
+        removeExpiringItem("forge_launch_discovered_creators");
       }
     } catch (err) {
       console.warn(
-        "[AcquisitionEngine] Failed to save creators to localStorage:",
+        "[AcquisitionEngine] Failed to save creators to storage:",
         err,
       );
     }
@@ -481,7 +481,7 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_launch_creator_stage_map");
       localStorage.removeItem("forge_deleted_creator_ids");
       localStorage.removeItem("forge_last_deleted_timestamp");
-      localStorage.setItem("forge_launch_active_section", "section1");
+      localStorage.removeItem("forge_launch_active_section");
       onResetAll?.();
 
       try {
@@ -489,13 +489,7 @@ export default function AcquisitionEngine({
         const { resetWorkflowState } = await import("../../services/opsApi");
         await resetWorkflowState().catch(() => {});
         try {
-          const url = new URL(window.location.href);
-          url.searchParams.set("section", "section1");
-          url.searchParams.set("step", "1");
-          url.searchParams.delete("project");
-          url.searchParams.delete("creator");
-          url.searchParams.delete("creatorId");
-          window.history.replaceState({}, "", url.toString());
+          window.history.replaceState({}, "", "/launch");
         } catch (e) {}
       } catch (err) {
         console.warn("Backend delete all creators failed or offline:", err);
@@ -560,7 +554,7 @@ export default function AcquisitionEngine({
         return c;
       });
       try {
-        localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(updated));
+        setExpiringItem("forge_launch_discovered_creators", updated, ONE_HOUR_MS);
       } catch (err) {}
       return updated;
     });
@@ -1229,7 +1223,7 @@ export default function AcquisitionEngine({
         return;
       }
 
-      if (res && res.creators && res.creators.length > 0) {
+      if (res && Array.isArray(res.creators) && res.creators.length > 0) {
         const enrichedCreators = res.creators.map((c) => {
           const bioEmailMatch = (c.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
           const autoEmail = c.email || c.email_public || (bioEmailMatch ? bioEmailMatch[0].trim() : "");
@@ -2454,8 +2448,7 @@ export default function AcquisitionEngine({
   // ── Real IMAP Inbox Poller & Reply Sync State ───────────────────────────────
   const [realThreads, setRealThreads] = useState(() => {
     try {
-      const saved = localStorage.getItem("forge_launch_real_threads");
-      return saved ? JSON.parse(saved) : [];
+      return getExpiringItem("forge_launch_real_threads", []);
     } catch {
       return [];
     }
@@ -2799,32 +2792,28 @@ export default function AcquisitionEngine({
   // ── Step 6: Opportunity Pitch State & Human-In-The-Loop Handlers ─────────
   const [pitchSentMap, setPitchSentMap] = useState(() => {
     try {
-      const saved = localStorage.getItem("forge_launch_pitch_sent_map");
-      return saved ? JSON.parse(saved) : {};
+      return getExpiringItem("forge_launch_pitch_sent_map", {});
     } catch {
       return {};
     }
   });
   const [persuasionSentMap, setPersuasionSentMap] = useState(() => {
     try {
-      const saved = localStorage.getItem("forge_launch_persuasion_sent_map");
-      return saved ? JSON.parse(saved) : {};
+      return getExpiringItem("forge_launch_persuasion_sent_map", {});
     } catch {
       return {};
     }
   });
   const [answerSentMap, setAnswerSentMap] = useState(() => {
     try {
-      const saved = localStorage.getItem("forge_launch_answer_sent_map");
-      return saved ? JSON.parse(saved) : {};
+      return getExpiringItem("forge_launch_answer_sent_map", {});
     } catch {
       return {};
     }
   });
   const [aiDetectedChoiceMap, setAiDetectedChoiceMap] = useState(() => {
     try {
-      const saved = localStorage.getItem("forge_launch_ai_choice_map");
-      return saved ? JSON.parse(saved) : {};
+      return getExpiringItem("forge_launch_ai_choice_map", {});
     } catch {
       return {};
     }
@@ -3083,7 +3072,7 @@ export default function AcquisitionEngine({
 
     // 3. Check persistent localStorage stage map
     try {
-      const stageMap = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+      const stageMap = getExpiringItem("forge_creator_stage_map", {});
       if (stageMap[c.id]?.step >= 5 || (c.handle && stageMap[c.handle.replace(/^@/, "").toLowerCase()]?.step >= 5)) {
         return true;
       }
@@ -3170,9 +3159,10 @@ export default function AcquisitionEngine({
   useEffect(() => {
     if (!isInitialLoadDone.current) return;
     try {
-      localStorage.setItem(
+      setExpiringItem(
         "forge_launch_pitch_sent_map",
-        JSON.stringify(pitchSentMap),
+        pitchSentMap,
+        ONE_HOUR_MS,
       );
       if (pitchSentMap && Object.keys(pitchSentMap).length > 0) {
         import("../../services/opsApi").then(({ updateWorkflowState }) => {
@@ -3185,9 +3175,10 @@ export default function AcquisitionEngine({
   useEffect(() => {
     if (!isInitialLoadDone.current) return;
     try {
-      localStorage.setItem(
+      setExpiringItem(
         "forge_launch_persuasion_sent_map",
-        JSON.stringify(persuasionSentMap),
+        persuasionSentMap,
+        ONE_HOUR_MS,
       );
       if (persuasionSentMap && Object.keys(persuasionSentMap).length > 0) {
         import("../../services/opsApi").then(({ updateWorkflowState }) => {
@@ -3200,9 +3191,10 @@ export default function AcquisitionEngine({
   useEffect(() => {
     if (!isInitialLoadDone.current) return;
     try {
-      localStorage.setItem(
+      setExpiringItem(
         "forge_launch_answer_sent_map",
-        JSON.stringify(answerSentMap),
+        answerSentMap,
+        ONE_HOUR_MS,
       );
       if (answerSentMap && Object.keys(answerSentMap).length > 0) {
         import("../../services/opsApi").then(({ updateWorkflowState }) => {
@@ -3215,9 +3207,10 @@ export default function AcquisitionEngine({
   useEffect(() => {
     if (!isInitialLoadDone.current) return;
     try {
-      localStorage.setItem(
+      setExpiringItem(
         "forge_launch_ai_choice_map",
-        JSON.stringify(aiDetectedChoiceMap),
+        aiDetectedChoiceMap,
+        ONE_HOUR_MS,
       );
       if (aiDetectedChoiceMap && Object.keys(aiDetectedChoiceMap).length > 0) {
         import("../../services/opsApi").then(({ updateWorkflowState }) => {
@@ -3391,9 +3384,10 @@ export default function AcquisitionEngine({
       };
       setPitchSentMap(updatedMap);
       try {
-        localStorage.setItem(
+        setExpiringItem(
           "forge_launch_pitch_sent_map",
-          JSON.stringify(updatedMap),
+          updatedMap,
+          ONE_HOUR_MS,
         );
       } catch {}
 
@@ -3524,7 +3518,7 @@ export default function AcquisitionEngine({
 
       // Automatically advance to Step 6
       try {
-        const map = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+        const map = getExpiringItem("forge_creator_stage_map", {});
         map[creator.id] = {
           step: 6,
           stepNumber: 6,
@@ -3534,7 +3528,7 @@ export default function AcquisitionEngine({
         if (creator.handle) {
           map[(creator.handle || "").replace(/^@/, "").toLowerCase()] = map[creator.id];
         }
-        localStorage.setItem("forge_creator_stage_map", JSON.stringify(map));
+        setExpiringItem("forge_creator_stage_map", map, ONE_HOUR_MS);
       } catch (e) {}
 
       setActiveStep(6);
@@ -3556,7 +3550,7 @@ export default function AcquisitionEngine({
     if (!creator) return;
     await handleSendOpportunityPitch(creator);
     try {
-      const map = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+      const map = getExpiringItem("forge_creator_stage_map", {});
       map[creator.id] = {
         step: 6,
         stepNumber: 6,
@@ -3566,7 +3560,7 @@ export default function AcquisitionEngine({
       if (creator.handle) {
         map[(creator.handle || "").replace(/^@/, "").toLowerCase()] = map[creator.id];
       }
-      localStorage.setItem("forge_creator_stage_map", JSON.stringify(map));
+      setExpiringItem("forge_creator_stage_map", map, ONE_HOUR_MS);
     } catch (e) {}
     setActiveStep(6);
   };
@@ -3671,7 +3665,7 @@ export default function AcquisitionEngine({
       };
       setPersuasionSentMap(updatedMap);
       try {
-        localStorage.setItem("forge_launch_persuasion_sent_map", JSON.stringify(updatedMap));
+        setExpiringItem("forge_launch_persuasion_sent_map", updatedMap, ONE_HOUR_MS);
       } catch {}
       notify(
         "info",
@@ -3756,7 +3750,7 @@ export default function AcquisitionEngine({
 
     // 2. Persist to stage map
     try {
-      const map = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+      const map = getExpiringItem("forge_creator_stage_map", {});
       map[targetId] = {
         step: 5,
         stepNumber: 5,
@@ -3766,7 +3760,7 @@ export default function AcquisitionEngine({
       if (target?.handle) {
         map[target.handle.replace(/^@/, "").toLowerCase()] = map[targetId];
       }
-      localStorage.setItem("forge_creator_stage_map", JSON.stringify(map));
+      setExpiringItem("forge_creator_stage_map", map, ONE_HOUR_MS);
     } catch (e) {}
 
     // 3. Persist to database (source of truth)
@@ -4155,7 +4149,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     });
 
     try {
-      const map = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+      const map = getExpiringItem("forge_creator_stage_map", {});
       map[selectedCreator.id] = {
         step: "section2",
         stepNumber: 7,
@@ -4165,7 +4159,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       if (selectedCreator.handle) {
         map[(selectedCreator.handle || "").replace(/^@/, "").toLowerCase()] = map[selectedCreator.id];
       }
-      localStorage.setItem("forge_creator_stage_map", JSON.stringify(map));
+      setExpiringItem("forge_creator_stage_map", map, ONE_HOUR_MS);
 
       // Persist stage map & partnered status to database for instant cross-device synchronization
       const { updateWorkflowState, updateCreatorDetails } = await import("../../services/opsApi");
@@ -4217,7 +4211,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       const draftEmail = tempEmailValue.trim();
       const targetId = editingEmailCreatorId;
       await saveEditEmail(targetId, null, draftEmail);
-      activeList = creators.map((c) => {
+      activeList = (Array.isArray(creators) ? creators : []).map((c) => {
         const cleanTarget = String(targetId).toLowerCase().replace(/^@/, "");
         const cleanHandle = String(c.handle || "").toLowerCase().replace(/^@/, "");
         if (c.id === targetId || (cleanTarget && cleanHandle && cleanTarget === cleanHandle)) {
@@ -4452,9 +4446,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
   useEffect(() => {
     try {
       if (realThreads && realThreads.length > 0) {
-        localStorage.setItem(
+        setExpiringItem(
           "forge_launch_real_threads",
-          JSON.stringify(realThreads),
+          realThreads,
+          ONE_HOUR_MS,
         );
       }
     } catch (e) {}
@@ -4895,7 +4890,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       };
       setPitchSentMap(updatedMap);
       try {
-        localStorage.setItem("forge_launch_pitch_sent_map", JSON.stringify(updatedMap));
+        setExpiringItem("forge_launch_pitch_sent_map", updatedMap, ONE_HOUR_MS);
       } catch {}
       notify(
         "info",
@@ -5042,7 +5037,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       };
       setAnswerSentMap(updatedMap);
       try {
-        localStorage.setItem("forge_launch_answer_sent_map", JSON.stringify(updatedMap));
+        setExpiringItem("forge_launch_answer_sent_map", updatedMap, ONE_HOUR_MS);
       } catch {}
       notify(
         "info",
@@ -5981,16 +5976,28 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             </div>
           </div>
 
-          {/* Real-time Status Terminal Log */}
-          {discoveryLog && (
+          {/* Real-time Status Terminal Log (displayed when not actively scouting or upon completion) */}
+          {discoveryLog && !discovering && (
             <div className="p-4 rounded-xl bg-black/60 border border-indigo-500/30 text-xs font-mono text-indigo-300 flex items-start gap-2 shadow-inner">
               <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1 flex-shrink-0 animate-ping" />
               <div className="flex-1 leading-relaxed">{discoveryLog}</div>
             </div>
           )}
 
-          {/* Discovered Creators Grid */}
-          {creators.length === 0 ? (
+          {/* Cycling Radar & Telemetry Scouting Animation (Active during autonomous discovery) */}
+          {discovering && (
+            <ScoutingCyclingAnimation
+              targetCount={creatorsBatchCount || 3}
+              foundCount={creators.length}
+              niches={niches.length > 0 ? niches : ["Tech", "Software", "SaaS"]}
+              selectedPlatforms={selectedPlatforms}
+              onStopScouting={handleStopDiscovery}
+              compact={creators.length > 0}
+            />
+          )}
+
+          {/* Discovered Creators Grid / Empty State */}
+          {!discovering && creators.length === 0 ? (
             <div className="text-center py-16 text-slate-500 text-xs space-y-4">
               <p>
                 No creators discovered yet. Click Start Discovery to find matching creators.
@@ -6006,7 +6013,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </span>
               </button>
             </div>
-          ) : (
+          ) : creators.length > 0 ? (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 border-b border-white/[0.04] pb-3">
                 <div className="flex items-center gap-2">
@@ -6039,7 +6046,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {creators.map((c) => {
+                {(Array.isArray(creators) ? creators : []).map((c) => {
                   const cleanHandle = (c.handle || "").replace(/^@/, "");
                   const platformSlug = (c.platform || "youtube").toLowerCase();
                   const profileUrl =
@@ -6345,7 +6352,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 })}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -6569,7 +6576,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       {/* STEP 4: INTERESTED CREATOR REVIEW */}
       {activeStep === 4 &&
         (() => {
-          const creatorsWithReplies = creators.map((c) => ({
+          const creatorsWithReplies = (Array.isArray(creators) ? creators : []).map((c) => ({
             ...c,
             replyInfo: getCreatorReply(c),
           }));
@@ -8036,7 +8043,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 let isLaunched = Boolean(c.project_id || (c.status || "").toLowerCase() === "launched" || (c.status || "").toLowerCase() === "active_project");
                 if (!isLaunched) {
                   try {
-                    const stageMap = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+                    const stageMap = getExpiringItem("forge_creator_stage_map", {});
                     if (stageMap[c.id]?.step === "section2" || stageMap[c.id]?.step === 7) isLaunched = true;
                     if (c.handle && (stageMap[c.handle.replace(/^@/, "").toLowerCase()]?.step === "section2" || stageMap[c.handle.replace(/^@/, "").toLowerCase()]?.step === 7)) isLaunched = true;
                     const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
@@ -8183,7 +8190,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 );
                 if (!isSelectedCreatorLaunched && selectedCreator) {
                   try {
-                    const stageMap = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
+                    const stageMap = getExpiringItem("forge_creator_stage_map", {});
                     if (stageMap[selectedCreator.id]?.step === "section2" || stageMap[selectedCreator.id]?.step === 7) isSelectedCreatorLaunched = true;
                     if (selectedCreator.handle && (stageMap[selectedCreator.handle.replace(/^@/, "").toLowerCase()]?.step === "section2" || stageMap[selectedCreator.handle.replace(/^@/, "").toLowerCase()]?.step === 7)) isSelectedCreatorLaunched = true;
                     const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");

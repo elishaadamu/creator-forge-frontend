@@ -29,14 +29,15 @@ import {
   ShieldCheck,
   Flame,
   Trash2,
+  Rocket,
 } from "lucide-react";
 
 export default function CreatorFollowUpCRM({
   isOpen = false,
   isPage = false,
   onClose,
-  creators = [],
-  realThreads = [],
+  creators: rawCreators = [],
+  realThreads: rawThreads = [],
   pitchSentMap = {},
   onSelectCreator,
   onSyncImap,
@@ -47,6 +48,20 @@ export default function CreatorFollowUpCRM({
   onOpenDecisionModal,
   onNotify,
 }) {
+  const creators = useMemo(() => {
+    if (Array.isArray(rawCreators)) return rawCreators;
+    if (rawCreators && Array.isArray(rawCreators.data)) return rawCreators.data;
+    if (rawCreators && Array.isArray(rawCreators.creators)) return rawCreators.creators;
+    return [];
+  }, [rawCreators]);
+
+  const realThreads = useMemo(() => {
+    if (Array.isArray(rawThreads)) return rawThreads;
+    if (rawThreads && Array.isArray(rawThreads.data)) return rawThreads.data;
+    if (rawThreads && Array.isArray(rawThreads.threads)) return rawThreads.threads;
+    return [];
+  }, [rawThreads]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
@@ -948,9 +963,15 @@ export default function CreatorFollowUpCRM({
     } catch {}
 
     try {
-      const saved = JSON.parse(localStorage.getItem("forge_launch_discovered_creators") || "[]");
-      const updated = saved.map((c) => (c.id === creatorId ? { ...c, email: newEmail, email_public: newEmail } : c));
-      localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(updated));
+      const raw = localStorage.getItem("forge_launch_discovered_creators");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const saved = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.data) ? parsed.data : []);
+        if (saved.length > 0) {
+          const updated = saved.map((c) => (c.id === creatorId ? { ...c, email: newEmail, email_public: newEmail } : c));
+          localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(updated));
+        }
+      }
     } catch {}
 
     setEditingEmailId(null);
@@ -1016,15 +1037,21 @@ export default function CreatorFollowUpCRM({
 
       // Clean up localStorage persistence
       try {
-        const saved = JSON.parse(localStorage.getItem("forge_launch_discovered_creators") || "[]");
-        const updated = saved.filter(
-          (c) =>
-            c.id !== targetId &&
-            c.id !== creator.id &&
-            (c.handle || "").replace(/^@/, "").toLowerCase() !== cleanHandle &&
-            (!cleanEmail || (c.email || c.email_public || "").toLowerCase().trim() !== cleanEmail)
-        );
-        localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(updated));
+        const raw = localStorage.getItem("forge_launch_discovered_creators");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const saved = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.data) ? parsed.data : []);
+          if (saved.length > 0) {
+            const updated = saved.filter(
+              (c) =>
+                c.id !== targetId &&
+                c.id !== creator.id &&
+                (c.handle || "").replace(/^@/, "").toLowerCase() !== cleanHandle &&
+                (!cleanEmail || (c.email || c.email_public || "").toLowerCase().trim() !== cleanEmail)
+            );
+            localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(updated));
+          }
+        }
 
         // Track in deleted IDs
         const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");

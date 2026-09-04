@@ -34,8 +34,8 @@ export default function AdminPipelineLookup({
   isOpen = false,
   isPage = false,
   onClose,
-  creators = [],
-  realThreads = [],
+  creators: rawCreators = [],
+  realThreads: rawThreads = [],
   pitchSentMap = {},
   answerSentMap = {},
   persuasionSentMap = {},
@@ -46,6 +46,20 @@ export default function AdminPipelineLookup({
   isSyncing = false,
   onNotify,
 }) {
+  const creators = useMemo(() => {
+    if (Array.isArray(rawCreators)) return rawCreators;
+    if (rawCreators && Array.isArray(rawCreators.data)) return rawCreators.data;
+    if (rawCreators && Array.isArray(rawCreators.creators)) return rawCreators.creators;
+    return [];
+  }, [rawCreators]);
+
+  const realThreads = useMemo(() => {
+    if (Array.isArray(rawThreads)) return rawThreads;
+    if (rawThreads && Array.isArray(rawThreads.data)) return rawThreads.data;
+    if (rawThreads && Array.isArray(rawThreads.threads)) return rawThreads.threads;
+    return [];
+  }, [rawThreads]);
+
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [platformFilter, setPlatformFilter] = useState('all')
@@ -69,7 +83,7 @@ export default function AdminPipelineLookup({
   const handleSaveInlineEmail = async (creatorId) => {
     const trimmed = inlineEmailValue.trim()
     if (!trimmed || !trimmed.includes('@')) {
-      onNotify?.('error', 'Invalid Email', 'Please provide a valid email address with @.')
+      onNotify?.('error', 'Invalid Email', 'Please enter a valid email address with an @ sign.')
       return
     }
 
@@ -79,9 +93,15 @@ export default function AdminPipelineLookup({
       
       // Update local creators storage if possible
       try {
-        const stored = JSON.parse(localStorage.getItem('forge_launch_discovered_creators') || '[]')
-        const updated = stored.map((c) => (c.id === creatorId ? { ...c, email: trimmed, email_public: trimmed } : c))
-        localStorage.setItem('forge_launch_discovered_creators', JSON.stringify(updated))
+        const raw = localStorage.getItem('forge_launch_discovered_creators')
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          const stored = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.data) ? parsed.data : [])
+          if (stored.length > 0) {
+            const updated = stored.map((c) => (c.id === creatorId ? { ...c, email: trimmed, email_public: trimmed } : c))
+            localStorage.setItem('forge_launch_discovered_creators', JSON.stringify(updated))
+          }
+        }
       } catch (err) {}
 
       // Update creator in-memory

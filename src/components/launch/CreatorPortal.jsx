@@ -8,13 +8,13 @@ import {
 import { getFrontendUrl, updateCoLaunchProject, getCoLaunchProject, getThreads } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
 import { CreatorPortalSkeleton } from './Section2Skeletons'
+import { getExpiringItem, setExpiringItem, ONE_HOUR_MS } from '../../utils/expiringStorage'
 
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
   const [project, setProject] = useState(() => {
     try {
-      const saved = localStorage.getItem('forge_launch_active_project')
-      if (saved) return JSON.parse(saved)
+      return getExpiringItem('forge_launch_active_project')
     } catch (e) {}
     return null
   })
@@ -60,8 +60,8 @@ export default function CreatorPortal({ portalId }) {
         if (isMounted && fetched) {
           setProject(fetched)
           try {
-            localStorage.setItem('forge_launch_active_project', JSON.stringify(fetched))
-            localStorage.setItem('forge_launch_active_section', 'section2')
+            setExpiringItem('forge_launch_active_project', fetched, ONE_HOUR_MS)
+            localStorage.removeItem('forge_launch_active_section')
           } catch (e) {}
         }
       } catch (err) {
@@ -177,7 +177,7 @@ export default function CreatorPortal({ portalId }) {
           if (freshCount !== curCount || fresh.currentPresales !== project.currentPresales) {
             setProject(fresh)
             try {
-              localStorage.setItem('forge_launch_active_project', JSON.stringify(fresh))
+              setExpiringItem('forge_launch_active_project', fresh, ONE_HOUR_MS)
             } catch (e) {}
           }
         }
@@ -229,7 +229,7 @@ export default function CreatorPortal({ portalId }) {
     setIsSendingReply(false)
 
     try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProject))
+      setExpiringItem('forge_launch_active_project', updatedProject, ONE_HOUR_MS)
       window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProject }))
     } catch (err) {}
 
@@ -270,7 +270,7 @@ export default function CreatorPortal({ portalId }) {
     }
     setProject(updated)
     try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
+      setExpiringItem('forge_launch_active_project', updated, ONE_HOUR_MS)
     } catch (e) {}
     showToast('Task status updated!')
   }

@@ -7,6 +7,7 @@ import AdminPipelineLookup from './AdminPipelineLookup'
 import CreatorFollowUpCRM from './CreatorFollowUpCRM'
 import { createCoLaunchProject, getCoLaunchProject, getCoLaunchProjects } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
+import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from '../../utils/expiringStorage'
 
 export default function CreatorLaunchLayout({
   initialProject = null,
@@ -25,11 +26,9 @@ export default function CreatorLaunchLayout({
       const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
       const secParam = searchParams?.get('section')
       const projParam = searchParams?.get('project')
-      const creatorParam = searchParams?.get('creator') || searchParams?.get('creatorId')
       if (secParam === 'section1') return 'section1'
       if (secParam === 'section2' || (!secParam && projParam)) return 'section2'
-      const savedSec = localStorage.getItem('forge_launch_active_section')
-      if (savedSec === 'section2' && !searchParams?.get('section')) return 'section2'
+      // Direct navigation to /launch always defaults cleanly to section1
       return 'section1'
     } catch {
       return 'section1'
@@ -49,14 +48,11 @@ export default function CreatorLaunchLayout({
 
   const [activeProject, setActiveProject] = useState(() => {
     try {
-      const savedProject = localStorage.getItem('forge_launch_active_project')
-      if (savedProject) {
-        const parsed = JSON.parse(savedProject)
-        if (parsed && !isCorruptedPhantomProject(parsed)) {
-          return parsed
-        }
-        localStorage.removeItem('forge_launch_active_project')
+      const savedProject = getExpiringItem('forge_launch_active_project')
+      if (savedProject && !isCorruptedPhantomProject(savedProject)) {
+        return savedProject
       }
+      removeExpiringItem('forge_launch_active_project')
       return null
     } catch {
       return null
@@ -202,10 +198,10 @@ export default function CreatorLaunchLayout({
       localStorage.removeItem('ops_authenticated')
 
       // Clear Section 2 project and lock it completely
-      localStorage.removeItem('forge_launch_active_project')
-      localStorage.setItem('forge_launch_active_section', 'section1')
-      localStorage.setItem('forge_launch_active_step', '1')
-      localStorage.setItem('forge_launch_acquisition_step', '1')
+      removeExpiringItem('forge_launch_active_project')
+      localStorage.removeItem('forge_launch_active_section')
+      setExpiringItem('forge_launch_active_step', '1', ONE_HOUR_MS)
+      setExpiringItem('forge_launch_acquisition_step', '1', ONE_HOUR_MS)
 
       // Clear pipeline state so Step 1 starts fresh
       localStorage.removeItem('forge_launch_discovered_creators')
@@ -291,8 +287,8 @@ export default function CreatorLaunchLayout({
       if (matched) {
         setActiveProject(matched)
         try {
-          localStorage.setItem('forge_launch_active_project', JSON.stringify(matched))
-          localStorage.setItem('forge_launch_active_section', 'section2')
+          setExpiringItem('forge_launch_active_project', matched, ONE_HOUR_MS)
+          localStorage.removeItem('forge_launch_active_section')
           const url = new URL(window.location.href)
           url.searchParams.set('section', 'section2')
           url.searchParams.set('project', matched.id)
@@ -407,8 +403,8 @@ export default function CreatorLaunchLayout({
         return [finalProject, ...filtered]
       })
       try {
-        localStorage.setItem('forge_launch_active_project', JSON.stringify(finalProject))
-        localStorage.setItem('forge_launch_active_section', 'section2')
+        setExpiringItem('forge_launch_active_project', finalProject, ONE_HOUR_MS)
+        localStorage.removeItem('forge_launch_active_section')
         const url = new URL(window.location.href)
         url.searchParams.set('section', 'section2')
         url.searchParams.set('project', finalProject.id)
@@ -416,7 +412,7 @@ export default function CreatorLaunchLayout({
         window.history.replaceState({}, '', url.toString())
 
         // Mark creator as Section 2 partnered in local stage map and DB
-        const map = JSON.parse(localStorage.getItem('forge_creator_stage_map') || '{}')
+        const map = getExpiringItem('forge_creator_stage_map', {})
         map[finalProject.creatorId] = {
           step: 'section2',
           stepNumber: 7,
@@ -426,7 +422,7 @@ export default function CreatorLaunchLayout({
         if (finalProject.creatorHandle) {
           map[finalProject.creatorHandle.replace(/^@/, '').toLowerCase()] = map[finalProject.creatorId]
         }
-        localStorage.setItem('forge_creator_stage_map', JSON.stringify(map))
+        setExpiringItem('forge_creator_stage_map', map, ONE_HOUR_MS)
         updateWorkflowState({ creator_stage_map: map }).catch(() => {})
         if (creatorProfile?.id) {
           updateCreatorDetails(creatorProfile.id, { status: 'partnered' }).catch(() => {})
@@ -501,33 +497,17 @@ export default function CreatorLaunchLayout({
     return () => window.removeEventListener('popstate', handleUrlSync)
   }, [])
 
-  // Keep section & project in localStorage and clean URL query params
+  // Keep activeProject in expiring storage (1 hour TTL) without modifying clean browser URLs
   useEffect(() => {
     try {
-      localStorage.setItem('forge_launch_active_section', activeSection)
+      localStorage.removeItem('forge_launch_active_section')
       if (activeProject) {
-        localStorage.setItem('forge_launch_active_project', JSON.stringify(activeProject))
-      }
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href)
-        if (activeSection === 'section2') {
-          url.searchParams.set('section', 'section2')
-          url.searchParams.delete('step') // Clean stale Section 1 step number
-          if (activeProject?.id) {
-            url.searchParams.set('project', activeProject.id)
-          }
-          if (activeProject?.creatorId) {
-            url.searchParams.set('creator', activeProject.creatorId)
-          }
-        } else {
-          url.searchParams.set('section', 'section1')
-        }
-        window.history.replaceState({}, '', url.toString())
+        setExpiringItem('forge_launch_active_project', activeProject, ONE_HOUR_MS)
       }
     } catch (e) {
-      console.warn('Failed to sync creator launch state to localStorage', e)
+      console.warn('Failed to sync creator launch state to storage', e)
     }
-  }, [activeSection, activeProject])
+  }, [activeProject])
 
   // Synchronize with backend DB: Sync workflow state and active projects across all devices
   useEffect(() => {
@@ -544,8 +524,10 @@ export default function CreatorLaunchLayout({
           const ws = workflowRes.value
           const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
           const urlSec = searchParams?.get('section')
-          if (!urlSec && ws.active_section) {
-            setActiveSection(ws.active_section)
+          // Do NOT auto-switch clean /launch to section2 just because of backend DB state.
+          // Clean /launch must remain on Section 1 unless an explicit ?section=section2 query param was opened.
+          if (urlSec === 'section2' && ws.active_section === 'section2') {
+            setActiveSection('section2')
           }
           // If the backend workflow state still references a phantom raw UUID, wipe it
           if (ws.selected_creator_id && isUuid(ws.selected_creator_id)) {
@@ -574,14 +556,14 @@ export default function CreatorLaunchLayout({
             const cleanCreator = creatorParam ? creatorParam.replace(/^@/, '').toLowerCase().trim() : null
 
             setActiveProject(prev => {
-              const local = prev || (typeof localStorage !== 'undefined' ? (() => {
+              const local = prev || (() => {
                 try {
-                  const saved = JSON.parse(localStorage.getItem('forge_launch_active_project') || 'null')
+                  const saved = getExpiringItem('forge_launch_active_project')
                   return isCorruptedPhantomProject(saved) ? null : saved
                 } catch {
                   return null
                 }
-              })() : null)
+              })()
 
               let matched = null
               // 1. Explicit project ID from URL
@@ -596,23 +578,23 @@ export default function CreatorLaunchLayout({
                   (p.creatorEmail && p.creatorEmail.toLowerCase() === cleanCreator)
                 )
               }
-              // 3. Keep current active project ID if present in DB
-              if (!matched && local?.id) {
-                matched = projs.find(p => p.id === local.id)
+              // 3. Fallback to active/local project if already set
+              if (!matched && local) {
+                matched = projs.find(p => p.id === local.id || (p.creatorId && p.creatorId === local.creatorId))
               }
-              // 4. Default to projs[0] only if nothing was active
+              // 4. Default to most recently updated project
               if (!matched) {
-                matched = deduped[0] || null
+                matched = projs[0]
               }
 
               if (!matched) return null
 
-              const resolvedPhase = Math.max(Number(matched.currentPhase || 1), Number(local?.id === matched.id ? (local?.currentPhase || 1) : 1))
+              // Safeguard against ghost UUID
+              if (isCorruptedPhantomProject(matched)) return null
+
+              // Deep merge DB project record with any transient local memory
               const merged = {
                 ...matched,
-                ...(local?.id === matched.id ? local : {}),
-                currentPhase: resolvedPhase,
-                status: resolvedPhase > 1 ? (local?.id === matched.id && local?.status ? local.status : (matched.status || 'building')) : (matched.status || 'validating'),
                 gateDecisions: (local?.id === matched.id && (local?.gateDecisions?.length || 0) > (matched.gateDecisions?.length || 0))
                   ? local.gateDecisions
                   : (matched.gateDecisions || local?.gateDecisions || []),
@@ -628,7 +610,7 @@ export default function CreatorLaunchLayout({
                 mvpVersion: (local?.id === matched.id ? local?.mvpVersion : null) || matched.mvpVersion || 'v1.0.0-MVP'
               }
               try {
-                localStorage.setItem('forge_launch_active_project', JSON.stringify(merged))
+                setExpiringItem('forge_launch_active_project', merged, ONE_HOUR_MS)
               } catch {}
               return merged
             })
@@ -637,7 +619,7 @@ export default function CreatorLaunchLayout({
             setAllProjects([])
             setActiveProject(null)
             try {
-              localStorage.removeItem('forge_launch_active_project')
+              removeExpiringItem('forge_launch_active_project')
               const url = new URL(window.location.href)
               if (url.searchParams.has('project') || url.searchParams.has('creator') || url.searchParams.has('creatorId')) {
                 url.searchParams.delete('project')
@@ -666,7 +648,7 @@ export default function CreatorLaunchLayout({
       const next = typeof updater === 'function' ? updater(prev) : updater
       if (!next) return next
       try {
-        localStorage.setItem('forge_launch_active_project', JSON.stringify(next))
+        setExpiringItem('forge_launch_active_project', next, ONE_HOUR_MS)
       } catch (e) {}
 
       // Persist to backend database tables in SQLite
@@ -728,8 +710,8 @@ export default function CreatorLaunchLayout({
     setActiveProject(cleanProject)
     setAllProjects(prev => [cleanProject, ...prev.filter(p => p.id !== cleanProject.id)])
     try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(cleanProject))
-      localStorage.setItem('forge_launch_active_section', 'section2')
+      setExpiringItem('forge_launch_active_project', cleanProject, ONE_HOUR_MS)
+      localStorage.removeItem('forge_launch_active_section')
       const url = new URL(window.location.href)
       url.searchParams.set('section', 'section2')
       url.searchParams.set('project', cleanProject.id)
@@ -745,7 +727,7 @@ export default function CreatorLaunchLayout({
         setActiveProject(prev => {
           const merged = { ...(prev || {}), ...dbProj }
           try {
-            localStorage.setItem('forge_launch_active_project', JSON.stringify(merged))
+            setExpiringItem('forge_launch_active_project', merged, ONE_HOUR_MS)
           } catch {}
           return merged
         })
@@ -786,9 +768,10 @@ export default function CreatorLaunchLayout({
       localStorage.removeItem('forge_launch_ai_choice_map')
       localStorage.removeItem('forge_creator_data')
       localStorage.removeItem('forge_step2_timer_target')
-      localStorage.setItem('forge_launch_active_section', 'section1')
-      localStorage.setItem('forge_launch_active_step', '1')
-      localStorage.setItem('forge_launch_acquisition_step', '1')
+      localStorage.removeItem('forge_launch_active_section')
+      removeExpiringItem('forge_launch_active_project')
+      removeExpiringItem('forge_launch_active_step')
+      removeExpiringItem('forge_launch_acquisition_step')
 
       const { deleteAllCreators, deleteCoLaunchProject } = await import('../../services/opsApi')
       if (activeProject?.id) {
@@ -801,8 +784,53 @@ export default function CreatorLaunchLayout({
 
     setActiveProject(null)
     setActiveSection('section1')
-    window.location.href = '/launch?section=section1&step=1'
+    window.location.href = '/launch'
   }
+
+  const getSafeDiscoveredCreators = () => {
+    try {
+      const list = getExpiringItem('forge_launch_discovered_creators');
+      if (Array.isArray(list) && list.length > 0) return list;
+      const raw = localStorage.getItem('forge_launch_discovered_creators');
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (Array.isArray(p)) return p;
+        if (p && Array.isArray(p.data)) return p.data;
+        if (p && Array.isArray(p.creators)) return p.creators;
+      }
+      return Array.isArray(crmCreators) ? crmCreators : [];
+    } catch {
+      return Array.isArray(crmCreators) ? crmCreators : [];
+    }
+  };
+
+  const getSafeRealThreads = () => {
+    try {
+      const list = getExpiringItem('forge_launch_real_threads');
+      if (Array.isArray(list) && list.length > 0) return list;
+      const raw = localStorage.getItem('forge_launch_real_threads');
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (Array.isArray(p)) return p;
+        if (p && Array.isArray(p.data)) return p.data;
+        if (p && Array.isArray(p.threads)) return p.threads;
+      }
+      return Array.isArray(crmThreads) ? crmThreads : [];
+    } catch {
+      return Array.isArray(crmThreads) ? crmThreads : [];
+    }
+  };
+
+  const getSafeSentMap = (storageKey) => {
+    try {
+      const raw = localStorage.getItem(storageKey) || '{}';
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.__expiring && parsed.data) return parsed.data;
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#090b0e] text-slate-100 font-sans flex flex-col">
@@ -1403,15 +1431,9 @@ export default function CreatorLaunchLayout({
               setAllProjects([])
               setActiveSection('section1')
               try {
-                localStorage.removeItem('forge_launch_active_project')
-                localStorage.setItem('forge_launch_active_section', 'section1')
-                const url = new URL(window.location.href)
-                url.searchParams.set('section', 'section1')
-                url.searchParams.delete('project')
-                url.searchParams.delete('creator')
-                url.searchParams.delete('creatorId')
-                url.searchParams.delete('step')
-                window.history.replaceState({}, '', url.toString())
+                removeExpiringItem('forge_launch_active_project')
+                localStorage.removeItem('forge_launch_active_section')
+                window.history.replaceState({}, '', '/launch')
               } catch (e) {}
             }}
             initialActiveStep={acquisitionNavState?.step}
@@ -1492,41 +1514,11 @@ export default function CreatorLaunchLayout({
       <AdminPipelineLookup
         isOpen={showAdminLookup}
         onClose={() => setShowAdminLookup(false)}
-        creators={(() => {
-          try {
-            return JSON.parse(localStorage.getItem('forge_launch_discovered_creators') || '[]')
-          } catch {
-            return []
-          }
-        })()}
-        realThreads={(() => {
-          try {
-            return JSON.parse(localStorage.getItem('forge_launch_real_threads') || '[]')
-          } catch {
-            return []
-          }
-        })()}
-        pitchSentMap={(() => {
-          try {
-            return JSON.parse(localStorage.getItem('forge_launch_pitch_sent_map') || '{}')
-          } catch {
-            return {}
-          }
-        })()}
-        answerSentMap={(() => {
-          try {
-            return JSON.parse(localStorage.getItem('forge_launch_answer_sent_map') || '{}')
-          } catch {
-            return {}
-          }
-        })()}
-        persuasionSentMap={(() => {
-          try {
-            return JSON.parse(localStorage.getItem('forge_launch_persuasion_sent_map') || '{}')
-          } catch {
-            return {}
-          }
-        })()}
+        creators={getSafeDiscoveredCreators()}
+        realThreads={getSafeRealThreads()}
+        pitchSentMap={getSafeSentMap('forge_launch_pitch_sent_map')}
+        answerSentMap={getSafeSentMap('forge_launch_answer_sent_map')}
+        persuasionSentMap={getSafeSentMap('forge_launch_persuasion_sent_map')}
         onSelectCreator={(cid) => {
           setShowAdminLookup(false)
           setActiveSection('section1')
@@ -1538,27 +1530,9 @@ export default function CreatorLaunchLayout({
       <CreatorFollowUpCRM
         isOpen={showFollowUpCRM}
         onClose={() => setShowFollowUpCRM(false)}
-        creators={(() => {
-          try {
-            return JSON.parse(localStorage.getItem('forge_launch_discovered_creators') || '[]')
-          } catch {
-            return []
-          }
-        })()}
-        realThreads={(() => {
-          try {
-            return JSON.parse(localStorage.getItem('forge_launch_real_threads') || '[]')
-          } catch {
-            return []
-          }
-        })()}
-        pitchSentMap={(() => {
-          try {
-            return JSON.parse(localStorage.getItem('forge_launch_pitch_sent_map') || '{}')
-          } catch {
-            return {}
-          }
-        })()}
+        creators={getSafeDiscoveredCreators()}
+        realThreads={getSafeRealThreads()}
+        pitchSentMap={getSafeSentMap('forge_launch_pitch_sent_map')}
         onSelectCreator={(cid, targetStep) => {
           setShowFollowUpCRM(false)
           if (targetStep === 'section2' || targetStep === 7) {
