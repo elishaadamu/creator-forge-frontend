@@ -205,7 +205,13 @@ export default function CreatorFollowUpCRM({
     matchedThreads.forEach((t) => {
       (t.replies || []).forEach((r) => {
         const fromAddr = (r.from_address || "").toLowerCase().trim();
-        const isAdmin = fromAddr.includes("partnerships@creatorforge.com") || fromAddr.includes("admin") || r.direction === "outbound";
+        const isAdmin =
+          fromAddr.includes("partnerships@creatorforge.com") ||
+          fromAddr.includes("admin") ||
+          fromAddr.includes("elishadamu97@gmail.com") ||
+          r.direction === "outbound" ||
+          r.is_outgoing ||
+          r.ai_summary === "Outgoing reply from you";
         if (isAdmin) return;
 
         const bodyLower = (r.body || "").toLowerCase();
@@ -229,7 +235,15 @@ export default function CreatorFollowUpCRM({
         });
         if (hasOtherToken) return;
 
-        inboundReplies.push(r);
+        // Clean quoted original message lines to verify new content was actually written
+        const stripped = (r.body || "")
+          .replace(/^>.*$/gm, "")
+          .replace(/On\s+[\s\S]*wrote:[\s\S]*/i, "")
+          .replace(/---\s*Ref:[\s\S]*/i, "")
+          .trim();
+        if (!stripped || stripped.length < 2) return;
+
+        inboundReplies.push({ ...r, cleanBody: stripped });
       });
     });
 
@@ -240,8 +254,8 @@ export default function CreatorFollowUpCRM({
     if (inboundReplies.length > 0) {
       const latest = inboundReplies[0];
       let resolvedCls = latest.classification || latest.ai_classification || c.replyClassification || c.reply_classification;
-      if (!resolvedCls) {
-        const bodyText = (latest.body || "").toLowerCase();
+      if (!resolvedCls || resolvedCls === "other") {
+        const bodyText = (latest.cleanBody || latest.body || "").toLowerCase();
         if (bodyText.includes("not interested") || bodyText.includes("no thanks") || bodyText.includes("pass on this") || bodyText.includes("unsubscribe") || bodyText.includes("cant do it") || bodyText.includes("can't do it")) {
           resolvedCls = "not_interested";
         } else if (bodyText.includes("how") || bodyText.includes("what") || bodyText.includes("cost") || bodyText.includes("pricing") || bodyText.includes("?") || bodyText.includes("clarification")) {
@@ -249,7 +263,7 @@ export default function CreatorFollowUpCRM({
         } else if (bodyText.includes("interested") || bodyText.includes("sounds good") || bodyText.includes("let's do it") || bodyText.includes("lets do it") || bodyText.includes("yes") || bodyText.includes("sure")) {
           resolvedCls = "interested";
         } else {
-          resolvedCls = "interested";
+          resolvedCls = "question";
         }
       }
       const cls = (overriddenCls || resolvedCls).toLowerCase();
@@ -266,28 +280,33 @@ export default function CreatorFollowUpCRM({
         classification: cls,
         sentiment,
         reasoning,
-        snippet: latest.body || "",
+        snippet: latest.cleanBody || latest.body || "",
         subject: latest.subject || "Re: Outreach to " + (c.name || c.display_name || c.handle || "Creator"),
         time: latest.received_at ? new Date(latest.received_at).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Recently",
         totalInbound: inboundReplies.length,
       };
     }
 
-    const hasExplicitRepliedStatus = c.status === "replied" || c.status === "in_review" || c.status === "interested";
-    if (overriddenCls || (hasExplicitRepliedStatus && (c.reply_text || c.replyText))) {
-      const cls = (overriddenCls || c.replyClassification || c.reply_classification || "interested").toLowerCase();
+    const hasExplicitRepliedText = Boolean(
+      (c.reply_text || c.replyText) &&
+      !c.reply_text?.startsWith("Creator responded") &&
+      !c.replyText?.startsWith("Creator responded") &&
+      c.reply_text !== "Yes, I would be interested." &&
+      c.replyText !== "Yes, I would be interested."
+    );
+
+    if (overriddenCls || hasExplicitRepliedText) {
+      const cls = (overriddenCls || c.replyClassification || c.reply_classification || "question").toLowerCase();
       const sentiment = cls === "interested" ? "positive" : cls === "question" ? "questioning" : cls === "not_interested" ? "negative" : "neutral";
       const reasoning = cls === "interested"
-        ? "Creator replied positively to Step 4 outreach. Qualified for Step 5 Audience & Product Synthesis — awaiting concept selection."
-        : cls === "question"
-        ? "Creator requested more technical details or clarifications regarding revenue split."
-        : "Creator responded to outreach.";
+        ? "Creator replied positively to Step 4 outreach."
+        : "Creator response received and logged.";
       return {
         hasReply: true,
         classification: cls,
         sentiment,
         reasoning,
-        snippet: c.reply_text || c.replyText || c.replySnippet || "Creator responded to outreach.",
+        snippet: c.reply_text || c.replyText || "",
         subject: "Re: Outreach to " + (c.name || c.display_name || c.handle || "Creator"),
         time: "Recently",
         totalInbound: 1,

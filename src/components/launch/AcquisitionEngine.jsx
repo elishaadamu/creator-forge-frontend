@@ -252,6 +252,27 @@ export default function AcquisitionEngine({
         );
       });
     }
+
+    // Sanitize any corrupt synthetic reply texts or false positive interested classifications
+    list = list.map((c) => {
+      const isFakeText =
+        c.replyText &&
+        (c.replyText.startsWith("Creator responded") ||
+          c.replyText.includes("qualified for partnership pitch") ||
+          c.replyText === "Yes, I would be interested.");
+      if (isFakeText) {
+        return {
+          ...c,
+          hasReplied: false,
+          replyText: null,
+          reply_text: null,
+          replyClassification: (c.status === "approved" || c.isApproved) ? "qualified" : "awaiting_reply",
+          reply_classification: (c.status === "approved" || c.isApproved) ? "qualified" : "awaiting_reply",
+        };
+      }
+      return c;
+    });
+
     return list;
   });
   const [selectedCreatorId, setSelectedCreatorId] = useState(() => {
@@ -271,6 +292,14 @@ export default function AcquisitionEngine({
     }
   });
   const [selectedConceptId, setSelectedConceptId] = useState(null);
+  const [creatorConceptSelectionMap, setCreatorConceptSelectionMap] = useState(() => {
+    try {
+      return getExpiringItem("forge_creator_concept_selection_map", {});
+    } catch {
+      return {};
+    }
+  });
+  const [step5Error, setStep5Error] = useState(null);
   const [discovering, setDiscovering] = useState(false);
   const discoveryAbortRef = useRef(null);
   const [discoveryLog, setDiscoveryLog] = useState("");
@@ -899,9 +928,27 @@ export default function AcquisitionEngine({
                   status: dbStatus,
                   isApproved: dbStatus === "approved",
                   isRejected: dbStatus === "rejected",
-                  replyClassification: dbItem.reply_classification,
-                  reply_classification: dbItem.reply_classification,
-                  replyText: dbItem.reply_text,
+                  replyClassification: (() => {
+                    const raw = dbItem.reply_text;
+                    const isCorrupt = raw && (raw.startsWith("Creator responded") || raw.includes("qualified for partnership pitch") || raw === "Yes, I would be interested.");
+                    if (dbItem.reply_classification === "interested" && (isCorrupt || !raw)) {
+                      return dbStatus === "approved" ? "qualified" : "awaiting_reply";
+                    }
+                    return dbItem.reply_classification;
+                  })(),
+                  reply_classification: (() => {
+                    const raw = dbItem.reply_text;
+                    const isCorrupt = raw && (raw.startsWith("Creator responded") || raw.includes("qualified for partnership pitch") || raw === "Yes, I would be interested.");
+                    if (dbItem.reply_classification === "interested" && (isCorrupt || !raw)) {
+                      return dbStatus === "approved" ? "qualified" : "awaiting_reply";
+                    }
+                    return dbItem.reply_classification;
+                  })(),
+                  replyText: (() => {
+                    const raw = dbItem.reply_text;
+                    const isCorrupt = raw && (raw.startsWith("Creator responded") || raw.includes("qualified for partnership pitch") || raw === "Yes, I would be interested.");
+                    return isCorrupt ? null : raw;
+                  })(),
                   creatorScore: (() => {
                     if (dbItem.score) return Math.min(99, Math.max(50, Number(dbItem.score)));
                     if (dbItem.creatorScore) return Math.min(99, Math.max(50, Number(dbItem.creatorScore)));
@@ -2466,40 +2513,69 @@ export default function AcquisitionEngine({
 
     // 1. Explicit user/DB classification
     const explicitCls = c.replyClassification || c.reply_classification;
+    const hasGenuineReplyText = Boolean(
+      c.replyText &&
+      !c.replyText.startsWith("Creator responded") &&
+      !c.replyText.includes("qualified for partnership pitch") &&
+      c.replyText !== "Yes, I would be interested."
+    );
+
     if (
       explicitCls &&
       explicitCls !== "awaiting_reply" &&
       explicitCls !== "no_email"
     ) {
       const isPositive = explicitCls === "interested" || explicitCls === "qualified";
-      return {
-        hasRealReply: true,
-        hasEmail: Boolean(cEmail && cEmail.includes("@")),
-        classification: explicitCls,
-        subject:
-          c.replySubject || `Re: Outreach to ${c.name || c.display_name}`,
-        text:
-          c.replyText ||
-          (isPositive
-            ? "Creator responded positively to initial outreach — qualified for partnership pitch."
-            : "Creator response received."),
-        time: c.replyTime || "Recently",
-        sentiment:
-          isPositive
-            ? "positive"
-            : explicitCls === "question"
-              ? "neutral"
-              : "negative",
-        reasoning: isPositive
-          ? `Creator replied positively to Step 4 outreach. Qualified for Step 6 Opportunity Pitch — awaiting their concept choice before Section 2.`
-          : `Label explicitly assigned as ${explicitCls} (stored in DB).`,
-        confidence: 96,
-        isRealImap: false,
-      };
+      // Only treat as hasRealReply if genuine custom or simulated text exists
+      if (hasGenuineReplyText) {
+        return {
+          hasRealReply: true,
+          hasEmail: Boolean(cEmail && cEmail.includes("@")),
+          classification: explicitCls,
+          subject:
+            c.replySubject || `Re: Outreach to ${c.name || c.display_name}`,
+          text: c.replyText,
+          time: c.replyTime || "Recently",
+          sentiment:
+            isPositive
+              ? "positive"
+              : explicitCls === "question"
+                ? "neutral"
+                : "negative",
+          reasoning: isPositive
+            ? `Creator responded to Step 4 outreach. Qualified for Step 6 Opportunity Pitch.`
+            : `Label explicitly assigned as ${explicitCls}.`,
+          confidence: 96,
+          isRealImap: false,
+        };
+      }
+
+      // If approved or qualified by human operator without an inbound email:
+      if (c.status === "approved" || c.isApproved || explicitCls === "qualified") {
+        return {
+          hasRealReply: false,
+          hasEmail: Boolean(cEmail && cEmail.includes("@")),
+          classification: "qualified",
+          subject: `Outreach Sent: ${templateSubject.replace("{{display_name}}", c.name || c.display_name)}`,
+          text: null,
+          time: "Awaiting response",
+          sentiment: "Qualified",
+          reasoning: "Manually qualified by operator — awaiting creator reply.",
+          confidence: 100,
+          isRealImap: false,
+        };
+      }
     }
 
     // 2. Strict matching against ALL real IMAP threads from Gmail with creator isolation
     const cName = (c.name || c.display_name || "").toLowerCase().trim();
+    const adminEmails = [
+      "elishadamu97@gmail.com",
+      "creatorforgestudio@gmail.com",
+      "noreply@creatorforge.com",
+      "hello@creatorforge.com",
+    ];
+
     const matchingThreads = (threads || []).filter((t) => {
       // Direct Creator ID match (highest precision)
       if (t.creator_id && cId) {
@@ -2513,14 +2589,14 @@ export default function AcquisitionEngine({
           .trim();
         if (cleanThreadHandle === cHandle) return true;
       }
-      // If thread has NO creator_id assigned, check if subject mentions this creator's name or handle
+      // If thread has NO creator_id assigned, check if subject mentions this creator specifically
       if (!t.creator_id) {
         const tSubject = (t.subject || "").toLowerCase();
-        if (cName && cName.length >= 3 && tSubject.includes(cName)) return true;
-        if (cHandle && cHandle.length >= 3 && tSubject.includes(cHandle)) return true;
+        if (cName && cName.length >= 3 && tSubject.includes(`for ${cName}`)) return true;
+        if (cHandle && cHandle.length >= 3 && tSubject.includes(`[#${cHandle}]`)) return true;
       }
       // If thread has NO creator_id assigned, match by email ONLY IF it doesn't belong to another creator
-      if (!t.creator_id && cEmail && cEmail.includes("@")) {
+      if (!t.creator_id && cEmail && cEmail.includes("@") && !adminEmails.includes(cEmail)) {
         const isEmailMatch =
           (t.creator_email && t.creator_email.toLowerCase().trim() === cEmail) ||
           (t.recipient_email && t.recipient_email.toLowerCase().trim() === cEmail);
@@ -2531,8 +2607,8 @@ export default function AcquisitionEngine({
             const oName = (other.name || other.display_name || "").toLowerCase().trim();
             const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
             return (
-              (oName && oName.length >= 3 && tSubj.includes(oName)) ||
-              (oHandle && oHandle.length >= 3 && tSubj.includes(oHandle))
+              (oName && oName.length >= 3 && tSubj.includes(`for ${oName}`)) ||
+              (oHandle && oHandle.length >= 3 && tSubj.includes(`[#${oHandle}]`))
             );
           });
           if (belongsToOther) return false;
@@ -2546,19 +2622,22 @@ export default function AcquisitionEngine({
     const incomingReplies = matchingThreads
       .flatMap((t) => t.replies || [])
       .filter((r) => {
+        if (!r.body || !r.body.trim()) return false;
+        if (r.is_outgoing || r.ai_summary === "Outgoing reply from you" || r.actor === "admin") {
+          return false;
+        }
+
         const fromAddr = (r.from_address || "").toLowerCase().trim();
         if (
+          !fromAddr ||
+          adminEmails.includes(fromAddr) ||
           fromAddr === "hello@apify.com" ||
           fromAddr.includes("mailer-daemon") ||
-          fromAddr.includes("no-reply")
-        )
+          fromAddr.includes("no-reply") ||
+          fromAddr.includes("noreply")
+        ) {
           return false;
-        if (
-          !r.body ||
-          !r.body.trim() ||
-          r.ai_summary === "Outgoing reply from you"
-        )
-          return false;
+        }
 
         const bodyLower = r.body.toLowerCase();
         const subjLower = (r.subject || "").toLowerCase();
@@ -2593,6 +2672,17 @@ export default function AcquisitionEngine({
         });
         if (hasOtherCreatorToken) return false;
 
+        // Strip quoted original message lines to verify new content was actually written
+        const strippedBody = r.body
+          .replace(/^>.*$/gm, "")
+          .replace(/On\s+[\s\S]*wrote:[\s\S]*/i, "")
+          .replace(/---\s*Ref:[\s\S]*/i, "")
+          .trim();
+
+        if (!strippedBody || strippedBody.length < 2) {
+          return false;
+        }
+
         return true;
       })
       .sort(
@@ -2605,7 +2695,14 @@ export default function AcquisitionEngine({
         : null;
 
     if (latestReply && latestReply.body) {
-      const bodyLower = latestReply.body.toLowerCase().trim();
+      // Clean quoted original message lines for pristine display and classification
+      const cleanReplyText = latestReply.body
+        .replace(/^>.*$/gm, "")
+        .replace(/On\s+[\s\S]*wrote:[\s\S]*/i, "")
+        .replace(/---\s*Ref:[\s\S]*/i, "")
+        .trim();
+
+      const bodyLower = (cleanReplyText || latestReply.body).toLowerCase().trim();
 
       // High-precision Intent Classification
       const negPatterns = [
@@ -2690,7 +2787,7 @@ export default function AcquisitionEngine({
         classification: cls,
         subject:
           latestReply.subject || `Re: Outreach to ${c.name || c.display_name}`,
-        text: latestReply.body,
+        text: cleanReplyText || latestReply.body,
         time: latestReply.received_at
           ? new Date(latestReply.received_at).toLocaleTimeString([], {
               hour: "2-digit",
@@ -2706,7 +2803,7 @@ export default function AcquisitionEngine({
               : "neutral"),
         reasoning:
           latestReply.ai_summary ||
-          `AI classified live email reply from ${latestReply.from_address || "creator"}: "${latestReply.body.slice(0, 60)}..."`,
+          `AI classified live email reply from ${latestReply.from_address || "creator"}: "${(cleanReplyText || latestReply.body).slice(0, 60)}..."`,
         confidence: 96,
         fromAddress: latestReply.from_address,
         isRealImap: true,
@@ -2731,14 +2828,15 @@ export default function AcquisitionEngine({
     }
 
     // 4. Default: No incoming reply -> strictly awaiting_reply
+    const isApprovedOrQualified = c.status === "approved" || c.isApproved;
     return {
       hasRealReply: false,
       hasEmail: true,
-      classification: "awaiting_reply",
+      classification: isApprovedOrQualified ? "qualified" : "awaiting_reply",
       subject: `Outreach Sent: ${templateSubject.replace("{{display_name}}", c.name || c.display_name)}`,
       text: null,
       time: "Awaiting response",
-      sentiment: "Pending",
+      sentiment: isApprovedOrQualified ? "Qualified" : "Pending",
       reasoning: `Outreach email delivered to ${cEmail}. Monitoring inbox for creator response.`,
       confidence: 0,
       isRealImap: false,
@@ -3078,11 +3176,11 @@ export default function AcquisitionEngine({
       }
     } catch (e) {}
 
-    // 4. In Step 5 or 6, creator's reply was classified as interested / qualified by AI
+    // 4. In Step 5 or 6, creator's reply was classified as interested / qualified with authentic reply
     const rInfo = c.replyInfo || getCreatorReply(c);
     if (
-      rInfo?.classification === "interested" ||
-      ["qualified", "interested"].includes((c.replyClassification || c.reply_classification || "").toLowerCase())
+      (rInfo?.classification === "interested" && rInfo.hasRealReply) ||
+      (c.replyClassification || c.reply_classification || "").toLowerCase() === "qualified"
     ) {
       return true;
     }
@@ -3136,25 +3234,69 @@ export default function AcquisitionEngine({
           rawSelectedCreator.productConcepts &&
           rawSelectedCreator.productConcepts.length > 0
             ? rawSelectedCreator.productConcepts
-            : ensureCreatorConcepts(rawSelectedCreator),
+            : (activeStep === 5 ? null : ensureCreatorConcepts(rawSelectedCreator)),
       }
     : null;
   const [autoLaunchCountdown, setAutoLaunchCountdown] = useState(null);
   const [hasAutoCreatedProject, setHasAutoCreatedProject] = useState(false);
 
-  // ── Step 5 Selection Initializer ──────────────────────────────────────────
+  // Concept Selection Handler: Persists choice across steps and attaches it to creator
+  const handleSelectConcept = (conceptId, creatorId = selectedCreator?.id) => {
+    if (!conceptId) return;
+    setSelectedConceptId(conceptId);
+    if (creatorId) {
+      setCreatorConceptSelectionMap((prev) => {
+        const next = { ...prev, [creatorId]: conceptId };
+        try {
+          setExpiringItem("forge_creator_concept_selection_map", next, ONE_HOUR_MS);
+        } catch {}
+        return next;
+      });
+      setCreators((prev) =>
+        prev.map((c) => {
+          if (c.id === creatorId) {
+            const concepts = c.productConcepts || [];
+            const chosen = concepts.find((p) => p.id === conceptId);
+            return {
+              ...c,
+              selectedConceptId: conceptId,
+              selectedConcept: chosen || c.selectedConcept,
+            };
+          }
+          return c;
+        }),
+      );
+    }
+  };
+
+  // ── Step 5 & 6 Concept Selection & AI Trigger Initializer ─────────────────
   useEffect(() => {
-    if (activeStep === 5) {
-      if (selectedCreator) {
-        const concepts =
-          selectedCreator.productConcepts ||
-          ensureCreatorConcepts(selectedCreator);
-        if (concepts && concepts.length > 0 && !selectedConceptId) {
-          setSelectedConceptId(concepts[0].id);
+    if (selectedCreator) {
+      const savedChoice =
+        creatorConceptSelectionMap[selectedCreator.id] ||
+        selectedCreator.selectedConceptId;
+      const concepts = selectedCreator.productConcepts;
+
+      if (savedChoice && (!selectedConceptId || selectedConceptId !== savedChoice)) {
+        setSelectedConceptId(savedChoice);
+      } else if (concepts && concepts.length > 0 && !selectedConceptId) {
+        setSelectedConceptId(concepts[0].id);
+      }
+
+      // If on Step 5 and creator does not have real AI concepts yet, auto-trigger AI synthesis
+      if (activeStep === 5) {
+        const hasRealAi =
+          selectedCreator.hasAiConcepts ||
+          (selectedCreator.productConcepts &&
+            selectedCreator.productConcepts.length > 0 &&
+            selectedCreator.audienceIntelligence?.topContent);
+
+        if (!hasRealAi && !isSynthesizingStep5Ai && !step5Error) {
+          handleSynthesizeStep5Ai(selectedCreator);
         }
       }
     }
-  }, [activeStep, selectedCreator?.id]);
+  }, [activeStep, selectedCreator?.id, selectedCreator?.productConcepts?.length]);
 
   useEffect(() => {
     if (!isInitialLoadDone.current) return;
@@ -3433,9 +3575,18 @@ export default function AcquisitionEngine({
   const handleSynthesizeStep5Ai = async (creator = selectedCreator) => {
     if (!creator) return;
     setIsSynthesizingStep5Ai(true);
+    setStep5Error(null);
     try {
       const { generateAudienceAndConcepts } = await import("../../services/opsApi");
-      const res = await generateAudienceAndConcepts({
+      
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("AI synthesis timed out after 25s. The model took too long to return structured concepts.")),
+          25000
+        )
+      );
+
+      const fetchPromise = generateAudienceAndConcepts({
         creator_id: creator.id,
         creator_name: creator.name || creator.display_name,
         creator_handle: creator.handle,
@@ -3445,6 +3596,8 @@ export default function AcquisitionEngine({
         bio: creator.bio,
       });
 
+      const res = await Promise.race([fetchPromise, timeoutPromise]);
+
       if (res && res.product_concepts && res.product_concepts.length > 0) {
         setCreators((prev) =>
           prev.map((c) =>
@@ -3453,6 +3606,7 @@ export default function AcquisitionEngine({
                   ...c,
                   productConcepts: res.product_concepts,
                   audienceIntelligence: res.audience_intelligence,
+                  hasAiConcepts: true,
                 }
               : c,
           ),
@@ -3461,20 +3615,25 @@ export default function AcquisitionEngine({
           setCustomPitchSubject(res.pitch_email.subject);
           setCustomPitchBody(res.pitch_email.body);
         }
+        setStep5Error(null);
         notify(
           "success",
           "AI Concepts & Audience Synthesized",
           `Engineered top 3 custom software product concepts and deep audience research for ${creator.name || creator.handle}.`,
           3500,
         );
+      } else {
+        throw new Error(res?.detail || res?.error || "AI engine failed to produce structured product concepts.");
       }
     } catch (err) {
-      console.warn("AI synthesis failed:", err);
+      console.warn("AI synthesis failed/delayed:", err);
+      const errMsg = err?.response?.data?.detail || err?.message || "AI audience research & concept synthesis delayed or failed.";
+      setStep5Error(errMsg);
       notify(
-        "info",
-        "Templates Ready",
-        "Loaded tailored product concepts and audience research.",
-        2500,
+        "error",
+        "AI Generation Delayed",
+        errMsg,
+        4500,
       );
     } finally {
       setIsSynthesizingStep5Ai(false);
@@ -4400,7 +4559,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
   // ── Creator reply notification & state update function (Strict Human Review Gate) ─
   const triggerAutoAdvance = (creator, reply) => {
-    if (!creator) return;
+    if (!creator || !reply || !reply.hasRealReply || !reply.text) return;
     autoAdvancedIdsRef.current.add(creator.id);
     setAutoAdvancedIds((prev) => new Set([...prev, creator.id]));
 
@@ -4410,21 +4569,21 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           ? {
               ...c,
               hasReplied: true,
-              replyClassification: reply?.classification || "interested",
-              reply_classification: reply?.classification || "interested",
-              replyText: reply?.text || c.replyText,
-              replyTime: reply?.time || "Recently",
+              replyClassification: reply.classification || "interested",
+              reply_classification: reply.classification || "interested",
+              replyText: reply.text,
+              replyTime: reply.time || "Recently",
               productConcepts: ensureCreatorConcepts(c),
             }
           : c,
       ),
     );
 
-    // Persist to DB
+    // Persist to DB ONLY with genuine reply text
     import("../../services/opsApi").then(({ updateCreatorDetails }) => {
       updateCreatorDetails(creator.id, {
-        reply_classification: reply?.classification || "interested",
-        reply_text: reply?.text || "Creator responded — awaiting review in Step 4",
+        reply_classification: reply.classification || "interested",
+        reply_text: reply.text,
       }).catch((e) => console.warn(e));
     });
 
@@ -4437,7 +4596,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     notify(
       "info",
       "New Creator Response",
-      `${cName} replied: "${(reply?.text || "Interested").slice(0, 45)}..." — Ready for review in Step 4.`,
+      `${cName} replied: "${reply.text.slice(0, 45)}..." — Ready for review in Step 4.`,
       4500,
     );
   };
@@ -4477,19 +4636,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           `[Inbox Synced] ${repliedThreads.length} active reply threads updated and classified.`,
         );
 
-        // Sync incoming replies directly into creators state
+        // Sync incoming replies directly into creators state ONLY if real reply with text exists
         setCreators((prevCreators) => {
           if (!prevCreators || prevCreators.length === 0) return prevCreators;
           return prevCreators.map((c) => {
             const reply = getCreatorReply(c, threads);
-            if (reply && reply.hasRealReply) {
+            if (reply && reply.hasRealReply && reply.text) {
               return {
                 ...c,
                 hasReplied: true,
                 replyClassification: reply.classification || c.replyClassification,
                 reply_classification: reply.classification || c.reply_classification,
-                replyText: reply.snippet || c.replyText,
-                reply_text: reply.snippet || c.reply_text,
+                replyText: reply.text,
+                reply_text: reply.text,
               };
             }
             return c;
@@ -4514,6 +4673,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             if (
               reply &&
               reply.hasRealReply &&
+              reply.text &&
               (reply.classification === "interested" ||
                 reply.sentiment?.toLowerCase() === "positive") &&
               !autoAdvancedIdsRef.current.has(c.id)
@@ -4558,6 +4718,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         if (
           reply &&
           reply.hasRealReply &&
+          reply.text &&
           (reply.classification === "interested" ||
             reply.sentiment?.toLowerCase() === "positive") &&
           !autoAdvancedIdsRef.current.has(c.id)
@@ -5984,16 +6145,59 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             </div>
           )}
 
-          {/* Cycling Radar & Telemetry Scouting Animation (Active during autonomous discovery) */}
+          {/* Active Scouting State with Spinning Icon (Clean & Simple) */}
           {discovering && (
-            <ScoutingCyclingAnimation
-              targetCount={creatorsBatchCount || 3}
-              foundCount={creators.length}
-              niches={niches.length > 0 ? niches : ["Tech", "Software", "SaaS"]}
-              selectedPlatforms={selectedPlatforms}
-              onStopScouting={handleStopDiscovery}
-              compact={creators.length > 0}
-            />
+            <div className="p-5 rounded-2xl bg-[#0e1117] border border-indigo-500/30 shadow-lg space-y-3.5 animate-in fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
+                    <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold text-white">
+                        Scouting Digital Creators...
+                      </span>
+                      <span className="text-[11px] font-mono text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                        {creators.length} of {creatorsBatchCount || 3} found
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Querying registries, audience engagement velocity, and business contact channels.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleStopDiscovery}
+                    className="px-3.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <XCircle className="w-3.5 h-3.5 text-red-400" />
+                    <span>Stop Scouting</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full bg-white/[0.05] h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.min(100, Math.max(8, Math.round((creators.length / (creatorsBatchCount || 3)) * 100)))}%`,
+                  }}
+                />
+              </div>
+
+              {/* Live Terminal Discovery Log */}
+              {discoveryLog && (
+                <div className="p-3 rounded-xl bg-black/60 border border-white/[0.06] text-xs font-mono text-indigo-300 flex items-start gap-2 shadow-inner">
+                  <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1 flex-shrink-0 animate-ping" />
+                  <div className="flex-1 leading-relaxed truncate">{discoveryLog}</div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Discovered Creators Grid / Empty State */}
@@ -7420,7 +7624,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     type="button"
                     onClick={() => {
                       setSelectedCreatorId(c.id);
-                      setSelectedConceptId(null);
+                      const savedConcept = creatorConceptSelectionMap[c.id] || c.selectedConceptId || c.productConcepts?.[0]?.id || null;
+                      setSelectedConceptId(savedConcept);
                     }}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       isSelected
@@ -8068,7 +8273,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     type="button"
                     onClick={() => {
                       setSelectedCreatorId(c.id);
-                      setSelectedConceptId(null);
+                      const savedConcept = creatorConceptSelectionMap[c.id] || c.selectedConceptId || c.productConcepts?.[0]?.id || null;
+                      setSelectedConceptId(savedConcept);
                     }}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       isSelected
@@ -8312,8 +8518,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             const pitchSent = Boolean(pitchSentMap[selectedCreator.id]);
             const detectedChoice = aiDetectedChoiceMap[selectedCreator.id];
             const concepts = selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
+            const savedConceptId = creatorConceptSelectionMap[selectedCreator.id] || selectedConceptId || selectedCreator.selectedConceptId;
             const chosenConcept =
-              concepts.find((c) => c.id === selectedConceptId) ||
+              concepts.find((c) => c.id === savedConceptId) ||
               concepts.find((c) => c.id === detectedChoice?.conceptId) ||
               concepts[0];
 
@@ -8383,7 +8590,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               <button
                                 key={c.id || i}
                                 type="button"
-                                onClick={() => setSelectedConceptId(c.id)}
+                                onClick={() => handleSelectConcept(c.id, selectedCreator.id)}
                                 className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer truncate ${
                                   isCurrent
                                     ? "bg-purple-600 text-white border-purple-500"
@@ -8782,7 +8989,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             )}
                           </div>
 
-                          {replyInfo.text && (
+                          {replyInfo.hasRealReply && replyInfo.text && (
                             <div className="mt-2 p-2.5 rounded-lg bg-black/40 border border-white/5 text-[11px] text-slate-300 italic max-w-lg">
                               "
                               {replyInfo.text.length > 140
@@ -8799,7 +9006,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           type="button"
                           onClick={() => {
                             setSelectedCreatorId(c.id);
-                            setSelectedConceptId(null);
+                            const savedConcept = creatorConceptSelectionMap[c.id] || c.selectedConceptId || c.productConcepts?.[0]?.id || null;
+                            setSelectedConceptId(savedConcept);
                             setActiveStep(6);
                             setShowInterestedModal(false);
                           }}
@@ -8981,7 +9189,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           onClick={() => {
                             handleModifyReplyClassification(c.id, "interested");
                             setSelectedCreatorId(c.id);
-                            setSelectedConceptId(null);
+                            const savedConcept = creatorConceptSelectionMap[c.id] || c.selectedConceptId || c.productConcepts?.[0]?.id || null;
+                            setSelectedConceptId(savedConcept);
                             setActiveStep(6);
                             setShowAwaitingModal(false);
                           }}

@@ -157,11 +157,11 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
           );
         }
 
-        // Check if block is a list (each line begins with bullet •/-/* or numbered item)
-        const lines = trimmed.split("\n");
-        const isList = lines.length > 1 && lines.every((l) => {
+        // Check if block is a list (all non-empty lines begin with bullet •/-/* or numbered item)
+        const lines = trimmed.split("\n").filter((l) => Boolean(l.trim()));
+        const isList = lines.length >= 1 && lines.every((l) => {
           const s = l.trim();
-          return !s || s.startsWith("•") || s.startsWith("-") || s.startsWith("*") || /^\d+[.)]/.test(s);
+          return s.startsWith("•") || s.startsWith("-") || s.startsWith("*") || /^\d+[.)]/.test(s);
         });
 
         if (isList) {
@@ -170,7 +170,7 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
               {lines.map((line, lIdx) => {
                 const s = line.trim();
                 if (!s) return null;
-                const cleanItem = s.replace(/^[•\-*]|\d+[.)]/, "").trim();
+                const cleanItem = s.replace(/^(?:[•\-*]|\d+[.)])\s*/, "").trim();
                 return (
                   <li key={lIdx} className="flex items-start gap-2 text-xs text-slate-200 leading-relaxed">
                     <span className="text-purple-400 font-bold mt-0.5">•</span>

@@ -351,8 +351,12 @@ export default function CreatorLaunchLayout({
       const creatorFollowers = creatorProfile?.followerStr || creatorProfile?.follower_count || '50k+'
       const creatorNiche = creatorProfile?.niche || 'Software & Tech'
 
-      // Concepts or dynamic fallback
-      const primaryConcept = creatorProfile?.concepts?.[0] || creatorProfile?.selectedConcept || {
+      // Prioritize explicitly selected concept (e.g. Concept 3) over default Concept 1
+      const allConcepts = creatorProfile?.productConcepts || creatorProfile?.concepts || []
+      const chosenConceptFromList = creatorProfile?.selectedConceptId
+        ? allConcepts.find(c => c.id === creatorProfile.selectedConceptId)
+        : null
+      const primaryConcept = creatorProfile?.selectedConcept || chosenConceptFromList || allConcepts[0] || {
         name: `${creatorName} Pro Hub`,
         tagline: `All-in-one software platform built for ${creatorName}'s audience`,
         pricing: '$29/mo Starter • $79/mo Pro',
