@@ -96,17 +96,17 @@ export default function AcquisitionEngine({
 }) {
   const [activeStep, setActiveStep] = useState(() => {
     try {
+      if (initialActiveStep && initialActiveStep >= 1 && initialActiveStep <= 6) {
+        return initialActiveStep;
+      }
       const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       const stepParam = Number(searchParams?.get('step'));
       if (stepParam >= 1 && stepParam <= 6) return stepParam;
-      const savedCreators = JSON.parse(
-        localStorage.getItem("forge_launch_discovered_creators") || "[]",
-      );
-      if (!savedCreators || savedCreators.length === 0) return 1;
       const savedStep = Number(
         localStorage.getItem("forge_launch_acquisition_step"),
       );
-      return savedStep >= 1 && savedStep <= 6 ? savedStep : 1;
+      if (savedStep >= 1 && savedStep <= 6) return savedStep;
+      return 1;
     } catch {
       return 1;
     }
@@ -255,8 +255,9 @@ export default function AcquisitionEngine({
   });
   const [selectedCreatorId, setSelectedCreatorId] = useState(() => {
     try {
+      if (initialSelectedCreatorId) return initialSelectedCreatorId;
       const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-      const creatorParam = searchParams?.get('creator');
+      const creatorParam = searchParams?.get('creator') || searchParams?.get('creatorId');
       if (creatorParam) return creatorParam;
       const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
       const savedCreators = JSON.parse(
@@ -280,7 +281,6 @@ export default function AcquisitionEngine({
 
   // Synchronize active step and selected creator across devices
   useEffect(() => {
-    if (!isInitialLoadDone.current) return;
     try {
       localStorage.setItem("forge_launch_acquisition_step", String(activeStep));
       import("../../services/opsApi").then(({ updateWorkflowState }) => {
@@ -824,10 +824,10 @@ export default function AcquisitionEngine({
         if (isMounted && ws) {
           const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
           const urlStep = Number(searchParams?.get('step'));
-          if (!urlStep && ws.active_step && ws.active_step >= 1 && ws.active_step <= 6) {
+          if (!urlStep && !initialActiveStep && !isInitialLoadDone.current && ws.active_step && ws.active_step >= 1 && ws.active_step <= 6) {
             setActiveStep(ws.active_step);
           }
-          if (ws.selected_creator_id) {
+          if (ws.selected_creator_id && !initialSelectedCreatorId) {
             setSelectedCreatorId((prev) => prev || ws.selected_creator_id);
           }
           if (ws.pitch_sent_map && Object.keys(ws.pitch_sent_map).length > 0) {

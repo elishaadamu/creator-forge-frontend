@@ -26,7 +26,8 @@ export default function CreatorLaunchLayout({
       const secParam = searchParams?.get('section')
       const projParam = searchParams?.get('project')
       const creatorParam = searchParams?.get('creator') || searchParams?.get('creatorId')
-      if (secParam === 'section2' || (secParam && (projParam || creatorParam))) return 'section2'
+      if (secParam === 'section1') return 'section1'
+      if (secParam === 'section2' || (!secParam && projParam)) return 'section2'
       const savedSec = localStorage.getItem('forge_launch_active_section')
       if (savedSec === 'section2' && !searchParams?.get('section')) return 'section2'
       return 'section1'
@@ -70,9 +71,34 @@ export default function CreatorLaunchLayout({
   const [crmCreators, setCrmCreators] = useState([])
   const [crmThreads, setCrmThreads] = useState([])
   const [isSyncingCrmImap, setIsSyncingCrmImap] = useState(false)
-  const [acquisitionNavState, setAcquisitionNavState] = useState(null)
+  const [acquisitionNavState, setAcquisitionNavState] = useState(() => {
+    try {
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+      const secParam = searchParams?.get('section')
+      const stepParam = Number(searchParams?.get('step'))
+      const creatorParam = searchParams?.get('creator') || searchParams?.get('creatorId')
+      if (secParam === 'section1' || (stepParam >= 1 && stepParam <= 6)) {
+        return {
+          step: (stepParam >= 1 && stepParam <= 6) ? stepParam : 5,
+          creatorId: creatorParam || null,
+          nonce: Date.now()
+        }
+      }
+      return null
+    } catch {
+      return null
+    }
+  })
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
-  const [section1ActiveStep, setSection1ActiveStep] = useState(1)
+  const [section1ActiveStep, setSection1ActiveStep] = useState(() => {
+    try {
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+      const stepParam = Number(searchParams?.get('step'))
+      return (stepParam >= 1 && stepParam <= 6) ? stepParam : 1
+    } catch {
+      return 1
+    }
+  })
   const [showSection1Menu, setShowSection1Menu] = useState(false)
   const [showSection1Sidebar, setShowSection1Sidebar] = useState(false)
 
@@ -1539,7 +1565,7 @@ export default function CreatorLaunchLayout({
             handleSwitchToCreatorProject(cid)
           } else {
             setActiveSection('section1')
-            const stepNum = Number(targetStep) || 4
+            const stepNum = Number(targetStep) || 5
             setAcquisitionNavState({ step: stepNum, creatorId: cid, nonce: Date.now() })
             try {
               const url = new URL(window.location.href)
