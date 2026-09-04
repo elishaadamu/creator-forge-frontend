@@ -54,6 +54,34 @@ import AdminPipelineLookup from "./AdminPipelineLookup";
 import CreatorFollowUpCRM from "./CreatorFollowUpCRM";
 import ActionNotificationToast from "../ui/ActionNotificationToast";
 import ConfirmationModal from "../ui/ConfirmationModal";
+import FormattedMarkdownBody from "./FormattedMarkdownBody";
+
+// Category-tailored high-res visual mockup screenshots for creator proposals
+export const CONCEPT_CATEGORY_IMAGES = {
+  productivity: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&auto=format&fit=crop&q=80",
+  tech: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1000&auto=format&fit=crop&q=80",
+  finance: "https://images.unsplash.com/photo-1642543492481-44e81e3914a7?w=1000&auto=format&fit=crop&q=80",
+  video_editing: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=1000&auto=format&fit=crop&q=80",
+  game_dev: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&auto=format&fit=crop&q=80",
+  data_ai: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000&auto=format&fit=crop&q=80",
+  cybersecurity: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1000&auto=format&fit=crop&q=80",
+  business_founder: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&auto=format&fit=crop&q=80",
+  podcast_audio: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=1000&auto=format&fit=crop&q=80",
+  default: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1000&auto=format&fit=crop&q=80",
+};
+
+export const getConceptImageUrl = (concept, fallbackNiche = "tech") => {
+  if (concept?.imageUrl) return concept.imageUrl;
+  if (concept?.mockup?.imageUrl) return concept.mockup.imageUrl;
+  if (concept?.mockup_image) return concept.mockup_image;
+  const n = (Array.isArray(fallbackNiche) ? fallbackNiche.join(" ") : String(fallbackNiche || "")).toLowerCase();
+  for (const [k, url] of Object.entries(CONCEPT_CATEGORY_IMAGES)) {
+    if (n.includes(k) || (concept?.tagline && concept.tagline.toLowerCase().includes(k))) {
+      return url;
+    }
+  }
+  return CONCEPT_CATEGORY_IMAGES.default;
+};
 
 export default function AcquisitionEngine({
   initialCreators = [],
@@ -63,6 +91,7 @@ export default function AcquisitionEngine({
   onResetAll,
   initialActiveStep = null,
   initialSelectedCreatorId = null,
+  initialNavNonce = null,
   onActiveStepChange = null,
 }) {
   const [activeStep, setActiveStep] = useState(() => {
@@ -121,7 +150,7 @@ export default function AcquisitionEngine({
     if (initialActiveStep && initialActiveStep >= 1 && initialActiveStep <= 6) {
       setActiveStep(initialActiveStep);
     }
-  }, [initialActiveStep]);
+  }, [initialActiveStep, initialNavNonce]);
 
   useEffect(() => {
     if (onActiveStepChange) {
@@ -132,8 +161,31 @@ export default function AcquisitionEngine({
   useEffect(() => {
     if (initialSelectedCreatorId) {
       setSelectedCreatorId(initialSelectedCreatorId);
+      // Ensure the creator exists in local creators pool; if not, query pipeline DB
+      setCreators((prev) => {
+        const found = (prev || []).some(
+          (c) => c.id === initialSelectedCreatorId || c.handle === initialSelectedCreatorId
+        );
+        if (found) return prev;
+        import("../../services/opsApi").then(({ fetchCreators }) => {
+          fetchCreators().then((all) => {
+            if (Array.isArray(all) && all.length > 0) {
+              const matched = all.find(
+                (c) => c.id === initialSelectedCreatorId || c.handle === initialSelectedCreatorId
+              );
+              if (matched) {
+                setCreators((curr) => {
+                  if (curr.some((c) => c.id === matched.id)) return curr;
+                  return [matched, ...curr];
+                });
+              }
+            }
+          }).catch(() => {});
+        });
+        return prev;
+      });
     }
-  }, [initialSelectedCreatorId]);
+  }, [initialSelectedCreatorId, initialNavNonce]);
 
   // Step 1: Campaign Controls State
   const [niches, setNiches] = useState([
@@ -1211,10 +1263,24 @@ export default function AcquisitionEngine({
         setDiscoveryLog((prev) => `${prev ? prev + "\n" : ""}[Stopped] Scouting stopped by operator.`);
         return;
       }
-      console.warn(e);
+      console.warn("[Discovery] Engine notice:", e);
+      const cleanMsg = (e.message || "").replace(/^500:\s*/, "").replace(/^Error:\s*/, "").trim() || "Scouting service ready for retry.";
       setDiscoveryLog(
-        `[Notice] Discovery note: ${e.message || "Scouted creators."}`,
+        `[Discovery Notice] ${cleanMsg}`,
       );
+
+      // Graceful fallback: If current creators list is empty, load existing database creators so operator is never stuck
+      try {
+        const { fetchCreators } = await import("../../services/opsApi");
+        const existing = await fetchCreators();
+        if (Array.isArray(existing) && existing.length > 0) {
+          setCreators(existing);
+          setSelectedCreatorId(existing[0].id);
+          setDiscoveryLog((prev) => `${prev}\n[Auto-Recovery] Loaded ${existing.length} verified creators from pipeline database.`);
+        }
+      } catch (recoverErr) {
+        console.debug("Recovery fallback silent:", recoverErr);
+      }
     } finally {
       if (discoveryAbortRef.current === controller) {
         discoveryAbortRef.current = null;
@@ -3301,7 +3367,12 @@ export default function AcquisitionEngine({
 
     try {
       const { sendDirectEmail, updateCreatorDetails, updateWorkflowState } = await import("../../services/opsApi");
-      await sendDirectEmail(targetEmail, subjectToSend, bodyToSend, cId);
+      const topConcept = concepts?.[0];
+      const conceptImg = getConceptImageUrl(topConcept, creator.niche);
+      await sendDirectEmail(targetEmail, subjectToSend, bodyToSend, cId, {
+        concepts,
+        concept_image_url: conceptImg,
+      });
 
       const sentTimeIso = new Date().toISOString();
       const sentTimestamp = Date.now();
@@ -6562,14 +6633,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     />
                     <span className="flex-shrink-0">Sync Replies</span>
                   </button>
-
-                  <button
-                    onClick={() => setActiveStep(5)}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-emerald-500/40 shadow-sm cursor-pointer active:scale-95 flex-shrink-0"
-                  >
-                    <span>Advance to Product Ideas</span>
-                    <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
-                  </button>
                 </div>
               </div>
 
@@ -7168,10 +7231,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               <strong className="text-emerald-400">Subject:</strong>{" "}
                               {activeReviewCreator.replyInfo.subject || "Re: Partnership Inquiry"}
                             </p>
-                            <div className="p-3.5 rounded-xl bg-black/50 border border-emerald-500/20 text-xs text-slate-100 whitespace-pre-wrap font-sans leading-relaxed shadow-inner">
-                              {activeReviewCreator.replyInfo.snippet ||
-                                activeReviewCreator.last_message ||
-                                "Creator responded to outreach."}
+                            <div className="p-3.5 rounded-xl bg-black/50 border border-emerald-500/20 text-xs text-slate-100 shadow-inner">
+                              <FormattedMarkdownBody
+                                text={
+                                  activeReviewCreator.replyInfo.snippet ||
+                                  activeReviewCreator.last_message ||
+                                  "Creator responded to outreach."
+                                }
+                              />
                             </div>
                           </div>
                         ) : (
@@ -7465,9 +7532,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 : "Recently"}
                             </span>
                           </div>
-                          <p className="text-slate-200 text-xs font-mono whitespace-pre-wrap bg-black/40 p-2 rounded-lg border border-white/[0.04]">
-                            {msg.body}
-                          </p>
+                          <div className="bg-black/40 p-2.5 rounded-lg border border-white/[0.04]">
+                            <FormattedMarkdownBody text={msg.body} />
+                          </div>
                         </div>
                       );
                     },
@@ -7781,8 +7848,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           </span>
                         </div>
 
-                        {/* Visual Mockup Window Preview */}
-                        <div className="h-32 rounded-xl bg-gradient-to-br from-[#0a0c12] via-[#141824] to-[#1c2234] border border-white/10 p-3 relative overflow-hidden flex flex-col justify-between shadow-inner">
+                        {/* Visual Mockup Window Preview with Real Concept Screenshot Image */}
+                        <div className="rounded-xl bg-gradient-to-br from-[#0a0c12] via-[#141824] to-[#1c2234] border border-white/10 p-3 relative overflow-hidden flex flex-col justify-between shadow-inner space-y-2.5">
                           <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
                             <div className="flex items-center gap-1.5">
                               <div className="w-2 h-2 rounded-full bg-red-400/80" />
@@ -7798,7 +7865,24 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-1.5 my-auto">
+                          {/* Real Concept Mockup Screenshot Image */}
+                          <div className="relative rounded-lg overflow-hidden border border-white/10 h-28 group bg-[#05070c]">
+                            <img
+                              src={getConceptImageUrl(concept, selectedCreator.niche)}
+                              alt={concept.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent flex items-end p-2 justify-between">
+                              <span className="text-[9px] font-mono text-white font-bold bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10">
+                                Visual Mockup
+                              </span>
+                              <span className="text-[9px] font-bold text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded border border-purple-500/40 backdrop-blur-sm">
+                                Attached in Proposal Email
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-1.5">
                             <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-center">
                               <span className="text-[8px] text-slate-500 block">
                                 MRR Projected
@@ -8444,9 +8528,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                   {msg.received_at ? new Date(msg.received_at).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "Recently"}
                                 </span>
                               </div>
-                              <p className="text-slate-200 text-xs whitespace-pre-wrap leading-relaxed font-sans">
-                                {msg.body}
-                              </p>
+                              <div className="text-xs text-slate-200 leading-relaxed font-sans">
+                                <FormattedMarkdownBody text={msg.body} />
+                              </div>
                             </div>
                           );
                         })
@@ -8963,7 +9047,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           if (targetStep === "section2" || targetStep === 7) {
             if (onGoToProjectOS) onGoToProjectOS(cid);
           } else {
-            setActiveStep(Number(targetStep) || 4);
+            setActiveStep(Number(targetStep) || 5);
           }
         }}
         onSyncImap={() => syncImapReplies(true)}

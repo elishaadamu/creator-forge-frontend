@@ -1488,25 +1488,41 @@ export default function CreatorFollowUpCRM({
                       )}
 
                       {!c.isRejected && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const targetStep = c.stepInfo?.targetStep || 5;
-                            if (onClose) onClose();
-                            handleOpenStudioForCreator(c, targetStep, c.stepInfo?.buttonLabel);
-                          }}
-                          className={`px-3.5 py-1.5 rounded-xl text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 ${
-                            c.stepInfo?.stepNumber === 6
-                              ? "bg-purple-600 hover:bg-purple-500 shadow-purple-900/30"
-                              : c.stepInfo?.stepNumber === 7
-                              ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30"
-                              : "bg-purple-600 hover:bg-purple-500 shadow-purple-900/30"
-                          }`}
-                          title={`Advance to ${c.stepInfo?.stepName || "Studio"}`}
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>{c.stepInfo?.buttonLabel || "Step 5 Product Studio →"}</span>
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {c.stepInfo?.targetStep === "section2" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (onClose) onClose();
+                                handleOpenStudioForCreator(c, 5, "Step 5 Product Ideas");
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all shadow-sm flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap"
+                              title="Jump directly to Step 5: Audience & 3 Product Ideas"
+                            >
+                              <Sparkles className="w-3 h-3 text-amber-300" />
+                              <span>Step 5 Ideas</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const targetStep = c.stepInfo?.targetStep || 5;
+                              if (onClose) onClose();
+                              handleOpenStudioForCreator(c, targetStep, c.stepInfo?.buttonLabel);
+                            }}
+                            className={`px-3.5 py-1.5 rounded-xl text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap ${
+                              c.stepInfo?.stepNumber === 6
+                                ? "bg-purple-600 hover:bg-purple-500 shadow-purple-900/30"
+                                : c.stepInfo?.stepNumber === 7
+                                ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30"
+                                : "bg-purple-600 hover:bg-purple-500 shadow-purple-900/30"
+                            }`}
+                            title={`Advance to ${c.stepInfo?.stepName || "Studio"}`}
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>{c.stepInfo?.buttonLabel || "Step 5 Product Studio →"}</span>
+                          </button>
+                        </div>
                       )}
 
                       <button
@@ -1623,19 +1639,39 @@ export default function CreatorFollowUpCRM({
 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {!detailCreator.isRejected && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const targetStep = detailCreator.stepInfo?.targetStep || 5;
-                        setSelectedDetailCreatorId(null);
-                        if (onClose) onClose();
-                        handleOpenStudioForCreator(detailCreator, targetStep, detailCreator.stepInfo?.buttonLabel);
-                      }}
-                      className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-white" />
-                      <span>{detailCreator.stepInfo?.buttonLabel || "Open Step 5 Product Studio →"}</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDetailCreatorId(null);
+                          if (onClose) onClose();
+                          handleOpenStudioForCreator(detailCreator, 5, "Step 5 Product Ideas");
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+                        title="Jump directly to Step 5: Audience & 3 Product Ideas"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Step 5 Ideas →</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const targetStep = detailCreator.stepInfo?.targetStep || 5;
+                          setSelectedDetailCreatorId(null);
+                          if (onClose) onClose();
+                          handleOpenStudioForCreator(detailCreator, targetStep, detailCreator.stepInfo?.buttonLabel);
+                        }}
+                        className={`px-4 py-1.5 rounded-xl text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap ${
+                          detailCreator.stepInfo?.stepNumber === 7
+                            ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30"
+                            : "bg-purple-600 hover:bg-purple-500 shadow-purple-900/30"
+                        }`}
+                      >
+                        <Rocket className="w-3.5 h-3.5 text-white" />
+                        <span>{detailCreator.stepInfo?.buttonLabel || "Open Studio →"}</span>
+                      </button>
+                    </div>
                   )}
 
                   <button

@@ -54,8 +54,25 @@ async function req(method, path, body, customSignal = null) {
     const res = await fetch(BASE + cleanPath, opts)
     clearTimeout(timeoutId)
     if (!res.ok) {
-      const err = await res.text()
-      throw new Error(`${res.status}: ${err.slice(0, 200)}`)
+      let errMsg = ''
+      try {
+        const errText = await res.text()
+        try {
+          const parsed = JSON.parse(errText)
+          errMsg = parsed.detail || parsed.message || errText
+        } catch {
+          errMsg = errText
+        }
+      } catch (readErr) {}
+
+      errMsg = (errMsg || '').trim()
+      if (!errMsg) {
+        if (res.status === 500) errMsg = 'Backend server temporarily unavailable (HTTP 500). Service is ready for retry.'
+        else if (res.status === 502 || res.status === 504) errMsg = 'Gateway timeout. Please retry with a smaller batch size.'
+        else if (res.status === 404) errMsg = `Endpoint not found (${cleanPath})`
+        else errMsg = `Server returned HTTP ${res.status}`
+      }
+      throw new Error(`${res.status}: ${errMsg.slice(0, 200)}`)
     }
     const data = await res.json()
     return proxyAvatars(data)
@@ -152,8 +169,15 @@ export const rejectOutreach = (id, notes = '') =>
 export const sendOutreach = (id) =>
   req('POST', `/outreach/${id}/send`)
 
-export const sendDirectEmail = (toEmail, subject, body, creatorId = null) =>
-  req('POST', '/outreach/send-direct', { to_email: toEmail, subject, body, creator_id: creatorId })
+export const sendDirectEmail = (toEmail, subject, body, creatorId = null, extraOptions = {}) =>
+  req('POST', '/outreach/send-direct', {
+    to_email: toEmail,
+    subject,
+    body,
+    creator_id: creatorId,
+    concept_image_url: extraOptions.concept_image_url || extraOptions.conceptImageUrl || null,
+    concepts: extraOptions.concepts || null
+  })
 
 export const updateOutreachDraft = (id, subject, body) =>
   req('PATCH', `/outreach/${id}`, { subject, body })

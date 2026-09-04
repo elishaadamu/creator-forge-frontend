@@ -423,7 +423,7 @@ export default function CreatorLaunchLayout({
     }
   }
 
-  // Deep-link handler: Load specific creator or project from URL query params (?section=section2&creator=xxx / ?project=proj_xxx)
+  // Deep-link handler: Load specific creator or project from URL query params (?section=section1&step=5&creator=xxx / ?section=section2&creator=xxx / ?project=proj_xxx)
   useEffect(() => {
     const handleUrlSync = () => {
       try {
@@ -431,13 +431,39 @@ export default function CreatorLaunchLayout({
         const secParam = searchParams.get('section')
         const projIdParam = searchParams.get('project')
         const creatorParam = searchParams.get('creator') || searchParams.get('creatorId')
+        const stepParam = searchParams.get('step')
 
-        if (secParam === 'section1' || secParam === 'section2') {
-          setActiveSection(secParam)
+        if (secParam === 'section1') {
+          setActiveSection('section1')
+          const stepNum = Number(stepParam) || 5
+          setAcquisitionNavState({
+            step: stepNum,
+            creatorId: creatorParam || null,
+            nonce: Date.now(),
+          })
+          return
         }
 
-        if (creatorParam || projIdParam) {
-          handleSwitchToCreatorProject(creatorParam || projIdParam)
+        if (secParam === 'section2') {
+          setActiveSection('section2')
+          if (creatorParam || projIdParam) {
+            handleSwitchToCreatorProject(creatorParam || projIdParam)
+          }
+          return
+        }
+
+        // If no section param in URL, determine from project or creator & step
+        if (projIdParam) {
+          setActiveSection('section2')
+          handleSwitchToCreatorProject(projIdParam)
+        } else if (creatorParam) {
+          const stepNum = Number(stepParam) || 5
+          setActiveSection('section1')
+          setAcquisitionNavState({
+            step: stepNum,
+            creatorId: creatorParam,
+            nonce: Date.now(),
+          })
         }
       } catch (e) {
         console.warn('[CreatorLaunchLayout] URL parameter parse error:', e)
@@ -1364,6 +1390,7 @@ export default function CreatorLaunchLayout({
             }}
             initialActiveStep={acquisitionNavState?.step}
             initialSelectedCreatorId={acquisitionNavState?.creatorId}
+            initialNavNonce={acquisitionNavState?.nonce}
             onActiveStepChange={(step) => setSection1ActiveStep(step)}
           />
         ) : isSwitchingCreator ? (
