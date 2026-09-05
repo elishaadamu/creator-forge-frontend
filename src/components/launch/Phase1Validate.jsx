@@ -355,9 +355,17 @@ export default function Phase1Validate({
         localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, campaignKit: next }))
       } catch (e) {}
       if (project?.id) {
+        const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
+          productName: project?.productName,
+          productTagline: project?.productTagline,
+          mockup: project?.selectedConcept?.mockup || {},
+          pricingConfig: sanitizedPricingConfig
+        }
         updateValidationCampaign(project.id, {
-          product_assets: next,
+          product_assets: step2Assets,
+          campaign_kit: next,
           creator_tasks: next.postingSchedule || [],
+          campaign_launched: true,
           infrastructure: {
             landingPageUrl: `/p/${productSlug}`,
             checkoutUrl: `/p/${productSlug}/checkout`,
@@ -415,15 +423,25 @@ export default function Phase1Validate({
         target_revenue: presaleTarget
       }).catch(e => console.warn('[Phase1] DB plan sync warning:', e))
 
+      const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
+        productName: project?.productName,
+        productTagline: project?.productTagline,
+        mockup: project?.selectedConcept?.mockup || {},
+        pricingConfig: sanitizedPricingConfig
+      }
       updateValidationCampaign(project.id, {
-        product_assets: campaignKit,
+        product_assets: step2Assets,
+        campaign_kit: campaignKit,
+        creator_tasks: campaignKit?.postingSchedule || project?.creatorTasks || [],
+        campaign_launched: Boolean(project?.campaignLaunched || hasCampaignGenerated),
         infrastructure: {
           landingPageUrl: `/p/${productSlug}`,
           checkoutUrl: `/p/${productSlug}/checkout`,
           waitlistCount: 240,
           attributionTracking: true
         },
-        research_survey: surveyData
+        research_survey: surveyData,
+        review_status: 'approved'
       }).catch(e => console.warn('[Phase1] DB campaign sync warning:', e))
     }
 
@@ -503,9 +521,17 @@ export default function Phase1Validate({
 
         // Persist immediately to backend database
         if (project?.id) {
+          const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
+            productName: project?.productName,
+            productTagline: project?.productTagline,
+            mockup: project?.selectedConcept?.mockup || {},
+            pricingConfig: sanitizedPricingConfig
+          }
           updateValidationCampaign(project.id, {
-            product_assets: generated,
+            product_assets: step2Assets,
+            campaign_kit: generated,
             creator_tasks: generated.postingSchedule || [],
+            campaign_launched: true,
             infrastructure: {
               landingPageUrl: `/p/${productSlug}`,
               checkoutUrl: `/p/${productSlug}/checkout`,
