@@ -796,17 +796,33 @@ export default function AcquisitionEngine({
     }
   };
 
-  // Quick preset niche tags
+  // Comprehensive curated list of popular creator niches
   const popularNiches = [
-    "Tech & SaaS",
-    "AI Tools",
-    "Software Dev",
+    "Tech",
+    "Software",
+    "SaaS",
     "Fintech",
     "Productivity",
-    "Gaming",
+    "AI Tools",
     "Creator Economy",
+    "Gaming",
     "Fitness & Health",
+    "E-Commerce",
+    "Finance",
+    "Crypto & Web3",
+    "Design & Creative",
+    "Education",
+    "Beauty & Lifestyle",
+    "Marketing",
   ];
+
+  // Merge popular niches with any active/custom niches so every niche is in the list with equal width
+  const allNicheOptions = Array.from(
+    new Set([
+      ...popularNiches,
+      ...niches,
+    ])
+  );
 
   const removeNiche = (tagToRemove) => {
     setNiches((prev) =>
@@ -5564,13 +5580,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   {niches.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-950/70 text-purple-200 border border-purple-500/40 shadow-sm"
+                      className="inline-flex items-center justify-between gap-2 px-3 py-1 rounded-lg text-xs font-semibold bg-purple-950/70 text-purple-200 border border-purple-500/40 shadow-sm min-w-[96px]"
                     >
-                      <span>{tag}</span>
+                      <span className="truncate">{tag}</span>
                       <button
                         type="button"
                         onClick={() => removeNiche(tag)}
-                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-purple-500/40 text-purple-300 hover:text-white transition-colors cursor-pointer"
+                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-purple-500/40 text-purple-300 hover:text-white transition-colors cursor-pointer shrink-0"
                         title={`Remove ${tag}`}
                       >
                         <X className="w-2.5 h-2.5" />
@@ -5597,37 +5613,49 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   />
                 </div>
 
-                {/* Preset Quick Add Tag Pills */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  <span className="text-[11px] text-slate-500 mr-1">
-                    Quick Add:
-                  </span>
-                  {popularNiches.map((tag) => {
-                    const isAdded = niches.some(
-                      (n) => n.toLowerCase() === tag.toLowerCase(),
-                    );
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() =>
-                          isAdded ? removeNiche(tag) : addNiche(tag)
-                        }
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
-                          isAdded
-                            ? "bg-purple-500/15 text-purple-200 border-purple-500/40"
-                            : "bg-white/[0.02] text-slate-400 hover:text-white border-white/[0.06] hover:border-white/20"
-                        }`}
-                      >
-                        {isAdded ? (
-                          <Check className="w-3 h-3 text-purple-300" />
-                        ) : (
-                          <Plus className="w-3 h-3 text-slate-500" />
-                        )}
-                        <span>{tag}</span>
-                      </button>
-                    );
-                  })}
+                {/* Available Niches - Equal Width Uniform Grid */}
+                <div className="space-y-2 pt-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                      <span>Available Niches</span>
+                      <span className="text-[10px] text-slate-500 font-normal">
+                        (Click to toggle on / off)
+                      </span>
+                    </span>
+                    <span className="text-[10px] text-purple-300 font-mono">
+                      {niches.length} active
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {allNicheOptions.map((tag) => {
+                      const isAdded = niches.some(
+                        (n) => n.toLowerCase() === tag.toLowerCase(),
+                      );
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() =>
+                            isAdded ? removeNiche(tag) : addNiche(tag)
+                          }
+                          className={`w-full h-9 px-3 rounded-lg text-xs font-medium border transition-all cursor-pointer flex items-center justify-between gap-1.5 ${
+                            isAdded
+                              ? "bg-purple-500/20 text-purple-100 border-purple-500/50 shadow-sm shadow-purple-950/40 font-semibold"
+                              : "bg-white/[0.02] text-slate-400 hover:text-slate-200 border-white/[0.06] hover:border-white/20 hover:bg-white/[0.05]"
+                          }`}
+                          title={isAdded ? `Click to remove ${tag}` : `Click to add ${tag}`}
+                        >
+                          <span className="truncate">{tag}</span>
+                          {isAdded ? (
+                            <Check className="w-3.5 h-3.5 text-purple-300 shrink-0" />
+                          ) : (
+                            <Plus className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
