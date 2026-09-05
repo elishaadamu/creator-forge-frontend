@@ -207,8 +207,7 @@ export default function CreatorFollowUpCRM({
         const fromAddr = (r.from_address || "").toLowerCase().trim();
         const isAdmin =
           fromAddr.includes("partnerships@creatorforge.com") ||
-          fromAddr.includes("admin") ||
-          fromAddr.includes("elishadamu97@gmail.com") ||
+          fromAddr.includes("creatorforgeweb@gmail.com") ||
           r.direction === "outbound" ||
           r.is_outgoing ||
           r.ai_summary === "Outgoing reply from you";

@@ -2586,8 +2586,9 @@ export default function AcquisitionEngine({
     // 2. Strict matching against ALL real IMAP threads from Gmail with creator isolation
     const cName = (c.name || c.display_name || "").toLowerCase().trim();
     const adminEmails = [
-      "elishadamu97@gmail.com",
+      "creatorforgeweb@gmail.com",
       "creatorforgestudio@gmail.com",
+      "partnerships@creatorforge.com",
       "noreply@creatorforge.com",
       "hello@creatorforge.com",
     ];
