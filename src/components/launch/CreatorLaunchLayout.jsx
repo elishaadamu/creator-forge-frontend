@@ -635,10 +635,22 @@ export default function CreatorLaunchLayout({
 
               // Safeguard against ghost UUID
               if (isCorruptedPhantomProject(matched)) return null
-
               // Deep merge DB project record with any transient local memory
+              const resolvedKit = matched.campaignKit ||
+                (matched.validationCampaign?.productAssets?.announcementPost ? matched.validationCampaign.productAssets : null) ||
+                (local?.id === matched.id ? local.campaignKit : null) ||
+                null
+
               const merged = {
                 ...matched,
+                campaignKit: resolvedKit,
+                campaignLaunched: Boolean(matched.campaignLaunched || (local?.id === matched.id && local?.campaignLaunched) || resolvedKit),
+                campaignAssetsGenerated: Boolean(matched.campaignAssetsGenerated || (local?.id === matched.id && local?.campaignAssetsGenerated) || resolvedKit),
+                creatorTasks: (matched.creatorTasks?.length > 0)
+                  ? matched.creatorTasks
+                  : (local?.id === matched.id && local?.creatorTasks?.length > 0 ? local.creatorTasks : []),
+                surveyData: matched.surveyData || (local?.id === matched.id ? local?.surveyData : null) || null,
+                validationPlan: matched.validationPlan || (local?.id === matched.id ? local?.validationPlan : null) || null,
                 gateDecisions: (local?.id === matched.id && (local?.gateDecisions?.length || 0) > (matched.gateDecisions?.length || 0))
                   ? local.gateDecisions
                   : (matched.gateDecisions || local?.gateDecisions || []),
@@ -679,19 +691,18 @@ export default function CreatorLaunchLayout({
           }
         }
       } catch (err) {
-        console.warn('[CreatorLaunchLayout] Cross-device sync error:', err)
+        console.warn('Backend database sync error in CreatorLaunchLayout:', err)
       }
     }
 
     syncDbState()
-    const syncInterval = setInterval(syncDbState, 20000)
     return () => {
       isMounted = false
-      clearInterval(syncInterval)
     }
   }, [])
 
-  const handleUpdateActiveProject = (updater) => {
+  // Provide a safe wrapper to update the active project state & sync to storage
+  const handleUpdateProject = (updater) => {
     setActiveProject(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
       if (!next) return next
@@ -699,7 +710,7 @@ export default function CreatorLaunchLayout({
         setExpiringItem('forge_launch_active_project', next, ONE_HOUR_MS)
       } catch (e) {}
 
-      // Persist to backend database tables in SQLite
+      // Persist to backend database tables in SQLite / PostgreSQL
       if (next.id) {
         import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
           updateCoLaunchProject(next.id, {
@@ -710,10 +721,15 @@ export default function CreatorLaunchLayout({
             productTagline: next.productTagline,
             pricing: next.pricing,
             presaleTarget: next.presaleTarget,
+            campaignKit: next.campaignKit,
+            campaign_kit: next.campaignKit,
+            campaignLaunched: next.campaignLaunched,
             projectFiles: next.projectFiles || [],
             messages: next.messages || [],
             metadataInfo: {
               ...(next.metadataInfo || {}),
+              campaign_kit: next.campaignKit || next.metadataInfo?.campaign_kit,
+              campaign_launched: next.campaignLaunched,
               activity_logs: next.activityLogs || next.adminActivity || [],
               gate_decisions: next.gateDecisions || [],
               mvpBuildPlan: next.mvpBuildPlan,

@@ -160,11 +160,24 @@ export default function ProjectOSPage() {
       if (!target && list.length > 0) {
         target = list[0]
       }
-
       if (target) {
-        setActiveProject(target)
+        const cached = getExpiringItem('forge_launch_active_project')
+        const resolvedKit = target.campaignKit ||
+          (target.validationCampaign?.productAssets?.announcementPost ? target.validationCampaign.productAssets : null) ||
+          (cached?.id === target.id ? cached.campaignKit : null) ||
+          null
+        const enhancedTarget = {
+          ...target,
+          campaignKit: resolvedKit,
+          campaignLaunched: Boolean(target.campaignLaunched || (cached?.id === target.id && cached.campaignLaunched) || resolvedKit),
+          campaignAssetsGenerated: Boolean(target.campaignAssetsGenerated || (cached?.id === target.id && cached.campaignAssetsGenerated) || resolvedKit),
+          creatorTasks: (target.creatorTasks?.length > 0)
+            ? target.creatorTasks
+            : (cached?.id === target.id && cached?.creatorTasks?.length > 0 ? cached.creatorTasks : [])
+        }
+        setActiveProject(enhancedTarget)
         try {
-          setExpiringItem('forge_launch_active_project', target, ONE_HOUR_MS)
+          setExpiringItem('forge_launch_active_project', enhancedTarget, ONE_HOUR_MS)
           // Reflect project ID in URL without reload
           const url = new URL(window.location.href)
           url.searchParams.set('project', target.id)
@@ -183,7 +196,7 @@ export default function ProjectOSPage() {
 
   // Initial load
   useEffect(() => {
-    loadProjects()
+    loadProjects(false)
   }, [loadProjects])
 
   // Handle switching active project from dropdown
@@ -207,7 +220,15 @@ export default function ProjectOSPage() {
 
     try {
       setExpiringItem('forge_launch_active_project', updatedProject, ONE_HOUR_MS)
-      await updateCoLaunchProject(updatedProject.id, updatedProject)
+      await updateCoLaunchProject(updatedProject.id, {
+        ...updatedProject,
+        campaignKit: updatedProject.campaignKit,
+        campaign_kit: updatedProject.campaignKit,
+        metadataInfo: {
+          ...(updatedProject.metadataInfo || {}),
+          campaign_kit: updatedProject.campaignKit || updatedProject.metadataInfo?.campaign_kit
+        }
+      })
     } catch (err) {
       console.warn('[ProjectOSPage] Error saving project update:', err)
     }

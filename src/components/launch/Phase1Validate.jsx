@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   CheckCircle2, DollarSign, Layout, Sparkles, Save, Check, Plus, Trash2,
@@ -39,6 +39,7 @@ import {
   Phase1ExperimentsGenSkeleton
 } from './Section2Skeletons'
 import { getPhase1StepGuards } from '../../utils/stepGuards'
+import { getExpiringItem, setExpiringItem, ONE_HOUR_MS } from '../../utils/expiringStorage'
 
 export default function Phase1Validate({
   project,
@@ -96,14 +97,20 @@ export default function Phase1Validate({
 
   // Real Project Campaign Kit State
   const [campaignKit, setCampaignKit] = useState(() => {
-    const fromProject = project?.campaignKit || project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets
+    const fromProject = project?.campaignKit ||
+      project?.validationCampaign?.campaignKit ||
+      (project?.validationCampaign?.productAssets?.announcementPost ? project?.validationCampaign?.productAssets : null) ||
+      (project?.validationCampaign?.product_assets?.announcementPost ? project?.validationCampaign?.product_assets : null)
     if (fromProject && (fromProject.announcementPost || fromProject.storySequence || fromProject.videoScript || fromProject.newsletterDraft || fromProject.postingSchedule?.length > 0)) {
       return fromProject
     }
     try {
-      const stored = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-      if (stored?.campaignKit && (stored.id === project?.id || stored.productName === project?.productName)) {
-        return stored.campaignKit
+      const stored = getExpiringItem('forge_launch_active_project') || JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+      const storedKit = stored?.campaignKit || stored?.data?.campaignKit
+      if (storedKit && (storedKit.announcementPost || storedKit.storySequence || storedKit.postingSchedule?.length > 0)) {
+        if (!project?.id || stored.id === project?.id || stored.productName === project?.productName) {
+          return storedKit
+        }
       }
     } catch (e) {}
     return {
@@ -215,14 +222,18 @@ export default function Phase1Validate({
       })
     }
 
-    const incomingKit = project.campaignKit || project.validationCampaign?.productAssets || project.validationCampaign?.product_assets
+    const incomingKit = project.campaignKit ||
+      project.validationCampaign?.campaignKit ||
+      (project.validationCampaign?.productAssets?.announcementPost ? project.validationCampaign?.productAssets : null) ||
+      (project.validationCampaign?.product_assets?.announcementPost ? project.validationCampaign?.product_assets : null)
     if (incomingKit && (incomingKit.announcementPost || incomingKit.videoScript || incomingKit.storySequence || incomingKit.newsletterDraft || incomingKit.postingSchedule?.length > 0)) {
       setCampaignKit(incomingKit)
     } else {
       try {
-        const stored = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        if (stored?.campaignKit && (stored.id === project.id || stored.productName === project.productName)) {
-          setCampaignKit(stored.campaignKit)
+        const stored = getExpiringItem('forge_launch_active_project') || JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+        const storedKit = stored?.campaignKit || stored?.data?.campaignKit
+        if (storedKit && (storedKit.announcementPost || storedKit.postingSchedule?.length > 0) && (!project?.id || stored.id === project.id || stored.productName === project.productName)) {
+          setCampaignKit(storedKit)
         }
       } catch (e) {}
     }
@@ -346,35 +357,50 @@ export default function Phase1Validate({
     setPlan(prev => ({ ...prev, [field]: value }))
   }
 
+  const campaignSyncTimerRef = useRef(null)
+
   const updateCampaignKit = (field, value) => {
     setCampaignKit(prev => {
       const next = { ...prev, [field]: value }
-      if (onUpdateProject) onUpdateProject(curr => ({ ...(curr || {}), campaignKit: next }))
+      if (onUpdateProject) {
+        onUpdateProject(curr => ({
+          ...(curr || {}),
+          campaignKit: next,
+          metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: next }
+        }))
+      }
       try {
-        const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, campaignKit: next }))
+        const cur = getExpiringItem('forge_launch_active_project') || JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+        const updatedLocal = { ...cur, campaignKit: next }
+        setExpiringItem('forge_launch_active_project', updatedLocal, ONE_HOUR_MS)
+        localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedLocal))
       } catch (e) {}
+
       if (project?.id) {
-        const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
-          productName: project?.productName,
-          productTagline: project?.productTagline,
-          mockup: project?.selectedConcept?.mockup || {},
-          pricingConfig: sanitizedPricingConfig
-        }
-        updateValidationCampaign(project.id, {
-          product_assets: step2Assets,
-          campaign_kit: next,
-          creator_tasks: next.postingSchedule || [],
-          campaign_launched: true,
-          infrastructure: {
-            landingPageUrl: `/p/${productSlug}`,
-            checkoutUrl: `/p/${productSlug}/checkout`,
-            waitlistCount: 240,
-            attributionTracking: true
-          },
-          research_survey: surveyData,
-          review_status: 'approved'
-        }).catch(e => console.warn('[Phase1] DB campaign auto-sync warning:', e))
+        if (campaignSyncTimerRef.current) clearTimeout(campaignSyncTimerRef.current)
+        campaignSyncTimerRef.current = setTimeout(() => {
+          const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
+            productName: project?.productName,
+            productTagline: project?.productTagline,
+            mockup: project?.selectedConcept?.mockup || {},
+            pricingConfig: sanitizedPricingConfig
+          }
+          updateValidationCampaign(project.id, {
+            product_assets: step2Assets,
+            campaign_kit: next,
+            campaignKit: next,
+            creator_tasks: next.postingSchedule || [],
+            campaign_launched: true,
+            infrastructure: {
+              landingPageUrl: `/p/${productSlug}`,
+              checkoutUrl: `/p/${productSlug}/checkout`,
+              waitlistCount: 240,
+              attributionTracking: true
+            },
+            research_survey: surveyData,
+            review_status: 'approved'
+          }).catch(e => console.warn('[Phase1] DB campaign auto-sync warning:', e))
+        }, 600)
       }
       return next
     })
@@ -400,6 +426,7 @@ export default function Phase1Validate({
     }
 
     try {
+      setExpiringItem('forge_launch_active_project', updated, ONE_HOUR_MS)
       localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
     } catch (e) {}
 
@@ -432,6 +459,7 @@ export default function Phase1Validate({
       updateValidationCampaign(project.id, {
         product_assets: step2Assets,
         campaign_kit: campaignKit,
+        campaignKit: campaignKit,
         creator_tasks: campaignKit?.postingSchedule || project?.creatorTasks || [],
         campaign_launched: Boolean(project?.campaignLaunched || hasCampaignGenerated),
         infrastructure: {
@@ -443,6 +471,17 @@ export default function Phase1Validate({
         research_survey: surveyData,
         review_status: 'approved'
       }).catch(e => console.warn('[Phase1] DB campaign sync warning:', e))
+
+      updateCoLaunchProject(project.id, {
+        campaignKit: campaignKit,
+        campaign_kit: campaignKit,
+        campaignLaunched: Boolean(project?.campaignLaunched || hasCampaignGenerated),
+        metadataInfo: {
+          ...(project?.metadataInfo || {}),
+          campaign_kit: campaignKit,
+          campaign_launched: Boolean(project?.campaignLaunched || hasCampaignGenerated)
+        }
+      }).catch(() => {})
     }
 
     setTimeout(() => {
@@ -479,6 +518,7 @@ export default function Phase1Validate({
         }
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
         try {
+          setExpiringItem('forge_launch_active_project', updated, ONE_HOUR_MS)
           localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
         } catch (e) {}
 
@@ -515,6 +555,7 @@ export default function Phase1Validate({
         }
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
         try {
+          setExpiringItem('forge_launch_active_project', updated, ONE_HOUR_MS)
           localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
           window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
         } catch (e) {}
@@ -527,20 +568,36 @@ export default function Phase1Validate({
             mockup: project?.selectedConcept?.mockup || {},
             pricingConfig: sanitizedPricingConfig
           }
-          updateValidationCampaign(project.id, {
-            product_assets: step2Assets,
-            campaign_kit: generated,
-            creator_tasks: generated.postingSchedule || [],
-            campaign_launched: true,
-            infrastructure: {
-              landingPageUrl: `/p/${productSlug}`,
-              checkoutUrl: `/p/${productSlug}/checkout`,
-              waitlistCount: 240,
-              attributionTracking: true
-            },
-            research_survey: surveyData,
-            review_status: 'approved'
-          }).catch(e => console.warn('[Phase1] DB campaign auto-sync warning:', e))
+          try {
+            await updateValidationCampaign(project.id, {
+              product_assets: step2Assets,
+              campaign_kit: generated,
+              campaignKit: generated,
+              creator_tasks: generated.postingSchedule || [],
+              campaign_launched: true,
+              infrastructure: {
+                landingPageUrl: `/p/${productSlug}`,
+                checkoutUrl: `/p/${productSlug}/checkout`,
+                waitlistCount: 240,
+                attributionTracking: true
+              },
+              research_survey: surveyData,
+              review_status: 'approved'
+            })
+
+            await updateCoLaunchProject(project.id, {
+              campaignKit: generated,
+              campaign_kit: generated,
+              campaignLaunched: true,
+              metadataInfo: {
+                ...(project?.metadataInfo || {}),
+                campaign_kit: generated,
+                campaign_launched: true
+              }
+            }).catch(() => {})
+          } catch (e) {
+            console.warn('[Phase1] DB campaign auto-sync warning:', e)
+          }
 
           logProjectActivity(project.id, {
             action: 'AI Campaign Content Generated & Locked',
@@ -1746,8 +1803,17 @@ export default function Phase1Validate({
             <button
               onClick={() => {
                 if (project?.id) {
+                  const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
+                    productName: project?.productName,
+                    productTagline: project?.productTagline,
+                    mockup: project?.selectedConcept?.mockup || {},
+                    pricingConfig: sanitizedPricingConfig
+                  }
                   updateValidationCampaign(project.id, {
-                    product_assets: campaignKit,
+                    product_assets: step2Assets,
+                    campaign_kit: campaignKit,
+                    campaignKit: campaignKit,
+                    creator_tasks: campaignKit?.postingSchedule || [],
                     infrastructure: {
                       landingPageUrl: `/p/${productSlug}`,
                       checkoutUrl: `/p/${productSlug}/checkout`,
