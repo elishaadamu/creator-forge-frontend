@@ -1259,7 +1259,9 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_step2_timer_target");
     } catch (e) {}
     setCountdownSeconds(30);
-    const targetCount = creatorsBatchCount || 3;
+    const targetCount = Math.max(1, Number(creatorsBatchCount) || 3);
+    const parsedMinFollowers = Math.max(1000, Number(minFollowers) || 100000);
+    const parsedMaxFollowers = Math.max(parsedMinFollowers, Number(maxFollowers) || 1000000);
     const activeNiches =
       niches.length > 0 ? niches : ["Tech", "Software", "SaaS"];
     setDiscoveryLog(
@@ -1275,8 +1277,8 @@ export default function AcquisitionEngine({
 
       const res = await discoverAutonomousCreators({
         niches: activeNiches,
-        min_followers: minFollowers,
-        max_followers: maxFollowers,
+        min_followers: parsedMinFollowers,
+        max_followers: parsedMaxFollowers,
         min_engagement_rate: minEngagement,
         target_count: targetCount,
         platforms: selectedPlatforms,
@@ -1289,11 +1291,12 @@ export default function AcquisitionEngine({
       }
 
       if (res && Array.isArray(res.creators) && res.creators.length > 0) {
-        const enrichedCreators = res.creators.map((c) => {
+        const enrichedCreators = res.creators.slice(0, targetCount).map((c) => {
           const bioEmailMatch = (c.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
           const autoEmail = c.email || c.email_public || (bioEmailMatch ? bioEmailMatch[0].trim() : "");
           return {
             ...c,
+            handle: (c.handle || "").replace(/^@+/, ""),
             email: autoEmail,
             email_public: autoEmail,
             email_verified: Boolean(c.email_verified || autoEmail),
@@ -1328,14 +1331,26 @@ export default function AcquisitionEngine({
         `[Discovery Notice] ${cleanMsg}`,
       );
 
-      // Graceful fallback: If current creators list is empty, load existing database creators so operator is never stuck
+      // Graceful fallback: If current creators list is empty, load existing database creators matching criteria
       try {
-        const { fetchCreators } = await import("../../services/opsApi");
-        const existing = await fetchCreators();
+        const { getCreators } = await import("../../services/opsApi");
+        const existing = await getCreators({ limit: targetCount * 2 });
         if (Array.isArray(existing) && existing.length > 0) {
-          setCreators(existing);
-          setSelectedCreatorId(existing[0].id);
-          setDiscoveryLog((prev) => `${prev}\n[Auto-Recovery] Loaded ${existing.length} verified creators from pipeline database.`);
+          const validExisting = existing
+            .filter((c) => {
+              const f = c.follower_count || c.followerCount || 0;
+              return (!parsedMinFollowers || f >= parsedMinFollowers * 0.7) && (!parsedMaxFollowers || f <= parsedMaxFollowers);
+            })
+            .slice(0, targetCount)
+            .map((c) => ({
+              ...c,
+              handle: (c.handle || "").replace(/^@+/, ""),
+            }));
+          if (validExisting.length > 0) {
+            setCreators(validExisting);
+            setSelectedCreatorId(validExisting[0].id);
+            setDiscoveryLog((prev) => `${prev}\n[Auto-Recovery] Loaded ${validExisting.length} verified creators from pipeline database.`);
+          }
         }
       } catch (recoverErr) {
         console.debug("Recovery fallback silent:", recoverErr);
@@ -6234,51 +6249,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             </div>
           )}
 
-          {/* Active Scouting State with Spinning Icon (Clean & Simple) */}
+          {/* Active Scouting State: Cycling Radar & Multi-Stage Intelligence Animation */}
           {discovering && (
-            <div className="p-5 rounded-2xl bg-[#0e1117] border border-indigo-500/30 shadow-lg space-y-3.5 animate-in fade-in">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
-                    <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-bold text-white">
-                        Scouting Digital Creators...
-                      </span>
-                      <span className="text-[11px] font-mono text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/30">
-                        {creators.length} of {creatorsBatchCount || 3} found
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Querying registries, audience engagement velocity, and business contact channels.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleStopDiscovery}
-                    className="px-3.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                  >
-                    <XCircle className="w-3.5 h-3.5 text-red-400" />
-                    <span>Stop Scouting</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="w-full bg-white/[0.05] h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${Math.min(100, Math.max(8, Math.round((creators.length / (creatorsBatchCount || 3)) * 100)))}%`,
-                  }}
-                />
-              </div>
-
+            <div className="space-y-3 animate-in fade-in">
+              <ScoutingCyclingAnimation
+                targetCount={creatorsBatchCount || 3}
+                foundCount={creators.length}
+                niches={niches.length > 0 ? niches : ["Tech", "Software"]}
+                selectedPlatforms={selectedPlatforms}
+                onStopScouting={handleStopDiscovery}
+              />
               {/* Live Terminal Discovery Log */}
               {discoveryLog && (
                 <div className="p-3 rounded-xl bg-black/60 border border-white/[0.06] text-xs font-mono text-indigo-300 flex items-start gap-2 shadow-inner">
