@@ -38,6 +38,7 @@ export default function CreatorFollowUpCRM({
   onClose,
   creators: rawCreators = [],
   realThreads: rawThreads = [],
+  projects: rawProjects = [],
   pitchSentMap = {},
   onSelectCreator,
   onSyncImap,
@@ -61,6 +62,17 @@ export default function CreatorFollowUpCRM({
     if (rawThreads && Array.isArray(rawThreads.threads)) return rawThreads.threads;
     return [];
   }, [rawThreads]);
+
+  const [dbProjects, setDbProjects] = useState(() => {
+    if (Array.isArray(rawProjects)) return rawProjects;
+    return [];
+  });
+
+  useEffect(() => {
+    if (Array.isArray(rawProjects) && rawProjects.length > 0) {
+      setDbProjects(rawProjects);
+    }
+  }, [rawProjects]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -90,12 +102,18 @@ export default function CreatorFollowUpCRM({
     }
   });
 
-  // Sync stage map from database on mount across devices
+  // Sync stage map and projects from database on mount across devices
   useEffect(() => {
-    import("../../services/opsApi").then(({ getWorkflowState }) => {
+    import("../../services/opsApi").then(({ getWorkflowState, getCoLaunchProjects }) => {
       getWorkflowState().then((ws) => {
         if (ws && ws.creator_stage_map && Object.keys(ws.creator_stage_map).length > 0) {
           setStageMap((prev) => ({ ...prev, ...ws.creator_stage_map }));
+        }
+      }).catch(() => {});
+
+      getCoLaunchProjects().then((projs) => {
+        if (Array.isArray(projs) && projs.length > 0) {
+          setDbProjects(projs);
         }
       }).catch(() => {});
     });
@@ -103,7 +121,7 @@ export default function CreatorFollowUpCRM({
 
   const handleOpenStudioForCreator = (creator, targetStep, actionName) => {
     if (!creator) return;
-    const stepNum = typeof targetStep === "number" ? targetStep : (targetStep === "section2" ? "section2" : 5);
+    const stepNum = typeof targetStep === "number" ? targetStep : (targetStep === "section2" || targetStep === 7 ? "section2" : 5);
     try {
       const map = JSON.parse(localStorage.getItem("forge_creator_stage_map") || "{}");
       map[creator.id] = {
@@ -123,6 +141,8 @@ export default function CreatorFollowUpCRM({
 
     if (onSelectCreator) {
       onSelectCreator(creator.id, targetStep);
+    } else if (targetStep === "section2" || targetStep === 7) {
+      window.location.href = `/project-os?creator=${encodeURIComponent(creator.id)}`;
     }
   };
 
@@ -682,14 +702,43 @@ export default function CreatorFollowUpCRM({
     const hasReply = Boolean(replyInfo?.hasReply || c.hasReplied || c.reply_classification || c.replyClassification);
 
     // 1. Check if an active project is launched for this creator (in DB or localStorage)
-    let hasActiveLaunchedProject = Boolean(c.project_id || effectiveStatus === "launched" || effectiveStatus === "active_project" || explicitTracked?.step === "section2" || explicitTracked?.step === 7);
+    const cCleanHandle = (c.handle || "").replace(/^@/, "").toLowerCase().trim();
+    const cCleanEmail = (c.email || c.email_public || "").toLowerCase().trim();
+    const cCleanName = (c.name || c.display_name || "").toLowerCase().trim();
+
+    const matchedDbProj = (dbProjects || []).find((p) => {
+      if (!p) return false;
+      const pCleanHandle = (p.creatorHandle || "").replace(/^@/, "").toLowerCase().trim();
+      const pCleanEmail = (p.creatorEmail || "").toLowerCase().trim();
+      const pCleanName = (p.creatorName || "").toLowerCase().trim();
+      return (
+        (p.creatorId && (p.creatorId === c.id || p.creatorId === c.handle)) ||
+        (p.id && (p.id === c.project_id || p.id === c.projectId || p.id === c.active_project_id)) ||
+        (cCleanHandle && pCleanHandle && cCleanHandle === pCleanHandle) ||
+        (cCleanEmail && pCleanEmail && cCleanEmail === pCleanEmail) ||
+        (cCleanName && pCleanName && cCleanName === pCleanName && cCleanName.length > 2)
+      );
+    });
+
+    let hasActiveLaunchedProject = Boolean(
+      c.project_id ||
+      c.projectId ||
+      c.has_project ||
+      c.hasProject ||
+      matchedDbProj ||
+      effectiveStatus === "launched" ||
+      effectiveStatus === "active_project" ||
+      explicitTracked?.step === "section2" ||
+      explicitTracked?.step === 7
+    );
+
     if (!hasActiveLaunchedProject) {
       try {
         const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
         if (storedProj) {
           const matchId = storedProj.creatorId && (storedProj.creatorId === c.id || storedProj.creatorId === c.handle);
-          const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === (c.handle || "").replace(/^@/, "").toLowerCase());
-          const matchEmail = storedProj.creatorEmail && c.email && (storedProj.creatorEmail.toLowerCase() === c.email.toLowerCase());
+          const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === cCleanHandle);
+          const matchEmail = storedProj.creatorEmail && cCleanEmail && (storedProj.creatorEmail.toLowerCase() === cCleanEmail);
           if (matchId || matchHandle || matchEmail) {
             hasActiveLaunchedProject = true;
           }
@@ -742,6 +791,8 @@ export default function CreatorFollowUpCRM({
         badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
         buttonLabel: "Open Project OS 🚀",
         targetStep: "section2",
+        matchedProject: matchedDbProj || null,
+        hasActiveLaunchedProject: true,
       };
     }
 

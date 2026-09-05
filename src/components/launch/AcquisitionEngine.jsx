@@ -89,6 +89,7 @@ export const getConceptImageUrl = (concept, fallbackNiche = "tech") => {
 
 export default function AcquisitionEngine({
   initialCreators = [],
+  allProjects = [],
   api,
   onCreateProject,
   onGoToProjectOS,
@@ -98,6 +99,27 @@ export default function AcquisitionEngine({
   initialNavNonce = null,
   onActiveStepChange = null,
 }) {
+  const [dbProjects, setDbProjects] = useState(() => {
+    if (Array.isArray(allProjects)) return allProjects;
+    return [];
+  });
+
+  useEffect(() => {
+    if (Array.isArray(allProjects) && allProjects.length > 0) {
+      setDbProjects(allProjects);
+    }
+  }, [allProjects]);
+
+  useEffect(() => {
+    import("../../services/opsApi").then(({ getCoLaunchProjects }) => {
+      getCoLaunchProjects().then((projs) => {
+        if (Array.isArray(projs) && projs.length > 0) {
+          setDbProjects(projs);
+        }
+      }).catch(() => {});
+    });
+  }, []);
+
   const [activeStep, setActiveStep] = useState(() => {
     try {
       if (initialActiveStep && initialActiveStep >= 1 && initialActiveStep <= 6) {
@@ -8480,7 +8502,33 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 const msgs = getCreatorThreadMessages(c, realThreads);
                 
                 // Check if creator project is already launched in Project OS (Section 2)
-                let isLaunched = Boolean(c.project_id || (c.status || "").toLowerCase() === "launched" || (c.status || "").toLowerCase() === "active_project");
+                const cCleanHandle = (c.handle || "").replace(/^@/, "").toLowerCase().trim();
+                const cCleanEmail = (c.email || c.email_public || "").toLowerCase().trim();
+                const cCleanName = (c.name || c.display_name || "").toLowerCase().trim();
+
+                const matchedDbProj = (dbProjects || []).find((p) => {
+                  if (!p) return false;
+                  const pCleanHandle = (p.creatorHandle || "").replace(/^@/, "").toLowerCase().trim();
+                  const pCleanEmail = (p.creatorEmail || "").toLowerCase().trim();
+                  const pCleanName = (p.creatorName || "").toLowerCase().trim();
+                  return (
+                    (p.creatorId && (p.creatorId === c.id || p.creatorId === c.handle)) ||
+                    (p.id && (p.id === c.project_id || p.id === c.projectId || p.id === c.active_project_id)) ||
+                    (cCleanHandle && pCleanHandle && cCleanHandle === pCleanHandle) ||
+                    (cCleanEmail && pCleanEmail && cCleanEmail === pCleanEmail) ||
+                    (cCleanName && pCleanName && cCleanName === pCleanName && cCleanName.length > 2)
+                  );
+                });
+
+                let isLaunched = Boolean(
+                  c.project_id ||
+                  c.projectId ||
+                  c.has_project ||
+                  c.hasProject ||
+                  matchedDbProj ||
+                  (c.status || "").toLowerCase() === "launched" ||
+                  (c.status || "").toLowerCase() === "active_project"
+                );
                 if (!isLaunched) {
                   try {
                     const stageMap = getExpiringItem("forge_creator_stage_map", {});
@@ -8489,8 +8537,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
                     if (storedProj) {
                       const matchId = storedProj.creatorId && (storedProj.creatorId === c.id || storedProj.creatorId === c.handle);
-                      const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === (c.handle || "").replace(/^@/, "").toLowerCase());
-                      const matchEmail = storedProj.creatorEmail && (c.email || c.email_public) && (storedProj.creatorEmail.toLowerCase() === (c.email || c.email_public).toLowerCase());
+                      const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === cCleanHandle);
+                      const matchEmail = storedProj.creatorEmail && cCleanEmail && (storedProj.creatorEmail.toLowerCase() === cCleanEmail);
                       if (matchId || matchHandle || matchEmail) isLaunched = true;
                     }
                   } catch (e) {}
@@ -8624,8 +8672,30 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               )}
 
               {(() => {
+                const selCleanHandle = (selectedCreator?.handle || "").replace(/^@/, "").toLowerCase().trim();
+                const selCleanEmail = (selectedCreator?.email || selectedCreator?.email_public || "").toLowerCase().trim();
+                const selCleanName = (selectedCreator?.name || selectedCreator?.display_name || "").toLowerCase().trim();
+
+                const matchedDbProj = (dbProjects || []).find((p) => {
+                  if (!p) return false;
+                  const pCleanHandle = (p.creatorHandle || "").replace(/^@/, "").toLowerCase().trim();
+                  const pCleanEmail = (p.creatorEmail || "").toLowerCase().trim();
+                  const pCleanName = (p.creatorName || "").toLowerCase().trim();
+                  return (
+                    (p.creatorId && (p.creatorId === selectedCreator?.id || p.creatorId === selectedCreator?.handle)) ||
+                    (p.id && (p.id === selectedCreator?.project_id || p.id === selectedCreator?.projectId || p.id === selectedCreator?.active_project_id)) ||
+                    (selCleanHandle && pCleanHandle && selCleanHandle === pCleanHandle) ||
+                    (selCleanEmail && pCleanEmail && selCleanEmail === pCleanEmail) ||
+                    (selCleanName && pCleanName && selCleanName === pCleanName && selCleanName.length > 2)
+                  );
+                });
+
                 let isSelectedCreatorLaunched = Boolean(
                   selectedCreator?.project_id ||
+                  selectedCreator?.projectId ||
+                  selectedCreator?.has_project ||
+                  selectedCreator?.hasProject ||
+                  matchedDbProj ||
                   (selectedCreator?.status || "").toLowerCase() === "launched" ||
                   (selectedCreator?.status || "").toLowerCase() === "active_project"
                 );
@@ -8637,8 +8707,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
                     if (storedProj) {
                       const matchId = storedProj.creatorId && (storedProj.creatorId === selectedCreator.id || storedProj.creatorId === selectedCreator.handle);
-                      const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === (selectedCreator.handle || "").replace(/^@/, "").toLowerCase());
-                      const matchEmail = storedProj.creatorEmail && (selectedCreator.email || selectedCreator.email_public) && (storedProj.creatorEmail.toLowerCase() === (selectedCreator.email || selectedCreator.email_public).toLowerCase());
+                      const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === selCleanHandle);
+                      const matchEmail = storedProj.creatorEmail && selCleanEmail && (storedProj.creatorEmail.toLowerCase() === selCleanEmail);
                       if (matchId || matchHandle || matchEmail) isSelectedCreatorLaunched = true;
                     }
                   } catch (e) {}
@@ -9521,6 +9591,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         onClose={() => setShowFollowUpCRM(false)}
         creators={creators}
         realThreads={realThreads}
+        projects={dbProjects}
         pitchSentMap={pitchSentMap}
         onSelectCreator={(cid, targetStep, conceptId) => {
           setSelectedCreatorId(cid);

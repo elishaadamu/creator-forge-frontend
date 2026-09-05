@@ -716,7 +716,7 @@ export default function Phase1Validate({
 
   const handleAnalyzeResponses = async () => {
     if (!surveyResponses || surveyResponses.length === 0) {
-      showNotification('Please collect at least 1 audience response or simulate a test response.')
+      showNotification('Please collect at least 1 audience survey response.')
       return
     }
     setIsAnalyzingResponses(true)
@@ -1500,14 +1500,6 @@ export default function Phase1Validate({
                     <span>Open Live Survey</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
-
-                  <button
-                    onClick={handleSimulateSurveyResponse}
-                    className="px-3 py-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-xs font-bold border border-emerald-500/30 flex items-center gap-1 transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Simulate Response</span>
-                  </button>
                 </div>
               </div>
 
@@ -2709,7 +2701,7 @@ export default function Phase1Validate({
             {(!surveyResponses || surveyResponses.length === 0) ? (
               <div className="p-8 text-center text-slate-500 border border-dashed border-white/[0.08] rounded-xl space-y-2">
                 <p>No audience discovery responses recorded yet.</p>
-                <p className="text-[11px] text-slate-400">Share your research link or simulate responses in Step 2 to view live feedback pulse.</p>
+                <p className="text-[11px] text-slate-400">Share your research survey link with the audience to view live feedback pulse.</p>
               </div>
             ) : (
               <div className="space-y-2.5">

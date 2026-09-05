@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import CreatorFollowUpCRM from "./CreatorFollowUpCRM";
-import { getCreators, getThreads, pollInboxReplies, updateCreatorDetails, deleteCreator, getWorkflowState } from "../../services/opsApi";
+import { getCreators, getThreads, pollInboxReplies, updateCreatorDetails, deleteCreator, getWorkflowState, getCoLaunchProjects } from "../../services/opsApi";
 import { updatePageSEO } from "../../utils/seo";
 import { Users, ExternalLink, RefreshCw, Rocket, ShieldCheck, CheckCircle, AlertCircle, X } from "lucide-react";
 import { CRMSkeleton } from "./Section2Skeletons";
@@ -8,6 +8,7 @@ import { CRMSkeleton } from "./Section2Skeletons";
 export default function FollowUpCRMPage() {
   const [creators, setCreators] = useState([]);
   const [realThreads, setRealThreads] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [workflowState, setWorkflowState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSyncingImap, setIsSyncingImap] = useState(false);
@@ -29,10 +30,11 @@ export default function FollowUpCRMPage() {
   const loadData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     try {
-      const [creatorsRes, threadsRes, workflowRes] = await Promise.allSettled([
+      const [creatorsRes, threadsRes, workflowRes, projectsRes] = await Promise.allSettled([
         getCreators({ limit: 50 }),
         getThreads(),
         getWorkflowState(),
+        getCoLaunchProjects(),
       ]);
 
       if (creatorsRes.status === "fulfilled" && creatorsRes.value) {
@@ -46,6 +48,9 @@ export default function FollowUpCRMPage() {
       }
       if (workflowRes.status === "fulfilled" && workflowRes.value) {
         setWorkflowState(workflowRes.value);
+      }
+      if (projectsRes.status === "fulfilled" && projectsRes.value) {
+        setProjects(Array.isArray(projectsRes.value) ? projectsRes.value : []);
       }
     } catch (err) {
       console.warn("[FollowUpCRMPage] Data load error:", err);
@@ -225,6 +230,7 @@ export default function FollowUpCRMPage() {
             isPage={true}
             creators={creators}
             realThreads={realThreads}
+            projects={projects}
             pitchSentMap={workflowState?.pitch_sent_map || {}}
             onSelectCreator={(creatorId, targetStep) => {
               if (targetStep === "section2" || targetStep === 7) {

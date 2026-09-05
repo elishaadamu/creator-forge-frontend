@@ -1455,6 +1455,7 @@ export default function CreatorLaunchLayout({
         {activeSection === 'section1' ? (
           <AcquisitionEngine
             initialCreators={initialCreators}
+            allProjects={allProjects}
             api={api}
             onCreateProject={handleCreateProjectFromConcept}
             onGoToProjectOS={(creatorOrId) => handleSwitchToCreatorProject(creatorOrId)}
@@ -1564,6 +1565,7 @@ export default function CreatorLaunchLayout({
         onClose={() => setShowFollowUpCRM(false)}
         creators={getSafeDiscoveredCreators()}
         realThreads={getSafeRealThreads()}
+        projects={allProjects}
         pitchSentMap={getSafeSentMap('forge_launch_pitch_sent_map')}
         onSelectCreator={(cid, targetStep) => {
           setShowFollowUpCRM(false)
