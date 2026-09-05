@@ -4,7 +4,6 @@ import {
   Zap, Star, Lock, Users, Globe, ExternalLink, HelpCircle, Check,
   Loader2, AlertCircle, RefreshCw
 } from 'lucide-react'
-import ProductMockupDisplay from './ProductMockupDisplay'
 import { trackVisit } from '../../services/tracker'
 import { updatePageSEO } from '../../utils/seo'
 import {
@@ -349,10 +348,7 @@ export default function PreorderLandingPage({ slug }) {
           </div>
         </div>
 
-        {/* Visual Designed Mockup Showcase (Full, Non-Editable UI Frame) */}
-        <div className="pt-6">
-          <ProductMockupDisplay project={project} theme="purple" />
-        </div>
+
 
         {/* Value Pillars Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-12 text-left">

@@ -23,7 +23,7 @@ const isUuid = (str) => typeof str === 'string' && (/^[0-9a-f]{8}-[0-9a-f]{4}-[0
 export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisition, onResetProject }) {
   const [isLoadingProject, setIsLoadingProject] = useState(() => !project)
 
-  // Initialize sidebarTab from URL search param or localStorage
+  // Initialize sidebarTab from URL search param or default 'overview'
   const [sidebarTab, setSidebarTabState] = useState(() => {
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search)
@@ -32,25 +32,20 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
       if (tabParam && validTabs.includes(tabParam.toLowerCase())) {
         return tabParam.toLowerCase()
       }
-      const saved = localStorage.getItem('forge_project_os_active_tab')
-      if (saved && validTabs.includes(saved.toLowerCase())) {
-        return saved.toLowerCase()
-      }
     }
     return 'overview'
   })
 
-  // Sync sidebar tab state, localStorage, and URL parameter
+  // Sync sidebar tab state and URL parameter
   const setSidebarTab = (newTab) => {
     setSidebarTabState(newTab)
-    try {
-      localStorage.setItem('forge_project_os_active_tab', newTab)
-      if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
+      try {
         const url = new URL(window.location.href)
         url.searchParams.set('tab', newTab)
         window.history.replaceState({}, '', url.toString())
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
   }
 
   // Initialize phase modal & step from URL or fallback
@@ -335,10 +330,6 @@ partnerships@creatorforge.com`
       ...(prev || {}),
       ...updated
     }))
-    try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-    } catch (e) {}
     if (project?.id) {
       import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
         updateCoLaunchProject(project.id, {
@@ -387,10 +378,6 @@ partnerships@creatorforge.com`
       status: decisionType === 'kill' ? 'archived' : 'launched'
     }
     onUpdateProject?.(prev => ({ ...(prev || {}), ...updatedProject }))
-    try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProject))
-      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProject }))
-    } catch (e) {}
 
     if (project?.id) {
       try {
@@ -1711,9 +1698,6 @@ partnerships@creatorforge.com`
                     <div
                       key={step.id}
                       onClick={() => {
-                        try {
-                          localStorage.setItem('forge_p3_active_step', step.id)
-                        } catch (e) {}
                         openPhaseStep(step.id)
                       }}
                       className={`p-3.5 rounded-xl border transition-all cursor-pointer group space-y-1 ${
@@ -1755,9 +1739,6 @@ partnerships@creatorforge.com`
 
               <button
                 onClick={() => {
-                  try {
-                    localStorage.setItem('forge_p3_active_step', 'prep')
-                  } catch (e) {}
                   openPhaseStep('prep')
                 }}
                 className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-purple-950/40 active:scale-95 cursor-pointer"
@@ -1803,7 +1784,7 @@ partnerships@creatorforge.com`
                   {
                     id: 'assets',
                     num: '2. Build Validation Assets',
-                    desc: 'Landing page, presales, checkout, analytics, emails, surveys, mockups',
+                    desc: 'Landing page, presales, checkout, analytics, emails, discovery surveys',
                     icon: Layout,
                     isDone: isStep2Done,
                     borderDone: 'bg-purple-500/[0.05] border-purple-500/35 hover:border-purple-400/60 shadow-sm shadow-purple-950/20',

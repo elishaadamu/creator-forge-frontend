@@ -12,16 +12,16 @@ import {
   generateValidationCampaignKitAI,
   generateDiscoverySurveyAI,
   analyzeSurveyResponsesAI,
-  analyzeAndGenerateExperimentsAI,
-  generateProductImage
+  analyzeAndGenerateExperimentsAI
 } from '../../services/ai'
-import ProductMockupCanvas from './ProductMockupCanvas'
-import ProductMockupDisplay from './ProductMockupDisplay'
 import { simulateUniqueDeviceVisit } from '../../services/tracker'
 import {
   updateValidationPlan,
   updateValidationCampaign,
   addProjectReservation,
+  addProjectSurveyResponse,
+  deleteSurveyResponse,
+  clearAllSurveyResponses,
   logProjectActivity,
   recordGateDecision,
   updateCoLaunchProject,
@@ -39,7 +39,6 @@ import {
   Phase1ExperimentsGenSkeleton
 } from './Section2Skeletons'
 import { getPhase1StepGuards } from '../../utils/stepGuards'
-import { getExpiringItem, setExpiringItem, ONE_HOUR_MS } from '../../utils/expiringStorage'
 
 export default function Phase1Validate({
   project,
@@ -95,24 +94,16 @@ export default function Phase1Validate({
   const derivedPlanTarget = parseThresholdAmount(plan?.threshold || project?.validationPlan?.threshold)
   const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project?.presaleTarget || project?.targetRevenue || 5000)
 
-  // Real Project Campaign Kit State
+  // Real Project Campaign Kit State (Database Sourced)
   const [campaignKit, setCampaignKit] = useState(() => {
     const fromProject = project?.campaignKit ||
       project?.validationCampaign?.campaignKit ||
+      project?.validationCampaign?.campaign_kit ||
       (project?.validationCampaign?.productAssets?.announcementPost ? project?.validationCampaign?.productAssets : null) ||
       (project?.validationCampaign?.product_assets?.announcementPost ? project?.validationCampaign?.product_assets : null)
     if (fromProject && (fromProject.announcementPost || fromProject.storySequence || fromProject.videoScript || fromProject.newsletterDraft || fromProject.postingSchedule?.length > 0)) {
       return fromProject
     }
-    try {
-      const stored = getExpiringItem('forge_launch_active_project') || JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-      const storedKit = stored?.campaignKit || stored?.data?.campaignKit
-      if (storedKit && (storedKit.announcementPost || storedKit.storySequence || storedKit.postingSchedule?.length > 0)) {
-        if (!project?.id || stored.id === project?.id || stored.productName === project?.productName) {
-          return storedKit
-        }
-      }
-    } catch (e) {}
     return {
       announcementPost: '',
       storySequence: '',
@@ -123,6 +114,18 @@ export default function Phase1Validate({
       landingPageCopy: null
     }
   })
+
+  // Synchronize campaignKit from project prop when database updates
+  useEffect(() => {
+    const fromProject = project?.campaignKit ||
+      project?.validationCampaign?.campaignKit ||
+      project?.validationCampaign?.campaign_kit ||
+      (project?.validationCampaign?.productAssets?.announcementPost ? project?.validationCampaign?.productAssets : null) ||
+      (project?.validationCampaign?.product_assets?.announcementPost ? project?.validationCampaign?.product_assets : null)
+    if (fromProject && (fromProject.announcementPost || fromProject.storySequence || fromProject.videoScript || fromProject.newsletterDraft || fromProject.postingSchedule?.length > 0)) {
+      setCampaignKit(fromProject)
+    }
+  }, [project?.id, project?.campaignKit, project?.validationCampaign?.campaignKit, project?.validationCampaign?.campaign_kit])
 
   // Sanitized dynamic pricing configuration
   const sanitizedPricingConfig = sanitizePricingConfig(
@@ -161,34 +164,46 @@ export default function Phase1Validate({
     (campaignKit?.postingSchedule || []).find(t => !t.done) ||
     (campaignKit?.postingSchedule || [])[0]
 
-  // Real Project Survey & Research State
+  // Real Project Survey & Research State (Database Sourced)
   const [surveyData, setSurveyData] = useState(() => {
     const fromProject = project?.surveyData || project?.validationCampaign?.researchSurvey || project?.validationCampaign?.research_survey
     if (fromProject && (fromProject.summary || fromProject.questions?.length > 0)) {
       return fromProject
     }
-    try {
-      const stored = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-      if (stored?.surveyData && (stored.id === project?.id || stored.productName === project?.productName)) {
-        return stored.surveyData
-      }
-    } catch (e) {}
     return {
       summary: '',
       keyTakeaways: [],
       questions: []
     }
   })
+
+  // Synchronize surveyData from project prop when database updates
+  useEffect(() => {
+    const fromProject = project?.surveyData || project?.validationCampaign?.researchSurvey || project?.validationCampaign?.research_survey
+    if (fromProject && (fromProject.summary || fromProject.questions?.length > 0)) {
+      setSurveyData(fromProject)
+    }
+  }, [project?.id, project?.surveyData, project?.validationCampaign?.researchSurvey, project?.validationCampaign?.research_survey])
   const [newQuestionText, setNewQuestionText] = useState('')
   const [newQuestionCategory, setNewQuestionCategory] = useState('Pain Point')
 
-  // Real Project Mockup Image State
-  const [mockupImage, setMockupImage] = useState(() => project?.mockupImage || null)
-  const [mockupViewMode, setMockupViewMode] = useState('ui')
-
   // Real Survey & Research Responses
-  const [surveyResponses, setSurveyResponses] = useState(() => project?.surveyResponses || [])
-  const [surveyAnalysis, setSurveyAnalysis] = useState(() => project?.surveyAnalysis || null)
+  const [surveyResponses, setSurveyResponses] = useState(() => {
+    const raw = project?.surveyResponses ||
+      project?.validationCampaign?.researchSurvey?.responses ||
+      project?.validationCampaign?.research_survey?.responses ||
+      project?.surveyData?.responses ||
+      (project?.metadataInfo || project?.metadata_info)?.survey_responses
+    return Array.isArray(raw) ? raw : []
+  })
+  const [surveyAnalysis, setSurveyAnalysis] = useState(() => {
+    return project?.surveyAnalysis ||
+      project?.validationCampaign?.researchSurvey?.analysis ||
+      project?.validationCampaign?.research_survey?.analysis ||
+      project?.surveyData?.analysis ||
+      (project?.metadataInfo || project?.metadata_info)?.survey_analysis ||
+      null
+  })
   const [isAnalyzingResponses, setIsAnalyzingResponses] = useState(false)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
   const [isGeneratingSurvey, setIsGeneratingSurvey] = useState(false)
@@ -224,37 +239,47 @@ export default function Phase1Validate({
 
     const incomingKit = project.campaignKit ||
       project.validationCampaign?.campaignKit ||
+      project.validationCampaign?.campaign_kit ||
       (project.validationCampaign?.productAssets?.announcementPost ? project.validationCampaign?.productAssets : null) ||
       (project.validationCampaign?.product_assets?.announcementPost ? project.validationCampaign?.product_assets : null)
-    if (incomingKit && (incomingKit.announcementPost || incomingKit.videoScript || incomingKit.storySequence || incomingKit.newsletterDraft || incomingKit.postingSchedule?.length > 0)) {
+    if (incomingKit && (incomingKit.announcementPost || incomingKit.videoScript || incomingKit.storySequence || incomingKit.newsletterDraft)) {
       setCampaignKit(incomingKit)
     } else {
-      try {
-        const stored = getExpiringItem('forge_launch_active_project') || JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        const storedKit = stored?.campaignKit || stored?.data?.campaignKit
-        if (storedKit && (storedKit.announcementPost || storedKit.postingSchedule?.length > 0) && (!project?.id || stored.id === project.id || stored.productName === project.productName)) {
-          setCampaignKit(storedKit)
-        }
-      } catch (e) {}
+      setCampaignKit(null)
     }
 
     const incomingSurvey = project.surveyData || project.validationCampaign?.researchSurvey || project.validationCampaign?.research_survey
     if (incomingSurvey && (incomingSurvey.summary || incomingSurvey.questions?.length > 0)) {
       setSurveyData(incomingSurvey)
     } else {
-      try {
-        const stored = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        if (stored?.surveyData && (stored.id === project.id || stored.productName === project.productName)) {
-          setSurveyData(stored.surveyData)
-        }
-      } catch (e) {}
+      setSurveyData(null)
     }
 
-    setSurveyResponses(Array.isArray(project.surveyResponses) ? project.surveyResponses : [])
-    setSurveyAnalysis(project.surveyAnalysis || null)
-    setMockupImage(project.mockupImage || null)
+    const resolvedResponses = (Array.isArray(project.surveyResponses) && project.surveyResponses.length > 0)
+      ? project.surveyResponses
+      : (Array.isArray(incomingSurvey?.responses) ? incomingSurvey.responses : (Array.isArray((project.metadataInfo || project.metadata_info)?.survey_responses) ? (project.metadataInfo || project.metadata_info).survey_responses : []))
+
+    const resolvedAnalysis = project.surveyAnalysis ||
+      incomingSurvey?.analysis ||
+      (project.metadataInfo || project.metadata_info)?.survey_analysis ||
+      null
+
+    setSurveyResponses(resolvedResponses)
+    setSurveyAnalysis(resolvedAnalysis)
     setExperiments(Array.isArray(project.experiments) ? project.experiments : [])
   }, [project?.id, project?.creatorId, project?.productName])
+
+  useEffect(() => {
+    if (Array.isArray(project?.surveyResponses)) {
+      setSurveyResponses(project.surveyResponses)
+    }
+  }, [project?.surveyResponses])
+
+  useEffect(() => {
+    if (project?.surveyAnalysis) {
+      setSurveyAnalysis(project.surveyAnalysis)
+    }
+  }, [project?.surveyAnalysis])
 
   useEffect(() => {
     if (project?.reservations) setReservations(project.reservations)
@@ -273,21 +298,19 @@ export default function Phase1Validate({
   useEffect(() => {
     const handleSync = (e) => {
       try {
-        const cur = (e?.detail && typeof e.detail === 'object') 
-          ? e.detail 
-          : JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        if (cur.reservations) setReservations(cur.reservations)
-        if (cur.currentPresales !== undefined) setPresalesRevenue(Number(cur.currentPresales) || 0)
-        if (onUpdateProject && cur && Object.keys(cur).length > 0) {
-          onUpdateProject(prev => ({ ...(prev || {}), ...cur }))
+        const cur = (e?.detail && typeof e.detail === 'object') ? e.detail : null
+        if (cur) {
+          if (cur.reservations) setReservations(cur.reservations)
+          if (cur.currentPresales !== undefined) setPresalesRevenue(Number(cur.currentPresales) || 0)
+          if (onUpdateProject) {
+            onUpdateProject(prev => ({ ...(prev || {}), ...cur }))
+          }
         }
       } catch (err) {}
     }
 
-    window.addEventListener('storage', handleSync)
     window.addEventListener('forge_project_updated', handleSync)
     return () => {
-      window.removeEventListener('storage', handleSync)
       window.removeEventListener('forge_project_updated', handleSync)
     }
   }, [onUpdateProject])
@@ -331,10 +354,6 @@ export default function Phase1Validate({
         }
         setCampaignKit(sanitized)
         if (onUpdateProject) onUpdateProject(curr => ({ ...(curr || {}), campaignKit: sanitized }))
-        try {
-          const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-          localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, campaignKit: sanitized }))
-        } catch (e) {}
       }
     }
   }, [campaignKit, origin, productSlug])
@@ -369,20 +388,12 @@ export default function Phase1Validate({
           metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: next }
         }))
       }
-      try {
-        const cur = getExpiringItem('forge_launch_active_project') || JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        const updatedLocal = { ...cur, campaignKit: next }
-        setExpiringItem('forge_launch_active_project', updatedLocal, ONE_HOUR_MS)
-        localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedLocal))
-      } catch (e) {}
-
       if (project?.id) {
         if (campaignSyncTimerRef.current) clearTimeout(campaignSyncTimerRef.current)
         campaignSyncTimerRef.current = setTimeout(() => {
           const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
             productName: project?.productName,
             productTagline: project?.productTagline,
-            mockup: project?.selectedConcept?.mockup || {},
             pricingConfig: sanitizedPricingConfig
           }
           updateValidationCampaign(project.id, {
@@ -415,7 +426,6 @@ export default function Phase1Validate({
       targetRevenue: presaleTarget,
       campaignKit: campaignKit,
       surveyData: surveyData,
-      mockupImage: mockupImage,
       reservations: reservations,
       experiments: experiments,
       currentPresales: presalesRevenue
@@ -424,11 +434,6 @@ export default function Phase1Validate({
     if (onUpdateProject) {
       onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
     }
-
-    try {
-      setExpiringItem('forge_launch_active_project', updated, ONE_HOUR_MS)
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-    } catch (e) {}
 
     // Persist to backend database tables in SQLite / PostgreSQL
     if (project?.id) {
@@ -453,7 +458,6 @@ export default function Phase1Validate({
       const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
         productName: project?.productName,
         productTagline: project?.productTagline,
-        mockup: project?.selectedConcept?.mockup || {},
         pricingConfig: sanitizedPricingConfig
       }
       updateValidationCampaign(project.id, {
@@ -512,15 +516,10 @@ export default function Phase1Validate({
           targetRevenue: newTarget,
           campaignKit,
           surveyData,
-          mockupImage,
           reservations,
           currentPresales: presalesRevenue
         }
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-        try {
-          setExpiringItem('forge_launch_active_project', updated, ONE_HOUR_MS)
-          localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-        } catch (e) {}
 
         setSaveStatus('saved')
         showNotification('AI Validation Plan generated & saved!')
@@ -549,23 +548,16 @@ export default function Phase1Validate({
           campaignAssetsGenerated: true,
           creatorTasks: generated.postingSchedule || project?.creatorTasks || [],
           surveyData,
-          mockupImage,
           reservations,
           currentPresales: presalesRevenue
         }
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-        try {
-          setExpiringItem('forge_launch_active_project', updated, ONE_HOUR_MS)
-          localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-          window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-        } catch (e) {}
 
         // Persist immediately to backend database
         if (project?.id) {
           const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
             productName: project?.productName,
             productTagline: project?.productTagline,
-            mockup: project?.selectedConcept?.mockup || {},
             pricingConfig: sanitizedPricingConfig
           }
           try {
@@ -682,11 +674,12 @@ export default function Phase1Validate({
           surveyData: generated
         }
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-        try {
-          const current = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-          localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...current, surveyData: generated }))
-        } catch (e) {}
-        showNotification('Dynamic AI discovery survey generated!')
+        if (project?.id) {
+          updateValidationCampaign(project.id, {
+            research_survey: generated
+          }).catch(e => console.warn('[Phase1] DB survey sync warning:', e))
+        }
+        showNotification('Dynamic AI discovery survey generated & saved!')
       }
     } catch (err) {
       console.error('Survey generation error:', err)
@@ -713,10 +706,11 @@ export default function Phase1Validate({
     setSurveyData(updated)
     setNewQuestionText('')
     if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), surveyData: updated }))
-    try {
-      const current = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-      localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...current, surveyData: updated }))
-    } catch (e) {}
+    if (project?.id) {
+      updateValidationCampaign(project.id, {
+        research_survey: updated
+      }).catch(e => console.warn('[Phase1] DB survey sync warning:', e))
+    }
     showNotification('Question added to discovery survey.')
   }
 
@@ -732,10 +726,14 @@ export default function Phase1Validate({
         setSurveyAnalysis(result)
         const updated = { ...(project || {}), surveyAnalysis: result }
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-        try {
-          const current = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-          localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...current, surveyAnalysis: result }))
-        } catch (e) {}
+        if (project?.id) {
+          updateCoLaunchProject(project.id, {
+            metadataInfo: {
+              ...(project?.metadataInfo || {}),
+              survey_analysis: result
+            }
+          }).catch(e => console.warn('[Phase1] DB survey analysis sync warning:', e))
+        }
         showNotification(`AI analysis complete! Score: ${result.overallScore}/100`)
       }
     } catch (err) {
@@ -746,88 +744,69 @@ export default function Phase1Validate({
     }
   }
 
-  const handleSimulateSurveyResponse = () => {
-    const sampleNames = ['Alex Rivera', 'Devon Vance', 'Elena Rostova', 'Marcus Brody', 'Priya Sharma', 'Tyler Bennett']
-    const samplePains = [
-      'Managing environments manually takes 5+ hours every week and breaks team builds.',
-      'Context switching between 4 separate tools slows down our workflow significantly.',
-      'Docker containers fail repeatedly due to dependency and driver mismatches.'
-    ]
-    const sampleFeatures = [
-      '1-Click automated reproducible environment launch',
-      'Direct team collaboration & cloud sync',
-      'Automated pipeline deployment with zero config'
-    ]
-
-    const randomName = sampleNames[Math.floor(Math.random() * sampleNames.length)]
-    const randomRating = Math.floor(Math.random() * 3) + 8 // 8, 9, 10
-    const newResp = {
-      id: `sr-${Date.now()}`,
-      name: `${randomName}`,
-      email: `${randomName.toLowerCase().replace(/[^a-z]/g, '')}_${Date.now().toString().slice(-4)}@example.com`,
-      rating: randomRating,
-      answers: {
-        q1: samplePains[Math.floor(Math.random() * samplePains.length)],
-        q2: '$75/month across AWS, Docker and SaaS subscriptions',
-        q3: 'Yes, $99 founding price is a no-brainer for the time saved.',
-        q4: sampleFeatures[Math.floor(Math.random() * sampleFeatures.length)]
-      },
-      submittedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      date: new Date().toISOString().split('T')[0]
-    }
-
-    const nextResponses = [newResp, ...surveyResponses]
-    setSurveyResponses(nextResponses)
-
-    const updatedQuestions = (surveyData?.questions || []).map(q => ({
-      ...q,
-      responseCount: (q.responseCount || 0) + 1
-    }))
-    const updatedSurveyData = { ...surveyData, questions: updatedQuestions }
-    setSurveyData(updatedSurveyData)
-
-    const updatedProject = {
-      ...(project || {}),
-      surveyResponses: nextResponses,
-      surveyData: updatedSurveyData
-    }
-    if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updatedProject }))
+  const handleDeleteSurveyResponse = async (responseId) => {
     try {
-      const current = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-      localStorage.setItem('forge_launch_active_project', JSON.stringify({
-        ...current,
-        surveyResponses: nextResponses,
-        surveyData: updatedSurveyData
-      }))
-    } catch (e) {}
-    showNotification(`New audience response recorded from ${randomName}!`)
-  }
+      const nextResponses = surveyResponses.filter(r => r.id !== responseId)
+      setSurveyResponses(nextResponses)
 
-  const handleGenerateAIMockupImage = async () => {
-    setIsGeneratingImage(true)
-    try {
-      const imgResult = await generateProductImage({
-        productName: project?.productName || 'Product',
-        niche: project?.niche || 'software',
-        creatorName: project?.creatorName || 'Creator'
+      const updatedQuestions = (surveyData?.questions || []).map(q => {
+        const remainingCount = nextResponses.filter(r => {
+          const ans = r.answers || {}
+          return ans[q.id] && String(ans[q.id]).trim().length > 0
+        }).length
+        return { ...q, responseCount: remainingCount }
       })
-      if (imgResult) {
-        setMockupImage(imgResult)
-        setMockupViewMode('ai_image')
-        const updated = { ...(project || {}), mockupImage: imgResult }
-        if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-        try {
-          localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-        } catch (e) {}
-        showNotification('AI visual product mockup generated successfully!')
+      const updatedSurveyData = {
+        ...surveyData,
+        questions: updatedQuestions,
+        responses: nextResponses
       }
+      setSurveyData(updatedSurveyData)
+
+      if (project?.id) {
+        const updatedProj = await deleteSurveyResponse(project.id, responseId)
+        if (updatedProj && onUpdateProject) {
+          onUpdateProject(updatedProj)
+        }
+      }
+      showNotification('Survey response removed.')
     } catch (err) {
-      console.error('AI Image generation error:', err)
-      showNotification('Image generation failed. Please verify AI API keys.')
-    } finally {
-      setIsGeneratingImage(false)
+      console.error('Delete survey response error:', err)
+      showNotification('Failed to delete response.')
     }
   }
+
+  const handleClearAllSurveyResponses = async () => {
+    if (!window.confirm('Clear all audience survey responses?')) return
+    try {
+      setSurveyResponses([])
+      setSurveyAnalysis(null)
+      const updatedQuestions = (surveyData?.questions || []).map(q => ({
+        ...q,
+        responseCount: 0
+      }))
+      const updatedSurveyData = {
+        ...surveyData,
+        questions: updatedQuestions,
+        responses: [],
+        analysis: null
+      }
+      setSurveyData(updatedSurveyData)
+
+      if (project?.id) {
+        const updatedProj = await clearAllSurveyResponses(project.id)
+        if (updatedProj && onUpdateProject) {
+          onUpdateProject(updatedProj)
+        }
+      }
+      showNotification('All survey responses cleared.')
+    } catch (err) {
+      console.error('Clear survey responses error:', err)
+      showNotification('Failed to clear responses.')
+    }
+  }
+
+
 
   const handleRunExperimentsAI = async () => {
     setIsAnalyzingExperiments(true)
@@ -837,10 +816,14 @@ export default function Phase1Validate({
         setExperimentsData(results)
         const updated = { ...(project || {}), experimentsData: results }
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-        try {
-          const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-          localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, experimentsData: results }))
-        } catch (e) {}
+        if (project?.id) {
+          updateCoLaunchProject(project.id, {
+            metadataInfo: {
+              ...(project.metadataInfo || {}),
+              experimentsData: results
+            }
+          }).catch(e => console.warn(e))
+        }
         showNotification('AI growth & optimization experiments generated!')
       }
     } catch (err) {
@@ -879,10 +862,12 @@ export default function Phase1Validate({
         experimentsData: nextExpData
       }
       if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updatedProject }))
-      try {
-        const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, campaignKit: updatedCampaign, experimentsData: nextExpData }))
-      } catch (e) {}
+      if (project?.id) {
+        updateValidationCampaign(project.id, {
+          campaign_kit: updatedCampaign,
+          campaignKit: updatedCampaign
+        }).catch(e => console.warn(e))
+      }
     }
 
     showNotification(`Experiment "${exp.title}" applied to live campaign!`)
@@ -921,18 +906,13 @@ export default function Phase1Validate({
       validationPlan: plan,
       campaignKit,
       surveyData,
-      mockupImage,
       reservations: nextReservations,
       currentPresales: nextRevenue
     }
 
     if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-    try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-    } catch (e) {}
 
-    // Persist pre-order reservation to SQLite database
+    // Persist pre-order reservation to SQLite / PostgreSQL database
     if (project?.id) {
       addProjectReservation(project.id, {
         name,
@@ -956,11 +936,12 @@ export default function Phase1Validate({
       conversionRate: 0
     }
     if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-    try {
-      const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-      localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, reservations: [], currentPresales: 0, conversionRate: 0 }))
-      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-    } catch (e) {}
+    if (project?.id) {
+      updateCoLaunchProject(project.id, {
+        reservations: [],
+        currentPresales: 0
+      }).catch(e => console.warn(e))
+    }
     showNotification('Pre-orders cleared.')
   }
 
@@ -988,7 +969,13 @@ export default function Phase1Validate({
     isStep3Done,
     isStep4Done,
     isStep5Done
-  } = getPhase1StepGuards(project)
+  } = getPhase1StepGuards({
+    ...project,
+    campaignKit,
+    surveyData,
+    reservations,
+    currentPresales: presalesRevenue
+  })
 
   return (
     <div className="space-y-5 w-full max-w-full overflow-hidden">
@@ -1151,7 +1138,7 @@ export default function Phase1Validate({
                 <span>2. Build Validation Assets & Infrastructure</span>
               </h3>
               <p className="text-xs text-slate-400">
-                Product assets, branding, positioning, copy, product mockups, landing page, checkout, waitlist, analytics & feedback surveys.
+                Product assets, branding, positioning, copy, landing page, checkout, waitlist, analytics & customer discovery surveys.
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -1190,7 +1177,7 @@ export default function Phase1Validate({
             })}
           </div>
 
-          {/* 1. PRODUCT ASSETS (Product Name, Basic Branding, Positioning, Copy, Product Mockups + Pricing) */}
+          {/* 1. PRODUCT ASSETS (Product Name, Basic Branding, Positioning, Copy + Pricing) */}
           {(assetSubTab === 'branding' || assetSubTab === 'product_assets') && (
             <div className="space-y-4 text-xs">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1208,10 +1195,6 @@ export default function Phase1Validate({
                       onChange={e => {
                         const val = e.target.value
                         if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), productName: val }))
-                        try {
-                          const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-                          localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, productName: val }))
-                        } catch (err) {}
                       }}
                       placeholder="e.g. FlutterFlow Flow AI"
                       className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-white font-bold outline-none focus:border-purple-500/50"
@@ -1226,10 +1209,6 @@ export default function Phase1Validate({
                       onChange={e => {
                         const val = e.target.value
                         if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), productTagline: val }))
-                        try {
-                          const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-                          localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, productTagline: val }))
-                        } catch (err) {}
                       }}
                       placeholder="e.g. Autonomous AI workflow engine tailored to mobile app creators"
                       className="w-full mt-1 p-2.5 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-200 outline-none resize-none focus:border-purple-500/50"
@@ -1245,10 +1224,6 @@ export default function Phase1Validate({
                         onChange={e => {
                           const val = e.target.value
                           if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), brandTone: val }))
-                          try {
-                            const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-                            localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, brandTone: val }))
-                          } catch (err) {}
                         }}
                         className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-300 text-xs outline-none focus:border-purple-500/50"
                       />
@@ -1261,10 +1236,6 @@ export default function Phase1Validate({
                         onChange={e => {
                           const val = e.target.value
                           if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), targetAudience: val, niche: val }))
-                          try {
-                            const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-                            localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, targetAudience: val, niche: val }))
-                          } catch (err) {}
                         }}
                         className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-300 text-xs outline-none focus:border-purple-500/50"
                       />
@@ -1342,25 +1313,6 @@ export default function Phase1Validate({
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Product Mockups Canvas Studio */}
-              <div className="space-y-2 pt-2">
-                <span className="text-[11px] font-bold text-white uppercase tracking-wider block">
-                  Product Mockup Studio & Visual Asset
-                </span>
-                <ProductMockupCanvas
-                  project={{ ...(project || {}), currentPresales: presalesRevenue, reservations }}
-                  onSaveMockupImage={(imgUrl) => {
-                    setMockupImage(imgUrl)
-                    onUpdateProject?.(prev => ({ ...(prev || {}), mockupImage: imgUrl }))
-                    try {
-                      const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-                      localStorage.setItem('forge_launch_active_project', JSON.stringify({ ...cur, mockupImage: imgUrl }))
-                    } catch (e) {}
-                  }}
-                  onShowNotification={showNotification}
-                />
               </div>
             </div>
           )}
@@ -1455,11 +1407,6 @@ export default function Phase1Validate({
                       </div>
                     )
                   })()}
-                </div>
-
-                {/* Visual Designed Mockup Showcase (Full, Non-Editable UI Frame) */}
-                <div className="pt-4 max-w-4xl mx-auto">
-                  <ProductMockupDisplay project={project} theme="purple" />
                 </div>
               </div>
 
@@ -1742,27 +1689,30 @@ export default function Phase1Validate({
                       Real-time responses submitted by audience members through the public survey URL.
                     </p>
                   </div>
-                  <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
-                    {surveyResponses.length} Responses
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+                      {surveyResponses.length} Responses
+                    </span>
+                    {surveyResponses.length > 0 && (
+                      <button
+                        onClick={handleClearAllSurveyResponses}
+                        className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[10px] font-bold transition-colors"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {surveyResponses.length === 0 ? (
                   <div className="text-center py-8 text-slate-500 text-xs border border-dashed border-white/[0.08] rounded-xl space-y-2">
                     <p>No audience responses submitted yet.</p>
-                    <div className="flex items-center justify-center gap-3 pt-1">
-                      <button
-                        onClick={handleSimulateSurveyResponse}
-                        className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors"
-                      >
-                        Simulate Test Response
-                      </button>
-                    </div>
+                    <p className="text-[10px] text-slate-500">Share your survey URL to collect responses from the community.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {surveyResponses.map((r) => (
-                      <div key={r.id} className="p-4 rounded-xl bg-[#0e1117] border border-white/[0.06] space-y-2.5">
+                      <div key={r.id} className="p-4 rounded-xl bg-[#0e1117] border border-white/[0.06] space-y-2.5 relative group">
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.04] pb-2">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-white text-xs">{r.name}</span>
@@ -1773,6 +1723,13 @@ export default function Phase1Validate({
                               Intent: {r.rating || 8}/10 🔥
                             </span>
                             <span className="text-[10px] text-slate-500 font-mono">{r.submittedAt || r.date}</span>
+                            <button
+                              onClick={() => handleDeleteSurveyResponse(r.id)}
+                              title="Delete response"
+                              className="p-1 rounded hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
 
@@ -1798,7 +1755,7 @@ export default function Phase1Validate({
           <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/[0.08]">
             <div className="flex items-center gap-2 text-xs text-emerald-400">
               <ShieldCheck className="w-4 h-4 shrink-0" />
-              <span>Verification: Verify assets, copy, mockups & infrastructure</span>
+              <span>Verification: Verify assets, copy, discovery survey & infrastructure</span>
             </div>
             <button
               onClick={() => {
@@ -1806,7 +1763,6 @@ export default function Phase1Validate({
                   const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
                     productName: project?.productName,
                     productTagline: project?.productTagline,
-                    mockup: project?.selectedConcept?.mockup || {},
                     pricingConfig: sanitizedPricingConfig
                   }
                   updateValidationCampaign(project.id, {
@@ -2901,10 +2857,6 @@ export default function Phase1Validate({
                     decisions: [decisionItem, ...(project?.decisions || [])]
                   }
                   if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-                  try {
-                    localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-                    window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-                  } catch (e) {}
 
                   if (project?.id) {
                     try {
@@ -2953,10 +2905,6 @@ export default function Phase1Validate({
                     decisions: [decisionItem, ...(project?.decisions || [])]
                   }
                   if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-                  try {
-                    localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-                    window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-                  } catch (e) {}
 
                   if (project?.id) {
                     recordGateDecision(project.id, { decision: 'iterate_validation', notes }).catch(e => console.warn(e))
@@ -2996,10 +2944,6 @@ export default function Phase1Validate({
                       decisions: [decisionItem, ...(project?.decisions || [])]
                     }
                     if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-                    try {
-                      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-                      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-                    } catch (e) {}
 
                     if (project?.id) {
                       recordGateDecision(project.id, { decision: 'kill_project', notes }).catch(e => console.warn(e))

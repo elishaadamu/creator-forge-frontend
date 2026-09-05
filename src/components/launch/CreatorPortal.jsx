@@ -8,16 +8,10 @@ import {
 import { getFrontendUrl, updateCoLaunchProject, getCoLaunchProject, getThreads } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
 import { CreatorPortalSkeleton } from './Section2Skeletons'
-import { getExpiringItem, setExpiringItem, ONE_HOUR_MS } from '../../utils/expiringStorage'
 
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
-  const [project, setProject] = useState(() => {
-    try {
-      return getExpiringItem('forge_launch_active_project')
-    } catch (e) {}
-    return null
-  })
+  const [project, setProject] = useState(null)
 
   useEffect(() => {
     updatePageSEO({
@@ -59,10 +53,6 @@ export default function CreatorPortal({ portalId }) {
 
         if (isMounted && fetched) {
           setProject(fetched)
-          try {
-            setExpiringItem('forge_launch_active_project', fetched, ONE_HOUR_MS)
-            localStorage.removeItem('forge_launch_active_section')
-          } catch (e) {}
         }
       } catch (err) {
         console.warn('[CreatorPortal] Failed to sync project from API:', err)
@@ -78,16 +68,14 @@ export default function CreatorPortal({ portalId }) {
   }, [portalId])
 
   useEffect(() => {
-    const handleSync = () => {
+    const handleSync = (e) => {
       try {
-        const saved = localStorage.getItem('forge_launch_active_project')
-        if (saved) setProject(JSON.parse(saved))
+        const updated = (e?.detail && typeof e.detail === 'object') ? e.detail : null
+        if (updated) setProject(updated)
       } catch (e) {}
     }
-    window.addEventListener('storage', handleSync)
     window.addEventListener('forge_project_updated', handleSync)
     return () => {
-      window.removeEventListener('storage', handleSync)
       window.removeEventListener('forge_project_updated', handleSync)
     }
   }, [])
@@ -176,9 +164,6 @@ export default function CreatorPortal({ portalId }) {
           const freshCount = Array.isArray(fresh.messages) ? fresh.messages.length : 0
           if (freshCount !== curCount || fresh.currentPresales !== project.currentPresales) {
             setProject(fresh)
-            try {
-              setExpiringItem('forge_launch_active_project', fresh, ONE_HOUR_MS)
-            } catch (e) {}
           }
         }
       } catch (e) {}
@@ -228,11 +213,6 @@ export default function CreatorPortal({ portalId }) {
     setCreatorReplyText('')
     setIsSendingReply(false)
 
-    try {
-      setExpiringItem('forge_launch_active_project', updatedProject, ONE_HOUR_MS)
-      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProject }))
-    } catch (err) {}
-
     if (project.id) {
       updateCoLaunchProject(project.id, { messages: updatedMessages }).catch(() => {})
     }
@@ -269,9 +249,12 @@ export default function CreatorPortal({ portalId }) {
       checklist: nextSchedule
     }
     setProject(updated)
-    try {
-      setExpiringItem('forge_launch_active_project', updated, ONE_HOUR_MS)
-    } catch (e) {}
+    if (project.id) {
+      updateCoLaunchProject(project.id, {
+        campaignKit: updated.campaignKit,
+        checklist: nextSchedule
+      }).catch(() => {})
+    }
     showToast('Task status updated!')
   }
 

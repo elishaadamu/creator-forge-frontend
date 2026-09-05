@@ -59,20 +59,7 @@ export default function Phase3Launch({ project, api, onUpdateProject }) {
     }
   }
 
-  const [prepSubtab, setPrepSubtabState] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('forge_p3_prep_subtab')
-      if (saved && ['strategy', 'assets', 'infra', 'checklists'].includes(saved)) return saved
-    }
-    return 'strategy'
-  })
-
-  const setPrepSubtab = (newSub) => {
-    setPrepSubtabState(newSub)
-    try {
-      localStorage.setItem('forge_p3_prep_subtab', newSub)
-    } catch (e) {}
-  }
+  const [prepSubtab, setPrepSubtab] = useState('strategy')
 
   const [assetTab, setAssetTab] = useState('post') // 'post' | 'story' | 'email' | 'video' | 'talking' | 'media' | 'links'
   const [isLive, setIsLive] = useState(() => project?.launchStatus === 'LIVE' || false)
@@ -174,10 +161,6 @@ export default function Phase3Launch({ project, api, onUpdateProject }) {
     }
 
     if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-    try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-    } catch (e) {}
 
     if (project?.id) {
       try {

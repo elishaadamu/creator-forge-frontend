@@ -3,6 +3,7 @@ import {
   Sparkles, CheckCircle2, MessageSquare, Send, Star,
   HelpCircle, ArrowRight, ShieldCheck, Heart, Loader2
 } from 'lucide-react'
+import { getProjectBySlug, getCoLaunchProjects, recordSurveyResponseUniversal } from '../../services/opsApi'
 import { trackVisit } from '../../services/tracker'
 import { updatePageSEO } from '../../utils/seo'
 
@@ -16,96 +17,122 @@ export default function PublicSurveyPage({ slug }) {
   const [isSubmitted, setIsSubmitted] = useState(false)
 
   useEffect(() => {
-    try {
-      const active = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-      setProject(active)
-      trackVisit(`/survey/${slug || 'product'}`, updated => setProject(updated))
-    } catch (e) {}
+    let isMounted = true
+    const fetchProject = async () => {
+      try {
+        let fetched = null
+        if (slug) {
+          try {
+            fetched = await getProjectBySlug(slug)
+          } catch (e) {}
+        }
+        if (!fetched) {
+          const all = await getCoLaunchProjects()
+          const list = Array.isArray(all) ? all : all?.projects || []
+          if (slug) {
+            const clean = slug.toLowerCase().trim()
+            fetched = list.find(p =>
+              (p.slug && p.slug.toLowerCase() === clean) ||
+              (p.productName && p.productName.toLowerCase().replace(/[^a-z0-9]+/g, '-') === clean) ||
+              (p.id === clean)
+            )
+          }
+          if (!fetched && list.length > 0) {
+            fetched = list[0]
+          }
+        }
+        if (isMounted && fetched) {
+          setProject(fetched)
+        }
+      } catch (err) {
+        console.warn('[PublicSurveyPage] Project fetch notice:', err)
+      }
+    }
+
+    fetchProject()
+    trackVisit(`/survey/${slug || 'product'}`, updated => {
+      if (isMounted && updated) setProject(prev => ({ ...(prev || {}), ...updated }))
+    })
+
+    return () => {
+      isMounted = false
+    }
   }, [slug])
 
   useEffect(() => {
     updatePageSEO({
-      title: project?.name ? `Audience Survey — ${project.name} | Creator Forge` : "Audience Discovery & Research Survey | Creator Forge",
+      title: project?.productName ? `Audience Survey — ${project.productName} | Creator Forge` : "Audience Discovery & Research Survey | Creator Forge",
       description: "Help shape our next software product! Share your biggest workflow challenges in 60 seconds.",
       image: "/og-image.svg"
     });
-  }, [project?.name]);
+  }, [project?.productName]);
 
   const productName = project?.productName || 'Software Product'
   const creatorName = project?.creatorName || 'Creator'
   const niche = project?.niche || 'Software Workflows'
-  const questions = project?.discoverySurvey?.questions || [
-    {
-      id: 'q1',
-      category: 'Pain Point',
-      question: `What is the single most frustrating bottleneck you face when managing ${niche}?`
-    },
-    {
-      id: 'q2',
-      category: 'Current Spend',
-      question: `What tools or services do you currently pay for monthly? Approximately how much do you spend?`
-    },
-    {
-      id: 'q3',
-      category: 'Pricing Validation',
-      question: `If ${productName} automates this completely, would a founding member price of $99/year provide positive ROI?`
-    },
-    {
-      id: 'q4',
-      category: 'Feature Wishlist',
-      question: `What is the #1 must-have feature you need in ${productName} on day one?`
-    }
-  ]
+  
+  const rawQuestions = project?.surveyData?.questions ||
+    project?.validationCampaign?.researchSurvey?.questions ||
+    project?.validationCampaign?.research_survey?.questions ||
+    project?.discoverySurvey?.questions
+
+  const questions = (Array.isArray(rawQuestions) && rawQuestions.length > 0)
+    ? rawQuestions
+    : [
+        {
+          id: 'q1',
+          category: 'Pain Point',
+          question: `What is the single most frustrating bottleneck you face when managing ${niche}?`
+        },
+        {
+          id: 'q2',
+          category: 'Current Spend',
+          question: `What tools or services do you currently pay for monthly? Approximately how much do you spend?`
+        },
+        {
+          id: 'q3',
+          category: 'Pricing Validation',
+          question: `If ${productName} automates this completely, would a founding member price of $99/year provide positive ROI?`
+        },
+        {
+          id: 'q4',
+          category: 'Feature Wishlist',
+          question: `What is the #1 must-have feature you need in ${productName} on day one?`
+        }
+      ]
 
   const handleAnswerChange = (qId, val) => {
     setAnswers(prev => ({ ...prev, [qId]: val }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
 
-    setTimeout(() => {
-      const newResponse = {
-        id: `sr-${Date.now()}`,
+    try {
+      const responsePayload = {
+        projectId: project?.id,
+        slug: slug || project?.slug || project?.productName,
         name: respondentName.trim() || 'Community Member',
-        email: respondentEmail.trim() || `respondent_${Date.now().toString().slice(-4)}@example.com`,
+        email: respondentEmail.trim(),
         rating: intentRating,
-        answers: answers,
-        submittedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        date: new Date().toISOString().split('T')[0]
+        answers: answers
       }
 
-      try {
-        const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        const prevResponses = cur.surveyResponses || project?.surveyResponses || []
-        const nextResponses = [newResponse, ...prevResponses]
-
-        // Update questions responseCount
-        const curSurvey = cur.discoverySurvey || project?.discoverySurvey || {}
-        const updatedQuestions = (curSurvey.questions || questions).map(q => ({
-          ...q,
-          responseCount: (q.responseCount || 0) + (answers[q.id] ? 1 : 0)
-        }))
-
-        const updatedProject = {
-          ...cur,
-          surveyResponses: nextResponses,
-          discoverySurvey: {
-            ...curSurvey,
-            questions: updatedQuestions
-          }
-        }
-
-        localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProject))
+      const updatedProject = await recordSurveyResponseUniversal(responsePayload)
+      if (updatedProject) {
         setProject(updatedProject)
-      } catch (err) {
-        console.error('Failed saving survey response', err)
+        try {
+          window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProject }))
+        } catch (e) {}
       }
-
-      setIsSubmitting(false)
       setIsSubmitted(true)
-    }, 600)
+    } catch (err) {
+      console.error('Failed saving survey response to database:', err)
+      setIsSubmitted(true)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -215,7 +242,7 @@ export default function PublicSurveyPage({ slug }) {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Sarah Jenkins"
+                    placeholder="Enter your full name"
                     value={respondentName}
                     onChange={e => setRespondentName(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#141720] border border-white/[0.08] text-xs text-white placeholder:text-slate-500 outline-none focus:border-purple-500/60"
@@ -226,7 +253,7 @@ export default function PublicSurveyPage({ slug }) {
                   <input
                     type="email"
                     required
-                    placeholder="sarah@example.com"
+                    placeholder="Enter your email address"
                     value={respondentEmail}
                     onChange={e => setRespondentEmail(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#141720] border border-white/[0.08] text-xs text-white placeholder:text-slate-500 outline-none focus:border-purple-500/60"

@@ -40,21 +40,13 @@ export function getPhase1StepGuards(project = {}) {
   // Step 3: Creator Campaign (7-day sprint launch & daily tasks)
   const resolvedKit = project.campaignKit || project.validationCampaign?.campaign_kit || project.validationCampaign?.campaignKit;
   const isStep3Done = Boolean(
-    project.campaignLaunched === true ||
-    project.campaignKit?.launched === true ||
-    project.validationCampaign?.campaign_launched === true ||
-    project.campaignAssetsGenerated === true ||
-    Boolean(
-      resolvedKit && (
-        (Array.isArray(resolvedKit.postingSchedule) && resolvedKit.postingSchedule.length > 0) ||
-        Boolean(resolvedKit.announcementPost?.trim()) ||
-        Boolean(resolvedKit.storySequence?.trim()) ||
-        Boolean(resolvedKit.videoScript?.trim()) ||
-        Boolean(resolvedKit.newsletterDraft?.trim())
-      )
-    ) ||
-    (Array.isArray(project.creatorTasks) && project.creatorTasks.length > 0) ||
-    (Array.isArray(project.validationCampaign?.creator_tasks) && project.validationCampaign.creator_tasks.length > 0)
+    resolvedKit && (
+      (Array.isArray(resolvedKit.postingSchedule) && resolvedKit.postingSchedule.length > 0) ||
+      Boolean(resolvedKit.announcementPost?.trim()) ||
+      Boolean(resolvedKit.storySequence?.trim()) ||
+      Boolean(resolvedKit.videoScript?.trim()) ||
+      Boolean(resolvedKit.newsletterDraft?.trim())
+    )
   );
 
   // Step 4: Run & Optimize (Live telemetry, reservations, meeting validation goal)

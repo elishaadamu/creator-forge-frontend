@@ -23,39 +23,6 @@ import {
 export default function Step5SkeletonLoader({ creatorName = 'Creator' }) {
   return (
     <div className="space-y-6 w-full animate-fade-in">
-      {/* ── Active Synthesis Telemetry Banner ── */}
-      <div className="p-4 rounded-xl bg-gradient-to-r from-purple-950/40 via-[#141824] to-indigo-950/30 border border-purple-500/30 shadow-lg relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/[0.05] to-transparent animate-pulse" />
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center shrink-0 shadow-inner">
-              <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
-                  <span>AI Audience Intelligence & Co-Launch Synthesis in Progress</span>
-                </span>
-                <span className="text-[10px] text-purple-400/80 bg-purple-500/10 px-2 py-0.5 rounded-full font-mono border border-purple-500/20">
-                  Live Engine
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Scanning {creatorName}&apos;s YouTube channel, extracting video retention spikes, cataloging recurring comments, and architecting 3 custom SaaS MVPs...
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[11px] font-mono text-purple-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-              Synthesizing Models
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* ── Section 1: Audience Intelligence & Deep Research Signals Skeleton ── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">

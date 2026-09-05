@@ -310,10 +310,6 @@ export default function Phase2BuildMVP({
       ...extraUpdates
     }
     if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-    try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-    } catch (e) {}
 
     // Direct DB sync to backend API
     if (project?.id) {
@@ -988,11 +984,10 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
     }
 
     if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-    try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-    } catch (e) {
-      console.warn('[Phase2BuildMVP] Local sync error:', e)
+    if (project?.id) {
+      updateCoLaunchProject(project.id, { projectFiles: updated.projectFiles }).catch(err => {
+        console.warn('[Phase2BuildMVP] Remote specFile update notice:', err)
+      })
     }
 
     showToast(`Saved "${fileName}" to Project Files!`)
@@ -1012,12 +1007,6 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
     if (onUpdateProject) {
       onUpdateProject(prev => ({ ...(prev || {}), projectFiles: mergedFiles }))
-    }
-    try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
-      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-    } catch (e) {
-      console.warn('[Phase2BuildMVP] Local sync error:', e)
     }
 
     if (project?.id) {

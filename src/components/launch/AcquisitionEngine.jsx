@@ -8070,7 +8070,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap border border-emerald-500/40"
                   title="Send the 3 product concepts directly to the creator's email and advance to Step 6"
                 >
-                  {isSendingPitch || isSynthesizingStep5Ai ? (
+                  {isSendingPitch ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Send className="w-3.5 h-3.5" />
@@ -8078,8 +8078,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <span>
                     {isSendingPitch
                       ? "Dispatching..."
-                      : isSynthesizingStep5Ai
-                      ? "Synthesizing Concepts..."
                       : "Send 3 Concepts & Advance to Step 6 →"}
                   </span>
                 </button>
@@ -8268,7 +8266,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </h3>
                   <p className="text-slate-400 text-xs">
                     Each concept includes problem, key features, audience
-                    evidence, pricing model, competition & UI mockup preview.
+                    evidence, pricing model, competition & revenue projections.
                   </p>
                 </div>
                 <span className="text-[11px] text-emerald-300 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20 font-mono">
@@ -8321,7 +8319,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent flex items-end p-2 justify-between">
                               <span className="text-[9px] font-mono text-white font-bold bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10">
-                                Visual Mockup
+                                Product Preview
                               </span>
                               <span className="text-[9px] font-bold text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded border border-purple-500/40 backdrop-blur-sm">
                                 Attached in Proposal Email

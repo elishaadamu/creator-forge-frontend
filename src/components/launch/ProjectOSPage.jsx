@@ -14,7 +14,6 @@ import {
   getCreator
 } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
-import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from '../../utils/expiringStorage'
 
 // Helper to check if string is raw UUID
 const isUuid = (str) =>
@@ -148,36 +147,33 @@ export default function ProjectOSPage() {
         }
       }
 
-      // 3. Fallback to cached active project in local storage
-      if (!target) {
-        const cached = getExpiringItem('forge_launch_active_project')
-        if (cached && cached.id) {
-          target = list.find((p) => p.id === cached.id) || cached
-        }
-      }
-
-      // 4. Fallback to most recent project in list
+      // 3. Fallback to most recent project in list if not specified
       if (!target && list.length > 0) {
         target = list[0]
       }
       if (target) {
-        const cached = getExpiringItem('forge_launch_active_project')
         const resolvedKit = target.campaignKit ||
+          target.validationCampaign?.campaignKit ||
+          target.validationCampaign?.campaign_kit ||
           (target.validationCampaign?.productAssets?.announcementPost ? target.validationCampaign.productAssets : null) ||
-          (cached?.id === target.id ? cached.campaignKit : null) ||
           null
+        const hasKit = Boolean(
+          resolvedKit && (
+            Boolean(resolvedKit.announcementPost?.trim()) ||
+            Boolean(resolvedKit.storySequence?.trim()) ||
+            Boolean(resolvedKit.videoScript?.trim()) ||
+            Boolean(resolvedKit.newsletterDraft?.trim())
+          )
+        )
         const enhancedTarget = {
           ...target,
           campaignKit: resolvedKit,
-          campaignLaunched: Boolean(target.campaignLaunched || (cached?.id === target.id && cached.campaignLaunched) || resolvedKit),
-          campaignAssetsGenerated: Boolean(target.campaignAssetsGenerated || (cached?.id === target.id && cached.campaignAssetsGenerated) || resolvedKit),
-          creatorTasks: (target.creatorTasks?.length > 0)
-            ? target.creatorTasks
-            : (cached?.id === target.id && cached?.creatorTasks?.length > 0 ? cached.creatorTasks : [])
+          campaignLaunched: hasKit,
+          campaignAssetsGenerated: hasKit,
+          creatorTasks: Array.isArray(target.creatorTasks) ? target.creatorTasks : []
         }
         setActiveProject(enhancedTarget)
         try {
-          setExpiringItem('forge_launch_active_project', enhancedTarget, ONE_HOUR_MS)
           // Reflect project ID in URL without reload
           const url = new URL(window.location.href)
           url.searchParams.set('project', target.id)
@@ -204,7 +200,6 @@ export default function ProjectOSPage() {
     setActiveProject(project)
     setShowProjectDropdown(false)
     try {
-      setExpiringItem('forge_launch_active_project', project, ONE_HOUR_MS)
       const url = new URL(window.location.href)
       url.searchParams.set('project', project.id)
       if (project.creatorId) url.searchParams.set('creator', project.creatorId)
@@ -219,7 +214,6 @@ export default function ProjectOSPage() {
     setProjects((prev) => prev.map((p) => (p.id === updatedProject.id ? updatedProject : p)))
 
     try {
-      setExpiringItem('forge_launch_active_project', updatedProject, ONE_HOUR_MS)
       await updateCoLaunchProject(updatedProject.id, {
         ...updatedProject,
         campaignKit: updatedProject.campaignKit,
