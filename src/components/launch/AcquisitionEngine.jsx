@@ -3272,8 +3272,16 @@ export default function AcquisitionEngine({
       setCreators((prev) =>
         prev.map((c) => {
           if (c.id === creatorId) {
-            const concepts = c.productConcepts || [];
+            const concepts = c.productConcepts || ensureCreatorConcepts(c);
             const chosen = concepts.find((p) => p.id === conceptId);
+            if (chosen) {
+              import("../../services/opsApi").then(({ updateCreatorDetails }) => {
+                updateCreatorDetails(creatorId, {
+                  selected_concept_id: conceptId,
+                  selected_concept: chosen,
+                }).catch(() => {});
+              });
+            }
             return {
               ...c,
               selectedConceptId: conceptId,

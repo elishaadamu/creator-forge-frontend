@@ -285,6 +285,31 @@ export default function CreatorLaunchLayout({
       })
 
       if (matched) {
+        // If an explicit concept choice or updated product was passed, update matched project
+        const passedConcept = isObj ? (creatorOrId.selectedConcept || (creatorOrId.productName ? creatorOrId : null)) : null
+        const passedConceptId = isObj ? (creatorOrId.selectedConceptId || creatorOrId.selected_concept_id || passedConcept?.id) : null
+        const passedName = isObj ? (creatorOrId.productName || passedConcept?.name) : null
+        const passedPricing = isObj ? (creatorOrId.pricing || passedConcept?.pricing) : null
+        
+        if (passedName && (passedName !== matched.productName || (passedPricing && passedPricing !== matched.pricing))) {
+          matched = {
+            ...matched,
+            productName: passedName,
+            productTagline: creatorOrId.productTagline || passedConcept?.tagline || matched.productTagline,
+            pricing: passedPricing || matched.pricing,
+            selectedConcept: passedConcept || matched.selectedConcept,
+            selectedConceptId: passedConceptId || matched.selectedConceptId,
+          }
+          import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
+            updateCoLaunchProject(matched.id, {
+              productName: matched.productName,
+              productTagline: matched.productTagline,
+              pricing: matched.pricing,
+              selectedConcept: matched.selectedConcept
+            }).catch(() => {})
+          })
+        }
+
         setActiveProject(matched)
         try {
           setExpiringItem('forge_launch_active_project', matched, ONE_HOUR_MS)
@@ -351,18 +376,28 @@ export default function CreatorLaunchLayout({
       const creatorFollowers = creatorProfile?.followerStr || creatorProfile?.follower_count || '50k+'
       const creatorNiche = creatorProfile?.niche || 'Software & Tech'
 
-      // Prioritize explicitly selected concept (e.g. Concept 3) over default Concept 1
-      const allConcepts = creatorProfile?.productConcepts || creatorProfile?.concepts || []
-      const chosenConceptFromList = creatorProfile?.selectedConceptId
-        ? allConcepts.find(c => c.id === creatorProfile.selectedConceptId)
+      // Prioritize explicitly selected concept (e.g. Concept 2 or Concept 3) over default Concept 1
+      const allConcepts = creatorProfile?.productConcepts || creatorProfile?.product_concepts || creatorProfile?.concepts || []
+      const savedLocalConceptId = creatorProfile?.id ? getExpiringItem('forge_creator_concept_selection_map', {})[creatorProfile.id] : null
+      const effectiveConceptId = (isObj ? (creatorOrId.selectedConceptId || creatorOrId.selected_concept_id) : null) ||
+        creatorProfile?.selectedConceptId ||
+        creatorProfile?.selected_concept_id ||
+        savedLocalConceptId
+
+      const chosenConceptFromList = effectiveConceptId
+        ? allConcepts.find(c => c.id === effectiveConceptId)
         : null
-      const primaryConcept = creatorProfile?.selectedConcept || chosenConceptFromList || allConcepts[0] || {
-        name: `${creatorName} Pro Hub`,
-        tagline: `All-in-one software platform built for ${creatorName}'s audience`,
-        pricing: '$29/mo Starter • $79/mo Pro',
-        revenueModel: 'Monthly SaaS Subscription',
-        presaleTarget: 12500,
-      }
+      const primaryConcept = (isObj && creatorOrId.selectedConcept) ||
+        creatorProfile?.selectedConcept ||
+        creatorProfile?.selected_concept ||
+        chosenConceptFromList ||
+        allConcepts[0] || {
+          name: `${creatorName} Pro Hub`,
+          tagline: `All-in-one software platform built for ${creatorName}'s audience`,
+          pricing: '$29/mo Starter • $79/mo Pro',
+          revenueModel: 'Monthly SaaS Subscription',
+          presaleTarget: 12500,
+        }
 
       const newProjPayload = {
         id: `proj_${Date.now()}`,
@@ -378,7 +413,9 @@ export default function CreatorLaunchLayout({
         pricing: primaryConcept.pricing || '$29/mo',
         presaleTarget: primaryConcept.presaleTarget || 12500,
         currentPhase: 1,
-        status: 'validating'
+        status: 'validating',
+        selectedConcept: primaryConcept,
+        selectedConceptId: primaryConcept.id,
       }
 
       let created = null
@@ -619,19 +656,23 @@ export default function CreatorLaunchLayout({
               return merged
             })
           } else {
-            // DB has 0 projects (e.g. all creators/projects deleted) -> wipe local orphan project
-            setAllProjects([])
-            setActiveProject(null)
-            try {
-              removeExpiringItem('forge_launch_active_project')
-              const url = new URL(window.location.href)
-              if (url.searchParams.has('project') || url.searchParams.has('creator') || url.searchParams.has('creatorId')) {
-                url.searchParams.delete('project')
-                url.searchParams.delete('creator')
-                url.searchParams.delete('creatorId')
-                window.history.replaceState({}, '', url.toString())
+            // DB returned 0 projects from remote endpoint
+            // PRESERVE the active project if the user already has one in memory or local storage!
+            const localSaved = getExpiringItem('forge_launch_active_project')
+            const current = (localSaved && !isCorruptedPhantomProject(localSaved)) ? localSaved : null
+            if (current) {
+              setAllProjects([current])
+              setActiveProject(prev => prev || current)
+              // Self-heal: persist the active local project to the database in background
+              if (current.creatorId || current.productName) {
+                import('../../services/opsApi').then(({ createCoLaunchProject }) => {
+                  createCoLaunchProject(current).catch(() => {})
+                })
               }
-            } catch (e) {}
+            } else {
+              setAllProjects([])
+              setActiveProject(null)
+            }
           }
         }
       } catch (err) {
