@@ -57,6 +57,7 @@ import ActionNotificationToast from "../ui/ActionNotificationToast";
 import ConfirmationModal from "../ui/ConfirmationModal";
 import FormattedMarkdownBody from "./FormattedMarkdownBody";
 import ScoutingCyclingAnimation from "./ScoutingCyclingAnimation";
+import Step5SkeletonLoader from "./Step5SkeletonLoader";
 import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from "../../utils/expiringStorage";
 
 // Category-tailored high-res visual mockup screenshots for creator proposals
@@ -7845,15 +7846,57 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
           {/* Step 5 Audience & Concept Review Status Banner */}
           {(() => {
-            const isDispatched = Boolean(selectedCreator && pitchSentMap[selectedCreator.id]);
-            const sentInfo = selectedCreator ? pitchSentMap[selectedCreator.id] : null;
+            const hasRealAi = Boolean(
+              selectedCreator?.hasAiConcepts ||
+                (selectedCreator?.productConcepts?.length > 0 &&
+                  selectedCreator?.audienceIntelligence?.topContent),
+            );
+            const showStep5Skeleton = Boolean(
+              isSynthesizingStep5Ai || (!hasRealAi && !step5Error),
+            );
+            const isDispatched = Boolean(
+              selectedCreator && pitchSentMap[selectedCreator.id],
+            );
+            const sentInfo = selectedCreator
+              ? pitchSentMap[selectedCreator.id]
+              : null;
+
+            if (showStep5Skeleton) {
+              return (
+                <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/40 via-[#141c26] to-indigo-950/30 border border-purple-500/30 flex items-center justify-between gap-3 shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-purple-500/20 border border-purple-500/30">
+                      <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+                          <span>AI Audience Intelligence & Co-Launch Synthesis in Progress</span>
+                        </span>
+                        <span className="text-[10px] text-purple-400/80 bg-purple-500/10 px-2 py-0.5 rounded-full font-mono border border-purple-500/20">
+                          Live Engine
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300">
+                        Analyzing {selectedCreator?.name || "the creator"}&apos;s YouTube channel metrics, cataloging recurring comments, and engineering 3 custom software product concepts...
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-950/40 via-[#141c26] to-purple-950/30 border border-amber-500/30 flex items-center justify-between gap-3 shadow-md">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    isDispatched ? "bg-emerald-500/20 border border-emerald-500/30" : "bg-amber-500/20 border border-amber-500/30"
-                  }`}>
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      isDispatched
+                        ? "bg-emerald-500/20 border border-emerald-500/30"
+                        : "bg-amber-500/20 border border-amber-500/30"
+                    }`}
+                  >
                     {isDispatched ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     ) : (
@@ -7862,8 +7905,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs font-bold ${isDispatched ? "text-emerald-300" : "text-amber-300"}`}>
-                        {isDispatched ? "3-Concept Blueprint Dispatched — Awaiting Creator Reply" : "Audience Analysis & Opportunities Ready"}
+                      <span
+                        className={`text-xs font-bold ${
+                          isDispatched ? "text-emerald-300" : "text-amber-300"
+                        }`}
+                      >
+                        {isDispatched
+                          ? "3-Concept Blueprint Dispatched — Awaiting Creator Reply"
+                          : "Audience Analysis & Opportunities Ready"}
                       </span>
                       {sentInfo && (
                         <span className="text-[10px] text-slate-400 font-mono">
@@ -7957,11 +8006,20 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   onClick={() =>
                     handleSendBlueprintAndAdvanceToStep6(selectedCreator)
                   }
-                  disabled={isSendingPitch}
-                  className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 whitespace-nowrap border border-emerald-500/40"
+                  disabled={
+                    isSendingPitch ||
+                    isSynthesizingStep5Ai ||
+                    (!selectedCreator?.hasAiConcepts &&
+                      !(
+                        selectedCreator?.productConcepts?.length > 0 &&
+                        selectedCreator?.audienceIntelligence?.topContent
+                      ) &&
+                      !step5Error)
+                  }
+                  className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap border border-emerald-500/40"
                   title="Send the 3 product concepts directly to the creator's email and advance to Step 6"
                 >
-                  {isSendingPitch ? (
+                  {isSendingPitch || isSynthesizingStep5Ai ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Send className="w-3.5 h-3.5" />
@@ -7969,6 +8027,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <span>
                     {isSendingPitch
                       ? "Dispatching..."
+                      : isSynthesizingStep5Ai
+                      ? "Synthesizing Concepts..."
                       : "Send 3 Concepts & Advance to Step 6 →"}
                   </span>
                 </button>
@@ -7976,8 +8036,44 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             </div>
           </div>
 
-          {/* Deep Audience Research Intelligence Breakdown (7 Key Pillars) - 100% Dynamic Per Creator */}
-          {(() => {
+          {step5Error ? (
+            <div className="p-6 rounded-2xl bg-red-950/20 border border-red-500/30 text-slate-300 space-y-4 shadow-lg">
+              <div className="flex items-center gap-2.5 text-red-400 font-bold text-sm">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+                <span>AI Audience Research & Concept Synthesis Delayed</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {step5Error}
+              </p>
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleSynthesizeStep5Ai(selectedCreator)}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Retry AI Synthesis</span>
+                </button>
+              </div>
+            </div>
+          ) : isSynthesizingStep5Ai ||
+            (!selectedCreator?.hasAiConcepts &&
+              !(
+                selectedCreator?.productConcepts?.length > 0 &&
+                selectedCreator?.audienceIntelligence?.topContent
+              )) ? (
+            <Step5SkeletonLoader
+              creatorName={
+                selectedCreator?.name ||
+                selectedCreator?.display_name ||
+                selectedCreator?.handle ||
+                "Creator"
+              }
+            />
+          ) : (
+            <>
+              {/* Deep Audience Research Intelligence Breakdown (7 Key Pillars) - 100% Dynamic Per Creator */}
+              {(() => {
             const audIntel = getCreatorAudienceIntelligence(selectedCreator);
             if (!audIntel) return null;
             return (
@@ -8314,6 +8410,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 })}
               </div>
             </div>
+          )}
+            </>
           )}
         </div>
       )}
