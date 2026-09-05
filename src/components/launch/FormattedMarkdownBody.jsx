@@ -120,8 +120,45 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
     return tokens;
   };
 
+  // Preprocess text to ensure lists and headings are separated from preceding paragraphs
+  const preprocessMarkdownContent = (raw) => {
+    if (!raw) return "";
+    const rawLines = raw.split("\n");
+    const processed = [];
+    const listMarkerRegex = /^(\s*)(?:[•\-\*]|\d+[.)])\s+/;
+    const headingRegex = /^#{1,6}\s+/;
+    let inList = false;
+
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      const stripped = line.trim();
+      const isListItem = listMarkerRegex.test(stripped);
+      const isHeading = headingRegex.test(stripped);
+
+      if (isHeading && processed.length > 0 && processed[processed.length - 1].trim()) {
+        processed.push("");
+      }
+
+      if (isListItem && !inList) {
+        if (processed.length > 0 && processed[processed.length - 1].trim()) {
+          processed.push("");
+        }
+        inList = true;
+      } else if (!isListItem && inList && stripped) {
+        processed.push("");
+        inList = false;
+      } else if (!stripped) {
+        inList = false;
+      }
+
+      processed.push(line);
+    }
+
+    return processed.join("\n");
+  };
+
   // Split into structural blocks (paragraphs, lists, headings, dividers)
-  const blocks = content.split(/\n\s*\n/);
+  const blocks = preprocessMarkdownContent(content).split(/\n\s*\n/);
 
   return (
     <div className={`space-y-3 font-sans ${className}`}>

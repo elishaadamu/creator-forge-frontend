@@ -47,6 +47,7 @@ import {
   User,
   UserCheck,
   Lock,
+  Unlock,
 } from "lucide-react";
 import { deleteAllCreators } from "../../services/opsApi";
 import { buildSmartFallbackPlan } from "../../services/ai";
@@ -2933,6 +2934,13 @@ export default function AcquisitionEngine({
       return {};
     }
   });
+  const [manualCommitmentMap, setManualCommitmentMap] = useState(() => {
+    try {
+      return getExpiringItem("forge_manual_commitment_map", {}) || {};
+    } catch {
+      return {};
+    }
+  });
   const [isEditingPitch, setIsEditingPitch] = useState(false);
   const [customPitchSubject, setCustomPitchSubject] = useState("");
   const [customPitchBody, setCustomPitchBody] = useState("");
@@ -3139,7 +3147,7 @@ export default function AcquisitionEngine({
     );
 
     // If it is an initial outreach subject AND does NOT explicitly discuss concepts/options:
-    if (isInitialOutreach && !/concept 1|concept 2|concept 3|option 1|option 2|option 3|#1|#2|#3|blueprint proposal/i.test(allText)) {
+    if (isInitialOutreach && !/concept 1|concept 2|concept 3|option 1|option 2|option 3|step 1|step 2|step 3|step1|step2|step3|idea 1|idea 2|idea 3|#1|#2|#3|second|third|first|2nd|3rd|1st|blueprint proposal/i.test(allText)) {
       return false;
     }
 
@@ -3153,8 +3161,8 @@ export default function AcquisitionEngine({
       return true;
     }
 
-    // C. Explicit Concept Choice in Body
-    if (/concept 1|concept 2|concept 3|option 1|option 2|option 3|#1|#2|#3/i.test(body)) {
+    // C. Explicit Concept Choice or Affirmative Agreement in Body
+    if (/concept 1|concept 2|concept 3|option 1|option 2|option 3|step 1|step 2|step 3|step1|step2|step3|idea 1|idea 2|idea 3|product 1|product 2|product 3|#1|#2|#3|second|third|first|2nd|3rd|1st|number 1|number 2|number 3|no 1|no 2|no 3|interested/i.test(body)) {
       return true;
     }
 
@@ -4783,7 +4791,127 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       };
     }
 
-    // 2. Hesitation / Confusion / Soft Rejection -> Suggested Persuasion Draft
+    // 2. Explicit Concept Selection or Build Agreement (Checked FIRST before general questions)
+    const explicitConceptSelection = [
+      "concept 1",
+      "concept 2",
+      "concept 3",
+      "option 1",
+      "option 2",
+      "option 3",
+      "step 1",
+      "step 2",
+      "step 3",
+      "step1",
+      "step2",
+      "step3",
+      "idea 1",
+      "idea 2",
+      "idea 3",
+      "#1",
+      "#2",
+      "#3",
+      "first one",
+      "second one",
+      "third one",
+      "number 1",
+      "number 2",
+      "number 3",
+      "no 1",
+      "no 2",
+      "no 3",
+      "1st",
+      "2nd",
+      "3rd",
+      "i choose",
+      "i prefer",
+      "let's go with",
+      "lets go with",
+      "let's build",
+      "lets build",
+      "start building",
+      "create project",
+      "ready to move forward",
+      "move forward",
+      "let's do it",
+      "lets do it",
+      "let's do this",
+      "lets do this",
+      "let's proceed",
+      "lets proceed",
+      "sign me up",
+      "count me in",
+      "deal",
+      "agreed",
+      "ready to launch",
+      "sounds great",
+      "love this",
+      "love it",
+    ];
+    const hasExplicitSelection = explicitConceptSelection.some((p) =>
+      text.includes(p),
+    );
+
+    // Resolve concept match
+    let matchedConcept = concepts.find((con) =>
+      text.includes(con.name?.toLowerCase()),
+    );
+    if (!matchedConcept) {
+      if (
+        text.includes("concept 2") ||
+        text.includes("option 2") ||
+        text.includes("second") ||
+        text.includes("step 2") ||
+        text.includes("idea 2") ||
+        text.includes("#2") ||
+        text.includes("2nd") ||
+        text.includes("number 2") ||
+        text.includes("no 2")
+      ) {
+        matchedConcept = concepts[1] || concepts[0];
+      } else if (
+        text.includes("concept 3") ||
+        text.includes("option 3") ||
+        text.includes("third") ||
+        text.includes("step 3") ||
+        text.includes("idea 3") ||
+        text.includes("#3") ||
+        text.includes("3rd") ||
+        text.includes("number 3") ||
+        text.includes("no 3")
+      ) {
+        matchedConcept = concepts[2] || concepts[0];
+      } else if (
+        text.includes("concept 1") ||
+        text.includes("option 1") ||
+        text.includes("first") ||
+        text.includes("step 1") ||
+        text.includes("idea 1") ||
+        text.includes("#1") ||
+        text.includes("1st") ||
+        text.includes("number 1") ||
+        text.includes("no 1") ||
+        hasExplicitSelection
+      ) {
+        matchedConcept = concepts[0];
+      }
+    }
+
+    if (hasExplicitSelection || (matchedConcept && text.length > 5)) {
+      const chosen = matchedConcept || concepts[0];
+      return {
+        decision: "CREATE_PROJECT",
+        actionLabel: `Launch & Create Project (${chosen.name})`,
+        confidence: 98,
+        conceptName: chosen.name,
+        conceptId: chosen.id,
+        reasoning: `Creator confirmed positive agreement with concrete intent: "${latestBody.slice(0, 60)}...". Selected Concept: ${chosen.name}. Verified alignment threshold passed; click Create Project to initialize Section 2.`,
+        color: "emerald",
+        badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+      };
+    }
+
+    // 3. Hesitation / Confusion / Soft Rejection -> Suggested Persuasion Draft
     const hesitationPatterns = [
       "confusing",
       "confused",
@@ -4823,7 +4951,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       };
     }
 
-    // 3. Questions / Inquiries -> Suggested Answer Draft
+    // 4. Questions / Inquiries -> Suggested Answer Draft
     const questionPatterns = [
       "?",
       "further explanation",
@@ -4880,7 +5008,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       };
     }
 
-    // 4. Review in Progress / Concept Review Acknowledgment
+    // 5. Review in Progress / Concept Review Acknowledgment
     const reviewPatterns = [
       "check them out",
       "check it out",
@@ -4917,83 +5045,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         reasoning: `Creator is reviewing concepts. Suggested: 60-second summary & concept preview draft.`,
         color: "amber",
         badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-      };
-    }
-
-    // 5. Explicit Concept Selection or Build Agreement
-    const explicitConceptSelection = [
-      "concept 1",
-      "concept 2",
-      "concept 3",
-      "option 1",
-      "option 2",
-      "option 3",
-      "#1",
-      "#2",
-      "#3",
-      "first one",
-      "second one",
-      "third one",
-      "i choose",
-      "i prefer",
-      "let's go with",
-      "lets go with",
-      "let's build",
-      "lets build",
-      "start building",
-      "create project",
-      "ready to move forward",
-      "move forward",
-      "let's do it",
-      "lets do it",
-      "let's do this",
-      "lets do this",
-      "let's proceed",
-      "lets proceed",
-      "sign me up",
-      "count me in",
-      "deal",
-      "agreed",
-    ];
-    const hasExplicitSelection = explicitConceptSelection.some((p) =>
-      text.includes(p),
-    );
-
-    // Resolve concept match
-    let matchedConcept = concepts.find((con) =>
-      text.includes(con.name?.toLowerCase()),
-    );
-    if (!matchedConcept) {
-      if (
-        text.includes("concept 2") ||
-        text.includes("option 2") ||
-        text.includes("second") ||
-        text.includes("#2")
-      ) {
-        matchedConcept = concepts[1] || concepts[0];
-      } else if (
-        text.includes("concept 3") ||
-        text.includes("option 3") ||
-        text.includes("third") ||
-        text.includes("#3")
-      ) {
-        matchedConcept = concepts[2] || concepts[0];
-      } else if (hasExplicitSelection) {
-        matchedConcept = concepts[0];
-      }
-    }
-
-    if (hasExplicitSelection || (matchedConcept && text.length > 5)) {
-      const chosen = matchedConcept || concepts[0];
-      return {
-        decision: "CREATE_PROJECT",
-        actionLabel: `Launch & Create Project (${chosen.name})`,
-        confidence: 98,
-        conceptName: chosen.name,
-        conceptId: chosen.id,
-        reasoning: `Creator confirmed positive agreement with concrete intent: "${latestBody.slice(0, 60)}...". Selected Concept: ${chosen.name}. Verified alignment threshold passed; click Create Project to initialize Section 2.`,
-        color: "emerald",
-        badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
       };
     }
 
@@ -8517,6 +8568,37 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {!hasFullCommitment && selectedCreator && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const curConcepts = selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
+                        const curChosen = curConcepts.find((c) => c.id === selectedConceptId) || curConcepts[0];
+                        setAiDetectedChoiceMap((prev) => ({
+                          ...prev,
+                          [selectedCreator.id]: {
+                            decision: "CREATE_PROJECT",
+                            actionLabel: `Launch & Create Project (${curChosen?.name || "Selected Concept"})`,
+                            confidence: 100,
+                            conceptName: curChosen?.name || "Selected Concept",
+                            conceptId: curChosen?.id,
+                            reasoning: "Admin manually confirmed creator commitment. Gate unlocked for ProjectOS promotion.",
+                            color: "emerald",
+                            badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+                          },
+                        }));
+                        setCreators((prev) =>
+                          prev.map((c) => (c.id === selectedCreator.id ? { ...c, isCommitted: true } : c))
+                        );
+                        notify("success", "Commitment Unlocked", "Creator commitment verified! You can now promote to ProjectOS.", 3500);
+                      }}
+                      className="h-9 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap shadow-sm"
+                      title="Manually verify creator commitment and unlock promotion to ProjectOS"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Manually Confirm & Unlock</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     disabled={!hasFullCommitment}
