@@ -44,6 +44,7 @@ import {
   Radio,
   Globe,
   Loader2,
+  RotateCw,
   User,
   UserCheck,
   Lock,
@@ -56,7 +57,6 @@ import CreatorFollowUpCRM from "./CreatorFollowUpCRM";
 import ActionNotificationToast from "../ui/ActionNotificationToast";
 import ConfirmationModal from "../ui/ConfirmationModal";
 import FormattedMarkdownBody from "./FormattedMarkdownBody";
-import ScoutingCyclingAnimation from "./ScoutingCyclingAnimation";
 import Step5SkeletonLoader from "./Step5SkeletonLoader";
 import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from "../../utils/expiringStorage";
 
@@ -207,7 +207,14 @@ export default function AcquisitionEngine({
   const [weeklyOutreachVolume, setWeeklyOutreachVolume] = useState(50);
   const [followUpDays, setFollowUpDays] = useState(7);
   const [minScoreThreshold, setMinScoreThreshold] = useState(70);
-  const [creatorsBatchCount, setCreatorsBatchCount] = useState(3); // Default batch size
+  const [creatorsBatchCount, setCreatorsBatchCount] = useState(() => {
+    try {
+      const saved = localStorage.getItem("forge_launch_creators_batch_count");
+      return saved ? Math.max(1, Number(saved)) : 3;
+    } catch {
+      return 3;
+    }
+  });
   const [selectedPlatforms, setSelectedPlatforms] = useState([
     "youtube",
     "tiktok",
@@ -232,6 +239,15 @@ export default function AcquisitionEngine({
       }
     })();
 
+    const batchLimit = (() => {
+      try {
+        const saved = localStorage.getItem("forge_launch_creators_batch_count");
+        return saved ? Math.max(1, Number(saved)) : 3;
+      } catch {
+        return 3;
+      }
+    })();
+
     let list = [];
     if (initialCreators && initialCreators.length > 0) {
       list = initialCreators;
@@ -253,6 +269,11 @@ export default function AcquisitionEngine({
           !deletedIds.includes(c.handle)
         );
       });
+    }
+
+    // Strictly enforce batch limit so old saved cohorts don't exceed chosen limit
+    if (list.length > batchLimit) {
+      list = list.slice(0, batchLimit);
     }
 
     // Sanitize any corrupt synthetic reply texts or false positive interested classifications
@@ -982,8 +1003,17 @@ export default function AcquisitionEngine({
                 };
               });
 
+            const currentBatchLimit = (() => {
+              try {
+                const saved = localStorage.getItem("forge_launch_creators_batch_count");
+                return saved ? Math.max(1, Number(saved)) : (creatorsBatchCount || 3);
+              } catch {
+                return creatorsBatchCount || 3;
+              }
+            })();
+
             if (!prev || prev.length === 0) {
-              return formattedDbCreators;
+              return formattedDbCreators.slice(0, currentBatchLimit);
             }
 
             const merged = [];
@@ -1039,7 +1069,7 @@ export default function AcquisitionEngine({
               }
             });
 
-            return merged;
+            return merged.slice(0, currentBatchLimit);
           });
 
           setSelectedCreatorId((prevId) => {
@@ -4414,7 +4444,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     if (sendingBulk) return;
     setSendingBulk(true);
 
-    let activeList = creators;
+    let activeList = Array.isArray(creators) ? creators.slice(0, creatorsBatchCount || 3) : [];
     if (editingEmailCreatorId && tempEmailValue.trim()) {
       const draftEmail = tempEmailValue.trim();
       const targetId = editingEmailCreatorId;
@@ -5832,9 +5862,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     max="50"
                     step="1"
                     value={creatorsBatchCount}
-                    onChange={(e) =>
-                      setCreatorsBatchCount(Number(e.target.value))
-                    }
+                    onChange={(e) => {
+                      const countVal = Number(e.target.value);
+                      setCreatorsBatchCount(countVal);
+                      try {
+                        localStorage.setItem("forge_launch_creators_batch_count", String(countVal));
+                      } catch {}
+                    }}
                     className="w-full accent-purple-500 cursor-pointer h-2 bg-purple-950 rounded-lg"
                   />
                   <div className="flex justify-between text-[10px] text-purple-400/80 font-mono">
@@ -6249,23 +6283,60 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             </div>
           )}
 
-          {/* Active Scouting State: Cycling Radar & Multi-Stage Intelligence Animation */}
+          {/* Active Scouting State: Clean Minimalist Rotating Cycling Icon + Target Niche */}
           {discovering && (
-            <div className="space-y-3 animate-in fade-in">
-              <ScoutingCyclingAnimation
-                targetCount={creatorsBatchCount || 3}
-                foundCount={creators.length}
-                niches={niches.length > 0 ? niches : ["Tech", "Software"]}
-                selectedPlatforms={selectedPlatforms}
-                onStopScouting={handleStopDiscovery}
-              />
-              {/* Live Terminal Discovery Log */}
+            <div className="p-6 rounded-2xl bg-gradient-to-b from-[#181b2a] to-[#121420] border border-indigo-500/30 text-center space-y-4 shadow-xl animate-in fade-in">
+              <div className="flex flex-col items-center justify-center gap-3">
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute w-16 h-16 rounded-full bg-indigo-500/20 animate-ping opacity-75" />
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center shadow-lg backdrop-blur-sm">
+                    <RotateCw className="w-7 h-7 text-indigo-400 animate-spin" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-white tracking-wide">
+                    Discovering Target Creators
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Target Limit: <span className="font-bold text-indigo-300">{creatorsBatchCount || 3} creators</span> • Audience: <span className="font-mono text-indigo-300">100K - 1M followers</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Target Niches Selected */}
+              <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
+                  Target Niche:
+                </span>
+                {(niches.length > 0 ? niches : ["Tech", "Software", "SaaS"]).map((n) => (
+                  <span
+                    key={n}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-xs font-medium"
+                  >
+                    {n}
+                  </span>
+                ))}
+              </div>
+
+              {/* Live Terminal Log */}
               {discoveryLog && (
-                <div className="p-3 rounded-xl bg-black/60 border border-white/[0.06] text-xs font-mono text-indigo-300 flex items-start gap-2 shadow-inner">
+                <div className="p-3 rounded-xl bg-black/60 border border-white/[0.06] text-xs font-mono text-indigo-300 flex items-start gap-2 shadow-inner text-left">
                   <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1 flex-shrink-0 animate-ping" />
-                  <div className="flex-1 leading-relaxed truncate">{discoveryLog}</div>
+                  <div className="flex-1 leading-relaxed">{discoveryLog}</div>
                 </div>
               )}
+
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleStopDiscovery}
+                  className="px-4 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Stop Discovery</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -6291,10 +6362,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 border-b border-white/[0.04] pb-3">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-white uppercase tracking-wider text-[11px]">
-                    Top Qualified Creators ({creators.length})
+                    Top Qualified Creators ({Math.min(creators.length, creatorsBatchCount || 3)})
                   </span>
                   <span className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-mono">
-                    {creators.filter((c) => (c.creatorScore || 85) >= minScoreThreshold).length} Advanceable (≥{minScoreThreshold})
+                    {creators.slice(0, creatorsBatchCount || 3).filter((c) => (c.creatorScore || 85) >= minScoreThreshold).length} Advanceable (≥{minScoreThreshold})
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -6319,7 +6390,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(Array.isArray(creators) ? creators : []).map((c) => {
+                {(Array.isArray(creators) ? creators.slice(0, creatorsBatchCount || 3) : []).map((c) => {
                   const cleanHandle = (c.handle || "").replace(/^@/, "");
                   const platformSlug = (c.platform || "youtube").toLowerCase();
                   const profileUrl =
@@ -6719,7 +6790,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           {/* Queue preview table */}
           <div className="space-y-3 pt-2">
             <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-              Active Outreach Queue ({creators.length})
+              Active Outreach Queue ({Math.min(creators.length, creatorsBatchCount || 3)})
             </h3>
             <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-[#161a23]">
               <table className="w-full text-left text-xs">
@@ -6733,7 +6804,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
-                  {creators.slice(0, 10).map((c) => {
+                  {creators.slice(0, creatorsBatchCount || 3).map((c) => {
                     const emailVal = c.email || c.email_public || "";
                     const isEditing = editingEmailCreatorId === c.id;
 
