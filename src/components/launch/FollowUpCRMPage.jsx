@@ -193,12 +193,24 @@ export default function FollowUpCRMPage() {
             <span className="hidden xs:inline">Sync Inbox</span>
           </button>
 
+          <a
+            href="/project-os"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all"
+            title="Open Co-Launch Project Operations Center"
+          >
+            <Rocket className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline">Project OS</span>
+            <ExternalLink className="w-3 h-3 text-emerald-400" />
+          </a>
+
           <button
             type="button"
             onClick={() => window.open("/launch", "_blank")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
           >
-            <span>Open Launch OS</span>
+            <span>Acquisition</span>
             <ExternalLink className="w-3 h-3 text-slate-400" />
           </button>
         </div>
@@ -216,7 +228,7 @@ export default function FollowUpCRMPage() {
             pitchSentMap={workflowState?.pitch_sent_map || {}}
             onSelectCreator={(creatorId, targetStep) => {
               if (targetStep === "section2" || targetStep === 7) {
-                window.open(`/launch?section=section2&creator=${encodeURIComponent(creatorId)}`, "_blank");
+                window.open(`/project-os?creator=${encodeURIComponent(creatorId)}`, "_blank");
               } else {
                 const stepNum = Number(targetStep) || 5;
                 window.open(`/launch?section=section1&step=${stepNum}&creator=${encodeURIComponent(creatorId)}`, "_blank");

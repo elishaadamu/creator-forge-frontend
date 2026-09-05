@@ -19,6 +19,7 @@ import PreorderLandingPage from './components/launch/PreorderLandingPage'
 import PublicSurveyPage from './components/launch/PublicSurveyPage'
 import FollowUpCRMPage from './components/launch/FollowUpCRMPage'
 import AdminErrorLogPage from './components/launch/AdminErrorLogPage'
+import ProjectOSPage from './components/launch/ProjectOSPage'
 import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys } from './services/ai'
@@ -830,6 +831,15 @@ export default function App() {
   // /admin-error-log or /error-log route — standalone Pipeline Intelligence & Exception Dashboard
   if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin-error-log') || window.location.pathname.startsWith('/error-log') || window.location.pathname === '/errors')) {
     return <AdminErrorLogPage />
+  }
+
+  // /project-os or /projects route — standalone Co-Launch Project Operations Center
+  if (typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/project-os') ||
+    window.location.pathname.startsWith('/projects') ||
+    window.location.pathname === '/project'
+  )) {
+    return <ProjectOSPage />
   }
 
   // /launch or /creator-launch route — standalone Creator Launch OS (Operator Master Command Center)

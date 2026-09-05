@@ -21,19 +21,25 @@ export default function CreatorLaunchLayout({
       image: "/og-image.svg"
     });
   }, []);
-  const [activeSection, setActiveSection] = useState(() => {
+  // If someone lands on /launch?section=section2 or with a ?project= param, redirect smoothly to dedicated /project-os route
+  useEffect(() => {
     try {
-      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
-      const secParam = searchParams?.get('section')
-      const projParam = searchParams?.get('project')
-      if (secParam === 'section1') return 'section1'
-      if (secParam === 'section2' || (!secParam && projParam)) return 'section2'
-      // Direct navigation to /launch always defaults cleanly to section1
-      return 'section1'
-    } catch {
-      return 'section1'
-    }
-  })
+      if (typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search)
+        const secParam = searchParams.get('section')
+        const projParam = searchParams.get('project')
+        if (secParam === 'section2' || (!secParam && projParam)) {
+          const nextUrl = new URL('/project-os', window.location.origin)
+          if (projParam) nextUrl.searchParams.set('project', projParam)
+          const creatorParam = searchParams.get('creator') || searchParams.get('creatorId')
+          if (creatorParam) nextUrl.searchParams.set('creator', creatorParam)
+          window.location.replace(nextUrl.toString())
+        }
+      }
+    } catch (e) {}
+  }, [])
+
+  const [activeSection, setActiveSection] = useState('section1')
 
   // Detect raw UUID strings (prevent phantom projects from using UUIDs as names)
   const isUuid = (str) => typeof str === 'string' && (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim()) || /^[0-9a-f-]{24,}$/i.test(str.trim()))
@@ -314,19 +320,15 @@ export default function CreatorLaunchLayout({
         try {
           setExpiringItem('forge_launch_active_project', matched, ONE_HOUR_MS)
           localStorage.removeItem('forge_launch_active_section')
-          const url = new URL(window.location.href)
-          url.searchParams.set('section', 'section2')
-          url.searchParams.set('project', matched.id)
-          if (matched.creatorId) url.searchParams.set('creator', matched.creatorId)
-          window.history.replaceState({}, '', url.toString())
-        } catch (e) {}
-        setActiveSection('section2')
-
-        const elapsed = Date.now() - switchStart
-        if (elapsed < 280) {
-          await new Promise(r => setTimeout(r, 280 - elapsed))
+          const nextUrl = new URL('/project-os', window.location.origin)
+          nextUrl.searchParams.set('project', matched.id)
+          if (matched.creatorId) nextUrl.searchParams.set('creator', matched.creatorId)
+          window.location.href = nextUrl.toString()
+          return matched
+        } catch (e) {
+          window.location.href = `/project-os?project=${matched.id}`
+          return matched
         }
-        return matched
       }
 
       // 2. Project does not exist yet -> resolve full creator record to initialize fresh project
@@ -468,17 +470,18 @@ export default function CreatorLaunchLayout({
         if (creatorProfile?.id) {
           updateCreatorDetails(creatorProfile.id, { status: 'partnered' }).catch(() => {})
         }
-      } catch (e) {}
-
-      setActiveSection('section2')
-      const elapsed = Date.now() - switchStart
-      if (elapsed < 280) {
-        await new Promise(r => setTimeout(r, 280 - elapsed))
+        const nextUrl = new URL('/project-os', window.location.origin)
+        nextUrl.searchParams.set('project', finalProject.id)
+        if (finalProject.creatorId) nextUrl.searchParams.set('creator', finalProject.creatorId)
+        window.location.href = nextUrl.toString()
+        return finalProject
+      } catch (e) {
+        window.location.href = `/project-os?project=${finalProject.id}`
+        return finalProject
       }
-      return finalProject
     } catch (err) {
       console.warn('[CreatorLaunchLayout] handleSwitchToCreatorProject failed:', err)
-      setActiveSection('section2')
+      window.location.href = '/project-os'
       return null
     } finally {
       setIsSwitchingCreator(false)
@@ -932,27 +935,15 @@ export default function CreatorLaunchLayout({
               <Target className="w-3.5 h-3.5 text-purple-400" />
               <span>Section 1: Acquisition</span>
             </button>
-            <button
-              onClick={() => {
-                setActiveSection('section2')
-                try {
-                  const url = new URL(window.location.href)
-                  url.searchParams.set('section', 'section2')
-                  window.history.replaceState({}, '', url.toString())
-                  import('../../services/opsApi').then(({ updateWorkflowState }) => {
-                    updateWorkflowState({ active_section: 'section2' }).catch(() => {})
-                  })
-                } catch {}
-              }}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                activeSection === 'section2'
-                  ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-white border border-transparent'
-              }`}
+            <a
+              href={activeProject?.id ? `/project-os?project=${activeProject.id}` : '/project-os'}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer text-slate-300 hover:text-white hover:bg-white/[0.05] border border-transparent"
+              title="Open Dedicated Co-Launch Operations Center"
             >
               <Layers className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Section 2: Project OS</span>
-            </button>
+              <span>Project OS</span>
+              <ExternalLink className="w-3 h-3 text-slate-400" />
+            </a>
           </div>
 
           {/* Section 1 Dropdown Sidebar & Step Selector (When in Section 1, Tablet & Desktop) */}
@@ -1269,24 +1260,15 @@ export default function CreatorLaunchLayout({
                   <Target className="w-3.5 h-3.5" />
                   <span>Section 1: Acquisition</span>
                 </button>
-                <button
-                  onClick={() => {
-                    if (activeProject) {
-                      setActiveSection('section2')
-                      setMobileDrawerOpen(false)
-                    } else {
-                      setShowLockedModal(true)
-                    }
-                  }}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                    activeSection === 'section2'
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40 border border-emerald-500/40'
-                      : 'bg-white/[0.03] text-slate-300 border border-white/[0.06]'
-                  }`}
+                <a
+                  href={activeProject?.id ? `/project-os?project=${activeProject.id}` : '/project-os'}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all bg-white/[0.03] hover:bg-white/[0.06] text-slate-300 border border-white/[0.06]"
+                  title="Open Dedicated Co-Launch Operations Center"
                 >
-                  {activeProject ? <Layers className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5 text-amber-400" />}
-                  <span>Section 2: Project OS</span>
-                </button>
+                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Project OS</span>
+                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                </a>
               </div>
             </div>
 
@@ -1442,26 +1424,15 @@ export default function CreatorLaunchLayout({
             <Target className="w-3.5 h-3.5" />
             <span>Section 1: Acquisition</span>
           </button>
-          <button
-            onClick={() => {
-              if (activeProject) {
-                setActiveSection('section2')
-              } else {
-                setShowLockedModal(true)
-              }
-            }}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
-              activeSection === 'section2' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-400'
-            }`}
+          <a
+            href={activeProject?.id ? `/project-os?project=${activeProject.id}` : '/project-os'}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-300 hover:text-white"
+            title="Open Dedicated Co-Launch Operations Center"
           >
-            {activeProject ? <Layers className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5 text-amber-400/80" />}
-            <span>Section 2: Project OS</span>
-            {!activeProject && (
-              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/10 text-amber-400/90 border border-amber-500/20">
-                Locked
-              </span>
-            )}
-          </button>
+            <Layers className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Project OS</span>
+            <ExternalLink className="w-3 h-3 text-slate-400" />
+          </a>
         </div>
 
         {/* Section 1 or Section 2 Container */}
