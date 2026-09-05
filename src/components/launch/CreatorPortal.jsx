@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Rocket, CheckCircle2, DollarSign, Copy, Check, Video, MessageSquare,
   Users, ExternalLink, Globe, Sparkles, AlertCircle, ShieldCheck, ArrowRight,
@@ -8,6 +8,7 @@ import {
 import { getFrontendUrl, updateCoLaunchProject, getCoLaunchProject, getThreads } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
 import { CreatorPortalSkeleton } from './Section2Skeletons'
+import { deduplicateAndSortMessages } from './CreatorWhatsAppChat'
 
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
@@ -121,6 +122,7 @@ export default function CreatorPortal({ portalId }) {
                 subject: t.subject || 'Partnership Proposal',
                 text: t.initial_body || t.body,
                 time: t.created_at ? new Date(t.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Section 1',
+                rawTime: t.created_at ? new Date(t.created_at).getTime() : 0,
                 status: 'read',
                 isSection1: true
               })
@@ -136,12 +138,14 @@ export default function CreatorPortal({ portalId }) {
                 subject: r.subject || '',
                 text: r.body || '',
                 time: r.received_at || r.created_at ? new Date(r.received_at || r.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Section 1',
+                rawTime: (r.received_at || r.created_at) ? new Date(r.received_at || r.created_at).getTime() : 0,
                 status: 'read',
                 isSection1: true
               })
             })
           })
-          setSection1Threads(collected)
+          const dedupedThreads = deduplicateAndSortMessages(collected)
+          setSection1Threads(dedupedThreads)
         }
       } catch (e) {
         console.warn('[CreatorPortal] Threads error:', e)
@@ -176,9 +180,11 @@ export default function CreatorPortal({ portalId }) {
     }
   }, [project?.id, project?.messages?.length, project?.currentPresales])
 
-  // Combine real Section 1 messages + Section 2 custom messages
+  // Combine real Section 1 messages + Section 2 custom messages with deduplication and chronological ordering
   const customProjectMessages = Array.isArray(project?.messages) ? project.messages : []
-  const portalDisplayMessages = [...section1Threads, ...customProjectMessages]
+  const portalDisplayMessages = useMemo(() => {
+    return deduplicateAndSortMessages([...section1Threads, ...customProjectMessages])
+  }, [section1Threads, customProjectMessages])
 
   // Auto-scroll on new messages
   useEffect(() => {

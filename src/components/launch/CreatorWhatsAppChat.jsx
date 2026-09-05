@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Phone, Video, MoreVertical, Paperclip, Smile, Send, Mic,
   Check, CheckCheck, Play, Pause, Clock, Sparkles, Share2,
@@ -10,6 +10,58 @@ import { getFrontendUrl, getThreads, sendDirectEmail } from '../../services/opsA
 
 // Module-level cache so leaving and returning to the Messages tab NEVER flashes a loading spinner
 const globalThreadsCache = new Map()
+
+export function deduplicateAndSortMessages(messages = []) {
+  if (!Array.isArray(messages) || messages.length === 0) return []
+
+  const seenIds = new Set()
+  const seenFingerprints = new Set()
+  const result = []
+
+  const normalizeBody = (txt) => (txt || '').trim().toLowerCase().replace(/\s+/g, ' ')
+  const normalizeSubject = (subj) => (subj || '')
+    .toLowerCase()
+    .replace(/^re:\s*/gi, '')
+    .replace(/^fwd:\s*/gi, '')
+    .replace(/\[#.*?\]/g, '')
+    .replace(/\[cf-cid:.*?\]/g, '')
+    .replace(/\[cf-ref:.*?\]/g, '')
+    .trim()
+
+  for (const m of messages) {
+    if (!m) continue
+
+    const rawId = m.id ? String(m.id) : ''
+    if (rawId && !rawId.includes('0.') && seenIds.has(rawId)) {
+      continue
+    }
+
+    const sender = (m.sender || '').toLowerCase().trim()
+    const normBody = normalizeBody(m.text || m.body)
+    const normSubj = normalizeSubject(m.subject)
+
+    // Build fingerprint to discard identical repeated replies from poller / multi-threads
+    const fp = `${sender}:::${normSubj}:::${normBody}`
+    
+    if (normBody && seenFingerprints.has(fp)) {
+      continue
+    }
+
+    if (rawId && !rawId.includes('0.')) seenIds.add(rawId)
+    if (normBody) seenFingerprints.add(fp)
+
+    result.push(m)
+  }
+
+  // Chronological sort: earliest messages first
+  result.sort((a, b) => {
+    const timeA = a.rawTime || (a.created_at ? new Date(a.created_at).getTime() : 0) || (a.received_at ? new Date(a.received_at).getTime() : 0) || (a.time ? Date.parse(a.time) || 0 : 0)
+    const timeB = b.rawTime || (b.created_at ? new Date(b.created_at).getTime() : 0) || (b.received_at ? new Date(b.received_at).getTime() : 0) || (b.time ? Date.parse(b.time) || 0 : 0)
+    return timeA - timeB
+  })
+
+  return result
+}
 
 export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
   const creatorName = project?.creatorName || 'Creator Partner'
@@ -107,6 +159,7 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
               subject: t.subject || 'Partnership Proposal',
               text: t.initial_body || t.body,
               time: t.created_at ? new Date(t.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Section 1',
+              rawTime: t.created_at ? new Date(t.created_at).getTime() : 0,
               status: 'read',
               isSection1: true
             })
@@ -124,15 +177,18 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
               subject: r.subject || '',
               text: r.body || '',
               time: r.received_at || r.created_at ? new Date(r.received_at || r.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Section 1',
+              rawTime: (r.received_at || r.created_at) ? new Date(r.received_at || r.created_at).getTime() : 0,
               status: 'read',
               isSection1: true
             })
           })
         })
 
+        const deduplicatedCollected = deduplicateAndSortMessages(collected)
+
         if (isMounted) {
-          globalThreadsCache.set(creatorKey, collected)
-          setRealSection1Messages(collected)
+          globalThreadsCache.set(creatorKey, deduplicatedCollected)
+          setRealSection1Messages(deduplicatedCollected)
         }
       } catch (err) {
         console.warn('Failed to load Section 1 real threads:', err)
@@ -148,8 +204,10 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
   // Custom messages added in Section 2 (if any)
   const customProjectMessages = Array.isArray(project?.messages) ? project.messages : []
   
-  // Combine real Section 1 messages + Section 2 custom messages
-  const allDisplayMessages = [...realSection1Messages, ...customProjectMessages]
+  // Combine real Section 1 messages + Section 2 custom messages with deduplication and chronological ordering
+  const allDisplayMessages = useMemo(() => {
+    return deduplicateAndSortMessages([...realSection1Messages, ...customProjectMessages])
+  }, [realSection1Messages, customProjectMessages])
 
   // Real-time polling for incoming creator messages from Creator Portal
   useEffect(() => {

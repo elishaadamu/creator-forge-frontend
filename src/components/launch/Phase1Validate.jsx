@@ -38,6 +38,8 @@ import {
   Phase1CampaignGenSkeleton,
   Phase1ExperimentsGenSkeleton
 } from './Section2Skeletons'
+import ProductMockupCanvas from './ProductMockupCanvas'
+import ProductMockupDisplay from './ProductMockupDisplay'
 import { getPhase1StepGuards } from '../../utils/stepGuards'
 
 export default function Phase1Validate({
@@ -54,6 +56,7 @@ export default function Phase1Validate({
   const [viewDraftTask, setViewDraftTask] = useState(null)
   const [isAnalyzingExperiments, setIsAnalyzingExperiments] = useState(false)
   const [experimentsData, setExperimentsData] = useState(() => project?.experimentsData || null)
+  const [mockupImage, setMockupImage] = useState(() => project?.mockupImage || null)
 
   useEffect(() => {
     if (activeStepId) setActiveStep(activeStepId)
@@ -1314,6 +1317,24 @@ export default function Phase1Validate({
                   </div>
                 </div>
               </div>
+
+              {/* Product Mockup Studio & Visual Asset */}
+              <div className="space-y-2 pt-2">
+                <span className="text-[11px] font-bold text-white uppercase tracking-wider block">
+                  Product Mockup Studio & Visual Asset
+                </span>
+                <ProductMockupCanvas
+                  project={{ ...(project || {}), currentPresales: presalesRevenue, reservations, mockupImage }}
+                  onSaveMockupImage={(imgUrl) => {
+                    setMockupImage(imgUrl)
+                    if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), mockupImage: imgUrl }))
+                    if (project?.id) {
+                      updateCoLaunchProject(project.id, { mockupImage: imgUrl }).catch(() => {})
+                    }
+                  }}
+                  onShowNotification={showNotification}
+                />
+              </div>
             </div>
           )}
 
@@ -1407,6 +1428,11 @@ export default function Phase1Validate({
                       </div>
                     )
                   })()}
+                </div>
+
+                {/* Visual Designed Mockup Showcase (Full, Non-Editable UI Frame) */}
+                <div className="pt-4 max-w-4xl mx-auto">
+                  <ProductMockupDisplay project={project} theme="purple" />
                 </div>
               </div>
 
