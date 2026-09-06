@@ -58,6 +58,12 @@ import ActionNotificationToast from "../ui/ActionNotificationToast";
 import ConfirmationModal from "../ui/ConfirmationModal";
 import FormattedMarkdownBody from "./FormattedMarkdownBody";
 import Step5SkeletonLoader from "./Step5SkeletonLoader";
+import {
+  CreatorCardSkeleton,
+  ConceptCardSkeleton,
+  OutreachQueueSkeleton,
+  ReplyInboxSkeleton,
+} from "./Section2Skeletons";
 import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from "../../utils/expiringStorage";
 
 // Category-tailored high-res visual mockup screenshots for creator proposals
@@ -5558,30 +5564,28 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
   return (
     <div className="space-y-6">
       {/* Header & Campaign Status */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] shadow-2xl relative overflow-hidden">
-        
-
-        <div className="space-y-1 z-10 max-w-xl">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-              <Zap className="w-5 h-5 text-purple-400 fill-purple-400" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-4 sm:p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] shadow-2xl relative overflow-hidden min-w-0">
+        <div className="space-y-1 z-10 max-w-xl min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-base sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+              <Zap className="w-4 sm:w-5 h-4 sm:h-5 text-purple-400 fill-purple-400 shrink-0" />
               <span>Creator Acquisition Engine</span>
             </h1>
-            <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
+            <span className="px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
               Live Real-Data
             </span>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 leading-relaxed">
             Real-time creator discovery, verified contact extraction, AI product
             concepts, and outreach orchestration.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 z-10 flex-shrink-0 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2.5 z-10 flex-shrink-0">
           <button
             onClick={handleDeleteAllCreators}
             disabled={isDeletingAll}
-            className="flex items-center gap-2 px-3.5 h-9 rounded-xl text-xs font-bold transition-all border bg-red-500/10 border-red-500/25 text-red-400 hover:bg-red-500/20 hover:text-white cursor-pointer whitespace-nowrap flex-shrink-0 disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 h-8 sm:h-9 rounded-xl text-xs font-bold transition-all border bg-red-500/10 border-red-500/25 text-red-400 hover:bg-red-500/20 hover:text-white cursor-pointer whitespace-nowrap flex-shrink-0 disabled:opacity-50"
             title="Delete all creators from database and reset pipeline"
           >
             <Trash2 className="w-3.5 h-3.5 flex-shrink-0" />
@@ -5591,7 +5595,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       </div>
 
       {/* Phase Navigation */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none sm:grid sm:grid-cols-3 lg:grid-cols-6">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none sm:grid sm:grid-cols-3 lg:grid-cols-6 w-full min-w-0">
         {[
           {
             step: 1,
@@ -5642,7 +5646,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             <button
               key={item.step}
               onClick={() => setActiveStep(item.step)}
-              className={`flex flex-col items-start p-3 rounded-xl text-left transition-all border cursor-pointer shrink-0 min-w-[135px] sm:min-w-0 sm:w-auto ${
+              className={`flex flex-col items-start p-2.5 sm:p-3 rounded-xl text-left transition-all border cursor-pointer shrink-0 min-w-[120px] sm:min-w-0 sm:w-auto ${
                 isActive
                   ? item.activeBg
                   : "bg-[#0e1117] border-white/[0.06] text-slate-400 hover:border-white/[0.14] hover:text-white"
@@ -5661,34 +5665,34 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
       {/* STEP 1: CAMPAIGN SETUP */}
       {activeStep === 1 && (
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full min-w-0">
+          <div className="lg:col-span-2 space-y-6 w-full min-w-0">
             {/* Parameters Card */}
-            <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
-              <div className="border-b border-white/[0.07] pb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Target className="w-4 h-4 text-purple-400" />
-                  <span>Campaign Parameters & Lead Discovery</span>
+            <div className="p-3.5 sm:p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5 min-w-0 w-full">
+              <div className="border-b border-white/[0.07] pb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2 min-w-0">
+                  <Target className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span className="truncate">Campaign Parameters & Lead Discovery</span>
                 </h2>
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={handleStartFresh}
-                    className="text-[11px] font-bold text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/10 border border-white/10 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                    className="text-[11px] font-bold text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/10 border border-white/10 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
                     title="Clear cached creators and start completely fresh"
                   >
-                    <RefreshCw className="w-3 h-3 text-purple-400" />
+                    <RefreshCw className="w-3 h-3 text-purple-400 shrink-0" />
                     <span>Reset Fresh</span>
                   </button>
                 </div>
               </div>
 
               {/* Target Niches with Cancel Tags */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
+              <div className="space-y-2.5 min-w-0 w-full">
+                <div className="flex items-center justify-between min-w-0">
+                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1.5 min-w-0">
                     <span>Target Niche(s)</span>
-                    <span className="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-md font-mono">
+                    <span className="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-md font-mono shrink-0">
                       {niches.length} selected
                     </span>
                   </label>
@@ -5696,7 +5700,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <button
                       type="button"
                       onClick={() => setNiches([])}
-                      className="text-[11px] text-slate-500 hover:text-red-400 transition-colors cursor-pointer"
+                      className="text-[11px] text-slate-500 hover:text-red-400 transition-colors cursor-pointer shrink-0"
                     >
                       Clear all
                     </button>
@@ -5704,11 +5708,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
 
                 {/* Interactive Niche Box with Remove Cancel Buttons */}
-                <div className="p-2.5 rounded-xl bg-[#161a23] border border-white/10 flex flex-wrap items-center gap-1.5 focus-within:border-purple-500 transition-all min-h-[48px]">
+                <div className="p-2.5 rounded-xl bg-[#161a23] border border-white/10 flex flex-wrap items-center gap-1.5 focus-within:border-purple-500 transition-all min-h-[48px] min-w-0 w-full">
                   {niches.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center justify-between gap-2 px-3 py-1 rounded-lg text-xs font-semibold bg-purple-950/70 text-purple-200 border border-purple-500/40 shadow-sm min-w-[96px]"
+                      className="inline-flex items-center justify-between gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-950/70 text-purple-200 border border-purple-500/40 shadow-sm max-w-full min-w-0"
                     >
                       <span className="truncate">{tag}</span>
                       <button
@@ -5737,25 +5741,25 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         ? "Type niche & press Enter..."
                         : "+ Add another..."
                     }
-                    className="flex-1 min-w-[130px] bg-transparent text-xs text-white placeholder:text-slate-500 focus:outline-none py-1 px-1 font-medium"
+                    className="flex-1 min-w-[100px] max-w-full bg-transparent text-xs text-white placeholder:text-slate-500 focus:outline-none py-1 px-1 font-medium"
                   />
                 </div>
 
                 {/* Available Niches - Equal Width Uniform Grid */}
-                <div className="space-y-2 pt-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                <div className="space-y-2 pt-1.5 min-w-0 w-full">
+                  <div className="flex items-center justify-between min-w-0">
+                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5 flex-wrap">
                       <span>Available Niches</span>
                       <span className="text-[10px] text-slate-500 font-normal">
                         (Click to toggle on / off)
                       </span>
                     </span>
-                    <span className="text-[10px] text-purple-300 font-mono">
+                    <span className="text-[10px] text-purple-300 font-mono shrink-0">
                       {niches.length} active
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full min-w-0">
                     {allNicheOptions.map((tag) => {
                       const isAdded = niches.some(
                         (n) => n.toLowerCase() === tag.toLowerCase(),
@@ -5767,7 +5771,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           onClick={() =>
                             isAdded ? removeNiche(tag) : addNiche(tag)
                           }
-                          className={`w-full h-9 px-3 rounded-lg text-xs font-medium border transition-all cursor-pointer flex items-center justify-between gap-1.5 ${
+                          className={`w-full h-9 px-2.5 sm:px-3 rounded-lg text-xs font-medium border transition-all cursor-pointer flex items-center justify-between gap-1 min-w-0 ${
                             isAdded
                               ? "bg-purple-500/20 text-purple-100 border-purple-500/50 shadow-sm shadow-purple-950/40 font-semibold"
                               : "bg-white/[0.02] text-slate-400 hover:text-slate-200 border-white/[0.06] hover:border-white/20 hover:bg-white/[0.05]"
@@ -5788,14 +5792,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
 
               {/* Target Platforms Multi-select */}
-              <div className="space-y-2">
-                <label className="text-xs text-slate-300 font-semibold flex items-center justify-between">
+              <div className="space-y-2 min-w-0 w-full">
+                <label className="text-xs text-slate-300 font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <span>Target Platforms</span>
                   <span className="text-[11px] text-slate-500 font-normal">
                     Select platforms for lead discovery
                   </span>
                 </label>
-                <div className="grid grid-cols-3 gap-2.5 w-full">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full min-w-0">
                   {[
                     { id: "youtube", label: "YouTube", icon: Youtube, color: "text-red-400" },
                     { id: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-400" },
@@ -5808,16 +5812,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         key={p.id}
                         type="button"
                         onClick={() => togglePlatform(p.id)}
-                        className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer w-full ${
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-bold transition-all cursor-pointer w-full min-w-0 ${
                           isSelected
                             ? "bg-purple-500/15 border-purple-500/40 text-white"
                             : "bg-[#161a23] border-white/[0.06] text-slate-400 hover:text-white hover:border-white/20"
                         }`}
                       >
-                        <PlatformIcon className={`w-3.5 h-3.5 ${p.color}`} />
-                        <span>{p.label}</span>
+                        <PlatformIcon className={`w-3.5 h-3.5 ${p.color} shrink-0`} />
+                        <span className="truncate">{p.label}</span>
                         {isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-1" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-0.5 shrink-0" />
                         )}
                       </button>
                     );
@@ -5826,26 +5830,26 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
 
               {/* Targeting Parameters: Sliders, Geography & Ranges */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 pt-2 min-w-0 w-full">
                 {/* Target Geography Selector */}
-                <div className="space-y-2 md:col-span-2 p-3.5 rounded-xl bg-[#161a23] border border-white/[0.06]">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                <div className="space-y-2 md:col-span-2 p-3.5 rounded-xl bg-[#161a23] border border-white/[0.06] min-w-0 w-full">
+                  <div className="flex items-center justify-between min-w-0">
+                    <label className="text-xs text-slate-300 font-semibold flex items-center gap-1.5 min-w-0">
+                      <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                       <span>Target Geography</span>
                     </label>
-                    <span className="text-[11px] text-cyan-300 font-mono font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                    <span className="text-[11px] text-cyan-300 font-mono font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 shrink-0">
                       {selectedGeography} Selected
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1 w-full">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 sm:gap-2 pt-1 w-full min-w-0">
                     {[
-                      { id: "GLOBAL", label: "Global / All" },
-                      { id: "US", label: "United States (US)" },
-                      { id: "UK", label: "United Kingdom (UK)" },
-                      { id: "CA", label: "Canada (CA)" },
-                      { id: "EU", label: "Europe (EU)" },
-                      { id: "AU", label: "Australia (AU)" },
+                      { id: "GLOBAL", label: "Global" },
+                      { id: "US", label: "United States" },
+                      { id: "UK", label: "United Kingdom" },
+                      { id: "CA", label: "Canada" },
+                      { id: "EU", label: "Europe" },
+                      { id: "AU", label: "Australia" },
                     ].map((geo) => {
                       const active = selectedGeography === geo.id;
                       return (
@@ -5853,11 +5857,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           key={geo.id}
                           type="button"
                           onClick={() => setSelectedGeography(geo.id)}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center truncate w-full ${
+                          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center truncate w-full min-w-0 ${
                             active
                               ? "bg-cyan-500/20 border-cyan-500/50 text-white shadow-sm"
                               : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200"
                           }`}
+                          title={geo.label}
                         >
                           {geo.label}
                         </button>
@@ -5868,13 +5873,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                 {/* Sliders and Ranges */}
                 {/* 50 Creators Slider Control */}
-                <div className="space-y-2 p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/30">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs text-purple-300 font-bold flex items-center gap-1.5">
-                      <Cpu className="w-3.5 h-3.5 text-purple-400" />
+                <div className="space-y-2 p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/30 min-w-0 w-full">
+                  <div className="flex items-center justify-between min-w-0">
+                    <label className="text-xs text-purple-300 font-bold flex items-center gap-1.5 min-w-0">
+                      <Cpu className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                       <span>Batch Discovery Count</span>
                     </label>
-                    <span className="text-xs font-black text-white bg-purple-600 px-2 py-0.5 rounded-md">
+                    <span className="text-xs font-black text-white bg-purple-600 px-2 py-0.5 rounded-md shrink-0">
                       {creatorsBatchCount} Creators
                     </span>
                   </div>
@@ -5901,12 +5906,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
 
                 {/* Min Engagement */}
-                <div className="space-y-2 p-3.5 rounded-xl bg-[#161a23] border border-white/[0.06]">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs text-slate-300 font-semibold">
+                <div className="space-y-2 p-3.5 rounded-xl bg-[#161a23] border border-white/[0.06] min-w-0 w-full">
+                  <div className="flex items-center justify-between min-w-0">
+                    <label className="text-xs text-slate-300 font-semibold min-w-0">
                       Min Engagement Rate
                     </label>
-                    <span className="text-xs font-bold text-emerald-400">
+                    <span className="text-xs font-bold text-emerald-400 shrink-0">
                       ≥ {minEngagement}%
                     </span>
                   </div>
@@ -5927,55 +5932,61 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
 
                 {/* Follower Range */}
-                <div className="space-y-1.5 md:col-span-2">
+                <div className="space-y-1.5 md:col-span-2 min-w-0 w-full">
                   <label className="text-xs text-slate-300 font-semibold">
                     Follower Range (100K – 1M Target Tier)
                   </label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="number"
-                      value={minFollowers}
-                      onChange={(e) => setMinFollowers(Number(e.target.value))}
-                      className="flex-1 bg-[#161a23] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono"
-                    />
-                    <span className="text-slate-500 text-xs font-bold">TO</span>
-                    <input
-                      type="number"
-                      value={maxFollowers}
-                      onChange={(e) => setMaxFollowers(Number(e.target.value))}
-                      className="flex-1 bg-[#161a23] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono"
-                    />
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full min-w-0">
+                    <div className="flex-1 w-full min-w-0">
+                      <input
+                        type="number"
+                        value={minFollowers}
+                        onChange={(e) => setMinFollowers(Number(e.target.value))}
+                        className="w-full min-w-0 bg-[#161a23] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono"
+                        placeholder="Min followers"
+                      />
+                    </div>
+                    <span className="text-slate-500 text-xs font-bold text-center self-center shrink-0">TO</span>
+                    <div className="flex-1 w-full min-w-0">
+                      <input
+                        type="number"
+                        value={maxFollowers}
+                        onChange={(e) => setMaxFollowers(Number(e.target.value))}
+                        className="w-full min-w-0 bg-[#161a23] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono"
+                        placeholder="Max followers"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* ── Luxury Email Outreach Studio (Step 1) ────────────────────── */}
-            <div className="rounded-2xl bg-[#0b0e14] border border-white/10 shadow-2xl overflow-hidden space-y-0">
+            <div className="rounded-2xl bg-[#0b0e14] border border-white/10 shadow-2xl overflow-hidden space-y-0 min-w-0 w-full">
               {/* Window Titlebar */}
-              <div className="bg-[#121620] px-4 py-3 border-b border-white/[0.08] flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
+              <div className="bg-[#121620] px-3.5 sm:px-4 py-3 border-b border-white/[0.08] flex items-center justify-between flex-wrap gap-2 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
                     <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
                     <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs font-bold text-white tracking-wide">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <Mail className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span className="text-xs font-bold text-white tracking-wide truncate">
                       Outreach Email Studio
                     </span>
-                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono font-semibold">
-                      🔒 TLS / SPF Ready
+                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-mono font-semibold shrink-0">
+                      🔒 TLS Ready
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-[#090b0e] p-1 rounded-xl border border-white/[0.06]">
+                <div className="flex items-center gap-1.5 bg-[#090b0e] p-1 rounded-xl border border-white/[0.06] shrink-0">
                   <button
                     type="button"
                     onClick={() => setStep1EmailTab("editor")}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       step1EmailTab === "editor"
                         ? "bg-purple-600 text-white shadow-sm"
                         : "text-slate-400 hover:text-white"
@@ -5986,20 +5997,20 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <button
                     type="button"
                     onClick={() => setStep1EmailTab("preview")}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                       step1EmailTab === "preview"
                         ? "bg-purple-600 text-white shadow-sm"
                         : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    <Eye className="w-3.5 h-3.5" />
+                    <Eye className="w-3.5 h-3.5 shrink-0" />
                     <span>Live Preview</span>
                   </button>
                 </div>
               </div>
 
               {/* Merge Tags Insertion Toolbar */}
-              <div className="px-5 py-2.5 bg-[#10141d] border-b border-white/[0.06] flex items-center gap-2 overflow-x-auto text-[11px]">
+              <div className="px-3.5 sm:px-5 py-2.5 bg-[#10141d] border-b border-white/[0.06] flex items-center gap-2 overflow-x-auto text-[11px] max-w-full">
                 <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px] flex-shrink-0 flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-purple-400" />
                   <span>Insert Tags:</span>
@@ -6028,22 +6039,22 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
               {/* Editor Mode */}
               {step1EmailTab === "editor" ? (
-                <div className="p-5 space-y-4">
-                  <div>
+                <div className="p-3.5 sm:p-5 space-y-4 min-w-0 w-full">
+                  <div className="min-w-0 w-full">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                       Email Subject
                     </label>
-                    <div className="relative">
+                    <div className="relative min-w-0 w-full">
                       <input
                         type="text"
                         value={templateSubject}
                         onChange={(e) => setTemplateSubject(e.target.value)}
-                        className="w-full bg-[#141824] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 transition-colors"
+                        className="w-full bg-[#141824] border border-white/10 rounded-xl px-3.5 sm:px-4 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 transition-colors min-w-0"
                       />
                     </div>
                   </div>
 
-                  <div>
+                  <div className="min-w-0 w-full">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                       Email Message Body
                     </label>
@@ -6051,49 +6062,49 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       rows={7}
                       value={templateBody}
                       onChange={(e) => setTemplateBody(e.target.value)}
-                      className="w-full bg-[#141824] border border-white/10 rounded-xl p-4 text-xs text-slate-200 font-mono focus:outline-none focus:border-purple-500 leading-relaxed transition-colors resize-y"
+                      className="w-full bg-[#141824] border border-white/10 rounded-xl p-3.5 sm:p-4 text-xs text-slate-200 font-mono focus:outline-none focus:border-purple-500 leading-relaxed transition-colors resize-y min-w-0"
                     />
                   </div>
                 </div>
               ) : (
                 /* Live Client Preview Mode */
-                <div className="p-5 space-y-4 animate-in fade-in">
-                  <div className="rounded-xl bg-[#131722] border border-white/[0.08] p-5 space-y-4 shadow-inner">
+                <div className="p-3.5 sm:p-5 space-y-4 animate-in fade-in min-w-0 w-full">
+                  <div className="rounded-xl bg-[#131722] border border-white/[0.08] p-3.5 sm:p-5 space-y-4 shadow-inner min-w-0 w-full overflow-hidden">
                     {/* Fake Email Client Metadata Header */}
-                    <div className="space-y-2 border-b border-white/[0.06] pb-3 text-xs">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400 font-bold w-12">
+                    <div className="space-y-2 border-b border-white/[0.06] pb-3 text-xs min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-slate-400 font-bold w-12 shrink-0">
                             From:
                           </span>
-                          <span className="text-slate-200 font-mono">
+                          <span className="text-slate-200 font-mono text-[11px] sm:text-xs truncate break-all">
                             Creator Forge Studio &lt;partnerships@creatorforge.com&gt;
                           </span>
                         </div>
-                        <span className="text-[10px] text-purple-400 font-mono font-bold">
+                        <span className="text-[10px] text-purple-400 font-mono font-bold shrink-0">
                           Step 1 Outreach Wave
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-400 font-bold w-12">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0">
+                        <span className="text-slate-400 font-bold w-12 shrink-0">
                           To:
                         </span>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-200 font-mono text-[11px] font-bold">
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-200 font-mono text-[10px] sm:text-[11px] font-bold truncate max-w-full">
                             Marcus Vance (marcus@channel.com)
                           </span>
-                          <span className="text-[10px] text-slate-400 font-mono">
+                          <span className="text-[10px] text-slate-400 font-mono shrink-0">
                             • 320K YouTube
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 pt-1">
-                        <span className="text-slate-400 font-bold w-12">
+                      <div className="flex items-start sm:items-center gap-2 pt-1 min-w-0">
+                        <span className="text-slate-400 font-bold w-12 shrink-0">
                           Subject:
                         </span>
-                        <span className="text-white font-bold text-xs">
+                        <span className="text-white font-bold text-xs break-words min-w-0">
                           {templateSubject
                             .replace("{{display_name}}", "Marcus Vance")
                             .replace("{{first_name}}", "Marcus")}
@@ -6102,7 +6113,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     </div>
 
                     {/* Email Rendered Body */}
-                    <div className="text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed space-y-3">
+                    <div className="text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed space-y-3 break-words min-w-0">
                       {templateBody
                         .replace(/\{\{first_name\}\}/g, "Marcus")
                         .replace(/\{\{display_name\}\}/g, "Marcus Vance")
@@ -6113,29 +6124,29 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     </div>
 
                     {/* Co-founder Guarantee Box */}
-                    <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-between text-xs text-purple-200">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        <span className="font-semibold">
-                          50/50 Revenue Split • Zero Upfront Cost to Creator
+                    <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-purple-200 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="font-semibold text-[11px] sm:text-xs">
+                          50/50 Revenue Split • Zero Upfront Cost
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-purple-300">
+                      <span className="text-[10px] font-mono text-purple-300 shrink-0">
                         Venture Studio Model
                       </span>
                     </div>
 
                     {/* Studio Signature */}
-                    <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                      <div>
-                        <div className="font-bold text-white">
+                    <div className="pt-3 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400 font-mono min-w-0">
+                      <div className="min-w-0">
+                        <div className="font-bold text-white text-xs">
                           Creator Forge Studio Team
                         </div>
                         <div className="text-[10px] text-slate-500">
                           Co-Founding Software Empires with Digital Creators
                         </div>
                       </div>
-                      <div className="text-right text-[10px] text-slate-500">
+                      <div className="text-left sm:text-right text-[10px] text-slate-500 break-all">
                         San Francisco, CA • studio@creatorforge.com
                       </div>
                     </div>
@@ -6146,42 +6157,42 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           </div>
 
           {/* Engine Summary & Start Button (Right Sidebar) */}
-          <div className="space-y-4">
-            <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5 sticky top-20">
+          <div className="space-y-4 w-full min-w-0">
+            <div className="p-4 sm:p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5 lg:sticky lg:top-20 min-w-0 w-full">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   Campaign Summary
                 </h4>
               </div>
 
-              <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-3 text-xs">
-                <div className="flex justify-between">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-3 text-xs min-w-0 w-full">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-400">Target Range</span>
                   <span className="text-purple-300 font-bold">100K – 1M</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-400">Geography</span>
                   <span className="text-cyan-300 font-bold">{selectedGeography}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-400">Batch Discovery Size</span>
                   <span className="text-purple-300 font-bold">
                     {creatorsBatchCount} Creators
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-400">Min Engagement</span>
                   <span className="text-emerald-400 font-bold">
                     ≥ {minEngagement}%
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-400">Follow-up Rule</span>
-                  <span className="text-amber-300 font-bold">Auto-follow up after 7d</span>
+                  <span className="text-amber-300 font-bold truncate">Auto-follow up (7d)</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-400">Response Handling</span>
-                  <span className="text-emerald-400 font-bold">
+                  <span className="text-emerald-400 font-bold truncate">
                     Stop Sequence
                   </span>
                 </div>
@@ -6216,9 +6227,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
       {/* QUALIFIED LEADS: FIND & QUALIFY CREATORS */}
       {activeStep === 2 && (
-        <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
-            <div>
+        <div className="p-3.5 sm:p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5 min-w-0 w-full">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.07] pb-4 min-w-0">
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">
                   Discovered Leads
@@ -6229,7 +6240,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </span>
               </div>
               <h2 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
-                <Search className="w-4 h-4 text-indigo-400" />
+                <Search className="w-4 h-4 text-indigo-400 shrink-0" />
                 <span>Find & Qualify Creators</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -6237,7 +6248,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </p>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-shrink-0 max-w-full">
               {creators.length > 0 && !discovering && (
                 <div className="h-9 px-3 rounded-xl bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono flex items-center gap-2 shadow-sm whitespace-nowrap">
                   <Clock className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
@@ -6297,68 +6308,43 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             </div>
           </div>
 
-          {/* Real-time Status Terminal Log (displayed when not actively scouting or upon completion) */}
-          {discoveryLog && !discovering && (
-            <div className="p-4 rounded-xl bg-black/60 border border-indigo-500/30 text-xs font-mono text-indigo-300 flex items-start gap-2 shadow-inner">
-              <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1 flex-shrink-0 animate-ping" />
-              <div className="flex-1 leading-relaxed">{discoveryLog}</div>
-            </div>
-          )}
-
-          {/* Active Scouting State: Clean Minimalist Rotating Cycling Icon + Target Niche */}
+          {/* Active Scouting State: Streamlined Cycling Icon Header + Shimmer Skeleton Grid */}
           {discovering && (
-            <div className="p-6 rounded-2xl bg-gradient-to-b from-[#181b2a] to-[#121420] border border-indigo-500/30 text-center space-y-4 shadow-xl animate-in fade-in">
-              <div className="flex flex-col items-center justify-center gap-3">
-                <div className="relative flex items-center justify-center">
-                  <div className="absolute w-16 h-16 rounded-full bg-indigo-500/20 animate-ping opacity-75" />
-                  <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center shadow-lg backdrop-blur-sm">
-                    <RotateCw className="w-7 h-7 text-indigo-400 animate-spin" />
+            <div className="space-y-4 animate-in fade-in">
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#0e1117] border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-xl">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 shadow-sm">
+                    <RotateCw className="w-5 h-5 animate-spin text-indigo-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-white tracking-wide">
+                        Discovering Target Creators
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
+                        Target: {creatorsBatchCount || 3}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate">
+                      Scouting verified creators across {(niches.length > 0 ? niches : ["Tech", "Software", "SaaS"]).join(", ")}
+                    </p>
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <h3 className="text-base font-bold text-white tracking-wide">
-                    Discovering Target Creators
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Target Limit: <span className="font-bold text-indigo-300">{creatorsBatchCount || 3} creators</span> • Audience: <span className="font-mono text-indigo-300">100K - 1M followers</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Target Niches Selected */}
-              <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
-                  Target Niche:
-                </span>
-                {(niches.length > 0 ? niches : ["Tech", "Software", "SaaS"]).map((n) => (
-                  <span
-                    key={n}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-xs font-medium"
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleStopDiscovery}
+                    className="px-3.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
                   >
-                    {n}
-                  </span>
-                ))}
-              </div>
-
-              {/* Live Terminal Log */}
-              {discoveryLog && (
-                <div className="p-3 rounded-xl bg-black/60 border border-white/[0.06] text-xs font-mono text-indigo-300 flex items-start gap-2 shadow-inner text-left">
-                  <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1 flex-shrink-0 animate-ping" />
-                  <div className="flex-1 leading-relaxed">{discoveryLog}</div>
+                    <X className="w-3.5 h-3.5" />
+                    <span>Stop Discovery</span>
+                  </button>
                 </div>
-              )}
-
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={handleStopDiscovery}
-                  className="px-4 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  <span>Stop Discovery</span>
-                </button>
               </div>
+
+              {/* Shimmer Skeleton Cards matching incoming creator cards */}
+              <CreatorCardSkeleton count={creatorsBatchCount || 3} />
             </div>
           )}
 

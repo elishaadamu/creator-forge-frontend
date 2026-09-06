@@ -637,3 +637,140 @@ export function Phase3ChecklistsSkeleton() {
   )
 }
 
+/**
+ * 16. Section 1 Step 2: Creator Candidate Cards Skeleton
+ */
+export function CreatorCardSkeleton({ count = 3 }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="p-4 rounded-xl border border-white/[0.08] bg-[#161a23]/60 space-y-3.5 relative overflow-hidden animate-fade-in"
+        >
+          {/* Header row with avatar, name and score */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <SkeletonCircle size={40} variant="purple" />
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <Skeleton rounded="rounded-full" className="w-28 h-3.5" />
+                <Skeleton rounded="rounded-full" className="w-20 h-2.5" />
+              </div>
+            </div>
+            <Skeleton variant="amber" rounded="rounded-full" className="w-12 h-6 shrink-0" />
+          </div>
+
+          {/* Followers & Platform row */}
+          <div className="flex items-center gap-2 pt-1">
+            <Skeleton rounded="rounded-md" className="w-20 h-5" />
+            <Skeleton rounded="rounded-md" className="w-24 h-5" />
+          </div>
+
+          {/* Bio lines */}
+          <SkeletonText lines={2} gap="space-y-1.5" />
+
+          {/* Contact and action footer */}
+          <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
+            <Skeleton rounded="rounded-md" className="w-32 h-6" />
+            <Skeleton variant="purple" rounded="rounded-lg" className="w-20 h-7" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * 17. Section 1 Step 5: AI Software Concept Cards Skeleton
+ */
+export function ConceptCardSkeleton({ count = 3 }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="p-5 rounded-2xl border border-purple-500/20 bg-[#121622]/70 space-y-4 relative overflow-hidden animate-fade-in"
+        >
+          <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+            <Skeleton variant="purple" rounded="rounded-lg" className="w-28 h-6" />
+            <Skeleton variant="emerald" rounded="rounded-full" className="w-16 h-5" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton rounded="rounded-full" className="w-4/5 h-4" />
+            <SkeletonText lines={2} gap="space-y-1.5" />
+          </div>
+          <div className="space-y-2 pt-2 border-t border-white/[0.06]">
+            {[1, 2, 3].map(f => (
+              <div key={f} className="flex items-center gap-2">
+                <SkeletonCircle size={14} variant="purple" />
+                <Skeleton rounded="rounded-full" className="w-3/4 h-3" />
+              </div>
+            ))}
+          </div>
+          <div className="pt-2">
+            <Skeleton variant="purple" rounded="rounded-xl" className="w-full h-10" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * 18. Section 1 Step 3: Direct Outreach Queue Skeleton
+ */
+export function OutreachQueueSkeleton() {
+  return (
+    <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4 animate-fade-in w-full">
+      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+        <Skeleton rounded="rounded-full" className="w-48 h-4" />
+        <Skeleton variant="purple" rounded="rounded-full" className="w-24 h-6" />
+      </div>
+      <div className="space-y-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <SkeletonCircle size={32} />
+              <div className="space-y-1 flex-1">
+                <Skeleton rounded="rounded-full" className="w-36 h-3.5" />
+                <Skeleton rounded="rounded-full" className="w-56 h-2.5" />
+              </div>
+            </div>
+            <Skeleton variant="emerald" rounded="rounded-full" className="w-20 h-5 shrink-0" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 19. Section 1 Step 4: Reply Classifier Inbox Skeleton
+ */
+export function ReplyInboxSkeleton() {
+  return (
+    <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4 animate-fade-in w-full">
+      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+        <Skeleton rounded="rounded-full" className="w-44 h-4" />
+        <Skeleton variant="emerald" rounded="rounded-full" className="w-28 h-6" />
+      </div>
+      <div className="space-y-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SkeletonCircle size={24} variant="purple" />
+                <Skeleton rounded="rounded-full" className="w-32 h-3.5" />
+              </div>
+              <Skeleton variant="emerald" rounded="rounded-full" className="w-16 h-4" />
+            </div>
+            <Skeleton rounded="rounded-full" className="w-4/5 h-3" />
+            <Skeleton rounded="rounded-full" className="w-1/2 h-2.5" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+

@@ -897,7 +897,7 @@ export default function CreatorLaunchLayout({
   };
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-slate-100 font-sans flex flex-col">
+    <div className="min-h-screen bg-[#090b0e] text-slate-100 font-sans flex flex-col overflow-x-hidden w-full max-w-[100vw]">
       {/* Top Navbar */}
       <header className="h-14 border-b border-white/[0.08] bg-[#0d0f14]/95 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 relative">
         {/* Workspace Switching Progress Bar (Linear / Vercel style) */}
@@ -1428,7 +1428,7 @@ export default function CreatorLaunchLayout({
       )}
 
       {/* Main Content View */}
-      <main className="flex-1 w-full max-w-[1720px] mx-auto px-3 sm:px-5 py-4 space-y-5">
+      <main className="flex-1 w-full max-w-[1720px] mx-auto px-2.5 sm:px-5 py-4 space-y-5 overflow-x-hidden min-w-0">
         {/* Mobile Section Switcher */}
         <div className="flex md:hidden items-center p-1 rounded-xl bg-white/[0.03] border border-white/[0.07] gap-1 overflow-x-auto">
           <button

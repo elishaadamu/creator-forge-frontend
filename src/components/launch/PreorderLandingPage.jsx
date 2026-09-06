@@ -263,36 +263,37 @@ export default function PreorderLandingPage({ slug }) {
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 selection:bg-purple-500 selection:text-white font-sans antialiased overflow-x-hidden">
       {/* Top Launch Notification Banner */}
-      <div className="bg-gradient-to-r from-purple-950/90 via-purple-900/70 to-[#07090e] border-b border-purple-500/20 py-2.5 px-4 text-center text-xs">
-        <div className="flex items-center justify-center gap-2 font-semibold">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+      <div className="bg-gradient-to-r from-purple-950/90 via-purple-900/70 to-[#07090e] border-b border-purple-500/20 py-2.5 px-3 sm:px-4 text-center text-xs">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-semibold flex-wrap">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           <span className="text-purple-200">Exclusive Co-Founder Early Launch by</span>
           <span className="text-white font-bold">{creatorName}</span>
-          <span className="bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ml-1">
+          <span className="bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase shrink-0">
             50% Off Lifetime Tier
           </span>
         </div>
       </div>
 
       {/* Navigation Bar */}
-      <header className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-purple-900/50">
+      <header className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-purple-900/50 shrink-0">
             {productName.slice(0, 2).toUpperCase()}
           </div>
-          <div>
-            <span className="font-extrabold text-white text-base tracking-tight block">{productName}</span>
-            <span className="text-[10px] text-purple-400 font-mono">by {creatorName}</span>
+          <div className="min-w-0">
+            <span className="font-extrabold text-white text-sm sm:text-base tracking-tight block truncate">{productName}</span>
+            <span className="text-[10px] text-purple-400 font-mono truncate block">by {creatorName}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={() => openCheckout({ name: `Founding Annual Pass ($${foundingPrice})`, price: foundingPrice, deposit: false })}
-            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            className="px-3 sm:px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
             <CreditCard className="w-3.5 h-3.5" />
-            <span>Claim Access (${foundingPrice})</span>
+            <span className="hidden sm:inline">Claim Access</span>
+            <span>(${foundingPrice})</span>
           </button>
         </div>
       </header>
