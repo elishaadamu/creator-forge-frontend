@@ -238,9 +238,12 @@ export default function AcquisitionEngine({
   const [creatorsBatchCount, setCreatorsBatchCount] = useState(() => {
     try {
       const saved = localStorage.getItem("forge_launch_creators_batch_count");
-      return saved ? Math.max(1, Number(saved)) : 3;
+      if (saved && Number(saved) !== 3) {
+        return Math.max(1, Number(saved));
+      }
+      return 25;
     } catch {
-      return 3;
+      return 25;
     }
   });
   const [selectedPlatforms, setSelectedPlatforms] = useState([
@@ -270,9 +273,12 @@ export default function AcquisitionEngine({
     const batchLimit = (() => {
       try {
         const saved = localStorage.getItem("forge_launch_creators_batch_count");
-        return saved ? Math.max(1, Number(saved)) : 3;
+        if (saved && Number(saved) !== 3) {
+          return Math.max(1, Number(saved));
+        }
+        return 25;
       } catch {
-        return 3;
+        return 25;
       }
     })();
 
@@ -1034,9 +1040,12 @@ export default function AcquisitionEngine({
             const currentBatchLimit = (() => {
               try {
                 const saved = localStorage.getItem("forge_launch_creators_batch_count");
-                return saved ? Math.max(1, Number(saved)) : (creatorsBatchCount || 3);
+                if (saved && Number(saved) !== 3) {
+                  return Math.max(1, Number(saved));
+                }
+                return creatorsBatchCount || 25;
               } catch {
-                return creatorsBatchCount || 3;
+                return creatorsBatchCount || 25;
               }
             })();
 
@@ -1276,7 +1285,9 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_launch_ai_choice_map");
       localStorage.removeItem("forge_launch_active_step");
       localStorage.removeItem("forge_launch_acquisition_step");
+      localStorage.removeItem("forge_launch_creators_batch_count");
     } catch (e) {}
+    setCreatorsBatchCount(25);
     setCountdownSeconds(30);
     setActiveStep(1);
   };
@@ -1317,7 +1328,7 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_step2_timer_target");
     } catch (e) {}
     setCountdownSeconds(30);
-    const targetCount = Math.max(1, Number(creatorsBatchCount) || 3);
+    const targetCount = Math.max(1, Number(creatorsBatchCount) || 25);
     const parsedMinFollowers = Math.max(1000, Number(minFollowers) || 100000);
     const parsedMaxFollowers = Math.max(parsedMinFollowers, Number(maxFollowers) || 1000000);
     const activeNiches =
@@ -4472,7 +4483,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     if (sendingBulk) return;
     setSendingBulk(true);
 
-    let activeList = Array.isArray(creators) ? creators.slice(0, creatorsBatchCount || 3) : [];
+    let activeList = Array.isArray(creators) ? creators.slice(0, creatorsBatchCount || 25) : [];
     if (editingEmailCreatorId && tempEmailValue.trim()) {
       const draftEmail = tempEmailValue.trim();
       const targetId = editingEmailCreatorId;
@@ -6322,7 +6333,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         Discovering Target Creators
                       </h3>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
-                        Target: {creatorsBatchCount || 3}
+                        Target: {creatorsBatchCount || 25}
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 truncate">
@@ -6344,7 +6355,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
 
               {/* Shimmer Skeleton Cards matching incoming creator cards */}
-              <CreatorCardSkeleton count={creatorsBatchCount || 3} />
+              <CreatorCardSkeleton count={Math.min(6, creatorsBatchCount || 25)} />
             </div>
           )}
 
@@ -6370,10 +6381,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 border-b border-white/[0.04] pb-3">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-white uppercase tracking-wider text-[11px]">
-                    Top Qualified Creators ({Math.min(creators.length, creatorsBatchCount || 3)})
+                    Top Qualified Creators ({Math.min(creators.length, creatorsBatchCount || 25)})
                   </span>
                   <span className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-mono">
-                    {creators.slice(0, creatorsBatchCount || 3).filter((c) => (c.creatorScore || 85) >= minScoreThreshold).length} Advanceable (≥{minScoreThreshold})
+                    {creators.slice(0, creatorsBatchCount || 25).filter((c) => (c.creatorScore || 85) >= minScoreThreshold).length} Advanceable (≥{minScoreThreshold})
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -6398,7 +6409,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(Array.isArray(creators) ? creators.slice(0, creatorsBatchCount || 3) : []).map((c) => {
+                {(Array.isArray(creators) ? creators.slice(0, creatorsBatchCount || 25) : []).map((c) => {
                   const cleanHandle = (c.handle || "").replace(/^@/, "");
                   const platformSlug = (c.platform || "youtube").toLowerCase();
                   const profileUrl =
@@ -6798,7 +6809,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           {/* Queue preview table */}
           <div className="space-y-3 pt-2">
             <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-              Active Outreach Queue ({Math.min(creators.length, creatorsBatchCount || 3)})
+              Active Outreach Queue ({Math.min(creators.length, creatorsBatchCount || 25)})
             </h3>
             <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-[#161a23]">
               <table className="w-full text-left text-xs">
@@ -6812,7 +6823,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
-                  {creators.slice(0, creatorsBatchCount || 3).map((c) => {
+                  {creators.slice(0, creatorsBatchCount || 25).map((c) => {
                     const emailVal = c.email || c.email_public || "";
                     const isEditing = editingEmailCreatorId === c.id;
 
