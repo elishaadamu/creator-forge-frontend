@@ -49,23 +49,7 @@ export default function Phase2BuildMVP({
     return 'plan'
   })
 
-  const setActiveStep = (newStep) => {
-    setActiveStepState(newStep)
-    if (onSelectStep) onSelectStep(newStep)
-    if (typeof window !== 'undefined') {
-      try {
-        const url = new URL(window.location.href)
-        url.searchParams.set('step', newStep)
-        window.history.replaceState({}, '', url.toString())
-      } catch (e) {}
-    }
-    // Direct persistence to PostgreSQL database
-    if (project?.id) {
-      import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
-        updateCoLaunchProject(project.id, { currentStep: newStep }).catch(e => console.warn('[Phase2] DB step sync warning:', e))
-      }).catch(() => {})
-    }
-  }
+
 
   // Synchronize when activeStepId prop changes
   useEffect(() => {
@@ -288,6 +272,54 @@ export default function Phase2BuildMVP({
     setSaveToast(msg)
     setTimeout(() => setSaveToast(''), 3500)
   }
+
+  const p2Guards = getPhase2StepGuards(project, { buildPlan, engineeringTasks, feedbackClusters })
+
+  const canAccessP2Step = (stepId) => {
+    if (stepId === 'plan') return true
+    if (stepId === 'build') return p2Guards.canAccessStep2
+    if (stepId === 'beta') return p2Guards.canAccessStep3
+    if (stepId === 'gate') return p2Guards.canAccessStep4
+    return true
+  }
+
+  const getP2StepMissingPrerequisiteText = (stepId) => {
+    if (stepId === 'build' && !p2Guards.canAccessStep2) return 'Please complete Step 1 (Product + Build Plan) first.'
+    if (stepId === 'beta' && !p2Guards.canAccessStep3) return 'Please complete Step 2 (Build MVP) first.'
+    if (stepId === 'gate' && !p2Guards.canAccessStep4) return 'Gate locked: Complete Steps 1–3 first.'
+    return 'Please complete previous steps first.'
+  }
+
+  const setActiveStep = (newStep) => {
+    if (!canAccessP2Step(newStep)) {
+      showToast(getP2StepMissingPrerequisiteText(newStep))
+      return
+    }
+    setActiveStepState(newStep)
+    if (onSelectStep) onSelectStep(newStep)
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href)
+        url.searchParams.set('step', newStep)
+        window.history.replaceState({}, '', url.toString())
+      } catch (e) {}
+    }
+    // Direct persistence to PostgreSQL database
+    if (project?.id) {
+      import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
+        updateCoLaunchProject(project.id, { currentStep: newStep }).catch(e => console.warn('[Phase2] DB step sync warning:', e))
+      }).catch(() => {})
+    }
+  }
+
+  // Synchronize and auto-fallback if activeStep is locked
+  useEffect(() => {
+    if (!canAccessP2Step(activeStep)) {
+      if (p2Guards.canAccessStep3) setActiveStepState('beta')
+      else if (p2Guards.canAccessStep2) setActiveStepState('build')
+      else setActiveStepState('plan')
+    }
+  }, [activeStep, p2Guards.canAccessStep1, p2Guards.canAccessStep2, p2Guards.canAccessStep3, p2Guards.canAccessStep4])
 
   const handleSavePlan = async (updatedPlan = buildPlan, updatedTasks = engineeringTasks, extraUpdates = {}) => {
     const clusters = extraUpdates.feedbackClusters !== undefined ? extraUpdates.feedbackClusters : feedbackClusters
@@ -1250,59 +1282,73 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
       {/* Main 4 Steps Stepper Navigation */}
       <div className="flex items-center justify-between p-1.5 rounded-2xl bg-[#0e1117] border border-white/[0.08] overflow-x-auto">
         <div className="flex items-center gap-1.5 min-w-max">
-          {(() => {
-            const p2Guards = getPhase2StepGuards(project, { buildPlan, engineeringTasks, feedbackClusters })
-            return [
-              {
-                id: 'plan',
-                label: '1. Product + Build Plan',
-                icon: FileText,
-                isDone: p2Guards.isStep1Done
-              },
-              {
-                id: 'build',
-                label: '2. Build MVP',
-                icon: Code,
-                isDone: p2Guards.isStep2Done
-              },
-              {
-                id: 'beta',
-                label: '3. Beta Test',
-                icon: Laptop,
-                isDone: p2Guards.isStep3Done
-              },
-              {
-                id: 'gate',
-                label: '4. Iterate + Launch Gate',
-                icon: ShieldCheck,
-                isDone: p2Guards.isStep4Done
-              },
-            ]
-          })().map(tab => {
+          {[
+            {
+              id: 'plan',
+              label: '1. Product + Build Plan',
+              icon: FileText,
+              isDone: p2Guards.isStep1Done,
+              canAccess: p2Guards.canAccessStep1
+            },
+            {
+              id: 'build',
+              label: '2. Build MVP',
+              icon: Code,
+              isDone: p2Guards.isStep2Done,
+              canAccess: p2Guards.canAccessStep2
+            },
+            {
+              id: 'beta',
+              label: '3. Beta Test',
+              icon: Laptop,
+              isDone: p2Guards.isStep3Done,
+              canAccess: p2Guards.canAccessStep3
+            },
+            {
+              id: 'gate',
+              label: '4. Iterate + Launch Gate',
+              icon: ShieldCheck,
+              isDone: p2Guards.isStep4Done,
+              canAccess: p2Guards.canAccessStep4
+            },
+          ].map(tab => {
             const Icon = tab.icon
             const isActive = activeStep === tab.id
             const isDone = tab.isDone
+            const isLocked = !tab.canAccess
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveStep(tab.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-950/60'
+                onClick={() => {
+                  if (isLocked) {
+                    showToast(getP2StepMissingPrerequisiteText(tab.id))
+                    return
+                  }
+                  setActiveStep(tab.id)
+                }}
+                disabled={isLocked}
+                title={isLocked ? getP2StepMissingPrerequisiteText(tab.id) : tab.label}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+                  isLocked
+                    ? 'opacity-40 cursor-not-allowed text-slate-500 bg-white/[0.01]'
+                    : isActive
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-950/60 cursor-pointer'
                     : isDone
-                    ? 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                    ? 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30 cursor-pointer'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04] cursor-pointer'
                 }`}
               >
-                {isDone ? (
+                {isLocked ? (
+                  <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                ) : isDone ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 ) : (
                   <Icon className="w-3.5 h-3.5 shrink-0" />
                 )}
-                <span className={isDone ? 'text-slate-200 font-semibold' : ''}>
+                <span className={isLocked ? 'text-slate-500' : isDone ? 'text-slate-200 font-semibold' : ''}>
                   {tab.label}
                 </span>
-                {isDone && (
+                {isDone && !isLocked && (
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-normal ${
                     isActive ? 'bg-emerald-400/20 text-emerald-200 border border-emerald-400/30' : 'bg-emerald-500/20 text-emerald-300'
                   }`}>
@@ -2197,8 +2243,11 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             </div>
 
             <button
-              onClick={() => setActiveStep('build')}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-950/50 transition-all active:scale-95"
+              onClick={async () => {
+                await handleSavePlan(buildPlan, engineeringTasks, { buildPlanApproved: true, status: 'approved' })
+                setActiveStep('build')
+              }}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-950/50 transition-all active:scale-95 cursor-pointer"
             >
               <span>Proceed to 2. Build MVP</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -2227,6 +2276,11 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             handleSwitchToAIAndDispatch={handleSwitchToAIAndDispatch}
             handleAutoDistributeDivisionOfLabor={handleAutoDistributeDivisionOfLabor}
             handleAddDefaultHumanTask={handleAddDefaultHumanTask}
+            onAutoBuildPlan={() => handleRegenerateMVPPlan(false)}
+            isBuildingPlan={isGenerating}
+            onRunQA={() => handleRunAutomatedQA(qaResults)}
+            qaRunning={qaRunning}
+            currentPhase={2}
             executingTaskId={executingTaskId}
             showToast={showToast}
           />
@@ -2240,8 +2294,11 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               ← Back to Product Plan
             </button>
             <button
-              onClick={() => setActiveStep('beta')}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-950/50 transition-all active:scale-95"
+              onClick={async () => {
+                await handleSavePlan(buildPlan, engineeringTasks, { buildCompleted: true, mvpBuildDone: true })
+                setActiveStep('beta')
+              }}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-950/50 transition-all active:scale-95 cursor-pointer"
             >
               <span>Proceed to 3. Beta Test</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -2600,6 +2657,58 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
       {/* STEP 4: ITERATE + LAUNCH GATE */}
       {activeStep === 'gate' && (
         <div className="space-y-5">
+          {/* Prerequisite Check Banner if prior steps are incomplete */}
+          {!p2Guards.allPriorStepsDone && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2.5 animate-fade-in shadow-lg shadow-amber-950/20">
+              <div className="flex items-center gap-2 font-bold text-amber-300">
+                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Phase 2 Launch Gate is Locked: Prerequisite Steps Incomplete</span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                The Launch Gate requires completing product specifications, the MVP codebase build tasks, and beta cohort testing before public release.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                <button
+                  onClick={() => setActiveStep('plan')}
+                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all cursor-pointer ${
+                    p2Guards.isStep1Done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20'
+                  }`}
+                >
+                  <span>1. Product + Build Plan</span>
+                  <span>{p2Guards.isStep1Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+                <button
+                  onClick={() => setActiveStep('build')}
+                  disabled={!p2Guards.canAccessStep2}
+                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                    p2Guards.isStep2Done
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      : p2Guards.canAccessStep2
+                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
+                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>2. Build MVP</span>
+                  <span>{p2Guards.isStep2Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+                <button
+                  onClick={() => setActiveStep('beta')}
+                  disabled={!p2Guards.canAccessStep3}
+                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                    p2Guards.isStep3Done
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      : p2Guards.canAccessStep3
+                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
+                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>3. Beta Test</span>
+                  <span>{p2Guards.isStep3Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Executive Header Banner */}
           <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
@@ -2782,23 +2891,33 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
               {/* Choice 1: Launch Product */}
               <button
-                onClick={onAdvanceToPhase3}
-                className="p-4 rounded-2xl bg-gradient-to-b from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white text-left space-y-2 shadow-xl shadow-blue-950/60 transition-all active:scale-[0.98] group"
+                disabled={!p2Guards.allPriorStepsDone}
+                onClick={p2Guards.allPriorStepsDone ? onAdvanceToPhase3 : undefined}
+                className={`p-4 rounded-2xl text-left space-y-2 transition-all group border ${
+                  p2Guards.allPriorStepsDone
+                    ? 'bg-gradient-to-b from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white shadow-xl shadow-blue-950/60 active:scale-[0.98] border-blue-400/40 cursor-pointer'
+                    : 'bg-slate-800/80 text-slate-500 border-slate-700/60 shadow-none cursor-not-allowed opacity-50'
+                }`}
+                title={!p2Guards.allPriorStepsDone ? 'Complete Steps 1–3 before advancing to Phase 3' : 'Advance to Phase 3'}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-white/10 text-white">
-                    <Rocket className="w-5 h-5" />
+                  <div className={`p-2 rounded-xl ${p2Guards.allPriorStepsDone ? 'bg-white/10 text-white' : 'bg-slate-700/50 text-slate-500'}`}>
+                    {!p2Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <Rocket className="w-5 h-5" />}
                   </div>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950 uppercase tracking-wider">
-                    Recommended
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                    p2Guards.allPriorStepsDone ? 'bg-emerald-400 text-slate-950' : 'bg-slate-700 text-slate-400'
+                  }`}>
+                    {p2Guards.allPriorStepsDone ? 'Recommended' : 'Locked'}
                   </span>
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-white group-hover:text-blue-100 transition-colors">
+                  <h4 className={`text-sm font-black transition-colors ${p2Guards.allPriorStepsDone ? 'text-white group-hover:text-blue-100' : 'text-slate-400'}`}>
                     1. Launch Product
                   </h4>
-                  <p className="text-[11px] text-blue-100/80 leading-relaxed mt-0.5">
-                    Advance to Phase 3 (Scale / General Launch), open public onboarding, and activate marketing engine.
+                  <p className={`text-[11px] leading-relaxed mt-0.5 ${p2Guards.allPriorStepsDone ? 'text-blue-100/80' : 'text-slate-500'}`}>
+                    {p2Guards.allPriorStepsDone
+                      ? 'Advance to Phase 3 (Scale / General Launch), open public onboarding, and activate marketing engine.'
+                      : 'Locked — Complete Steps 1–3 (Product Plan, MVP Engineering Build, and Beta Test) first.'}
                   </p>
                 </div>
               </button>

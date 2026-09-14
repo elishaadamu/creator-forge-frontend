@@ -422,7 +422,11 @@ export default function CreatorLaunchLayout({
 
       let created = null
       try {
-        created = await createCoLaunchProject(newProjPayload)
+        created = await createCoLaunchProject({
+          ...newProjPayload,
+          portalLinkSent: true,
+          skipCreatorEmail: true
+        })
       } catch (err) {
         console.warn('[CreatorLaunchLayout] createCoLaunchProject API error, using local payload:', err)
       }
@@ -744,6 +748,8 @@ export default function CreatorLaunchLayout({
     })
   }
 
+  const handleUpdateActiveProject = handleUpdateProject
+
   const handleCreateProjectFromConcept = async (newProjData) => {
     const projId = `proj_${Date.now()}`
     const cleanProject = {
@@ -786,7 +792,12 @@ export default function CreatorLaunchLayout({
 
     // Persist to backend database tables in SQLite
     try {
-      const dbProj = await createCoLaunchProject({ ...newProjData, id: projId })
+      const dbProj = await createCoLaunchProject({
+        ...newProjData,
+        id: projId,
+        portalLinkSent: true,
+        skipCreatorEmail: true
+      })
       if (dbProj && dbProj.id) {
         setActiveProject(prev => {
           const merged = { ...(prev || {}), ...dbProj }

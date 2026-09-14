@@ -138,7 +138,19 @@ export default function FollowUpCRMPage() {
         }
       }
 
-      const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
+      const rawDeleted = (() => {
+        try {
+          const direct = localStorage.getItem("forge_deleted_creator_ids");
+          if (!direct) return [];
+          const parsed = JSON.parse(direct);
+          if (Array.isArray(parsed)) return parsed;
+          if (parsed && typeof parsed === "object" && Array.isArray(parsed.data)) return parsed.data;
+          return [];
+        } catch {
+          return [];
+        }
+      })();
+      const deletedIds = Array.isArray(rawDeleted) ? [...rawDeleted] : [];
       if (creatorId && !deletedIds.includes(creatorId)) {
         deletedIds.push(creatorId);
         localStorage.setItem("forge_deleted_creator_ids", JSON.stringify(deletedIds));

@@ -30,9 +30,12 @@ import {
 } from './Section2Skeletons'
 import { getPhase3StepGuards } from '../../utils/stepGuards'
 
-export default function Phase3Launch({ project, api, onUpdateProject }) {
+export default function Phase3Launch({ project, api, onUpdateProject, activeStepId, onSelectStep }) {
   // Step & Subtab state with database & URL persistence
   const [activeStep, setActiveStepState] = useState(() => {
+    if (activeStepId && ['prep', 'monitor', 'manager', 'report'].includes(activeStepId)) {
+      return activeStepId
+    }
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search)
       const s = sp.get('step') || sp.get('p3_step')
@@ -42,22 +45,6 @@ export default function Phase3Launch({ project, api, onUpdateProject }) {
     if (dbStep && ['prep', 'monitor', 'manager', 'report'].includes(dbStep)) return dbStep
     return 'prep'
   })
-
-  const setActiveStep = (newStep) => {
-    setActiveStepState(newStep)
-    if (typeof window !== 'undefined') {
-      try {
-        const url = new URL(window.location.href)
-        url.searchParams.set('step', newStep)
-        window.history.replaceState({}, '', url.toString())
-      } catch (e) {}
-    }
-    if (project?.id) {
-      import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
-        updateCoLaunchProject(project.id, { currentStep: newStep }).catch(e => console.warn('[Phase3] DB step sync warning:', e))
-      }).catch(() => {})
-    }
-  }
 
   const [prepSubtab, setPrepSubtab] = useState('strategy')
 
@@ -111,6 +98,62 @@ export default function Phase3Launch({ project, api, onUpdateProject }) {
     setTimeout(() => setSaveToast(''), 3500)
   }
 
+  const p3Guards = getPhase3StepGuards(project, { strategy, telemetry, launchManager, launchReport, decisionNotice })
+
+  const canAccessP3Step = (stepId) => {
+    if (stepId === 'prep') return true
+    if (stepId === 'monitor') return p3Guards.canAccessStep2
+    if (stepId === 'manager') return p3Guards.canAccessStep3
+    if (stepId === 'report') return p3Guards.canAccessStep4
+    return true
+  }
+
+  const getP3StepMissingPrerequisiteText = (stepId) => {
+    if (stepId === 'monitor' && !p3Guards.canAccessStep2) return 'Please complete Step 1 (Prepare Launch) first.'
+    if (stepId === 'manager' && !p3Guards.canAccessStep3) return 'Please complete Step 2 (Launch + Monitor) first.'
+    if (stepId === 'report' && !p3Guards.canAccessStep4) return 'Launch Gate locked: Complete Steps 1–3 first.'
+    return 'Please complete previous steps first.'
+  }
+
+  const setActiveStep = (newStep) => {
+    if (!canAccessP3Step(newStep)) {
+      showToast(getP3StepMissingPrerequisiteText(newStep))
+      return
+    }
+    setActiveStepState(newStep)
+    if (onSelectStep) onSelectStep(newStep)
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href)
+        url.searchParams.set('step', newStep)
+        window.history.replaceState({}, '', url.toString())
+      } catch (e) {}
+    }
+    if (project?.id) {
+      import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
+        updateCoLaunchProject(project.id, { currentStep: newStep }).catch(e => console.warn('[Phase3] DB step sync warning:', e))
+      }).catch(() => {})
+    }
+  }
+
+  // Synchronize when activeStepId prop changes
+  useEffect(() => {
+    if (activeStepId && ['prep', 'monitor', 'manager', 'report'].includes(activeStepId)) {
+      if (canAccessP3Step(activeStepId)) {
+        setActiveStepState(activeStepId)
+      }
+    }
+  }, [activeStepId])
+
+  // Auto-fallback if active step is locked
+  useEffect(() => {
+    if (!canAccessP3Step(activeStep)) {
+      if (p3Guards.canAccessStep3) setActiveStepState('manager')
+      else if (p3Guards.canAccessStep2) setActiveStepState('monitor')
+      else setActiveStepState('prep')
+    }
+  }, [activeStep, p3Guards.canAccessStep1, p3Guards.canAccessStep2, p3Guards.canAccessStep3, p3Guards.canAccessStep4])
+
   // Synchronize all Phase 3 states when project changes
   useEffect(() => {
     if (!project) return
@@ -147,6 +190,7 @@ export default function Phase3Launch({ project, api, onUpdateProject }) {
 
   // Save full Phase 3 state directly to localStorage & PostgreSQL DB
   const handleSaveState = async (updatedState = {}) => {
+    const updatedIsLive = updatedState.isLive !== undefined ? updatedState.isLive : isLive
     const updated = {
       ...(project || {}),
       launchStrategy: updatedState.strategy !== undefined ? updatedState.strategy : strategy,
@@ -157,7 +201,8 @@ export default function Phase3Launch({ project, api, onUpdateProject }) {
       dispatchedActions: updatedState.dispatchedActions !== undefined ? updatedState.dispatchedActions : dispatchedActions,
       launchReport: updatedState.launchReport !== undefined ? updatedState.launchReport : launchReport,
       decisionNotice: updatedState.decisionNotice !== undefined ? updatedState.decisionNotice : decisionNotice,
-      launchStatus: isLive ? 'LIVE' : 'PRE-LAUNCH'
+      isLive: updatedIsLive,
+      launchStatus: updatedIsLive ? 'LIVE' : 'PRE-LAUNCH'
     }
 
     if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
@@ -173,7 +218,8 @@ export default function Phase3Launch({ project, api, onUpdateProject }) {
           dispatchedActions: updated.dispatchedActions,
           launchReport: updated.launchReport,
           decisionNotice: updated.decisionNotice,
-          launchStatus: isLive ? 'LIVE' : 'PRE-LAUNCH'
+          isLive: updated.isLive,
+          launchStatus: updated.launchStatus
         })
       } catch (err) {
         console.warn('[Phase3Launch] DB sync warning:', err)
@@ -668,59 +714,73 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
       {/* Main 4 Steps Stepper Navigation */}
       <div className="flex items-center justify-between p-1.5 rounded-2xl bg-[#0e1117] border border-white/[0.08] overflow-x-auto">
         <div className="flex items-center gap-1.5 min-w-max">
-          {(() => {
-            const p3Guards = getPhase3StepGuards(project, { strategy, telemetry, launchManager, launchReport, decisionNotice })
-            return [
-              {
-                id: 'prep',
-                label: '1. Prepare Launch',
-                icon: Calendar,
-                isDone: p3Guards.isStep1Done
-              },
-              {
-                id: 'monitor',
-                label: '2. Launch + Monitor',
-                icon: TrendingUp,
-                isDone: p3Guards.isStep2Done
-              },
-              {
-                id: 'manager',
-                label: '3. AI Launch Manager',
-                icon: Sparkles,
-                isDone: p3Guards.isStep3Done
-              },
-              {
-                id: 'report',
-                label: '4. Launch Report + Decision',
-                icon: ShieldCheck,
-                isDone: p3Guards.isStep4Done
-              },
-            ]
-          })().map(tab => {
+          {[
+            {
+              id: 'prep',
+              label: '1. Prepare Launch',
+              icon: Calendar,
+              isDone: p3Guards.isStep1Done,
+              canAccess: p3Guards.canAccessStep1
+            },
+            {
+              id: 'monitor',
+              label: '2. Launch + Monitor',
+              icon: TrendingUp,
+              isDone: p3Guards.isStep2Done,
+              canAccess: p3Guards.canAccessStep2
+            },
+            {
+              id: 'manager',
+              label: '3. AI Launch Manager',
+              icon: Sparkles,
+              isDone: p3Guards.isStep3Done,
+              canAccess: p3Guards.canAccessStep3
+            },
+            {
+              id: 'report',
+              label: '4. Launch Report + Decision',
+              icon: ShieldCheck,
+              isDone: p3Guards.isStep4Done,
+              canAccess: p3Guards.canAccessStep4
+            },
+          ].map(tab => {
             const Icon = tab.icon
             const isActive = activeStep === tab.id
             const isDone = tab.isDone
+            const isLocked = !tab.canAccess
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveStep(tab.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-purple-600 text-white shadow-md shadow-purple-950/60'
+                onClick={() => {
+                  if (isLocked) {
+                    showToast(getP3StepMissingPrerequisiteText(tab.id))
+                    return
+                  }
+                  setActiveStep(tab.id)
+                }}
+                disabled={isLocked}
+                title={isLocked ? getP3StepMissingPrerequisiteText(tab.id) : tab.label}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+                  isLocked
+                    ? 'opacity-40 cursor-not-allowed text-slate-500 bg-white/[0.01]'
+                    : isActive
+                    ? 'bg-purple-600 text-white shadow-md shadow-purple-950/60 cursor-pointer'
                     : isDone
-                    ? 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                    ? 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30 cursor-pointer'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04] cursor-pointer'
                 }`}
               >
-                {isDone ? (
+                {isLocked ? (
+                  <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                ) : isDone ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 ) : (
                   <Icon className="w-3.5 h-3.5 shrink-0" />
                 )}
-                <span className={isDone ? 'text-slate-200 font-semibold' : ''}>
+                <span className={isLocked ? 'text-slate-500' : isDone ? 'text-slate-200 font-semibold' : ''}>
                   {tab.label}
                 </span>
-                {isDone && (
+                {isDone && !isLocked && (
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-normal ${
                     isActive ? 'bg-emerald-400/20 text-emerald-200 border border-emerald-400/30' : 'bg-emerald-500/20 text-emerald-300'
                   }`}>
@@ -2108,9 +2168,16 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
               ← Back to Prepare
             </button>
             <button
+              disabled={!p3Guards.canAccessStep3}
               onClick={() => setActiveStep('manager')}
-              className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-purple-950/50 transition-all active:scale-95 cursor-pointer"
+              className={`px-6 py-2.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all border ${
+                p3Guards.canAccessStep3
+                  ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-950/50 active:scale-95 cursor-pointer border-purple-400/30'
+                  : 'bg-slate-800/80 text-slate-500 border-slate-700/60 shadow-none cursor-not-allowed opacity-50'
+              }`}
+              title={!p3Guards.canAccessStep3 ? 'Complete Step 1 (Prepare Launch) and Step 2 (Launch + Monitor) first' : 'Proceed to Step 3'}
             >
+              {!p3Guards.canAccessStep3 && <Lock className="w-3.5 h-3.5 text-slate-500" />}
               <span>Proceed to 3. AI Launch Manager</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -2281,9 +2348,16 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
               ← Back to Monitor
             </button>
             <button
+              disabled={!p3Guards.canAccessStep4}
               onClick={() => setActiveStep('report')}
-              className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-purple-950/50 transition-all active:scale-95 cursor-pointer"
+              className={`px-6 py-2.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all border ${
+                p3Guards.canAccessStep4
+                  ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-950/50 active:scale-95 cursor-pointer border-purple-400/30'
+                  : 'bg-slate-800/80 text-slate-500 border-slate-700/60 shadow-none cursor-not-allowed opacity-50'
+              }`}
+              title={!p3Guards.canAccessStep4 ? 'Complete Steps 1–3 first' : 'Proceed to Step 4'}
             >
+              {!p3Guards.canAccessStep4 && <Lock className="w-3.5 h-3.5 text-slate-500" />}
               <span>Proceed to 4. Launch Report + Decision</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -2294,6 +2368,58 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
       {/* STEP 4: LAUNCH REPORT + DECISION GATE */}
       {activeStep === 'report' && (
         <div className="space-y-5">
+          {/* Prerequisite Check Banner if prior steps are incomplete */}
+          {!p3Guards.allPriorStepsDone && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2.5 animate-fade-in shadow-lg shadow-amber-950/20">
+              <div className="flex items-center gap-2 font-bold text-amber-300">
+                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Phase 3 Launch Gate is Locked: Prerequisite Steps Incomplete</span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                The Launch Report and Strategic Decision Gate require completing launch preparation checklists, going live with telemetry monitoring, and running the AI Launch Manager sweeps first.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                <button
+                  onClick={() => setActiveStep('prep')}
+                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all cursor-pointer ${
+                    p3Guards.isStep1Done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20'
+                  }`}
+                >
+                  <span>1. Prepare Launch</span>
+                  <span>{p3Guards.isStep1Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+                <button
+                  onClick={() => setActiveStep('monitor')}
+                  disabled={!p3Guards.canAccessStep2}
+                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                    p3Guards.isStep2Done
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      : p3Guards.canAccessStep2
+                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
+                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>2. Launch + Monitor</span>
+                  <span>{p3Guards.isStep2Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+                <button
+                  onClick={() => setActiveStep('manager')}
+                  disabled={!p3Guards.canAccessStep3}
+                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                    p3Guards.isStep3Done
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      : p3Guards.canAccessStep3
+                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
+                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>3. AI Launch Manager</span>
+                  <span>{p3Guards.isStep3Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
@@ -2464,80 +2590,107 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2">
                   {/* Choice 1: SCALE */}
                   <button
+                    disabled={!p3Guards.allPriorStepsDone}
                     onClick={() => {
+                      if (!p3Guards.allPriorStepsDone) return
                       const dec = '🚀 SCALE MODE ACTIVATED: Creator posting frequency doubled, viral referral engine enabled, paid channels unlocked.'
                       setDecisionNotice(dec)
                       handleSaveState({ decisionNotice: dec })
                       showToast('Scale mode activated!')
                     }}
-                    className="p-4 rounded-2xl bg-gradient-to-b from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white text-left space-y-2 shadow-xl shadow-purple-950/60 transition-all active:scale-[0.98] group cursor-pointer"
+                    className={`p-4 rounded-2xl text-left space-y-2 transition-all group border ${
+                      p3Guards.allPriorStepsDone
+                        ? 'bg-gradient-to-b from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white shadow-xl shadow-purple-950/60 active:scale-[0.98] border-purple-400/40 cursor-pointer'
+                        : 'bg-slate-800/80 text-slate-500 border-slate-700/60 shadow-none cursor-not-allowed opacity-50'
+                    }`}
+                    title={!p3Guards.allPriorStepsDone ? 'Complete Steps 1–3 before scaling' : 'Activate Scale Mode'}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="p-2 rounded-xl bg-white/10 text-white">
-                        <Rocket className="w-5 h-5" />
+                      <div className={`p-2 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-white/10 text-white' : 'bg-slate-700/50 text-slate-500'}`}>
+                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <Rocket className="w-5 h-5" />}
                       </div>
-                      <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950 uppercase tracking-wider">
-                        Recommended
+                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                        p3Guards.allPriorStepsDone ? 'bg-emerald-400 text-slate-950' : 'bg-slate-700 text-slate-400'
+                      }`}>
+                        {p3Guards.allPriorStepsDone ? 'Recommended' : 'Locked'}
                       </span>
                     </div>
                     <div>
-                      <h4 className="text-sm font-black text-white group-hover:text-purple-100 transition-colors">
+                      <h4 className={`text-sm font-black transition-colors ${p3Guards.allPriorStepsDone ? 'text-white group-hover:text-purple-100' : 'text-slate-400'}`}>
                         1. SCALE
                       </h4>
-                      <p className="text-[11px] text-purple-100/80 leading-relaxed mt-0.5">
-                        Double down on top converting channels, increase creator posting cadence & unlock viral loops.
+                      <p className={`text-[11px] leading-relaxed mt-0.5 ${p3Guards.allPriorStepsDone ? 'text-purple-100/80' : 'text-slate-500'}`}>
+                        {p3Guards.allPriorStepsDone
+                          ? 'Double down on top converting channels, increase creator posting cadence & unlock viral loops.'
+                          : 'Locked — Complete Steps 1–3 (Prepare, Monitor, and Launch Manager) first.'}
                       </p>
                     </div>
                   </button>
 
                   {/* Choice 2: ITERATE */}
                   <button
+                    disabled={!p3Guards.allPriorStepsDone}
                     onClick={() => {
+                      if (!p3Guards.allPriorStepsDone) return
                       const dec = '🔄 ITERATE MODE: Refining onboarding funnel and optimizing mobile checkout friction before further ad spend.'
                       setDecisionNotice(dec)
                       handleSaveState({ decisionNotice: dec })
                       showToast('Iterate mode set.')
                     }}
-                    className="p-4 rounded-2xl bg-[#141720] hover:bg-[#1a1f2c] text-white text-left space-y-2 border border-white/[0.08] hover:border-blue-500/40 transition-all active:scale-[0.98] group cursor-pointer"
+                    className={`p-4 rounded-2xl text-left space-y-2 border transition-all ${
+                      p3Guards.allPriorStepsDone
+                        ? 'bg-[#141720] hover:bg-[#1a1f2c] text-white border-white/[0.08] hover:border-blue-500/40 active:scale-[0.98] group cursor-pointer'
+                        : 'bg-slate-800/80 text-slate-500 border-slate-700/60 cursor-not-allowed opacity-50'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="p-2 rounded-xl bg-blue-500/20 text-blue-300">
-                        <RefreshCw className="w-5 h-5" />
+                      <div className={`p-2 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-blue-500/20 text-blue-300' : 'bg-slate-700/50 text-slate-500'}`}>
+                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />}
                       </div>
                       <span className="text-[10px] font-mono text-slate-400">Optimize</span>
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white group-hover:text-blue-200 transition-colors">
+                      <h4 className={`text-sm font-bold transition-colors ${p3Guards.allPriorStepsDone ? 'text-white group-hover:text-blue-200' : 'text-slate-400'}`}>
                         2. ITERATE
                       </h4>
-                      <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
-                        Optimize lower-converting channels and patch mobile checkout drop-offs.
+                      <p className={`text-[11px] leading-relaxed mt-0.5 ${p3Guards.allPriorStepsDone ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {p3Guards.allPriorStepsDone
+                          ? 'Optimize lower-converting channels and patch mobile checkout drop-offs.'
+                          : 'Locked — Complete Steps 1–3 first.'}
                       </p>
                     </div>
                   </button>
 
                   {/* Choice 3: MAINTAIN */}
                   <button
+                    disabled={!p3Guards.allPriorStepsDone}
                     onClick={() => {
+                      if (!p3Guards.allPriorStepsDone) return
                       const dec = '🛡️ MAINTAIN MODE: Operating at steady-state organic posting and monitoring subscriber retention.'
                       setDecisionNotice(dec)
                       handleSaveState({ decisionNotice: dec })
                       showToast('Maintain mode set.')
                     }}
-                    className="p-4 rounded-2xl bg-[#141720] hover:bg-[#1a1f2c] text-white text-left space-y-2 border border-white/[0.08] hover:border-emerald-500/40 transition-all active:scale-[0.98] group cursor-pointer"
+                    className={`p-4 rounded-2xl text-left space-y-2 border transition-all ${
+                      p3Guards.allPriorStepsDone
+                        ? 'bg-[#141720] hover:bg-[#1a1f2c] text-white border-white/[0.08] hover:border-emerald-500/40 active:scale-[0.98] group cursor-pointer'
+                        : 'bg-slate-800/80 text-slate-500 border-slate-700/60 cursor-not-allowed opacity-50'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
-                        <ShieldCheck className="w-5 h-5" />
+                      <div className={`p-2 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700/50 text-slate-500'}`}>
+                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
                       </div>
                       <span className="text-[10px] font-mono text-slate-400">Steady</span>
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white group-hover:text-emerald-200 transition-colors">
+                      <h4 className={`text-sm font-bold transition-colors ${p3Guards.allPriorStepsDone ? 'text-white group-hover:text-emerald-200' : 'text-slate-400'}`}>
                         3. MAINTAIN
                       </h4>
-                      <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
-                        Preserve organic creator posting rhythm, maintain high customer retention and steady MRR.
+                      <p className={`text-[11px] leading-relaxed mt-0.5 ${p3Guards.allPriorStepsDone ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {p3Guards.allPriorStepsDone
+                          ? 'Preserve organic creator posting rhythm, maintain high customer retention and steady MRR.'
+                          : 'Locked — Complete Steps 1–3 first.'}
                       </p>
                     </div>
                   </button>

@@ -5,7 +5,7 @@ import {
   Loader2, AlertCircle, Copy, Video, MessageSquare, ExternalLink, Globe,
   CreditCard, Users, TrendingUp, RefreshCw, FileText, Megaphone, Target,
   Flag, ArrowRight, Layers, HelpCircle, BarChart3, Radio, ShieldCheck,
-  Palette, Smartphone, Send, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell
+  Palette, Smartphone, Send, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell, Lock, RotateCcw
 } from 'lucide-react'
 import {
   generateValidationPlanAI,
@@ -55,12 +55,88 @@ export default function Phase1Validate({
   const [campaignSubTab, setCampaignSubTab] = useState('schedule')
   const [viewDraftTask, setViewDraftTask] = useState(null)
   const [isAnalyzingExperiments, setIsAnalyzingExperiments] = useState(false)
-  const [experimentsData, setExperimentsData] = useState(() => project?.experimentsData || null)
+  const [isAdvancingPhase, setIsAdvancingPhase] = useState(false)
+  const [isIteratingGate, setIsIteratingGate] = useState(false)
+  const [isArchivingProject, setIsArchivingProject] = useState(false)
+
+  // Robust resolver to ensure experiments are NEVER lost across navigation, rerender, or polling
+  const resolveExperimentsData = (proj) => {
+    if (proj?.experimentsData?.experiments?.length > 0) return proj.experimentsData
+    if (proj?.metadataInfo?.experimentsData?.experiments?.length > 0) return proj.metadataInfo.experimentsData
+    if (proj?.metadata_info?.experiments_data?.experiments?.length > 0) return proj.metadata_info.experiments_data
+    if (proj?.metadataInfo?.experiments_data?.experiments?.length > 0) return proj.metadataInfo.experiments_data
+    if (Array.isArray(proj?.experiments) && proj.experiments.length > 0) {
+      return {
+        experiments: proj.experiments,
+        performanceAudit: proj?.metadataInfo?.performanceAudit || proj?.metadata_info?.performanceAudit || null
+      }
+    }
+    if (Array.isArray(proj?.telemetry?.experiments) && proj.telemetry.experiments.length > 0) {
+      return {
+        experiments: proj.telemetry.experiments,
+        performanceAudit: proj?.metadataInfo?.performanceAudit || proj?.metadata_info?.performanceAudit || null
+      }
+    }
+    if (typeof window !== 'undefined' && proj?.id) {
+      try {
+        const cached = localStorage.getItem(`forge_experiments_${proj.id}`)
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (parsed?.experiments?.length > 0) return parsed
+        }
+      } catch (e) {}
+    }
+    return null
+  }
+
+  const [experimentsData, setExperimentsData] = useState(() => resolveExperimentsData(project))
   const [mockupImage, setMockupImage] = useState(() => project?.mockupImage || null)
+  const [isStep2Approved, setIsStep2Approved] = useState(() => Boolean(
+    project?.assetsApproved ||
+    project?.landingPageApproved ||
+    project?.validationCampaign?.review_status === 'approved' ||
+    project?.validationCampaign?.reviewStatus === 'approved'
+  ))
 
   useEffect(() => {
     if (activeStepId) setActiveStep(activeStepId)
   }, [activeStepId])
+
+  useEffect(() => {
+    if (
+      project?.assetsApproved ||
+      project?.landingPageApproved ||
+      project?.validationCampaign?.review_status === 'approved' ||
+      project?.validationCampaign?.reviewStatus === 'approved'
+    ) {
+      setIsStep2Approved(true)
+    }
+  }, [
+    project?.assetsApproved,
+    project?.landingPageApproved,
+    project?.validationCampaign?.review_status,
+    project?.validationCampaign?.reviewStatus
+  ])
+
+  // Synchronize experimentsData whenever project prop updates, polling refreshes, or from localStorage
+  useEffect(() => {
+    const incoming = resolveExperimentsData(project)
+    if (incoming) {
+      setExperimentsData(incoming)
+      if (typeof window !== 'undefined' && project?.id) {
+        try {
+          localStorage.setItem(`forge_experiments_${project.id}`, JSON.stringify(incoming))
+        } catch (e) {}
+      }
+    }
+  }, [
+    project?.id,
+    project?.experimentsData,
+    project?.metadataInfo?.experimentsData,
+    project?.metadata_info?.experiments_data,
+    project?.experiments,
+    project?.telemetry?.experiments
+  ])
 
   // Real Project Presales State
   const [presalesRevenue, setPresalesRevenue] = useState(() => {
@@ -269,7 +345,13 @@ export default function Phase1Validate({
 
     setSurveyResponses(resolvedResponses)
     setSurveyAnalysis(resolvedAnalysis)
-    setExperiments(Array.isArray(project.experiments) ? project.experiments : [])
+    const incomingExperiments = resolveExperimentsData(project)
+    if (incomingExperiments) {
+      setExperimentsData(incomingExperiments)
+      setExperiments(incomingExperiments.experiments || [])
+    } else {
+      setExperiments(Array.isArray(project.experiments) ? project.experiments : [])
+    }
   }, [project?.id, project?.creatorId, project?.productName])
 
   useEffect(() => {
@@ -289,8 +371,12 @@ export default function Phase1Validate({
   }, [project?.reservations])
 
   useEffect(() => {
-    if (project?.experiments) setExperiments(project.experiments)
-  }, [project?.experiments])
+    const incoming = resolveExperimentsData(project)
+    if (incoming) {
+      setExperimentsData(incoming)
+      setExperiments(incoming.experiments || [])
+    }
+  }, [project?.experiments, project?.experimentsData, project?.metadataInfo?.experimentsData, project?.telemetry?.experiments])
 
   useEffect(() => {
     if (project?.currentPresales !== undefined) {
@@ -430,8 +516,10 @@ export default function Phase1Validate({
       campaignKit: campaignKit,
       surveyData: surveyData,
       reservations: reservations,
-      experiments: experiments,
-      currentPresales: presalesRevenue
+      experiments: experimentsData?.experiments || experiments || [],
+      experimentsData: experimentsData,
+      currentPresales: presalesRevenue,
+      ...(isStep2Approved ? { assetsApproved: true, landingPageApproved: true } : {})
     }
 
     if (onUpdateProject) {
@@ -483,10 +571,13 @@ export default function Phase1Validate({
         campaignKit: campaignKit,
         campaign_kit: campaignKit,
         campaignLaunched: Boolean(project?.campaignLaunched || hasCampaignGenerated),
+        experimentsData: experimentsData,
+        experiments: experimentsData?.experiments || experiments || [],
         metadataInfo: {
           ...(project?.metadataInfo || {}),
           campaign_kit: campaignKit,
-          campaign_launched: Boolean(project?.campaignLaunched || hasCampaignGenerated)
+          campaign_launched: Boolean(project?.campaignLaunched || hasCampaignGenerated),
+          experimentsData: experimentsData
         }
       }).catch(() => {})
     }
@@ -815,17 +906,37 @@ export default function Phase1Validate({
     setIsAnalyzingExperiments(true)
     try {
       const results = await analyzeAndGenerateExperimentsAI(project)
-      if (results) {
+      if (results && Array.isArray(results.experiments) && results.experiments.length > 0) {
         setExperimentsData(results)
-        const updated = { ...(project || {}), experimentsData: results }
+        setExperiments(results.experiments)
+        if (typeof window !== 'undefined' && project?.id) {
+          try {
+            localStorage.setItem(`forge_experiments_${project.id}`, JSON.stringify(results))
+          } catch (e) {}
+        }
+        const updated = {
+          ...(project || {}),
+          experimentsData: results,
+          experiments: results.experiments,
+          metadataInfo: {
+            ...(project?.metadataInfo || {}),
+            experimentsData: results,
+            experiments_data: results,
+            performanceAudit: results.performanceAudit
+          }
+        }
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
         if (project?.id) {
           updateCoLaunchProject(project.id, {
+            experimentsData: results,
+            experiments: results.experiments,
             metadataInfo: {
               ...(project.metadataInfo || {}),
-              experimentsData: results
+              experimentsData: results,
+              experiments_data: results,
+              performanceAudit: results.performanceAudit
             }
-          }).catch(e => console.warn(e))
+          }).catch(e => console.warn('[Phase1Validate] updateCoLaunchProject err:', e))
         }
         showNotification('AI growth & optimization experiments generated!')
       }
@@ -840,40 +951,217 @@ export default function Phase1Validate({
   const handleApplyExperiment = (exp) => {
     if (!exp) return
     let updatedCampaign = { ...campaignKit }
+    let appliedMessage = `Experiment "${exp.title}" applied!`
+    let updatedPlanPricing = null
 
+    // 1. Messaging Variant
     if (exp.category === 'messaging' || exp.targetField === 'announcementPost') {
       updatedCampaign.announcementPost = exp.variant
-    } else if (exp.category === 'creator_content' || exp.targetField === 'storySequence') {
+      if (Array.isArray(updatedCampaign.postingSchedule)) {
+        updatedCampaign.postingSchedule = updatedCampaign.postingSchedule.map(t => {
+          if (t.day === 1 || t.title?.toLowerCase().includes('announcement')) {
+            return { ...t, description: `[AI Experiment Variant Active] ${exp.variant}` }
+          }
+          return t
+        })
+      }
+      appliedMessage = `Messaging variant applied to Step 2 Campaign Kit & Step 3 Social Announcement!`
+    }
+    // 2. Creator Content Variant
+    else if (exp.category === 'creator_content' || exp.targetField === 'storySequence') {
       updatedCampaign.storySequence = exp.variant
-    } else if (exp.category === 'landing_page') {
+      if (Array.isArray(updatedCampaign.postingSchedule)) {
+        updatedCampaign.postingSchedule = updatedCampaign.postingSchedule.map(t => {
+          if (t.day === 2 || t.day === 3 || t.title?.toLowerCase().includes('story')) {
+            return { ...t, description: `[AI Experiment Variant Active] ${exp.variant}` }
+          }
+          return t
+        })
+      }
+      appliedMessage = `Creator story sequence & sprint tasks updated with AI variant in Step 3!`
+    }
+    // 3. Landing Page Variant (Headline / Hero / Subheadline)
+    else if (exp.category === 'landing_page' || exp.targetField === 'landingPageHero') {
+      const existingLP = updatedCampaign.landingPageCopy || {}
       updatedCampaign.landingPageCopy = {
-        ...(updatedCampaign.landingPageCopy || {}),
-        headline: exp.variant
+        ...existingLP,
+        headline: exp.variant,
+        subheadline: existingLP.subheadline || project?.productTagline || 'Reserve early founding access and lock in lifetime benefits.',
+        activeExperimentTitle: exp.title
+      }
+      appliedMessage = `Landing page hero & headline updated with AI variant in Step 2 Funnel!`
+    }
+    // 4. Pricing Variant
+    else if (exp.category === 'pricing' || exp.targetField === 'pricingTier') {
+      const priceMatches = exp.variant.match(/\$(\d+)/g)
+      let parsedDeposit = null
+      let parsedFounding = null
+      if (priceMatches && priceMatches.length > 0) {
+        const nums = priceMatches.map(m => Number(m.replace('$', ''))).filter(n => !isNaN(n) && n > 0)
+        if (nums.length === 1) {
+          if (nums[0] < activeFoundingPrice) {
+            parsedDeposit = nums[0]
+          } else {
+            parsedFounding = nums[0]
+          }
+        } else if (nums.length >= 2) {
+          nums.sort((a, b) => a - b)
+          parsedDeposit = nums[0]
+          parsedFounding = nums[nums.length - 1]
+        }
+      }
+
+      const nextFounding = parsedFounding || activeFoundingPrice
+      const nextDeposit = parsedDeposit || (Math.round(nextFounding * 0.2) || activeDepositPrice)
+
+      updatedCampaign.pricingConfig = {
+        ...(updatedCampaign.pricingConfig || {}),
+        foundingPrice: nextFounding,
+        depositPrice: nextDeposit,
+        activeExperimentVariant: exp.variant,
+        activeExperimentTitle: exp.title
+      }
+
+      updatedPlanPricing = `${exp.variant} (Pricing adjusted via AI Experiment: ${exp.title})`
+      setPlan(prev => ({ ...prev, pricing: updatedPlanPricing }))
+      appliedMessage = `Pricing adjusted: Founding Pass $${nextFounding}, Deposit Pass $${nextDeposit}! Updated in Step 1 Plan & Step 2 Checkout.`
+    }
+
+    setCampaignKit(updatedCampaign)
+
+    let nextExpData = experimentsData
+    if (experimentsData?.experiments) {
+      const updatedExps = experimentsData.experiments.map(e => e.id === exp.id ? {
+        ...e,
+        status: 'applied',
+        appliedAt: new Date().toISOString()
+      } : e)
+      nextExpData = { ...experimentsData, experiments: updatedExps }
+      setExperimentsData(nextExpData)
+      setExperiments(updatedExps)
+      if (typeof window !== 'undefined' && project?.id) {
+        try {
+          localStorage.setItem(`forge_experiments_${project.id}`, JSON.stringify(nextExpData))
+        } catch (e) {}
+      }
+    }
+
+    const updatedProject = {
+      ...(project || {}),
+      campaignKit: updatedCampaign,
+      experimentsData: nextExpData,
+      experiments: nextExpData?.experiments || [],
+      ...(updatedPlanPricing ? { pricing: updatedPlanPricing } : {})
+    }
+    if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updatedProject }))
+
+    if (project?.id) {
+      updateCoLaunchProject(project.id, {
+        campaignKit: updatedCampaign,
+        experimentsData: nextExpData,
+        experiments: nextExpData?.experiments || [],
+        ...(updatedPlanPricing ? { pricing: updatedPlanPricing } : {}),
+        metadataInfo: {
+          ...(project.metadataInfo || {}),
+          campaign_kit: updatedCampaign,
+          experimentsData: nextExpData
+        }
+      }).catch(e => console.warn(e))
+
+      updateValidationCampaign(project.id, {
+        campaign_kit: updatedCampaign,
+        campaignKit: updatedCampaign
+      }).catch(e => console.warn(e))
+
+      if (updatedPlanPricing) {
+        updateValidationPlan(project.id, {
+          pricing: updatedPlanPricing
+        }).catch(e => console.warn(e))
+      }
+
+      logProjectActivity(project.id, {
+        action: `AI Experiment Implemented: ${exp.title}`,
+        details: `Variant activated: "${exp.variant.slice(0, 100)}"`,
+        step: 'optimize',
+        phase: 1
+      }).catch(() => {})
+    }
+
+    showNotification(appliedMessage)
+  }
+
+  const handleRevertExperiment = (exp) => {
+    if (!exp) return
+    let updatedCampaign = { ...campaignKit }
+
+    if (exp.category === 'messaging' || exp.targetField === 'announcementPost') {
+      updatedCampaign.announcementPost = exp.control || ''
+    } else if (exp.category === 'creator_content' || exp.targetField === 'storySequence') {
+      updatedCampaign.storySequence = exp.control || ''
+    } else if (exp.category === 'landing_page' || exp.targetField === 'landingPageHero') {
+      const existingLP = updatedCampaign.landingPageCopy || {}
+      updatedCampaign.landingPageCopy = {
+        ...existingLP,
+        headline: exp.control || `The ${project?.productName || 'Product'} System`,
+        activeExperimentTitle: null
+      }
+    } else if (exp.category === 'pricing' || exp.targetField === 'pricingTier') {
+      const origFounding = parseMainPricingAmount(project?.pricing || 49)
+      const origDeposit = parseDepositPricingAmount(project?.pricing, origFounding)
+      updatedCampaign.pricingConfig = {
+        ...(updatedCampaign.pricingConfig || {}),
+        foundingPrice: origFounding,
+        depositPrice: origDeposit,
+        activeExperimentVariant: null,
+        activeExperimentTitle: null
+      }
+      setPlan(prev => ({ ...prev, pricing: project?.pricing || `$${origFounding} founding member pass` }))
+      if (project?.id) {
+        updateValidationPlan(project.id, { pricing: project?.pricing || `$${origFounding}` }).catch(() => {})
       }
     }
 
     setCampaignKit(updatedCampaign)
 
+    let nextExpData = experimentsData
     if (experimentsData?.experiments) {
-      const updatedExps = experimentsData.experiments.map(e => e.id === exp.id ? { ...e, status: 'applied' } : e)
-      const nextExpData = { ...experimentsData, experiments: updatedExps }
+      const updatedExps = experimentsData.experiments.map(e => e.id === exp.id ? {
+        ...e,
+        status: 'ready',
+        appliedAt: null
+      } : e)
+      nextExpData = { ...experimentsData, experiments: updatedExps }
       setExperimentsData(nextExpData)
-      
-      const updatedProject = {
-        ...(project || {}),
-        campaignKit: updatedCampaign,
-        experimentsData: nextExpData
-      }
-      if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updatedProject }))
-      if (project?.id) {
-        updateValidationCampaign(project.id, {
-          campaign_kit: updatedCampaign,
-          campaignKit: updatedCampaign
-        }).catch(e => console.warn(e))
+      setExperiments(updatedExps)
+      if (typeof window !== 'undefined' && project?.id) {
+        try {
+          localStorage.setItem(`forge_experiments_${project.id}`, JSON.stringify(nextExpData))
+        } catch (e) {}
       }
     }
 
-    showNotification(`Experiment "${exp.title}" applied to live campaign!`)
+    const updatedProject = {
+      ...(project || {}),
+      campaignKit: updatedCampaign,
+      experimentsData: nextExpData,
+      experiments: nextExpData?.experiments || []
+    }
+    if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updatedProject }))
+
+    if (project?.id) {
+      updateCoLaunchProject(project.id, {
+        campaignKit: updatedCampaign,
+        experimentsData: nextExpData,
+        experiments: nextExpData?.experiments || []
+      }).catch(e => console.warn(e))
+
+      updateValidationCampaign(project.id, {
+        campaign_kit: updatedCampaign,
+        campaignKit: updatedCampaign
+      }).catch(e => console.warn(e))
+    }
+
+    showNotification(`Reverted experiment "${exp.title}" back to control.`)
   }
 
   const handleSimulatePresale = (e) => {
@@ -948,12 +1236,6 @@ export default function Phase1Validate({
     showNotification('Pre-orders cleared.')
   }
 
-  const isGatePassed = Boolean(presaleTarget > 0 && presalesRevenue >= presaleTarget && reservations.length > 0)
-  const handleStepChange = (id) => {
-    setActiveStep(id)
-    onSelectStep?.(id)
-  }
-
   // Dynamic Telemetry Calculations
   const totalTraffic = Number(project?.visitors || project?.uniqueVisitors?.length || 0)
   const totalSignups = Number(project?.telemetry?.signups || (project?.waitlist || []).length || 0)
@@ -971,14 +1253,70 @@ export default function Phase1Validate({
     isStep2Done,
     isStep3Done,
     isStep4Done,
-    isStep5Done
+    isStep5Done,
+    isGatePassed: dbGatePassed,
+    allPriorStepsDone,
+    canAccessStep1,
+    canAccessStep2,
+    canAccessStep3,
+    canAccessStep4,
+    canAccessStep5
   } = getPhase1StepGuards({
     ...project,
+    validationPlan: { ...(project?.validationPlan || {}), ...(plan || {}) },
+    validationCampaign: {
+      ...(project?.validationCampaign || {}),
+      ...(isStep2Approved ? { review_status: 'approved', reviewStatus: 'approved' } : {})
+    },
+    assetsApproved: Boolean(isStep2Approved || project?.assetsApproved || project?.landingPageApproved),
+    landingPageApproved: Boolean(isStep2Approved || project?.landingPageApproved),
     campaignKit,
     surveyData,
     reservations,
     currentPresales: presalesRevenue
   })
+
+  // Gate can ONLY be passed if Steps 1-4 are ALL completed
+  const isGatePassed = Boolean(allPriorStepsDone && (
+    dbGatePassed ||
+    (presaleTarget > 0 && presalesRevenue >= presaleTarget && reservations.length > 0)
+  ))
+
+  const canAccessStep = (stepId) => {
+    if (stepId === 'plan') return true
+    if (stepId === 'assets') return canAccessStep2
+    if (stepId === 'campaign') return canAccessStep3
+    if (stepId === 'optimize') return canAccessStep4
+    if (stepId === 'gate') return canAccessStep5
+    return true
+  }
+
+  const getStepMissingPrerequisiteText = (stepId) => {
+    if (stepId === 'assets' && !canAccessStep2) return 'Please complete Step 1 (Validation Plan) first.'
+    if (stepId === 'campaign' && !canAccessStep3) return 'Please complete Step 2 (Validation Assets) first.'
+    if (stepId === 'optimize' && !canAccessStep4) return 'Please complete Step 3 (Creator Campaign) first.'
+    if (stepId === 'gate' && !canAccessStep5) return 'Validation Gate locked: Complete Steps 1–4 first.'
+    return 'Please complete previous steps first.'
+  }
+
+  const handleStepChange = (id) => {
+    if (!canAccessStep(id)) {
+      showNotification(getStepMissingPrerequisiteText(id))
+      return
+    }
+    setActiveStep(id)
+    onSelectStep?.(id)
+  }
+
+  // If currently active step is locked, automatically drop down to highest unlocked step
+  useEffect(() => {
+    if (!canAccessStep(activeStep)) {
+      if (canAccessStep4) setActiveStep('optimize')
+      else if (canAccessStep3) setActiveStep('campaign')
+      else if (canAccessStep2) setActiveStep('assets')
+      else setActiveStep('plan')
+    }
+  }, [activeStep, canAccessStep1, canAccessStep2, canAccessStep3, canAccessStep4, canAccessStep5])
 
   return (
     <div className="space-y-5 w-full max-w-full overflow-hidden">
@@ -986,32 +1324,39 @@ export default function Phase1Validate({
       <div className="p-2 rounded-2xl bg-[#0e1117] border border-white/[0.08] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none min-w-0">
           {[
-            { id: 'plan', label: '1. Plan', icon: FileText, isDone: isStep1Done },
-            { id: 'assets', label: '2. Assets', icon: Layout, isDone: isStep2Done },
-            { id: 'campaign', label: '3. Campaign', icon: Megaphone, isDone: isStep3Done },
-            { id: 'optimize', label: '4. Optimize', icon: TrendingUp, isDone: isStep4Done },
-            { id: 'gate', label: '5. Gate', icon: Flag, isDone: isStep5Done },
+            { id: 'plan', label: '1. Plan', icon: FileText, isDone: isStep1Done, canAccess: canAccessStep1 },
+            { id: 'assets', label: '2. Assets', icon: Layout, isDone: isStep2Done, canAccess: canAccessStep2 },
+            { id: 'campaign', label: '3. Campaign', icon: Megaphone, isDone: isStep3Done, canAccess: canAccessStep3 },
+            { id: 'optimize', label: '4. Optimize', icon: TrendingUp, isDone: isStep4Done, canAccess: canAccessStep4 },
+            { id: 'gate', label: '5. Gate', icon: Flag, isDone: isStep5Done, canAccess: canAccessStep5 },
           ].map(step => {
             const Icon = step.icon
             const isActive = activeStep === step.id
+            const isLocked = !step.canAccess
             return (
               <button
                 key={step.id}
                 onClick={() => handleStepChange(step.id)}
+                disabled={isLocked}
+                title={isLocked ? getStepMissingPrerequisiteText(step.id) : step.label}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
-                  isActive
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                  isLocked
+                    ? 'opacity-40 cursor-not-allowed text-slate-500 bg-white/[0.01]'
+                    : isActive
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm cursor-pointer'
                     : step.isDone
-                    ? 'text-slate-300 hover:text-white bg-white/[0.02]'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
+                    ? 'text-slate-300 hover:text-white bg-white/[0.02] cursor-pointer'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.03] cursor-pointer'
                 }`}
               >
-                {step.isDone ? (
+                {isLocked ? (
+                  <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                ) : step.isDone ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 ) : (
                   <Icon className="w-3.5 h-3.5" />
                 )}
-                <span className={step.isDone ? 'text-slate-200 font-semibold' : ''}>
+                <span className={isLocked ? 'text-slate-500' : step.isDone ? 'text-slate-200 font-semibold' : ''}>
                   {step.label}
                 </span>
               </button>
@@ -1107,7 +1452,15 @@ export default function Phase1Validate({
               <label key={field} className={`p-3.5 rounded-xl bg-[#161a23] border ${field === 'threshold' ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-white/[0.08] focus-within:border-purple-500/40'} space-y-1.5 block ${field === 'testMethod' ? 'md:col-span-2' : ''} transition-all`}>
                 <div className="flex items-center justify-between">
                   <span className={`${field === 'threshold' ? 'text-emerald-400' : 'text-slate-400'} font-bold uppercase tracking-wider text-[10px]`}>{label}</span>
-                  <span className="text-[10px] text-slate-500">editable</span>
+                  <div className="flex items-center gap-1.5">
+                    {field === 'pricing' && (plan.pricing?.includes('AI Experiment') || campaignKit?.pricingConfig?.activeExperimentTitle) && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+                        <span>AI Variant Active</span>
+                      </span>
+                    )}
+                    <span className="text-[10px] text-slate-500">editable</span>
+                  </div>
                 </div>
                 <textarea
                   value={plan[field] || ''}
@@ -1122,8 +1475,33 @@ export default function Phase1Validate({
 
           <div className="pt-2 flex justify-end">
             <button
-              onClick={() => handleStepChange('assets')}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
+              onClick={async () => {
+                saveAll()
+                const updated = {
+                  ...(project || {}),
+                  validationPlan: { ...(plan || {}), status: 'approved', locked: true },
+                  planLocked: true
+                }
+                if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+                if (project?.id) {
+                  updateValidationPlan(project.id, {
+                    customer: plan.customer,
+                    problem: plan.problem,
+                    offer: plan.offer,
+                    pricing: plan.pricing,
+                    test_method: plan.testMethod,
+                    period: plan.period,
+                    threshold: plan.threshold,
+                    target_revenue: presaleTarget,
+                    status: 'approved',
+                    locked: true
+                  }).catch(e => console.warn(e))
+                }
+                showNotification('Validation plan approved & locked! Advancing to Assets.')
+                setActiveStep('assets')
+                onSelectStep?.('assets')
+              }}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
             >
               <span>Next: Build Validation Assets</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -1388,9 +1766,17 @@ export default function Phase1Validate({
               <div className="rounded-3xl bg-[#090b0e] border border-white/[0.1] overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6">
                 {/* Top Pre-sale Badge */}
                 <div className="text-center space-y-3 max-w-2xl mx-auto">
-                  <span className="inline-block px-3.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-black uppercase tracking-wider">
-                    🔥 Founding Member Pre-Sale
-                  </span>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <span className="inline-block px-3.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-black uppercase tracking-wider">
+                      🔥 Founding Member Pre-Sale
+                    </span>
+                    {(campaignKit?.landingPageCopy?.activeExperimentTitle || campaignKit?.pricingConfig?.activeExperimentTitle) && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>AI Optimization Variant Live</span>
+                      </span>
+                    )}
+                  </div>
                   <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
                     {campaignKit?.landingPageCopy?.headline || `The ${project?.productName || 'Product'} System`}
                   </h2>
@@ -1428,6 +1814,11 @@ export default function Phase1Validate({
                       </div>
                     )
                   })()}
+                  {campaignKit?.pricingConfig?.activeExperimentTitle && (
+                    <p className="text-[11px] text-emerald-400/90 font-medium">
+                      ✨ Pricing optimized via active experiment: {campaignKit.pricingConfig.activeExperimentTitle}
+                    </p>
+                  )}
                 </div>
 
                 {/* Visual Designed Mockup Showcase (Full, Non-Editable UI Frame) */}
@@ -1777,12 +2168,43 @@ export default function Phase1Validate({
             </div>
             <button
               onClick={() => {
-                if (project?.id) {
-                  const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
-                    productName: project?.productName,
-                    productTagline: project?.productTagline,
-                    pricingConfig: sanitizedPricingConfig
+                const step2Assets = project?.validationCampaign?.productAssets || project?.validationCampaign?.product_assets || {
+                  productName: project?.productName,
+                  productTagline: project?.productTagline,
+                  pricingConfig: sanitizedPricingConfig
+                }
+
+                setIsStep2Approved(true)
+
+                const updated = {
+                  ...(project || {}),
+                  planLocked: true,
+                  assetsApproved: true,
+                  landingPageApproved: true,
+                  validationCampaign: {
+                    ...(project?.validationCampaign || {}),
+                    product_assets: step2Assets,
+                    productAssets: step2Assets,
+                    campaign_kit: campaignKit,
+                    campaignKit: campaignKit,
+                    creator_tasks: campaignKit?.postingSchedule || [],
+                    infrastructure: {
+                      landingPageUrl: `/p/${productSlug}`,
+                      checkoutUrl: `/p/${productSlug}/checkout`,
+                      waitlistCount: 240,
+                      attributionTracking: true
+                    },
+                    research_survey: surveyData,
+                    review_status: 'approved',
+                    reviewStatus: 'approved'
                   }
+                }
+
+                if (onUpdateProject) {
+                  onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+                }
+
+                if (project?.id) {
                   updateValidationCampaign(project.id, {
                     product_assets: step2Assets,
                     campaign_kit: campaignKit,
@@ -1797,9 +2219,25 @@ export default function Phase1Validate({
                     research_survey: surveyData,
                     review_status: 'approved'
                   }).catch(e => console.warn('[Phase1] DB campaign approval warning:', e))
+
+                  updateCoLaunchProject(project.id, {
+                    assetsApproved: true,
+                    landingPageApproved: true,
+                    campaignKit: campaignKit,
+                    campaign_kit: campaignKit
+                  }).catch(e => console.warn('[Phase1] DB project approval warning:', e))
+
+                  logProjectActivity(project.id, {
+                    action: 'Validation Assets & Campaign Approved',
+                    details: 'Step 2 assets, copy, and research survey approved. Advancing to Creator Campaign.',
+                    step: 'assets',
+                    phase: 1
+                  }).catch(e => console.warn('[Phase1] Activity logging warning:', e))
                 }
-                showNotification('Validation assets approved & locked in database!')
-                handleStepChange('campaign')
+
+                showNotification('Validation assets approved & locked in database! Advancing to Creator Campaign.')
+                setActiveStep('campaign')
+                onSelectStep?.('campaign')
               }}
               className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-2 transition-all shadow-md shadow-emerald-950/40 active:scale-95 cursor-pointer"
             >
@@ -2346,8 +2784,25 @@ export default function Phase1Validate({
 
           <div className="pt-2 flex justify-end">
             <button
-              onClick={() => handleStepChange('optimize')}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
+              onClick={() => {
+                const updated = {
+                  ...(project || {}),
+                  campaignApproved: true,
+                  step3Done: true,
+                  campaignKit: campaignKit
+                }
+                if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+                if (project?.id) {
+                  updateCoLaunchProject(project.id, {
+                    campaignApproved: true,
+                    step3Done: true
+                  }).catch(e => console.warn(e))
+                }
+                showNotification('Creator campaign approved & sprint launched!')
+                setActiveStep('optimize')
+                onSelectStep?.('optimize')
+              }}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
             >
               <span>Next: Run & Optimize</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -2654,6 +3109,7 @@ export default function Phase1Validate({
               <div className="p-8 text-center text-slate-500 border border-dashed border-white/[0.08] rounded-xl space-y-3">
                 <p>No growth experiments generated yet.</p>
                 <button
+                  type="button"
                   onClick={handleRunExperimentsAI}
                   disabled={isAnalyzingExperiments}
                   className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
@@ -2663,49 +3119,120 @@ export default function Phase1Validate({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {experimentsData.experiments.map((exp) => (
-                  <div key={exp.id} className="p-4 rounded-xl bg-[#141720] border border-white/[0.08] space-y-3 flex flex-col justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                          {exp.category?.replace('_', ' ')} Experiment
-                        </span>
-                        <span className="text-[10px] font-bold text-emerald-400 font-mono">
-                          {exp.expectedUplift}
-                        </span>
+              <div className="space-y-3">
+                {/* Active Experiments Summary Banner */}
+                {experimentsData.experiments.some(e => e.status === 'applied') && (
+                  <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4 text-emerald-400" />
                       </div>
-
-                      <h4 className="font-bold text-white text-xs leading-snug">{exp.title}</h4>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">{exp.hypothesis}</p>
-
-                      <div className="p-2.5 rounded-lg bg-[#0e1117] border border-white/[0.04] space-y-1 text-[11px]">
-                        <span className="text-purple-300 font-bold block">Proposed Variant:</span>
-                        <p className="text-slate-300 italic">{exp.variant}</p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-emerald-200">
+                            {experimentsData.experiments.filter(e => e.status === 'applied').length} Active Optimization Experiment{experimentsData.experiments.filter(e => e.status === 'applied').length > 1 ? 's' : ''} Implemented in Phase 1
+                          </span>
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            Live in Phase 1
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 mt-0.5">
+                          Your Phase 1 Validation Plan (Step 1), live Landing Page & checkout (Step 2), and Creator Tasks (Step 3) are running these AI variants.
+                        </p>
                       </div>
                     </div>
-
-                    <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                        exp.status === 'applied' ? 'text-emerald-400' : 'text-slate-400'
-                      }`}>
-                        Status: {exp.status || 'Ready'}
-                      </span>
-
-                      <button
-                        onClick={() => handleApplyExperiment(exp)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer ${
-                          exp.status === 'applied'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                            : 'bg-purple-600 hover:bg-purple-500 text-white'
-                        }`}
-                      >
-                        <Check className="w-3 h-3" />
-                        <span>{exp.status === 'applied' ? 'Applied' : 'Apply Experiment'}</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveStep('assets')
+                        onSelectStep?.('assets')
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                    >
+                      <span>View in Step 2 Funnel</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
                   </div>
-                ))}
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {experimentsData.experiments.map((exp) => (
+                    <div key={exp.id} className="p-4 rounded-xl bg-[#141720] border border-white/[0.08] space-y-3 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            {exp.category?.replace('_', ' ')} Experiment
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-400 font-mono">
+                            {exp.expectedUplift}
+                          </span>
+                        </div>
+
+                        <h4 className="font-bold text-white text-xs leading-snug">{exp.title}</h4>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">{exp.hypothesis}</p>
+
+                        <div className="p-2.5 rounded-lg bg-[#0e1117] border border-white/[0.04] space-y-1 text-[11px]">
+                          <span className="text-purple-300 font-bold block">Proposed Variant:</span>
+                          <p className="text-slate-300 italic">{exp.variant}</p>
+                        </div>
+
+                        {/* Phase 1 Implementation Mapping */}
+                        <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5">
+                          <span className="text-purple-400 font-semibold">Phase 1 Target:</span>
+                          <span className="text-slate-300">
+                            {exp.category === 'messaging'
+                              ? 'Step 2 Campaign Kit & Step 3 Social Post Draft'
+                              : exp.category === 'creator_content'
+                              ? 'Step 3 Creator Story Sprints & Tasks'
+                              : exp.category === 'landing_page'
+                              ? 'Step 2 Live Landing Page Hero & Headline'
+                              : 'Step 1 Validation Plan & Step 2 Pre-Order Checkout'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${
+                            exp.status === 'applied' ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+                          }`} />
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                            exp.status === 'applied' ? 'text-emerald-400' : 'text-slate-400'
+                          }`}>
+                            {exp.status === 'applied' ? 'Live in Phase 1' : 'Ready to Test'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          {exp.status === 'applied' && (
+                            <button
+                              type="button"
+                              onClick={() => handleRevertExperiment(exp)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Revert back to control"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span>Revert</span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleApplyExperiment(exp)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer ${
+                              exp.status === 'applied'
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                                : 'bg-purple-600 hover:bg-purple-500 text-white'
+                            }`}
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>{exp.status === 'applied' ? 'Applied' : 'Apply to Phase 1'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -2760,8 +3287,26 @@ export default function Phase1Validate({
 
           <div className="pt-2 flex justify-end">
             <button
-              onClick={() => handleStepChange('gate')}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
+              onClick={() => {
+                const updated = {
+                  ...(project || {}),
+                  step4Done: true,
+                  validationOptimized: true,
+                  telemetryReviewed: true
+                }
+                if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+                if (project?.id) {
+                  updateCoLaunchProject(project.id, {
+                    step4Done: true,
+                    validationOptimized: true,
+                    telemetryReviewed: true
+                  }).catch(e => console.warn(e))
+                }
+                showNotification('Validation metrics reviewed. Ready for Gate Checkpoint.')
+                setActiveStep('gate')
+                onSelectStep?.('gate')
+              }}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
             >
               <span>Next: Gate</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -2773,16 +3318,84 @@ export default function Phase1Validate({
       {/* STEP 5: VALIDATION GATE */}
       {activeStep === 'gate' && (
         <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
+          {/* Prerequisite Check Banner if prior steps are incomplete */}
+          {!allPriorStepsDone && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2.5 animate-fade-in shadow-lg shadow-amber-950/20">
+              <div className="flex items-center gap-2 font-bold text-amber-300">
+                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Validation Gate is Locked: Prerequisite Steps Incomplete</span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                The Gate Checkpoint requires verified data, audience feedback, and campaign telemetry from Steps 1–4 before an executive MVP build decision can be made.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                <button
+                  onClick={() => handleStepChange('plan')}
+                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all cursor-pointer ${
+                    isStep1Done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20'
+                  }`}
+                >
+                  <span>1. Plan</span>
+                  <span>{isStep1Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+                <button
+                  onClick={() => handleStepChange('assets')}
+                  disabled={!canAccessStep2}
+                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                    isStep2Done
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      : canAccessStep2
+                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
+                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>2. Assets</span>
+                  <span>{isStep2Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+                <button
+                  onClick={() => handleStepChange('campaign')}
+                  disabled={!canAccessStep3}
+                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                    isStep3Done
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      : canAccessStep3
+                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
+                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>3. Campaign</span>
+                  <span>{isStep3Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+                <button
+                  onClick={() => handleStepChange('optimize')}
+                  disabled={!canAccessStep4}
+                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                    isStep4Done
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      : canAccessStep4
+                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
+                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>4. Optimize</span>
+                  <span>{isStep4Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="border-b border-white/[0.07] pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>5. Validation Gate Checkpoint</span>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase border ${
-                  isGatePassed
+                  !allPriorStepsDone
+                    ? 'bg-slate-800 text-slate-400 border-slate-700'
+                    : isGatePassed
                     ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                     : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                 }`}>
-                  Result: {isGatePassed ? 'PASS' : 'TEST AGAIN'}
+                  Result: {!allPriorStepsDone ? 'LOCKED' : isGatePassed ? 'PASS' : 'TEST AGAIN'}
                 </span>
               </h3>
               <p className="text-xs text-slate-400">
@@ -2790,9 +3403,13 @@ export default function Phase1Validate({
               </p>
             </div>
             <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-              isGatePassed ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-extrabold' : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+              !allPriorStepsDone
+                ? 'bg-slate-800/80 text-slate-400 border border-slate-700'
+                : isGatePassed
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-extrabold'
+                : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
             }`}>
-              Gate Status: {isGatePassed ? 'PASS (Ready for MVP Build)' : `${presaleTarget > 0 ? Math.round((presalesRevenue/presaleTarget)*100) : 0}% of Goal`}
+              Gate Status: {!allPriorStepsDone ? 'LOCKED (Prerequisites Pending)' : isGatePassed ? 'PASS (Ready for MVP Build)' : `${presaleTarget > 0 ? Math.round((presalesRevenue/presaleTarget)*100) : 0}% of Goal`}
             </span>
           </div>
 
@@ -2826,13 +3443,17 @@ export default function Phase1Validate({
               </div>
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
                 <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Result</span>
-                <span className="text-base font-extrabold text-emerald-400 block">{isGatePassed ? 'PASS' : 'IN PROGRESS'}</span>
-                <span className="text-[10px] text-emerald-400/80">{isGatePassed ? 'Demand Proven' : 'Awaiting Target'}</span>
+                <span className="text-base font-extrabold text-emerald-400 block">{!allPriorStepsDone ? 'LOCKED' : isGatePassed ? 'PASS' : 'IN PROGRESS'}</span>
+                <span className="text-[10px] text-emerald-400/80">{!allPriorStepsDone ? 'Prerequisites Required' : isGatePassed ? 'Demand Proven' : 'Awaiting Target'}</span>
               </div>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed bg-[#0a0c10]/60 p-3 rounded-xl border border-white/[0.04]">
-              {isGatePassed ? (
+              {!allPriorStepsDone ? (
+                <span>
+                  🔒 <strong>Validation Prerequisites Incomplete:</strong> The Gate checkpoint evaluates evidence gathered across the validation lifecycle. Please complete the validation plan, asset review, creator campaign sprint, and optimization steps before making a final gate decision.
+                </span>
+              ) : isGatePassed ? (
                 <span>
                   🔥 <strong>Validation Successful:</strong> The customer willingness-to-pay threshold of ${presaleTarget.toLocaleString()} was achieved with strong audience demand and an estimated {dynamicConversionRate.toFixed(1)}% conversion rate. The AI engine recommends immediately advancing to <strong>Phase 2: Build MVP</strong>.
                 </span>
@@ -2854,128 +3475,186 @@ export default function Phase1Validate({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               {/* Option 1: Build MVP */}
               <button
+                disabled={!allPriorStepsDone || isAdvancingPhase || isIteratingGate || isArchivingProject}
                 onClick={async () => {
-                  const notes = `Validation target passed with $${presalesRevenue.toLocaleString()} presales and ${reservations.length} backers.`
-                  const decisionItem = {
-                    id: `gate_${Date.now()}`,
-                    decision: 'pass_to_phase2',
-                    targetRevenue: presaleTarget,
-                    achievedRevenue: presalesRevenue,
-                    backersCount: reservations.length,
-                    conversionRate: Number(dynamicConversionRate.toFixed(1)),
-                    gateStatus: 'passed',
-                    notes: notes,
-                    decidedAt: new Date().toLocaleString()
-                  }
-                  const updated = {
-                    ...(project || {}),
-                    currentPhase: 2,
-                    status: 'building',
-                    gateDecisions: [decisionItem, ...(project?.gateDecisions || [])],
-                    decisions: [decisionItem, ...(project?.decisions || [])]
-                  }
-                  if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-
-                  if (project?.id) {
-                    try {
-                      await recordGateDecision(project.id, { decision: 'pass_to_phase2', notes })
-                      await updateCoLaunchProject(project.id, {
-                        currentPhase: 2,
-                        currentStep: 'specs',
-                        status: 'building'
-                      })
-                    } catch (e) {
-                      console.warn('[Phase1] DB gate decision warning:', e)
-                    }
-                  }
-                  showNotification('Validation Gate Passed! Advancing to Phase 2: Build MVP.')
-                  onAdvanceToPhase2?.()
-                }}
-                className="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-950/50 transition-all active:scale-95 cursor-pointer border border-emerald-400/40"
-              >
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Build MVP (PASS)</span>
-                </div>
-                <span className="text-[10px] font-normal text-emerald-100/80">Advance to Phase 2 Sprints</span>
-              </button>
-
-              {/* Option 2: Test Again */}
-              <button
-                onClick={async () => {
-                  const notes = 'Resetting validation sprint for new optimization iteration.'
-                  const decisionItem = {
-                    id: `gate_${Date.now()}`,
-                    decision: 'iterate_validation',
-                    targetRevenue: presaleTarget,
-                    achievedRevenue: presalesRevenue,
-                    backersCount: reservations.length,
-                    conversionRate: Number(dynamicConversionRate.toFixed(1)),
-                    gateStatus: 'iterating',
-                    notes: notes,
-                    decidedAt: new Date().toLocaleString()
-                  }
-                  const updated = {
-                    ...(project || {}),
-                    currentPhase: 1,
-                    status: 'validating',
-                    gateDecisions: [decisionItem, ...(project?.gateDecisions || [])],
-                    decisions: [decisionItem, ...(project?.decisions || [])]
-                  }
-                  if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-
-                  if (project?.id) {
-                    recordGateDecision(project.id, { decision: 'iterate_validation', notes }).catch(e => console.warn(e))
-                  }
-                  showNotification('Validation sprint reset for new iteration with fresh experiments.')
-                  handleStepChange('optimize')
-                }}
-                className="py-3 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 hover:text-white border border-white/[0.1] text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Test Again (Iterate)</span>
-                </div>
-                <span className="text-[10px] font-normal text-slate-400">Run fresh messaging/pricing</span>
-              </button>
-
-              {/* Option 3: Kill Project */}
-              <button
-                onClick={async () => {
-                  if (window.confirm('Are you sure you want to kill and archive this venture?')) {
-                    const notes = 'Project failed validation gate threshold.'
+                  if (!allPriorStepsDone || isAdvancingPhase) return
+                  setIsAdvancingPhase(true)
+                  try {
+                    const notes = `Validation target passed with $${presalesRevenue.toLocaleString()} presales and ${reservations.length} backers.`
                     const decisionItem = {
                       id: `gate_${Date.now()}`,
-                      decision: 'kill_project',
+                      decision: 'pass_to_phase2',
                       targetRevenue: presaleTarget,
                       achievedRevenue: presalesRevenue,
                       backersCount: reservations.length,
                       conversionRate: Number(dynamicConversionRate.toFixed(1)),
-                      gateStatus: 'killed',
+                      gateStatus: 'passed',
                       notes: notes,
                       decidedAt: new Date().toLocaleString()
                     }
                     const updated = {
                       ...(project || {}),
-                      status: 'killed',
+                      currentPhase: 2,
+                      current_phase: 2,
+                      currentStep: 'plan',
+                      current_step: 'plan',
+                      status: 'building',
                       gateDecisions: [decisionItem, ...(project?.gateDecisions || [])],
                       decisions: [decisionItem, ...(project?.decisions || [])]
                     }
                     if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
 
                     if (project?.id) {
-                      recordGateDecision(project.id, { decision: 'kill_project', notes }).catch(e => console.warn(e))
+                      try {
+                        await recordGateDecision(project.id, { decision: 'pass_to_phase2', notes })
+                        await updateCoLaunchProject(project.id, {
+                          currentPhase: 2,
+                          current_phase: 2,
+                          currentStep: 'plan',
+                          current_step: 'plan',
+                          status: 'building'
+                        })
+                      } catch (e) {
+                        console.warn('[Phase1] DB gate decision warning:', e)
+                      }
                     }
-                    showNotification('Project archived.')
+                    showNotification('Validation Gate Passed! Advancing to Phase 2: Build MVP.')
+                    onAdvanceToPhase2?.()
+                  } finally {
+                    setIsAdvancingPhase(false)
                   }
                 }}
-                className="py-3 px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
+                className={`py-3 px-4 rounded-xl font-extrabold text-xs flex flex-col items-center justify-center gap-1 shadow-lg transition-all border ${
+                  allPriorStepsDone
+                    ? isAdvancingPhase
+                      ? 'bg-emerald-700/80 text-white shadow-emerald-950/50 cursor-wait border-emerald-400/50'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/50 active:scale-95 cursor-pointer border-emerald-400/40'
+                    : 'bg-slate-800/80 text-slate-500 border-slate-700/60 shadow-none cursor-not-allowed opacity-50'
+                }`}
+                title={!allPriorStepsDone ? 'Complete Steps 1–4 before advancing to Phase 2' : 'Advance to Phase 2 Sprints'}
               >
                 <div className="flex items-center gap-1.5">
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Kill (Archive)</span>
+                  {isAdvancingPhase ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  ) : !allPriorStepsDone ? (
+                    <Lock className="w-4 h-4 text-slate-500" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4" />
+                  )}
+                  <span>{isAdvancingPhase ? 'Advancing to Phase 2...' : 'Build MVP (PASS)'}</span>
                 </div>
-                <span className="text-[10px] font-normal text-red-400/70">Wind down & refund backers</span>
+                <span className={allPriorStepsDone ? 'text-[10px] font-normal text-emerald-100/80' : 'text-[10px] font-normal text-slate-500'}>
+                  {isAdvancingPhase
+                    ? 'Setting up Phase 2 Engineering Workspace...'
+                    : allPriorStepsDone
+                    ? 'Advance to Phase 2 Sprints'
+                    : 'Locked — Complete Steps 1–4 first'}
+                </span>
+              </button>
+
+              {/* Option 2: Test Again */}
+              <button
+                disabled={isAdvancingPhase || isIteratingGate || isArchivingProject}
+                onClick={async () => {
+                  if (isIteratingGate) return
+                  setIsIteratingGate(true)
+                  try {
+                    const notes = 'Resetting validation sprint for new optimization iteration.'
+                    const decisionItem = {
+                      id: `gate_${Date.now()}`,
+                      decision: 'iterate_validation',
+                      targetRevenue: presaleTarget,
+                      achievedRevenue: presalesRevenue,
+                      backersCount: reservations.length,
+                      conversionRate: Number(dynamicConversionRate.toFixed(1)),
+                      gateStatus: 'iterating',
+                      notes: notes,
+                      decidedAt: new Date().toLocaleString()
+                    }
+                    const updated = {
+                      ...(project || {}),
+                      currentPhase: 1,
+                      status: 'validating',
+                      gateDecisions: [decisionItem, ...(project?.gateDecisions || [])],
+                      decisions: [decisionItem, ...(project?.decisions || [])]
+                    }
+                    if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+
+                    if (project?.id) {
+                      await recordGateDecision(project.id, { decision: 'iterate_validation', notes }).catch(e => console.warn(e))
+                    }
+                    showNotification('Validation sprint reset for new iteration with fresh experiments.')
+                    handleStepChange('optimize')
+                  } finally {
+                    setIsIteratingGate(false)
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 hover:text-white border border-white/[0.1] text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex items-center gap-1.5">
+                  {isIteratingGate ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                  ) : (
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                  )}
+                  <span>{isIteratingGate ? 'Resetting Sprint...' : 'Test Again (Iterate)'}</span>
+                </div>
+                <span className="text-[10px] font-normal text-slate-400">
+                  {isIteratingGate ? 'Preparing fresh experiments...' : 'Run fresh messaging/pricing'}
+                </span>
+              </button>
+
+              {/* Option 3: Kill Project */}
+              <button
+                disabled={isAdvancingPhase || isIteratingGate || isArchivingProject}
+                onClick={async () => {
+                  if (isArchivingProject) return
+                  if (window.confirm('Are you sure you want to kill and archive this venture?\n\nThis will:\n1. Stop all validation and marketing outreach\n2. Mark venture status as "Killed" and archive it\n3. Initiate refund protocol for backers who reserved/pre-ordered')) {
+                    setIsArchivingProject(true)
+                    try {
+                      const notes = 'Project failed validation gate threshold. Venture archived and backer refunds initiated.'
+                      const decisionItem = {
+                        id: `gate_${Date.now()}`,
+                        decision: 'kill_project',
+                        targetRevenue: presaleTarget,
+                        achievedRevenue: presalesRevenue,
+                        backersCount: reservations.length,
+                        conversionRate: Number(dynamicConversionRate.toFixed(1)),
+                        gateStatus: 'killed',
+                        notes: notes,
+                        decidedAt: new Date().toLocaleString()
+                      }
+                      const updated = {
+                        ...(project || {}),
+                        status: 'killed',
+                        gateDecisions: [decisionItem, ...(project?.gateDecisions || [])],
+                        decisions: [decisionItem, ...(project?.decisions || [])]
+                      }
+                      if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+
+                      if (project?.id) {
+                        await recordGateDecision(project.id, { decision: 'kill_project', notes }).catch(e => console.warn(e))
+                        await updateCoLaunchProject(project.id, { status: 'killed' }).catch(e => console.warn(e))
+                      }
+                      showNotification('Project archived and backer refund protocol logged.')
+                    } finally {
+                      setIsArchivingProject(false)
+                    }
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex items-center gap-1.5">
+                  {isArchivingProject ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isArchivingProject ? 'Archiving Venture...' : 'Kill (Archive)'}</span>
+                </div>
+                <span className="text-[10px] font-normal text-red-400/70">
+                  {isArchivingProject ? 'Logging audit & refund logs...' : 'Wind down & refund backers'}
+                </span>
               </button>
             </div>
           </div>

@@ -1123,10 +1123,23 @@ export default function CreatorFollowUpCRM({
         }
 
         // Track in deleted IDs
-        const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
+        const rawDeleted = (() => {
+          try {
+            const direct = localStorage.getItem("forge_deleted_creator_ids");
+            if (!direct) return [];
+            const parsed = JSON.parse(direct);
+            if (Array.isArray(parsed)) return parsed;
+            if (parsed && typeof parsed === "object" && Array.isArray(parsed.data)) return parsed.data;
+            return [];
+          } catch {
+            return [];
+          }
+        })();
+        const deletedIds = Array.isArray(rawDeleted) ? [...rawDeleted] : [];
         if (creator.id && !deletedIds.includes(creator.id)) deletedIds.push(creator.id);
         if (cleanHandle && !deletedIds.includes(cleanHandle)) deletedIds.push(cleanHandle);
         if (creator.handle && !deletedIds.includes(creator.handle)) deletedIds.push(creator.handle);
+        localStorage.setItem("forge_deleted_creator_ids", JSON.stringify(deletedIds));
         // Clean up threads for this creator in localStorage
         try {
           const storedThreads = JSON.parse(localStorage.getItem("forge_launch_real_threads") || "[]");

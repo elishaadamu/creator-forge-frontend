@@ -6,7 +6,7 @@ import {
   FileText, Layout, Megaphone, TrendingUp, Flag, Bot, User, UserCheck,
   Calendar, Clock, CheckCircle, AlertCircle, MessageSquare, Folder,
   DollarSign, PieChart, Users, ChevronRight, ChevronLeft, Play, Eye, Smartphone, Monitor, Tablet,
-  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download, RefreshCw, Zap, Trash2
+  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download, RefreshCw, Zap, Trash2, Lock
 } from 'lucide-react'
 import Phase1Validate from './Phase1Validate'
 import Phase2BuildMVP from './Phase2BuildMVP'
@@ -320,12 +320,17 @@ partnerships@creatorforge.com`
 
   const handleAdvancePhase = (nextPhase) => {
     const updatedStatus = nextPhase === 2 ? 'building' : nextPhase === 3 ? 'launched' : 'validating'
+    const initialStep = nextPhase === 2 ? 'plan' : nextPhase === 3 ? 'prep' : 'plan'
     const updated = {
       ...(project || {}),
       currentPhase: nextPhase,
       current_phase: nextPhase,
+      currentStep: initialStep,
+      current_step: initialStep,
       status: updatedStatus
     }
+    setSelectedPhaseTab(nextPhase)
+    setSelectedPhaseStep(initialStep)
     onUpdateProject?.(prev => ({
       ...(prev || {}),
       ...updated
@@ -335,6 +340,8 @@ partnerships@creatorforge.com`
         updateCoLaunchProject(project.id, {
           currentPhase: nextPhase,
           current_phase: nextPhase,
+          currentStep: initialStep,
+          current_step: initialStep,
           status: updatedStatus
         }).catch(e => console.warn(e))
       })
@@ -414,8 +421,61 @@ partnerships@creatorforge.com`
     }
   }
 
+  const [toastNotice, setToastNotice] = useState('')
+  const showToast = (msg) => {
+    setToastNotice(msg)
+    setTimeout(() => setToastNotice(''), 3500)
+  }
+
   const openPhaseStep = (stepId) => {
     const sId = stepId || 'plan'
+
+    // Check phase step guards before opening modal
+    if (currentPhase === 1) {
+      if (sId === 'assets' && !p1Guards.canAccessStep2) {
+        showToast('Step 1 (Validation Plan) must be completed before accessing Assets.')
+        return
+      }
+      if (sId === 'campaign' && !p1Guards.canAccessStep3) {
+        showToast('Step 2 (Validation Assets) must be completed before accessing Campaign.')
+        return
+      }
+      if (sId === 'optimize' && !p1Guards.canAccessStep4) {
+        showToast('Step 3 (Creator Campaign) must be completed before accessing Optimization.')
+        return
+      }
+      if (sId === 'gate' && !p1Guards.canAccessStep5) {
+        showToast('Validation Gate is locked: Complete Steps 1–4 first.')
+        return
+      }
+    } else if (currentPhase === 2) {
+      if (sId === 'build' && !p2Guards.canAccessStep2) {
+        showToast('Step 1 (Product + Build Plan) must be completed before accessing Build.')
+        return
+      }
+      if (sId === 'beta' && !p2Guards.canAccessStep3) {
+        showToast('Step 2 (Build MVP) must be completed before accessing Beta Testing.')
+        return
+      }
+      if (sId === 'gate' && !p2Guards.canAccessStep4) {
+        showToast('Launch Gate is locked: Complete Steps 1–3 first.')
+        return
+      }
+    } else if (currentPhase === 3) {
+      if (sId === 'monitor' && !p3Guards.canAccessStep2) {
+        showToast('Step 1 (Prepare Launch) must be completed before accessing Monitor.')
+        return
+      }
+      if (sId === 'manager' && !p3Guards.canAccessStep3) {
+        showToast('Step 2 (Launch + Monitor) must be completed before accessing AI Launch Manager.')
+        return
+      }
+      if (sId === 'report' && !p3Guards.canAccessStep4) {
+        showToast('Launch Decision Gate is locked: Complete Steps 1–3 first.')
+        return
+      }
+    }
+
     setSelectedPhaseStep(sId)
     setShowPhaseExecutionModal(true)
     try {
@@ -1551,70 +1611,85 @@ partnerships@creatorforge.com`
                     num: '1. Product + Build Plan',
                     desc: 'Product spec, user flows, tech stack, schema, acceptance criteria & scope boundaries',
                     icon: FileText,
-                    isDone: p2Guards.isStep1Done
+                    isDone: p2Guards.isStep1Done,
+                    canAccess: p2Guards.canAccessStep1
                   },
                   {
                     id: 'build',
                     num: '2. Engineering Build',
                     desc: 'FastAPI backend, React frontend, database migrations, and async AI worker pipeline',
                     icon: Terminal,
-                    isDone: p2Guards.isStep2Done
+                    isDone: p2Guards.isStep2Done,
+                    canAccess: p2Guards.canAccessStep2
                   },
                   {
                     id: 'beta',
                     num: '3. Beta Testing',
                     desc: `Invite ${Array.isArray(project?.reservations) ? project.reservations.length : 0} founding pre-order backers for private beta QA`,
                     icon: Laptop,
-                    isDone: p2Guards.isStep3Done
+                    isDone: p2Guards.isStep3Done,
+                    canAccess: p2Guards.canAccessStep3
                   },
                   {
                     id: 'gate',
                     num: '4. MVP Launch Gate',
                     desc: 'Verify acceptance criteria, zero critical errors, approve & advance to Phase 3',
                     icon: ShieldCheck,
-                    isDone: p2Guards.isP2Done
+                    isDone: p2Guards.isP2Done,
+                    canAccess: p2Guards.canAccessStep4
                   },
                 ].map(step => {
                   const Icon = step.icon
                   const isDone = step.isDone
+                  const isLocked = !step.canAccess
                   return (
                     <div
                       key={step.id}
                       onClick={() => openPhaseStep(step.id)}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer group space-y-1 ${
-                        isDone
-                          ? 'bg-emerald-950/15 border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-950/25'
-                          : 'bg-[#141720] hover:bg-[#1b202c] border-white/[0.06] hover:border-blue-500/40'
+                      className={`p-3.5 rounded-xl border transition-all space-y-1 ${
+                        isLocked
+                          ? 'bg-[#141720]/40 border-white/[0.04] opacity-50 cursor-not-allowed'
+                          : isDone
+                          ? 'bg-emerald-950/15 border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-950/25 cursor-pointer group'
+                          : 'bg-[#141720] hover:bg-[#1b202c] border-white/[0.06] hover:border-blue-500/40 cursor-pointer group'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5 text-xs font-bold transition-colors">
-                          {isDone ? (
+                          {isLocked ? (
+                            <Lock className="w-4 h-4 text-slate-500 shrink-0" />
+                          ) : isDone ? (
                             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                           ) : (
                             <Icon className="w-4 h-4 text-blue-400 shrink-0" />
                           )}
-                          <span className={isDone ? 'text-slate-200 font-bold' : 'text-white group-hover:text-blue-300'}>
+                          <span className={isLocked ? 'text-slate-500' : isDone ? 'text-slate-200 font-bold' : 'text-white group-hover:text-blue-300'}>
                             {step.num}
                           </span>
                         </div>
-                        <span className={`text-[10px] font-bold flex items-center gap-1 ${
-                          isDone ? 'text-emerald-400' : 'text-slate-400 group-hover:text-white'
-                        }`}>
-                          {isDone ? (
-                            <>
-                              <span>✓ Done</span>
-                              <ChevronRight className="w-3 h-3" />
-                            </>
-                          ) : (
-                            <>
-                              <span>Open</span>
-                              <ChevronRight className="w-3 h-3" />
-                            </>
-                          )}
-                        </span>
+                        {isLocked ? (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-800 text-slate-500 border border-slate-700/60">
+                            🔒 Locked
+                          </span>
+                        ) : (
+                          <span className={`text-[10px] font-bold flex items-center gap-1 ${
+                            isDone ? 'text-emerald-400' : 'text-slate-400 group-hover:text-white'
+                          }`}>
+                            {isDone ? (
+                              <>
+                                <span>✓ Done</span>
+                                <ChevronRight className="w-3 h-3" />
+                              </>
+                            ) : (
+                              <>
+                                <span>Open</span>
+                                <ChevronRight className="w-3 h-3" />
+                              </>
+                            )}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-[11px] leading-relaxed pl-6 text-slate-400">
+                      <p className={`text-[11px] leading-relaxed pl-6 ${isLocked ? 'text-slate-600' : 'text-slate-400'}`}>
                         {step.desc}
                       </p>
                     </div>
@@ -1623,10 +1698,25 @@ partnerships@creatorforge.com`
               </div>
 
               <button
-                onClick={() => openPhaseStep('plan')}
-                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-blue-950/40 active:scale-95"
+                onClick={() => {
+                  if (p2Guards.isP2Done || currentPhase >= 3) {
+                    handleAdvancePhase(3)
+                    setShowPhaseExecutionModal(true)
+                  } else {
+                    openPhaseStep('plan')
+                  }
+                }}
+                className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg active:scale-95 ${
+                  p2Guards.isP2Done || currentPhase >= 3
+                    ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-950/40'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-950/40'
+                }`}
               >
-                <span>Open Phase 2 MVP Workspace</span>
+                <span>
+                  {p2Guards.isP2Done || currentPhase >= 3
+                    ? 'Advance to Phase 3: Launch & Scale'
+                    : 'Open Phase 2 MVP Workspace'}
+                </span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </>
@@ -1658,78 +1748,81 @@ partnerships@creatorforge.com`
                     num: '1. Prepare Launch',
                     desc: 'Strategy, channels, offers, creator marketing assets, production infra & verified checklists',
                     icon: Calendar,
-                    isDone: Boolean(
-                      project?.launchStrategy &&
-                      (project.launchStrategy.creatorChecklist || []).length > 0 &&
-                      (project.launchStrategy.creatorChecklist || []).every(t => Boolean(t.done)) &&
-                      (project.launchStrategy.opsChecklist || []).length > 0 &&
-                      (project.launchStrategy.opsChecklist || []).every(t => Boolean(t.done))
-                    )
+                    isDone: p3Guards.isStep1Done,
+                    canAccess: p3Guards.canAccessStep1
                   },
                   {
                     id: 'monitor',
                     num: '2. Launch + Monitor',
                     desc: 'Live production telemetry, customer conversion funnel, and channel attribution breakdown',
                     icon: TrendingUp,
-                    isDone: Boolean(project?.launchStatus === 'LIVE' && ((project?.launchTelemetry?.revenue || 0) > 0 || (project?.launchTelemetry?.customers || 0) > 0))
+                    isDone: p3Guards.isStep2Done,
+                    canAccess: p3Guards.canAccessStep2
                   },
                   {
                     id: 'manager',
                     num: '3. AI Launch Manager',
                     desc: 'Autonomous telemetry sweep, growth optimization engine, and real-time CRO interventions',
                     icon: Sparkles,
-                    isDone: Boolean(
-                      (project?.dispatchedActions || []).length > 0 &&
-                      (project?.launchManagerData?.automatedActions || []).length > 0 &&
-                      (project.launchManagerData.automatedActions || []).every(a => (project.dispatchedActions || []).includes(a.id))
-                    )
+                    isDone: p3Guards.isStep3Done,
+                    canAccess: p3Guards.canAccessStep3
                   },
                   {
                     id: 'report',
                     num: '4. Launch Report + Decision',
                     desc: 'Commercial score, CAC economics, executive milestone verdict, and scale/pivot decision gate',
                     icon: ShieldCheck,
-                    isDone: Boolean((project?.launchReport?.score || 0) > 0 && project?.decisionNotice)
+                    isDone: p3Guards.isStep4Done,
+                    canAccess: p3Guards.canAccessStep4
                   },
                 ].map(step => {
                   const Icon = step.icon
                   const isDone = step.isDone
+                  const isLocked = !step.canAccess
                   return (
                     <div
                       key={step.id}
-                      onClick={() => {
-                        openPhaseStep(step.id)
-                      }}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer group space-y-1 ${
-                        isDone
-                          ? 'bg-[#141720] hover:bg-[#1b202c] border-emerald-500/30'
-                          : 'bg-[#141720] hover:bg-[#1b202c] border-white/[0.06] hover:border-purple-500/40'
+                      onClick={() => openPhaseStep(step.id)}
+                      className={`p-3.5 rounded-xl border transition-all space-y-1 ${
+                        isLocked
+                          ? 'bg-[#141720]/40 border-white/[0.04] opacity-50 cursor-not-allowed'
+                          : isDone
+                          ? 'bg-[#141720] hover:bg-[#1b202c] border-emerald-500/30 cursor-pointer group'
+                          : 'bg-[#141720] hover:bg-[#1b202c] border-white/[0.06] hover:border-purple-500/40 cursor-pointer group'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5 text-xs font-bold text-white group-hover:text-purple-300 transition-colors">
-                          {isDone ? (
+                        <div className="flex items-center gap-2.5 text-xs font-bold transition-colors">
+                          {isLocked ? (
+                            <Lock className="w-4 h-4 text-slate-500 shrink-0" />
+                          ) : isDone ? (
                             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                           ) : (
                             <Icon className="w-4 h-4 text-purple-400 shrink-0" />
                           )}
-                          <span className={isDone ? 'text-slate-200 font-bold' : ''}>
+                          <span className={isLocked ? 'text-slate-500' : isDone ? 'text-slate-200 font-bold' : 'text-white group-hover:text-purple-300'}>
                             {step.num}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          {isDone && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-normal">
-                              Done
-                            </span>
-                          )}
-                          <span className="text-[10px] font-bold text-slate-400 group-hover:text-white flex items-center gap-0.5">
-                            <span>Open</span>
-                            <ChevronRight className="w-3 h-3" />
+                        {isLocked ? (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-800 text-slate-500 border border-slate-700/60">
+                            🔒 Locked
                           </span>
-                        </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            {isDone && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-normal">
+                                Done
+                              </span>
+                            )}
+                            <span className="text-[10px] font-bold text-slate-400 group-hover:text-white flex items-center gap-0.5">
+                              <span>Open</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed pl-6">
+                      <p className={`text-[11px] leading-relaxed pl-6 ${isLocked ? 'text-slate-600' : 'text-slate-400'}`}>
                         {step.desc}
                       </p>
                     </div>
@@ -1776,6 +1869,7 @@ partnerships@creatorforge.com`
                     desc: 'Define customer, problem, offer, price, test method, success threshold',
                     icon: FileText,
                     isDone: isStep1Done,
+                    canAccess: p1Guards.canAccessStep1,
                     borderDone: 'bg-emerald-500/[0.05] border-emerald-500/35 hover:border-emerald-400/60 shadow-sm shadow-emerald-950/20',
                     badgeDone: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
                     iconDoneColor: 'text-emerald-400',
@@ -1787,6 +1881,7 @@ partnerships@creatorforge.com`
                     desc: 'Landing page, presales, checkout, analytics, emails, discovery surveys',
                     icon: Layout,
                     isDone: isStep2Done,
+                    canAccess: p1Guards.canAccessStep2,
                     borderDone: 'bg-purple-500/[0.05] border-purple-500/35 hover:border-purple-400/60 shadow-sm shadow-purple-950/20',
                     badgeDone: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
                     iconDoneColor: 'text-purple-400',
@@ -1798,6 +1893,7 @@ partnerships@creatorforge.com`
                     desc: 'Posts, stories, newsletter, videos, polls, CTAs, images, scripts',
                     icon: Megaphone,
                     isDone: isStep3Done,
+                    canAccess: p1Guards.canAccessStep3,
                     borderDone: 'bg-blue-500/[0.05] border-blue-500/35 hover:border-blue-400/60 shadow-sm shadow-blue-950/20',
                     badgeDone: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
                     iconDoneColor: 'text-blue-400',
@@ -1809,6 +1905,7 @@ partnerships@creatorforge.com`
                     desc: 'Track traffic, presales, revenue, conversion, feedback. AI suggests experiments',
                     icon: TrendingUp,
                     isDone: isStep4Done,
+                    canAccess: p1Guards.canAccessStep4,
                     borderDone: 'bg-amber-500/[0.05] border-amber-500/35 hover:border-amber-400/60 shadow-sm shadow-amber-950/20',
                     badgeDone: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
                     iconDoneColor: 'text-amber-400',
@@ -1820,6 +1917,7 @@ partnerships@creatorforge.com`
                     desc: 'PASS → Build MVP | TEST AGAIN → Iterate | FAIL → Kill',
                     icon: Flag,
                     isDone: isStep5Done,
+                    canAccess: p1Guards.canAccessStep5,
                     borderDone: isStep5Done
                       ? 'bg-emerald-500/[0.08] border-emerald-500/50 hover:border-emerald-400/80 shadow-md shadow-emerald-950/30'
                       : 'bg-[#141720] hover:bg-[#1b202c] border border-white/[0.08] hover:border-emerald-500/40',
@@ -1829,29 +1927,38 @@ partnerships@creatorforge.com`
                   },
                 ].map(step => {
                   const Icon = step.icon
+                  const isLocked = !step.canAccess
                   return (
                     <div
                       key={step.id}
                       onClick={() => openPhaseStep(step.id)}
-                      className={`p-3 rounded-xl transition-all cursor-pointer group space-y-1 ${
-                        step.isDone
-                          ? step.borderDone
-                          : 'bg-[#141720] hover:bg-[#1b202c] border border-white/[0.06] hover:border-emerald-500/40'
+                      className={`p-3 rounded-xl transition-all space-y-1 ${
+                        isLocked
+                          ? 'bg-[#141720]/40 border border-white/[0.04] opacity-50 cursor-not-allowed'
+                          : step.isDone
+                          ? `${step.borderDone} cursor-pointer group`
+                          : 'bg-[#141720] hover:bg-[#1b202c] border border-white/[0.06] hover:border-emerald-500/40 cursor-pointer group'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
-                          {step.isDone ? (
+                          {isLocked ? (
+                            <Lock className="w-4 h-4 text-slate-500 shrink-0" />
+                          ) : step.isDone ? (
                             <CheckCircle2 className={`w-4 h-4 shrink-0 ${step.iconDoneColor}`} />
                           ) : (
                             <Icon className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 shrink-0 transition-colors" />
                           )}
-                          <span className={`text-xs font-bold truncate ${step.isDone ? 'text-slate-200' : 'text-white'}`}>
+                          <span className={`text-xs font-bold truncate ${isLocked ? 'text-slate-500' : step.isDone ? 'text-slate-200' : 'text-white'}`}>
                             {step.num}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {step.isDone ? (
+                          {isLocked ? (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-800 text-slate-500 border border-slate-700/60">
+                              🔒 Locked
+                            </span>
+                          ) : step.isDone ? (
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${step.badgeDone}`}>
                               {step.badgeText}
                             </span>
@@ -1863,7 +1970,7 @@ partnerships@creatorforge.com`
                           )}
                         </div>
                       </div>
-                      <p className="text-[11px] leading-relaxed pl-6 line-clamp-2 text-slate-400">
+                      <p className={`text-[11px] leading-relaxed pl-6 line-clamp-2 ${isLocked ? 'text-slate-600' : 'text-slate-400'}`}>
                         {step.desc}
                       </p>
                     </div>
@@ -1897,6 +2004,14 @@ partnerships@creatorforge.com`
           )}
         </div>
       </div>
+
+      {/* Step Guard Warning Toast */}
+      {toastNotice && (
+        <div className="fixed bottom-6 right-6 z-[10000] flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900/95 border border-amber-500/50 text-amber-200 shadow-2xl animate-fade-in text-xs font-semibold max-w-md backdrop-blur-md">
+          <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>{toastNotice}</span>
+        </div>
+      )}
 
       {/* PHASE EXECUTION MODAL (PHASE 1 / PHASE 2 / PHASE 3) */}
       {showPhaseExecutionModal && typeof document !== 'undefined' && createPortal(
@@ -1942,14 +2057,17 @@ partnerships@creatorforge.com`
                 }}
                 onUpdateProject={onUpdateProject}
                 onAdvanceToPhase3={() => {
-                  setShowPhaseExecutionModal(false)
                   handleAdvancePhase(3)
+                  setSelectedPhaseTab(3)
+                  setSelectedPhaseStep('prep')
                 }}
               />
             ) : currentPhase === 3 ? (
               <Phase3Launch
                 project={project}
                 api={api}
+                activeStepId={selectedPhaseStep}
+                onSelectStep={setSelectedPhaseStep}
                 onUpdateProject={onUpdateProject}
               />
             ) : (
@@ -1960,8 +2078,9 @@ partnerships@creatorforge.com`
                 onSelectStep={setSelectedPhaseStep}
                 onUpdateProject={onUpdateProject}
                 onAdvanceToPhase2={() => {
-                  setShowPhaseExecutionModal(false)
                   handleAdvancePhase(2)
+                  setSelectedPhaseTab(2)
+                  setSelectedPhaseStep('plan')
                 }}
               />
             )}

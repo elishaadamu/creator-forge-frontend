@@ -93,6 +93,34 @@ export const getConceptImageUrl = (concept, fallbackNiche = "tech") => {
   return CONCEPT_CATEGORY_IMAGES.default;
 };
 
+// Safe helper to read deleted creator IDs from storage (handles arrays, expiringStorage envelopes, and self-heals)
+export function getDeletedCreatorIds() {
+  if (typeof window === "undefined" || !window.localStorage) return [];
+  try {
+    const direct = window.localStorage.getItem("forge_deleted_creator_ids");
+    if (!direct) return [];
+    let parsed;
+    try {
+      parsed = JSON.parse(direct);
+    } catch {
+      return [];
+    }
+    let list = [];
+    if (Array.isArray(parsed)) {
+      list = parsed;
+    } else if (parsed && typeof parsed === "object" && Array.isArray(parsed.data)) {
+      list = parsed.data;
+      // Auto-heal localStorage to plain JSON array so all callers remain safe
+      try {
+        window.localStorage.setItem("forge_deleted_creator_ids", JSON.stringify(list));
+      } catch (e) {}
+    }
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function AcquisitionEngine({
   initialCreators = [],
   allProjects = [],
@@ -262,13 +290,8 @@ export default function AcquisitionEngine({
   const [isLaunchingProject, setIsLaunchingProject] = useState(false);
   const [launchStepIndex, setLaunchStepIndex] = useState(1);
   const [creators, setCreators] = useState(() => {
-    const deletedIds = (() => {
-      try {
-        return getExpiringItem("forge_deleted_creator_ids", []);
-      } catch {
-        return [];
-      }
-    })();
+    const deletedIds = getDeletedCreatorIds();
+    const deletedSet = new Set(deletedIds.map(String));
 
     const batchLimit = (() => {
       try {
@@ -294,13 +317,13 @@ export default function AcquisitionEngine({
       } catch {}
     }
 
-    if (deletedIds.length > 0) {
+    if (deletedSet.size > 0) {
       list = list.filter((c) => {
         const cleanHandle = (c.handle || "").toLowerCase().replace(/^@/, "");
         return (
-          !deletedIds.includes(c.id) &&
-          !deletedIds.includes(cleanHandle) &&
-          !deletedIds.includes(c.handle)
+          !deletedSet.has(String(c.id)) &&
+          !deletedSet.has(cleanHandle) &&
+          !deletedSet.has(String(c.handle))
         );
       });
     }
@@ -338,10 +361,12 @@ export default function AcquisitionEngine({
       const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       const creatorParam = searchParams?.get('creator') || searchParams?.get('creatorId');
       if (creatorParam) return creatorParam;
-      const deletedIds = getExpiringItem("forge_deleted_creator_ids", []);
+      const deletedIds = getDeletedCreatorIds();
+      const deletedSet = new Set(deletedIds.map(String));
       const savedCreators = getExpiringItem("forge_launch_discovered_creators", []);
-      const candidates = (initialCreators && initialCreators.length > 0 ? initialCreators : savedCreators).filter(
-        (c) => !deletedIds.includes(c.id) && !deletedIds.includes((c.handle || "").replace(/^@/, "").toLowerCase())
+      const safeSaved = Array.isArray(savedCreators) ? savedCreators : [];
+      const candidates = (initialCreators && initialCreators.length > 0 ? initialCreators : safeSaved).filter(
+        (c) => !deletedSet.has(String(c.id)) && !deletedSet.has((c.handle || "").replace(/^@/, "").toLowerCase())
       );
       return candidates?.[0]?.id || null;
     } catch {
@@ -421,13 +446,14 @@ export default function AcquisitionEngine({
   // Keep discovered creators persisted to expiring storage (1 hour TTL) so they never vanish on refresh
   useEffect(() => {
     try {
-      const deletedIds = getExpiringItem("forge_deleted_creator_ids", []);
+      const deletedIds = getDeletedCreatorIds();
+      const deletedSet = new Set(deletedIds.map(String));
       const cleanList = (creators || []).filter((c) => {
         const cleanHandle = (c.handle || "").toLowerCase().replace(/^@/, "");
         return (
-          !deletedIds.includes(c.id) &&
-          !deletedIds.includes(cleanHandle) &&
-          !deletedIds.includes(c.handle)
+          !deletedSet.has(String(c.id)) &&
+          !deletedSet.has(cleanHandle) &&
+          !deletedSet.has(String(c.handle))
         );
       });
 
@@ -484,15 +510,16 @@ export default function AcquisitionEngine({
       }
       if (e.key === "forge_last_deleted_timestamp") {
         try {
-          const deletedIds = JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
-          if (deletedIds.length > 0) {
+          const deletedIds = getDeletedCreatorIds();
+          const deletedSet = new Set(deletedIds.map(String));
+          if (deletedSet.size > 0) {
             setCreators((prev) =>
               (prev || []).filter((c) => {
                 const cleanHandle = (c.handle || "").toLowerCase().replace(/^@/, "");
                 return (
-                  !deletedIds.includes(c.id) &&
-                  !deletedIds.includes(cleanHandle) &&
-                  !deletedIds.includes(c.handle)
+                  !deletedSet.has(String(c.id)) &&
+                  !deletedSet.has(cleanHandle) &&
+                  !deletedSet.has(String(c.handle))
                 );
               })
             );
@@ -954,13 +981,8 @@ export default function AcquisitionEngine({
         // 3. Sync creator cohort
         const res = await getCreators({ limit: 50 }).catch(() => null);
         const rawList = Array.isArray(res) ? res : res?.creators || [];
-        const deletedIds = (() => {
-          try {
-            return JSON.parse(localStorage.getItem("forge_deleted_creator_ids") || "[]");
-          } catch {
-            return [];
-          }
-        })();
+        const deletedIds = getDeletedCreatorIds();
+        const deletedSet = new Set(deletedIds.map(String));
 
         if (isMounted) {
           if (Array.isArray(res) && rawList.length === 0) {
@@ -978,9 +1000,9 @@ export default function AcquisitionEngine({
               .filter((dbItem) => {
                 const cleanHandle = (dbItem.handle || "").toLowerCase().replace(/^@/, "");
                 return (
-                  !deletedIds.includes(dbItem.id) &&
-                  !deletedIds.includes(cleanHandle) &&
-                  !deletedIds.includes(dbItem.handle)
+                  !deletedSet.has(String(dbItem.id)) &&
+                  !deletedSet.has(cleanHandle) &&
+                  !deletedSet.has(String(dbItem.handle))
                 );
               })
               .map((dbItem) => {
@@ -1093,10 +1115,10 @@ export default function AcquisitionEngine({
               const cleanHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
               const cleanEmail = (p.email || p.email_public || "").toLowerCase().trim();
               const isDeleted =
-                deletedIds.includes(p.id) ||
-                deletedIds.includes(cleanHandle) ||
-                deletedIds.includes(p.handle) ||
-                (cleanEmail && deletedIds.includes(cleanEmail));
+                deletedSet.has(String(p.id)) ||
+                deletedSet.has(cleanHandle) ||
+                deletedSet.has(String(p.handle)) ||
+                (cleanEmail && deletedSet.has(cleanEmail));
 
               if (!isDeleted && !seenKeys.has(p.id) && (!cleanHandle || !seenKeys.has(cleanHandle))) {
                 const isDbUuid = p.id && /^[0-9a-f-]{36}$/i.test(p.id);
@@ -1110,7 +1132,7 @@ export default function AcquisitionEngine({
           });
 
           setSelectedCreatorId((prevId) => {
-            if (deletedIds.includes(prevId)) return null;
+            if (prevId && deletedSet.has(String(prevId))) return null;
             return prevId || rawList[0]?.id || null;
           });
         }
@@ -4276,6 +4298,7 @@ export default function AcquisitionEngine({
 
   const handlePitchAndCreateProject = async () => {
     if (!selectedCreator) return;
+    if (isLaunchingProject) return;
 
     // Strict Gate: No approval to ProjectOS until creator confirms full commitment
     const detectedChoice = aiDetectedChoiceMap[selectedCreator.id];
@@ -4423,6 +4446,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       targetRevenue: parsedTargetVal,
       currentPhase: 1,
       validationPlan: smartInitialPlan,
+      portalLinkSent: true,
+      skipCreatorEmail: true,
     });
 
     try {
@@ -8716,8 +8741,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
+                        disabled={isLaunchingProject}
                         onClick={() => handlePitchAndCreateProject()}
-                        className="h-9 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap shadow-sm"
+                        className={`h-9 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-sm ${
+                          isLaunchingProject ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                        }`}
                         title="Re-sync project specs from selected concept"
                       >
                         <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
@@ -8815,10 +8843,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   )}
                   <button
                     type="button"
-                    disabled={!hasFullCommitment}
+                    disabled={!hasFullCommitment || isLaunchingProject}
                     onClick={() => handlePitchAndCreateProject()}
                     className={`h-9 px-4 rounded-xl text-xs font-bold border shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                      hasFullCommitment
+                      hasFullCommitment && !isLaunchingProject
                         ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/40 cursor-pointer active:scale-95 shadow-emerald-500/20"
                         : "bg-slate-800/80 text-slate-400 border-white/[0.08] cursor-not-allowed opacity-75"
                     }`}

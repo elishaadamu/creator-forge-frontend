@@ -208,19 +208,26 @@ export default function ProjectOSPage() {
   }
 
   // Handle live updates from Phase 1-4 components
-  const handleUpdateActiveProject = async (updatedProject) => {
-    if (!updatedProject || !updatedProject.id) return
-    setActiveProject(updatedProject)
-    setProjects((prev) => prev.map((p) => (p.id === updatedProject.id ? updatedProject : p)))
+  const handleUpdateActiveProject = async (updater) => {
+    let resolved
+    setActiveProject(prev => {
+      resolved = typeof updater === 'function' ? updater(prev) : updater
+      return resolved
+    })
+    if (!resolved || !resolved.id) return
+    setProjects((prev) => prev.map((p) => (p.id === resolved.id ? resolved : p)))
 
     try {
-      await updateCoLaunchProject(updatedProject.id, {
-        ...updatedProject,
-        campaignKit: updatedProject.campaignKit,
-        campaign_kit: updatedProject.campaignKit,
+      await updateCoLaunchProject(resolved.id, {
+        ...resolved,
+        currentPhase: resolved.currentPhase,
+        current_phase: resolved.currentPhase,
+        status: resolved.status,
+        campaignKit: resolved.campaignKit,
+        campaign_kit: resolved.campaignKit,
         metadataInfo: {
-          ...(updatedProject.metadataInfo || {}),
-          campaign_kit: updatedProject.campaignKit || updatedProject.metadataInfo?.campaign_kit
+          ...(resolved.metadataInfo || {}),
+          campaign_kit: resolved.campaignKit || resolved.metadataInfo?.campaign_kit
         }
       })
     } catch (err) {
