@@ -285,8 +285,7 @@ export default function CreatorLaunchLayout({
         if (p.id === targetId) return true
         if (p.creatorId && String(p.creatorId).toLowerCase() === targetId.toLowerCase()) return true
         if (p.creatorHandle && cleanTarget && p.creatorHandle.replace(/^@/, '').toLowerCase() === cleanTarget) return true
-        if (p.creatorName && cleanTarget && p.creatorName.toLowerCase().trim() === cleanTarget) return true
-        if (targetEmail && p.creatorEmail && p.creatorEmail.toLowerCase() === targetEmail.toLowerCase()) return true
+        if (p.creatorName && cleanTarget && p.creatorName.toLowerCase().trim() === cleanTarget && cleanTarget.length > 3 && !['creator', 'partner', 'lead'].includes(cleanTarget)) return true
         return false
       })
 

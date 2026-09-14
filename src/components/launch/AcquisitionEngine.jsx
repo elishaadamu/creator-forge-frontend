@@ -8525,43 +8525,37 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 
                 // Check if creator project is already launched in Project OS (Section 2)
                 const cCleanHandle = (c.handle || "").replace(/^@/, "").toLowerCase().trim();
-                const cCleanEmail = (c.email || c.email_public || "").toLowerCase().trim();
                 const cCleanName = (c.name || c.display_name || "").toLowerCase().trim();
 
                 const matchedDbProj = (dbProjects || []).find((p) => {
                   if (!p) return false;
                   const pCleanHandle = (p.creatorHandle || "").replace(/^@/, "").toLowerCase().trim();
-                  const pCleanEmail = (p.creatorEmail || "").toLowerCase().trim();
                   const pCleanName = (p.creatorName || "").toLowerCase().trim();
                   return (
                     (p.creatorId && (p.creatorId === c.id || p.creatorId === c.handle)) ||
                     (p.id && (p.id === c.project_id || p.id === c.projectId || p.id === c.active_project_id)) ||
                     (cCleanHandle && pCleanHandle && cCleanHandle === pCleanHandle) ||
-                    (cCleanEmail && pCleanEmail && cCleanEmail === pCleanEmail) ||
-                    (cCleanName && pCleanName && cCleanName === pCleanName && cCleanName.length > 2)
+                    (cCleanName && pCleanName && cCleanName === pCleanName && cCleanName.length > 3 && !["creator", "partner", "lead"].includes(cCleanName))
                   );
                 });
 
+                const cChoice = aiDetectedChoiceMap[c.id];
+                const cIsCommittedChoice = cChoice?.decision === "CREATE_PROJECT" || cChoice?.decision === "COMMITTED";
+                const cHasVerifiedCommitment = Boolean(cIsCommittedChoice || c.isCommitted === true);
+
                 let isLaunched = Boolean(
-                  c.project_id ||
-                  c.projectId ||
-                  c.has_project ||
-                  c.hasProject ||
-                  matchedDbProj ||
-                  (c.status || "").toLowerCase() === "launched" ||
-                  (c.status || "").toLowerCase() === "active_project"
+                  (c.project_id || c.projectId) &&
+                  (["launched", "active_project", "partnered"].includes((c.status || "").toLowerCase()) || matchedDbProj)
                 );
                 if (!isLaunched) {
                   try {
                     const stageMap = getExpiringItem("forge_creator_stage_map", {});
-                    if (stageMap[c.id]?.step === "section2" || stageMap[c.id]?.step === 7) isLaunched = true;
-                    if (c.handle && (stageMap[c.handle.replace(/^@/, "").toLowerCase()]?.step === "section2" || stageMap[c.handle.replace(/^@/, "").toLowerCase()]?.step === 7)) isLaunched = true;
+                    const isStageMapSection2 = stageMap[c.id]?.step === "section2" || stageMap[c.id]?.step === 7;
                     const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
-                    if (storedProj) {
-                      const matchId = storedProj.creatorId && (storedProj.creatorId === c.id || storedProj.creatorId === c.handle);
-                      const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === cCleanHandle);
-                      const matchEmail = storedProj.creatorEmail && cCleanEmail && (storedProj.creatorEmail.toLowerCase() === cCleanEmail);
-                      if (matchId || matchHandle || matchEmail) isLaunched = true;
+                    const matchId = storedProj && (storedProj.creatorId === c.id || storedProj.creatorId === c.handle);
+                    const matchHandle = storedProj && cCleanHandle && storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === cCleanHandle);
+                    if ((isStageMapSection2 || matchId || matchHandle || matchedDbProj) && (cHasVerifiedCommitment || (c.status || "").toLowerCase() === "launched" || (c.status || "").toLowerCase() === "partnered")) {
+                      isLaunched = true;
                     }
                   } catch (e) {}
                 }
@@ -8611,7 +8605,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             : "text-purple-300 bg-purple-500/15 border border-purple-500/30"
                         }`}
                       >
-                        {msgs.length > 0 ? "In Conversation" : "Proposal Sent"}
+                        {cChoice?.isStep6Reply ? "In Conversation" : "Proposal Sent"}
                       </span>
                     ) : (
                       <span
@@ -8695,43 +8689,44 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
               {(() => {
                 const selCleanHandle = (selectedCreator?.handle || "").replace(/^@/, "").toLowerCase().trim();
-                const selCleanEmail = (selectedCreator?.email || selectedCreator?.email_public || "").toLowerCase().trim();
                 const selCleanName = (selectedCreator?.name || selectedCreator?.display_name || "").toLowerCase().trim();
 
                 const matchedDbProj = (dbProjects || []).find((p) => {
                   if (!p) return false;
                   const pCleanHandle = (p.creatorHandle || "").replace(/^@/, "").toLowerCase().trim();
-                  const pCleanEmail = (p.creatorEmail || "").toLowerCase().trim();
                   const pCleanName = (p.creatorName || "").toLowerCase().trim();
                   return (
                     (p.creatorId && (p.creatorId === selectedCreator?.id || p.creatorId === selectedCreator?.handle)) ||
                     (p.id && (p.id === selectedCreator?.project_id || p.id === selectedCreator?.projectId || p.id === selectedCreator?.active_project_id)) ||
                     (selCleanHandle && pCleanHandle && selCleanHandle === pCleanHandle) ||
-                    (selCleanEmail && pCleanEmail && selCleanEmail === pCleanEmail) ||
-                    (selCleanName && pCleanName && selCleanName === pCleanName && selCleanName.length > 2)
+                    (selCleanName && pCleanName && selCleanName === pCleanName && selCleanName.length > 3 && !["creator", "partner", "lead"].includes(selCleanName))
                   );
                 });
 
-                let isSelectedCreatorLaunched = Boolean(
-                  selectedCreator?.project_id ||
-                  selectedCreator?.projectId ||
-                  selectedCreator?.has_project ||
-                  selectedCreator?.hasProject ||
-                  matchedDbProj ||
+                const detectedChoice = selectedCreator ? aiDetectedChoiceMap[selectedCreator.id] : null;
+                const isCommittedChoice = detectedChoice?.decision === "CREATE_PROJECT" || detectedChoice?.decision === "COMMITTED";
+                const hasCommitment = Boolean(
+                  isCommittedChoice ||
+                  selectedCreator?.isCommitted === true ||
                   (selectedCreator?.status || "").toLowerCase() === "launched" ||
-                  (selectedCreator?.status || "").toLowerCase() === "active_project"
+                  (selectedCreator?.status || "").toLowerCase() === "partnered"
                 );
-                if (!isSelectedCreatorLaunched && selectedCreator) {
+
+                let isSelectedCreatorLaunched = Boolean(
+                  (selectedCreator?.project_id || selectedCreator?.projectId) &&
+                  (["launched", "active_project", "partnered"].includes((selectedCreator?.status || "").toLowerCase()) || matchedDbProj) &&
+                  hasCommitment
+                );
+
+                if (!isSelectedCreatorLaunched && selectedCreator && hasCommitment) {
                   try {
                     const stageMap = getExpiringItem("forge_creator_stage_map", {});
-                    if (stageMap[selectedCreator.id]?.step === "section2" || stageMap[selectedCreator.id]?.step === 7) isSelectedCreatorLaunched = true;
-                    if (selectedCreator.handle && (stageMap[selectedCreator.handle.replace(/^@/, "").toLowerCase()]?.step === "section2" || stageMap[selectedCreator.handle.replace(/^@/, "").toLowerCase()]?.step === 7)) isSelectedCreatorLaunched = true;
+                    const isStageMapSection2 = stageMap[selectedCreator.id]?.step === "section2" || stageMap[selectedCreator.id]?.step === 7;
                     const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
-                    if (storedProj) {
-                      const matchId = storedProj.creatorId && (storedProj.creatorId === selectedCreator.id || storedProj.creatorId === selectedCreator.handle);
-                      const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === selCleanHandle);
-                      const matchEmail = storedProj.creatorEmail && selCleanEmail && (storedProj.creatorEmail.toLowerCase() === selCleanEmail);
-                      if (matchId || matchHandle || matchEmail) isSelectedCreatorLaunched = true;
+                    const matchId = storedProj && (storedProj.creatorId === selectedCreator.id || storedProj.creatorId === selectedCreator.handle);
+                    const matchHandle = storedProj && selCleanHandle && storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === selCleanHandle);
+                    if (isStageMapSection2 || matchId || matchHandle || matchedDbProj) {
+                      isSelectedCreatorLaunched = true;
                     }
                   } catch (e) {}
                 }
@@ -8765,7 +8760,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   );
                 }
 
-                return null;
+                return (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-medium text-slate-400 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-amber-400" />
+                      <span>{detectedChoice?.isStep6Reply ? "Feedback In Review" : "Awaiting Creator Reply"}</span>
+                    </span>
+                  </div>
+                );
               })()}
             </div>
           </div>
@@ -8889,54 +8891,96 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               <div className="grid lg:grid-cols-12 gap-6">
                 {/* Left Column (5 cols): Decided Project Concept & Partnership Terms */}
                 <div className="lg:col-span-5 space-y-4">
-                  {/* 1. Decided Product Concept Card */}
-                  <div className="p-5 rounded-2xl bg-[#161a24] border border-emerald-500/50 shadow-xl space-y-4 relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-xs flex items-center justify-center">
-                          ✓
-                        </span>
-                        <span className="text-xs font-bold text-white uppercase tracking-wider">
-                          Decided Project Concept
-                        </span>
-                      </div>
-                      <span className="text-xs font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span>Score: {chosenConcept?.opportunityScore || 94}/100</span>
-                      </span>
-                    </div>
+                  {/* 1. Product Concept Card */}
+                  {(() => {
+                    const detectedChoice = selectedCreator ? aiDetectedChoiceMap[selectedCreator.id] : null;
+                    const isCommittedChoice = detectedChoice?.decision === "CREATE_PROJECT" || detectedChoice?.decision === "COMMITTED";
+                    const isAlreadyLaunched = Boolean(
+                      selectedCreator?.project_id ||
+                      ["launched", "active_project", "partnered"].includes((selectedCreator?.status || "").toLowerCase())
+                    );
+                    const isCommitted = Boolean(
+                      isCommittedChoice ||
+                      selectedCreator?.isCommitted === true ||
+                      isAlreadyLaunched
+                    );
+                    const hasStep6Feedback = Boolean(detectedChoice?.isStep6Reply && !isCommitted);
 
-                    <div className="space-y-2 border-b border-white/[0.06] pb-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-white tracking-tight">
-                          {chosenConcept?.name}
-                        </h3>
-                        <span className="text-xs font-bold text-emerald-400 font-mono bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/25">
-                          {chosenConcept?.pricing}
-                        </span>
-                      </div>
-                      <p className="text-xs text-purple-300 font-medium">
-                        {chosenConcept?.tagline}
-                      </p>
-                      <p className="text-xs text-slate-300 leading-relaxed">
-                        <strong className="text-slate-400">Solves:</strong> {chosenConcept?.problem}
-                      </p>
-                    </div>
+                    return (
+                      <div className={`p-5 rounded-2xl bg-[#161a24] border shadow-xl space-y-4 relative overflow-hidden transition-all ${
+                        isCommitted ? "border-emerald-500/50" : "border-purple-500/30"
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {isCommitted ? (
+                              <>
+                                <span className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-xs flex items-center justify-center">
+                                  ✓
+                                </span>
+                                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                                  Decided Project Concept
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-300 font-black text-xs flex items-center justify-center">
+                                  💡
+                                </span>
+                                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                                  Proposed Concept (Recommended #1)
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <span className="text-xs font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            <span>Score: {chosenConcept?.opportunityScore || 94}/100</span>
+                          </span>
+                        </div>
 
-                    {/* Target Specs & Status */}
-                    <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                      <div className="p-2 rounded-xl bg-black/40 border border-white/[0.05]">
-                        <span className="text-[10px] text-slate-500 block uppercase font-bold">Target MVP</span>
-                        <span className="font-bold text-slate-200">{chosenConcept?.mvpDifficulty || "2 weeks"}</span>
-                      </div>
-                      <div className="p-2 rounded-xl bg-black/40 border border-white/[0.05]">
-                        <span className="text-[10px] text-slate-500 block uppercase font-bold">Selection Status</span>
-                        <span className="font-bold text-emerald-300 flex items-center justify-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>{detectedChoice?.conceptName ? "Confirmed by Creator" : "Ready for Section 2"}</span>
-                        </span>
-                      </div>
-                    </div>
+                        <div className="space-y-2 border-b border-white/[0.06] pb-3">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-white tracking-tight">
+                              {chosenConcept?.name}
+                            </h3>
+                            <span className="text-xs font-bold text-emerald-400 font-mono bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/25">
+                              {chosenConcept?.pricing}
+                            </span>
+                          </div>
+                          <p className="text-xs text-purple-300 font-medium">
+                            {chosenConcept?.tagline}
+                          </p>
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            <strong className="text-slate-400">Solves:</strong> {chosenConcept?.problem}
+                          </p>
+                        </div>
+
+                        {/* Target Specs & Status */}
+                        <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                          <div className="p-2 rounded-xl bg-black/40 border border-white/[0.05]">
+                            <span className="text-[10px] text-slate-500 block uppercase font-bold">Target MVP</span>
+                            <span className="font-bold text-slate-200">{chosenConcept?.mvpDifficulty || "2 weeks"}</span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-black/40 border border-white/[0.05]">
+                            <span className="text-[10px] text-slate-500 block uppercase font-bold">Selection Status</span>
+                            {isCommitted ? (
+                              <span className="font-bold text-emerald-300 flex items-center justify-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Confirmed by Creator</span>
+                              </span>
+                            ) : hasStep6Feedback ? (
+                              <span className="font-bold text-blue-300 flex items-center justify-center gap-1">
+                                <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+                                <span>Feedback In Review</span>
+                              </span>
+                            ) : (
+                              <span className="font-bold text-amber-300 flex items-center justify-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Awaiting Creator Reply</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
                     {/* Concept Switcher Dropdown / Pills (in case admin wants to toggle) */}
                     {concepts.length > 1 && (
@@ -8965,7 +9009,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         </div>
                       </div>
                     )}
-                  </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* 2. 50/50 Co-Founder Terms Card */}
                   <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200 space-y-2 shadow-sm">

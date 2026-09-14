@@ -703,43 +703,40 @@ export default function CreatorFollowUpCRM({
 
     // 1. Check if an active project is launched for this creator (in DB or localStorage)
     const cCleanHandle = (c.handle || "").replace(/^@/, "").toLowerCase().trim();
-    const cCleanEmail = (c.email || c.email_public || "").toLowerCase().trim();
     const cCleanName = (c.name || c.display_name || "").toLowerCase().trim();
 
     const matchedDbProj = (dbProjects || []).find((p) => {
       if (!p) return false;
       const pCleanHandle = (p.creatorHandle || "").replace(/^@/, "").toLowerCase().trim();
-      const pCleanEmail = (p.creatorEmail || "").toLowerCase().trim();
       const pCleanName = (p.creatorName || "").toLowerCase().trim();
       return (
         (p.creatorId && (p.creatorId === c.id || p.creatorId === c.handle)) ||
         (p.id && (p.id === c.project_id || p.id === c.projectId || p.id === c.active_project_id)) ||
         (cCleanHandle && pCleanHandle && cCleanHandle === pCleanHandle) ||
-        (cCleanEmail && pCleanEmail && cCleanEmail === pCleanEmail) ||
-        (cCleanName && pCleanName && cCleanName === pCleanName && cCleanName.length > 2)
+        (cCleanName && pCleanName && cCleanName === pCleanName && cCleanName.length > 3 && !["creator", "partner", "lead"].includes(cCleanName))
       );
     });
 
-    let hasActiveLaunchedProject = Boolean(
-      c.project_id ||
-      c.projectId ||
-      c.has_project ||
-      c.hasProject ||
-      matchedDbProj ||
+    const isCommittedCreator = Boolean(
+      c.isCommitted === true ||
       effectiveStatus === "launched" ||
       effectiveStatus === "active_project" ||
+      effectiveStatus === "partnered"
+    );
+
+    let hasActiveLaunchedProject = Boolean(
+      ((c.project_id || c.projectId || matchedDbProj) && isCommittedCreator) ||
       explicitTracked?.step === "section2" ||
       explicitTracked?.step === 7
     );
 
-    if (!hasActiveLaunchedProject) {
+    if (!hasActiveLaunchedProject && isCommittedCreator) {
       try {
         const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
         if (storedProj) {
           const matchId = storedProj.creatorId && (storedProj.creatorId === c.id || storedProj.creatorId === c.handle);
           const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === cCleanHandle);
-          const matchEmail = storedProj.creatorEmail && cCleanEmail && (storedProj.creatorEmail.toLowerCase() === cCleanEmail);
-          if (matchId || matchHandle || matchEmail) {
+          if (matchId || matchHandle || matchedDbProj) {
             hasActiveLaunchedProject = true;
           }
         }
