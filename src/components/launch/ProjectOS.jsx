@@ -6,7 +6,7 @@ import {
   FileText, Layout, Megaphone, TrendingUp, Flag, Bot, User, UserCheck,
   Calendar, Clock, CheckCircle, AlertCircle, MessageSquare, Folder,
   DollarSign, PieChart, Users, ChevronRight, ChevronLeft, Play, Eye, Smartphone, Monitor, Tablet,
-  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download, RefreshCw, Zap, Trash2, Lock
+  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download, RefreshCw, Zap, Trash2, Lock, Tag
 } from 'lucide-react'
 import Phase1Validate from './Phase1Validate'
 import Phase2BuildMVP from './Phase2BuildMVP'
@@ -749,26 +749,50 @@ partnerships@creatorforge.com`
             {/* Main Command Center Inner Area */}
             <div className="flex-1 min-w-0 p-5 sm:p-6 space-y-5 bg-[#0e1117] overflow-x-hidden">
               {/* Header inside Command Center */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-                      <span>{cleanProductName}</span>
-                      <span className="text-slate-400 font-normal">×</span>
-                      <span className="truncate">{cleanCreatorName}</span>
-                    </h2>
-                    {project.pricing && (
-                      <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shadow-xs whitespace-nowrap shrink-0">
-                        {project.pricing}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-300 mt-1 line-clamp-1 max-w-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-white/[0.06] pb-4">
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2 flex-wrap">
+                    <span>{cleanProductName}</span>
+                    <span className="text-slate-500 font-normal">×</span>
+                    <span className="text-slate-200">{cleanCreatorName}</span>
+                  </h2>
+
+                  {/* Pricing and active AI experiment badges */}
+                  {(() => {
+                    if (!project?.pricing) return null
+                    const rawPricing = String(project.pricing).trim()
+                    const match = rawPricing.match(/^(.*?)(?:\s*\((?:Pricing adjusted via )?AI Experiment:\s*(.*?)\))?$/i)
+                    const corePrice = match && match[1] ? match[1].trim() : rawPricing
+                    const expTitle = match && match[2] ? match[2].trim() : null
+
+                    return (
+                      <div className="flex items-center gap-2 flex-wrap max-w-full">
+                        <span
+                          className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shadow-xs inline-flex items-center gap-1.5 max-w-full sm:max-w-xl"
+                          title={rawPricing}
+                        >
+                          <Tag className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span className="truncate">{corePrice}</span>
+                        </span>
+                        {expTitle && (
+                          <span
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-purple-300 bg-purple-500/10 border border-purple-500/25 shadow-xs inline-flex items-center gap-1.5 shrink-0"
+                            title={`Pricing adjusted via AI Experiment: ${expTitle}`}
+                          >
+                            <Sparkles className="w-3 h-3 text-purple-400 shrink-0" />
+                            <span>AI Experiment: {expTitle}</span>
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })()}
+
+                  <p className="text-xs text-slate-300 line-clamp-2 max-w-2xl leading-relaxed">
                     {cleanTagline}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 self-start sm:pt-0.5">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-xs flex items-center gap-1.5 ${
                     isLiveLaunch
                       ? 'text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 shadow-emerald-950/50'
