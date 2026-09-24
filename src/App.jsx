@@ -882,7 +882,7 @@ export default function App() {
 
   return (
     <ForgeContext.Provider value={ctx}>
-      <div className="min-h-screen bg-forge-bg text-white overflow-x-hidden">
+      <div className={`min-h-screen ${step === 'welcome' ? 'bg-white text-slate-900' : 'bg-forge-bg text-white'} overflow-x-hidden`}>
         {screens[step] || <Welcome />}
       </div>
       {globalToast && (
