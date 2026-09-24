@@ -32,7 +32,8 @@ import {
   Flame,
   RotateCcw,
   Compass,
-  Cpu
+  Cpu,
+  ChevronUp
 } from 'lucide-react'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import FloatingPolygons from '../ui/FloatingPolygons'
@@ -243,20 +244,56 @@ const PORTFOLIO_PRODUCTS = [
 // ── FAQ Items (Written in simple, plain human creator language) ───────────────
 const FAQS = [
   {
-    q: 'Why a 50/50 partnership instead of hiring a software agency?',
-    a: 'Agencies charge $60,000 to $120,000 upfront, and if users leave or servers crash, they bill you more hourly fees. With Creator Forge, you pay $0 upfront. We do all the coding, design, and 24/7 server maintenance. We only make money when your app makes money.'
+    id: 'agency-comparison',
+    category: 'Partnership & Model',
+    badge: '$0 Upfront vs $120k',
+    q: "Couldn't I just hire a software agency or sell another course?",
+    a: "Agencies charge $60,000 to $120,000 upfront with zero skin in the game. If users cancel or things break, they bill you more hourly fees. Digital courses burn out audiences with low completion rates. Creator Forge does 100% of the engineering and 24/7 maintenance for $0 upfront. We only make money when your software succeeds.",
+    comparison: [
+      { label: 'Software Agency', detail: '$60k–$120k upfront + hourly maintenance fees with zero skin in the game', type: 'negative' },
+      { label: 'Selling Courses', detail: 'High audience burnout, one-off payment spikes, <8% completion rates', type: 'negative' },
+      { label: 'Creator Forge (50/50)', detail: '$0 upfront cost, 100% managed engineering & servers, 50/50 profit split only when you win', type: 'positive' }
+    ]
   },
   {
+    id: 'creator-responsibilities',
+    category: 'Process & Role',
+    badge: 'Zero Tech Skills',
     q: 'What does the creator need to do? Do I need to know how to code?',
-    a: 'You never write a single line of code. You just tell us what your audience asks for, test the app, and introduce it in your videos. We write 100% of the code, connect payment processing, and take care of customer support.'
+    a: 'You never write a single line of code. You simply tell us what repeat questions or problems your audience has, test the prototype screens we build, and introduce the app in your videos and community. We handle 100% of the architecture, coding, UI design, Stripe billing, and server infrastructure.',
+    highlights: ['Zero coding or technical experience needed', 'You provide audience insight & feedback', 'We handle 100% of code, servers, and app updates']
   },
   {
-    q: 'What if my audience doesn’t buy?',
-    a: 'You risk zero dollars. Because we build everything for free, you never get a surprise bill. If a prototype does not get enough interest from your fans, we can easily change direction or test another idea at zero financial cost to you.'
+    id: 'risk-and-fees',
+    category: 'Financial Risk',
+    badge: '100% Free Upfront',
+    q: "What if my audience doesn't subscribe? Is there any hidden fee?",
+    a: "You risk zero dollars. Because we build everything for free, you will never receive an invoice or surprise bill. If an idea does not get enough interest from your fans, we can quickly pivot or test another software concept at zero financial expense to you.",
+    highlights: ['$0 setup fee & $0 monthly retainers', 'No minimum sales requirements', 'Zero personal or corporate debt risk']
   },
   {
+    id: 'payouts-stripe',
+    category: 'Payouts & Money',
+    badge: 'Automated Stripe',
     q: 'How and when do I get paid?',
-    a: 'You get paid automatically through Stripe directly to your bank account. Whenever a customer pays their monthly subscription, half goes to your account immediately. You can check your earnings on your live dashboard anytime.'
+    a: 'You get paid automatically through Stripe directly to your linked bank account. Whenever a customer pays their monthly subscription, half goes to your account immediately. You have full transparency with a live real-time dashboard tracking members, MRR, and payouts.',
+    highlights: ['Direct bank deposits via Stripe Connect', 'Instant 50/50 automated revenue split', 'Real-time financial dashboard & analytics']
+  },
+  {
+    id: 'ip-ownership',
+    category: 'Ownership & IP',
+    badge: 'Creator Owned',
+    q: 'Who owns the intellectual property and subscriber list?',
+    a: 'You own your brand, your audience relationship, and your content 100%. We act as your specialized technical co-founder. Subscriber email lists and data belong to the co-founded venture, and we will never sell or cross-promote other products to your users without your explicit consent.',
+    highlights: ['100% creator brand and identity ownership', 'Co-ownership of software enterprise', 'Strict privacy & audience protection']
+  },
+  {
+    id: 'timeline-launch',
+    category: 'Timeline',
+    badge: '14-Day Sprint',
+    q: 'How fast can we launch from today?',
+    a: 'Our target is 14 days from concept approval to a live, payment-ready app in your fans’ hands. Because we have specialized creator-software infrastructure, we can build robust, production-grade applications in weeks instead of months.',
+    highlights: ['14-day rapid launch cycle', 'Battle-tested production architecture', 'Stripe payments active on Day 1']
   }
 ]
 
@@ -301,8 +338,11 @@ export default function Welcome() {
     }
   }, [])
 
-  const isDesktopCarousel = carouselWidth >= 640
-  const maxCreatorIndex = isDesktopCarousel ? Math.max(0, CREATOR_PARTNERS.length - 2) : CREATOR_PARTNERS.length - 1
+  const isDesktop = carouselWidth >= 1024
+  const isTablet = carouselWidth >= 640 && carouselWidth < 1024
+  const isMobile = carouselWidth < 640
+
+  const maxCreatorIndex = isDesktop ? Math.max(0, CREATOR_PARTNERS.length - 2) : CREATOR_PARTNERS.length - 1
 
   const handleNextCreator = () => {
     setActiveCreatorIndex((prev) => (prev >= maxCreatorIndex ? 0 : prev + 1))
@@ -402,15 +442,6 @@ export default function Welcome() {
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#0F172A] font-sans selection:bg-[#E2F952] selection:text-[#0F172A] overflow-x-hidden relative">
 
-      {/* ── Background Grid Matrix (Subtle Architectural Lines) ──────────── */}
-      <div 
-        className="fixed inset-0 pointer-events-none opacity-[0.035] z-0"
-        style={{
-          backgroundImage: `linear-gradient(#0F172A 1px, transparent 1px), linear-gradient(90deg, #0F172A 1px, transparent 1px)`,
-          backgroundSize: '64px 64px'
-        }}
-      />
-
       {/* ── Ambient Radial Lighting Glow (Soft Radiant Wash) ──────────────── */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div 
@@ -425,14 +456,14 @@ export default function Welcome() {
 
       {/* ── Sticky Light Navigation Bar ───────────────────────────────────── */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-slate-200/80 transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Brand Logo (Light Mode) */}
           <div 
-            className="flex items-center gap-2.5 cursor-pointer shrink-0" 
+            className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer shrink-0" 
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
-            <CreatorForgeLogo size={22} showText={true} theme="light" />
+            <CreatorForgeLogo size={20} showText={true} theme="light" />
           </div>
 
           {/* Navigation Links (Desktop — Clean Essential Anchors) */}
@@ -446,6 +477,13 @@ export default function Welcome() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </a>
             <a 
+              href="#workflow" 
+              onClick={(e) => scrollToSection(e, 'workflow')} 
+              className="hover:text-slate-950 transition-colors whitespace-nowrap cursor-pointer"
+            >
+              Workflow
+            </a>
+            <a 
               href="#reviews" 
               onClick={(e) => scrollToSection(e, 'reviews')} 
               className="hover:text-slate-950 transition-colors whitespace-nowrap cursor-pointer"
@@ -453,8 +491,8 @@ export default function Welcome() {
               Reviews
             </a>
             <a 
-              href="#pipeline" 
-              onClick={(e) => scrollToSection(e, 'pipeline')} 
+              href="#steps" 
+              onClick={(e) => scrollToSection(e, 'steps')} 
               className="hover:text-slate-950 transition-colors whitespace-nowrap cursor-pointer"
             >
               How It Works
@@ -476,32 +514,32 @@ export default function Welcome() {
           </nav>
 
           {/* Header Action Button & Hamburger Menu */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 whitespace-nowrap">
-            {/* Signature Button with Top-Right Beacon (WCAG AAA contrast, >=44px touch target) */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 whitespace-nowrap">
+            {/* Signature Button with Top-Right Beacon (Responsive & Compact on Mobile) */}
             <button
               type="button"
-              onClick={(e) => e.preventDefault()}
-              className="relative inline-flex items-center gap-2 text-xs sm:text-sm font-bold px-3.5 sm:px-5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none min-h-[44px]"
+              onClick={() => { window.location.href = '/launch' }}
+              className="relative inline-flex items-center gap-1 sm:gap-2 text-[11px] sm:text-xs md:text-sm font-bold px-2.5 sm:px-4 md:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none min-h-[34px] sm:min-h-[42px]"
             >
-              <span>Apply as Co-Founder</span>
-              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+              <span><span className="hidden xs:inline">Start </span>Engagement</span>
+              <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5] shrink-0" />
               {/* Signature Top-Right Accent Beacon Dot with Ambient Halo */}
-              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 pointer-events-none items-center justify-center">
-                <span className="absolute inline-flex h-6 w-6 rounded-full bg-emerald-400/30 blur-[2px]" />
-                <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-xs" />
+              <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 flex h-3 w-3 sm:h-4 sm:w-4 pointer-events-none items-center justify-center">
+                <span className="absolute inline-flex h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-emerald-400/30 blur-[1px]" />
+                <span className="animate-ping absolute inline-flex h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-3 sm:w-3 bg-emerald-500 border-2 border-white shadow-xs" />
               </span>
             </button>
 
-            {/* Hamburger Menu Toggle Button (Prominent across all screen sizes) */}
+            {/* Hamburger Menu Toggle Button (Correctly sized, never overflows on mobile) */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 transition-all cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 transition-all cursor-pointer shrink-0 min-h-[34px] sm:min-h-[42px] min-w-[34px] sm:min-w-[42px] w-[34px] h-[34px] sm:w-[42px] sm:h-[42px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               aria-label={mobileMenuOpen ? "Close Navigation Menu" : "Open Navigation Menu"}
               title="Navigation Menu"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5 text-slate-900" /> : <Menu className="w-5 h-5 text-slate-800" />}
+              {mobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5 text-slate-900" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-slate-800" />}
             </button>
           </div>
         </div>
@@ -513,7 +551,7 @@ export default function Welcome() {
               <span>Navigation Menu</span>
               <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">50/50 Co-Founder Portal</span>
             </div>
-            <nav className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm font-semibold">
+            <nav className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm font-semibold">
               <a 
                 href="#creators" 
                 onClick={(e) => {
@@ -526,6 +564,17 @@ export default function Welcome() {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </a>
               <a 
+                href="#workflow" 
+                onClick={(e) => {
+                  scrollToSection(e, 'workflow')
+                  setMobileMenuOpen(false)
+                }}
+                className="px-4 py-3 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer flex items-center justify-between"
+              >
+                <span>14-Day Workflow</span>
+                <span className="text-xs font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Live Map</span>
+              </a>
+              <a 
                 href="#reviews" 
                 onClick={(e) => {
                   scrollToSection(e, 'reviews')
@@ -536,9 +585,9 @@ export default function Welcome() {
                 Reviews & Testimonials
               </a>
               <a 
-                href="#pipeline" 
+                href="#steps" 
                 onClick={(e) => {
-                  scrollToSection(e, 'pipeline')
+                  scrollToSection(e, 'steps')
                   setMobileMenuOpen(false)
                 }}
                 className="px-4 py-3 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer flex items-center justify-between"
@@ -575,13 +624,13 @@ export default function Welcome() {
               </p>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault()
+                onClick={() => {
                   setMobileMenuOpen(false)
+                  window.location.href = '/launch'
                 }}
-                className="relative w-full sm:w-auto px-6 py-2.5 text-center text-xs sm:text-sm font-bold text-white rounded-xl bg-[#0F172A] hover:bg-[#1E293B] min-h-[44px] flex items-center justify-center gap-2"
+                className="relative w-full sm:w-auto px-6 py-2.5 text-center text-xs sm:text-sm font-bold text-white rounded-xl bg-[#0F172A] hover:bg-[#1E293B] min-h-[44px] flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Apply as Co-Founder (50/50)</span>
+                <span>Start Engagement</span>
                 <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span className="absolute -top-1 -right-1 flex h-3 w-3 pointer-events-none items-center justify-center">
                   <span className="absolute inline-flex h-4 w-4 rounded-full bg-emerald-400/30 blur-[1px]" />
@@ -595,7 +644,7 @@ export default function Welcome() {
       </header>
 
       {/* ── HERO SECTION (S1: STRUCTURED LIKE REFERENCE DESIGN, CREATORFORGE PALETTE, LARGE 3D HERO) ── */}
-      <section className="relative w-full px-4 sm:px-6 md:px-8 lg:px-[10%] min-h-[82vh] lg:min-h-[88vh] flex flex-col justify-center py-12 sm:py-16 lg:py-20 overflow-hidden border-b border-slate-200/60">
+      <section className="relative w-full px-4 sm:px-6 md:px-8 lg:px-[10%] min-h-[82vh] lg:min-h-[88vh] flex flex-col justify-center py-8 sm:py-16 lg:py-20 overflow-hidden border-b border-slate-200/60">
         
         {/* Ambient Light Green Conic Gradient Glow Aura */}
         <div 
@@ -617,17 +666,17 @@ export default function Welcome() {
         {/* Floating Background Polygons (Image 5 Style) */}
         <FloatingPolygons variant="hero" />
 
-        {/* 2-Column Balanced 50/50 Responsive Hero Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-center w-full relative z-10">
+        {/* 2-Column Balanced 50/50 Responsive Hero Grid (Hero image above content on mobile) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-stretch w-full relative z-10">
           
-          {/* Left Column (50%): Typography & Actions with Proper Breathing Room */}
-          <div className="w-full flex flex-col items-start text-left">
+          {/* Left Column (50% on desktop, below image on mobile): Typography & Actions */}
+          <div className="w-full h-full flex flex-col justify-center items-start text-left order-2 lg:order-1">
             {/* Eyebrow Pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-xs sm:text-sm font-mono font-semibold uppercase tracking-wider text-slate-700 mb-3.5 sm:mb-4 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-slate-900 font-bold">WE BUILD YOUR APP FOR FREE</span>
-              <span className="text-slate-400">·</span>
-              <span className="text-emerald-700 font-bold">YOU KEEP 50% PROFIT</span>
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 xs:px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-mono font-semibold uppercase tracking-tight sm:tracking-wider text-slate-700 mb-3.5 sm:mb-4 shadow-2xs whitespace-nowrap max-w-full">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-slate-900 font-bold shrink-0">WE BUILD YOUR APP FOR FREE</span>
+              <span className="text-slate-400 shrink-0">·</span>
+              <span className="text-emerald-700 font-bold shrink-0">YOU KEEP 50% PROFIT</span>
             </div>
 
             {/* Headline: Perfectly Proportionate for 50/50 Layout (No Awkward 1-Word Wrapping) */}
@@ -653,15 +702,15 @@ export default function Welcome() {
               Helping creators acquire more monthly paying subscribers by turning their audience into simple, high-retention software products. $0 upfront cost, 100% managed.
             </p>
 
-            {/* Action Row: Solid Action Button + Inline Estimated Cost & Time */}
+            {/* Action Row: Start Engagement Action Button linking to /launch */}
             <div className="mt-6 sm:mt-7 flex flex-wrap items-center gap-3.5 sm:gap-4 w-full">
-              {/* Primary Signature Button with Beacon (Does nothing on click) */}
+              {/* Primary Signature Button with Beacon (Links to /launch) */}
               <button
                 type="button"
-                onClick={(e) => e.preventDefault()}
-                className="relative inline-flex items-center justify-center gap-2.5 px-6 py-3.5 sm:px-7 sm:py-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs sm:text-sm font-display font-bold shadow-[0_6px_24px_rgba(15,23,42,0.18)] hover:shadow-[0_10px_32px_rgba(15,23,42,0.28)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none min-h-[48px] shrink-0 uppercase tracking-wide"
+                onClick={() => { window.location.href = '/launch' }}
+                className="relative inline-flex items-center justify-center gap-2 sm:gap-2.5 px-5 py-3 sm:px-7 sm:py-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs sm:text-sm font-display font-bold shadow-[0_6px_24px_rgba(15,23,42,0.18)] hover:shadow-[0_10px_32px_rgba(15,23,42,0.28)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none min-h-[44px] sm:min-h-[48px] shrink-0 uppercase tracking-wide w-full sm:w-auto"
               >
-                <span>SUBMIT YOUR IDEA (50/50)</span>
+                <span>Start Engagement</span>
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                 {/* Signature Top-Right Accent Beacon Dot with Soft Halo Glow */}
                 <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 pointer-events-none items-center justify-center">
@@ -701,9 +750,9 @@ export default function Welcome() {
             </div>
           </div>
 
-          {/* Right Column (50%): Centered 3D Astronaut Rocket (Well-Proportioned & Isolated) */}
-          <div className="w-full relative flex items-center justify-center">
-            <div className="relative w-full max-w-[440px] sm:max-w-[480px] md:max-w-[520px] lg:max-w-[560px] xl:max-w-[620px] animate-float-slow select-none">
+          {/* Right Column (50% on desktop, above content on mobile): Centered 3D Astronaut Rocket */}
+          <div className="w-full h-full relative flex flex-col items-center justify-center order-1 lg:order-2 mb-2 lg:mb-0">
+            <div className="relative w-full max-w-[260px] xs:max-w-[300px] sm:max-w-[420px] md:max-w-[480px] lg:max-w-[560px] xl:max-w-[620px] animate-float-slow select-none mx-auto">
               
               {/* Transparent 3D Hero Astronaut Rocket (No background box) */}
               <img
@@ -724,10 +773,10 @@ export default function Welcome() {
                 <span className="text-[10px] font-mono text-slate-700 font-semibold block mt-0.5">Automated 50/50 Stripe Split</span>
               </div>
 
-              {/* Floating Live Telemetry Badge 2: Bottom Right */}
-              <div className="absolute -bottom-2 right-0 sm:right-4 p-2.5 sm:p-3 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl text-right hidden sm:block animate-float-reverse z-20">
-                <div className="flex items-center justify-end gap-2 text-[10px] font-mono text-slate-500 mb-0.5">
-                  <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+              {/* Floating Live Telemetry Badge 2: Bottom Left on Desktop */}
+              <div className="absolute -bottom-2 sm:-bottom-4 left-0 sm:left-2 lg:-left-6 p-2.5 sm:p-3 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl text-left hidden sm:block animate-float-reverse z-20">
+                <div className="flex items-center justify-start gap-2 text-[10px] font-mono text-slate-500 mb-0.5">
+                  <CreditCard className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span className="font-bold">STRIPE PAYOUT DEPOSITED</span>
                 </div>
                 <div className="text-base sm:text-lg font-display font-black text-slate-950 font-mono">
@@ -760,8 +809,7 @@ export default function Welcome() {
           <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
             {CREATOR_PARTNERS.map((creator, idx) => {
               const isPrimary = idx === activeCreatorIndex
-              const isSecondary = isDesktopCarousel && idx === activeCreatorIndex + 1
-              const isSelected = isPrimary || isSecondary
+              const isSecondary = isDesktop && idx === activeCreatorIndex + 1
 
               return (
                 <button
@@ -793,7 +841,7 @@ export default function Welcome() {
           </div>
         </div>
 
-        {/* ── Left-Aligned Carousel Container (2 Active + 1/2 Blurred) ── */}
+        {/* ── Creators Focus Carousel (2 Cards + 1/2 Blur Desktop, 1 Card + 1/2 Blur Tablet, 1 Full Card Mobile) ── */}
         <div 
           ref={carouselContainerRef}
           onMouseEnter={() => setIsCarouselHovered(true)}
@@ -802,18 +850,18 @@ export default function Welcome() {
           onTouchEnd={handleTouchEnd}
           className="relative w-full overflow-hidden py-1 select-none"
         >
-          {/* Subtle side edge fade mask on right edge */}
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 sm:w-16 z-20 bg-gradient-to-l from-white/90 to-transparent hidden md:block" />
+          {/* Subtle side edge fade mask on right edge (desktop & tablet only) */}
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 sm:w-16 z-20 bg-gradient-to-l from-white/90 to-transparent hidden sm:block" />
 
           {/* Slider Track */}
           {(() => {
-            const cardGap = 20
+            const cardGap = isMobile ? 16 : 20
             const cardWidth = carouselWidth > 0 
-              ? (carouselWidth >= 1024 
+              ? (isDesktop 
                   ? Math.floor((carouselWidth - cardGap * 2) / 2.5)
-                  : carouselWidth >= 640 
-                    ? Math.floor((carouselWidth - cardGap) / 2.35)
-                    : Math.min(Math.floor(carouselWidth * 0.8), 340))
+                  : isTablet 
+                    ? Math.floor((carouselWidth - cardGap) / 1.5)
+                    : carouselWidth)
               : 440
 
             const trackTranslateX = -(activeCreatorIndex * (cardWidth + cardGap))
@@ -828,34 +876,39 @@ export default function Welcome() {
                 }}
               >
                 {CREATOR_PARTNERS.map((creator, index) => {
-                  const isActive = isDesktopCarousel 
+                  const isActive = isDesktop 
                     ? (index === activeCreatorIndex || index === activeCreatorIndex + 1)
                     : (index === activeCreatorIndex)
+
+                  const cardBlur = isMobile ? 'none' : (isActive ? 'blur(0px)' : 'blur(5px)')
+                  const cardOpacity = isMobile ? 1 : (isActive ? 1 : 0.45)
+                  const cardScale = isMobile ? 'scale(1)' : (isActive ? 'scale(1)' : 'scale(0.96)')
 
                   return (
                     <div
                       key={creator.id}
                       onClick={() => {
-                        if (!isActive) {
+                        if (!isActive && !isMobile) {
                           setActiveCreatorIndex(Math.min(index, maxCreatorIndex))
                         }
                       }}
                       style={{
                         width: `${cardWidth}px`,
+                        minWidth: `${cardWidth}px`,
                         flexShrink: 0,
-                        filter: isActive ? 'blur(0px)' : 'blur(5px)',
-                        opacity: isActive ? 1 : 0.45,
-                        transform: isActive ? 'scale(1)' : 'scale(0.96)',
+                        filter: cardBlur,
+                        opacity: cardOpacity,
+                        transform: cardScale,
                         transition: 'filter 600ms cubic-bezier(0.16, 1, 0.3, 1), opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), transform 600ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 600ms cubic-bezier(0.16, 1, 0.3, 1), border-color 600ms ease'
                       }}
-                      className={`rounded-2xl sm:rounded-3xl bg-white border flex flex-col justify-between overflow-hidden relative text-left p-4 sm:p-5 transition-all ${
-                        isActive 
+                      className={`rounded-2xl sm:rounded-3xl bg-white border flex flex-col justify-between overflow-hidden relative text-left p-3.5 sm:p-5 transition-all ${
+                        isActive || isMobile
                           ? 'border-slate-300 ring-2 ring-slate-900/10 shadow-[0_15px_35px_-10px_rgba(15,23,42,0.08)] cursor-default' 
                           : 'border-slate-200 hover:border-slate-300 hover:opacity-75 shadow-xs cursor-pointer'
                       }`}
                     >
-                      {/* Inactive overlay tooltip hint */}
-                      {!isActive && (
+                      {/* Inactive overlay tooltip hint (desktop & tablet only) */}
+                      {!isActive && !isMobile && (
                         <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-900/5 hover:bg-slate-900/10 transition-colors">
                           <span className="px-3 py-1 rounded-full bg-slate-950/85 backdrop-blur-md text-white text-[10px] font-mono font-bold shadow-md">
                             Click to Focus · {creator.name.split(' ')[0]}
@@ -863,29 +916,29 @@ export default function Welcome() {
                         </div>
                       )}
 
-                      <div className="space-y-3.5">
+                      <div className="space-y-2.5 sm:space-y-3.5">
                         {/* Top Creator Header */}
-                        <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
-                          <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex items-start justify-between gap-2.5 pb-2.5 sm:pb-3 border-b border-slate-100">
+                          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                             <div className="relative shrink-0">
                               <img
                                 src={creator.avatar}
                                 alt={creator.name}
-                                className="w-11 h-11 rounded-2xl object-cover border border-slate-200 shadow-2xs"
+                                className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl object-cover border border-slate-200 shadow-2xs"
                               />
                               <span 
-                                className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" 
+                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-white" 
                                 title="Active Venture Co-Founder" 
                               />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1">
-                                <h3 className="font-display font-bold text-base text-slate-950 truncate">
+                                <h3 className="font-display font-bold text-sm sm:text-base text-slate-950 truncate">
                                   {creator.name}
                                 </h3>
-                                <CheckCircle2 className="w-4 h-4 text-sky-500 fill-sky-100 shrink-0" />
+                                <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-500 fill-sky-100 shrink-0" />
                               </div>
-                              <div className="flex items-center gap-1.5 text-xs font-mono text-slate-500 truncate mt-0.5">
+                              <div className="flex items-center gap-1 text-[11px] sm:text-xs font-mono text-slate-500 truncate mt-0.5">
                                 <span className="font-semibold text-slate-700">{creator.handle}</span>
                                 <span>·</span>
                                 <span className="text-slate-900 font-bold">{creator.subscribers.split(' ')[0]}</span>
@@ -894,52 +947,52 @@ export default function Welcome() {
                           </div>
 
                           <div className="text-right shrink-0">
-                            <span className="text-xs font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold inline-block">
+                            <span className="text-[11px] sm:text-xs font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 sm:px-2.5 py-0.5 rounded-full font-bold inline-block">
                               {creator.mrr}
                             </span>
-                            <span className="text-[10px] font-mono text-slate-500 block mt-0.5">
+                            <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 block mt-0.5">
                               50/50 Split
                             </span>
                           </div>
                         </div>
 
                         {/* Co-Founded Product Showcase (Clean & Readable) */}
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
-                          <div className="flex items-center justify-between text-[11px] font-mono">
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs truncate max-w-[170px]">
+                        <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1 sm:space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono">
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs truncate max-w-[130px] sm:max-w-[170px]">
                               <Lock className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
                               <span className="truncate">{creator.domain}</span>
                             </div>
-                            <span className="text-[10px] font-mono text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded uppercase shrink-0">
+                            <span className="text-[9px] sm:text-[10px] font-mono text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded uppercase shrink-0">
                               LIVE APP
                             </span>
                           </div>
 
                           <div className="pt-0.5">
-                            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">
+                            <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 uppercase tracking-wider block">
                               {creator.category}
                             </span>
-                            <h4 className="font-display font-extrabold text-lg sm:text-xl text-slate-950 tracking-tight">
+                            <h4 className="font-display font-extrabold text-base sm:text-xl text-slate-950 tracking-tight">
                               {creator.saasProduct}
                             </h4>
                           </div>
 
-                          <p className="text-xs sm:text-sm text-slate-800 font-medium leading-snug">
+                          <p className="text-xs sm:text-sm text-slate-800 font-medium leading-snug line-clamp-1 sm:line-clamp-none">
                             {creator.headline}
                           </p>
-                          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                          <p className="text-[11px] sm:text-sm text-slate-600 leading-relaxed line-clamp-2 sm:line-clamp-none">
                             {creator.description}
                           </p>
                         </div>
 
-                        {/* Feature / Spec Previews */}
-                        <div className="grid grid-cols-2 gap-2 text-left pt-0.5">
+                        {/* Feature / Spec Previews (2 features on mobile for compactness, 4 on desktop & tablet) */}
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 text-left pt-0.5">
                           {creator.demoFeatures.slice(0, 4).map((feat, fIdx) => (
                             <div 
                               key={fIdx} 
-                              className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs hover:border-slate-300 transition-colors"
+                              className={`p-2 sm:p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs hover:border-slate-300 transition-colors ${fIdx >= 2 ? 'hidden sm:block' : ''}`}
                             >
-                              <div className="flex items-center justify-between gap-1 text-[10px] font-mono">
+                              <div className="flex items-center justify-between gap-1 text-[9px] sm:text-[10px] font-mono">
                                 <span className="text-slate-500 truncate">
                                   {feat.role}
                                 </span>
@@ -947,10 +1000,10 @@ export default function Welcome() {
                                   {feat.rating.split(' ')[0]}
                                 </span>
                               </div>
-                              <span className="text-xs font-display font-bold text-slate-950 block truncate mt-0.5">
+                              <span className="text-[11px] sm:text-xs font-display font-bold text-slate-950 block truncate mt-0.5">
                                 {feat.name}
                               </span>
-                              <span className="text-xs font-mono text-slate-600 block truncate">
+                              <span className="text-[10px] sm:text-xs font-mono text-slate-600 block truncate">
                                 {feat.price}
                               </span>
                             </div>
@@ -958,33 +1011,33 @@ export default function Welcome() {
                         </div>
 
                         {/* Traction Metrics Pills */}
-                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        <div className="flex flex-wrap gap-1 sm:gap-1.5 pt-0.5">
                           {creator.tags.slice(0, 3).map((tag, idx) => (
-                            <span key={idx} className="text-xs font-mono px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700">
+                            <span key={idx} className="text-[10px] sm:text-xs font-mono px-2 sm:px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700">
                               {tag}
                             </span>
                           ))}
                         </div>
                       </div>
 
-                      {/* Footer Actions (Featuring the Beacon Button with Halo) */}
-                      <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center gap-2">
+                      {/* Footer Actions (Compact & Responsive on Mobile) */}
+                      <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3.5 border-t border-slate-100 flex items-center gap-1.5 sm:gap-2">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation()
                             openDemoForCreator(creator.id)
                           }}
-                          className="relative flex-1 py-2.5 px-3.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs sm:text-sm font-bold transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer group select-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                          className="relative flex-1 py-2 px-2.5 sm:py-2.5 sm:px-3.5 rounded-lg sm:rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-[11px] sm:text-xs md:text-sm font-bold transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer group select-none min-h-[36px] sm:min-h-[42px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 whitespace-nowrap"
                         >
-                          <Play className="w-3.5 h-3.5 fill-current" />
-                          <span>Interactive Demo</span>
-                          <ArrowRight className="w-3 h-3 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                          <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current shrink-0" />
+                          <span className="truncate">Interactive Demo</span>
+                          <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0 hidden xs:inline-block" />
                           {/* Top-Right Accent Beacon Dot with Ambient Halo */}
-                          <span className="absolute -top-1 -right-1 flex h-3 w-3 pointer-events-none items-center justify-center">
-                            <span className="absolute inline-flex h-4 w-4 rounded-full bg-emerald-400/30 blur-[1px]" />
-                            <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 opacity-60" />
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-white" />
+                          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 sm:h-3 sm:w-3 pointer-events-none items-center justify-center">
+                            <span className="absolute inline-flex h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-full bg-emerald-400/30 blur-[1px]" />
+                            <span className="animate-ping absolute inline-flex h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-emerald-400 opacity-60" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-emerald-500 border border-white" />
                           </span>
                         </button>
                         <button
@@ -992,9 +1045,9 @@ export default function Welcome() {
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            scrollToSection(e, 'pipeline')
+                            scrollToSection(e, 'steps')
                           }}
-                          className="py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap active:scale-95 min-h-[44px]"
+                          className="py-2 px-2.5 sm:py-2.5 sm:px-3 rounded-lg sm:rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[11px] sm:text-xs md:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap active:scale-95 min-h-[36px] sm:min-h-[42px] shrink-0"
                         >
                           50/50 Terms
                         </button>
@@ -1048,7 +1101,7 @@ export default function Welcome() {
 
           {/* Next Creator Preview Pill */}
           {(() => {
-            const nextIdx = (activeCreatorIndex + (isDesktopCarousel ? 2 : 1)) % CREATOR_PARTNERS.length
+            const nextIdx = (activeCreatorIndex + (isDesktop ? 2 : 1)) % CREATOR_PARTNERS.length
             const nextCreator = CREATOR_PARTNERS[nextIdx]
             return (
               <button
@@ -1068,6 +1121,321 @@ export default function Welcome() {
             )
           })()}
         </div>
+      </section>
+
+      {/* ── THE 14-DAY WORKFLOW ROUTE MAP (ANIMATED S-CURVE WITH SHIPPED & LIVE CANVAS) ── */}
+      <section id="workflow" className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-slate-200/80 scroll-mt-20">
+        <div id="pipeline" className="sr-only" aria-hidden="true" />
+        <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-8">
+          <span className="text-xs sm:text-sm font-mono uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full font-bold inline-block">
+            HOW THE PARTNERSHIP WORKS
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-display font-black text-slate-950 mt-2.5 tracking-tight leading-[1.15]">
+            From fan comments to a live app in 14 days
+          </h2>
+          <p className="mt-2.5 text-base sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed sm:leading-8 font-normal">
+            We handle all the coding, design, and 24/7 server maintenance. You approve each step before we move forward, and we split the profits 50/50.
+          </p>
+          <div className="mt-3.5 inline-flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm font-mono text-slate-600 bg-slate-50 border border-slate-200 px-4 py-1.5 rounded-full">
+            <span className="font-bold text-slate-900">3 simple steps</span>
+            <span>·</span>
+            <span className="font-bold text-slate-900">14-day build</span>
+            <span>·</span>
+            <span className="font-bold text-slate-900">50/50 profit split</span>
+            <span>·</span>
+            <span className="text-emerald-700 font-semibold">you approve every step</span>
+          </div>
+        </div>
+
+        {/* ── DESKTOP CONTINUOUS SERPENTINE S-CURVE ROUTE (ANIMATED ENERGY FLOW & CANVAS CELEBRATION) ── */}
+        <div className="hidden lg:block relative p-6 sm:p-10 rounded-3xl bg-white border border-slate-200/90 shadow-sm overflow-hidden group select-none">
+          
+          {/* Celebratory Canvas Particle Explosion dynamically anchored to #shippedLiveBadge */}
+          <ShippedLiveCanvas
+            cycleDuration={6000}
+            originXPercent={0.77}
+            originYPercent={0.82}
+          />
+
+          <svg className="w-full h-auto relative z-10" viewBox="0 0 1040 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* SVG Definitions for Glow Effects */}
+            <defs>
+              <filter id="glowGreen" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            {/* Hidden Master S-Curve Path for Continuous Particle Tracer */}
+            <path
+              id="scurveMasterRoute"
+              d="M 65 85 L 860 85 A 85 85 0 0 1 860 255 L 160 255 A 85 85 0 0 0 160 425 L 800 425"
+              fill="none"
+              stroke="transparent"
+            />
+
+            {/* ── PHASE 1, 2, 3 HEADER LABELS (Clean pill tags) ─────────── */}
+            <g transform="translate(85, 24)">
+              <rect x="0" y="0" width="180" height="26" rx="13" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1" />
+              <text x="90" y="17" fill="#B45309" fontFamily="ui-monospace, monospace" fontSize="10.5" fontWeight="700" letterSpacing="0.08em" textAnchor="middle">
+                1 · FIND WHAT FANS WANT
+              </text>
+            </g>
+
+            <g transform="translate(670, 194)">
+              <rect x="0" y="0" width="224" height="26" rx="13" fill="#CCFBF1" stroke="#99F6E4" strokeWidth="1" />
+              <text x="112" y="17" fill="#0F766E" fontFamily="ui-monospace, monospace" fontSize="10.5" fontWeight="700" letterSpacing="0.08em" textAnchor="middle">
+                2 · WE BUILD IT IN 14 DAYS
+              </text>
+            </g>
+
+            <g transform="translate(175, 364)">
+              <rect x="0" y="0" width="224" height="26" rx="13" fill="#EDE9FE" stroke="#DDD6FE" strokeWidth="1" />
+              <text x="112" y="17" fill="#6D28D9" fontFamily="ui-monospace, monospace" fontSize="10.5" fontWeight="700" letterSpacing="0.08em" textAnchor="middle">
+                3 · LAUNCH & SPLIT PROFITS
+              </text>
+            </g>
+
+            {/* ── CONTINUOUS S-CURVE BASE ROUTE PATHS ── */}
+            {/* Row 1: Line 1 (Amber, Left-to-Right) */}
+            <line x1="65" y1="85" x2="860" y2="85" stroke="#D9A441" strokeWidth="6" strokeLinecap="round" />
+
+            {/* Turn 1: Right 180° Downward Arc into Row 2 (Teal) */}
+            <path d="M 860 85 A 85 85 0 0 1 860 255" stroke="#17A79B" strokeWidth="6" strokeLinecap="round" fill="none" />
+
+            {/* Row 2: Line 2 (Teal, Right-to-Left) */}
+            <line x1="860" y1="255" x2="160" y2="255" stroke="#17A79B" strokeWidth="6" strokeLinecap="round" />
+
+            {/* Turn 2: Left 180° Downward Arc into Row 3 (Purple) */}
+            <path d="M 160 255 A 85 85 0 0 0 160 425" stroke="#6E61AA" strokeWidth="6" strokeLinecap="round" fill="none" />
+
+            {/* Row 3: Line 3 (Purple, Left-to-Right) */}
+            <line x1="160" y1="425" x2="800" y2="425" stroke="#6E61AA" strokeWidth="6" strokeLinecap="round" />
+
+            {/* ── ANIMATED ENERGY DASH OVERLAY (Continuous Electric Flow) ── */}
+            <path
+              d="M 65 85 L 860 85 A 85 85 0 0 1 860 255 L 160 255 A 85 85 0 0 0 160 425 L 800 425"
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              className="animate-path-dash opacity-70 pointer-events-none"
+            />
+
+            {/* ── CONTINUOUS TRAVELING PARTICLE ENERGY BEAM (Full Circuit into ★ SHIPPED & LIVE) ── */}
+            <circle r="7.5" fill="#10B981" filter="url(#glowGreen)" opacity="0.95">
+              <animateMotion
+                dur="6s"
+                repeatCount="indefinite"
+                path="M 65 85 L 860 85 A 85 85 0 0 1 860 255 L 160 255 A 85 85 0 0 0 160 425 L 800 425"
+              />
+            </circle>
+
+            {/* ── STOP NODES & TEXT LABELS (Simple Non-Tech Language) ─────────────── */}
+            {/* START Badge */}
+            <rect x="25" y="68" width="68" height="34" rx="17" fill="#0F172A" />
+            <text x="59" y="89" fill="#FFFFFF" fontFamily="ui-monospace, monospace" fontSize="11" fontWeight="700" textAnchor="middle">
+              START
+            </text>
+
+            {/* Stop 1 */}
+            <circle cx="210" cy="85" r="13" fill="#FFFFFF" stroke="#D9A441" strokeWidth="4" />
+            <circle cx="210" cy="85" r="5" fill="#D9A441" />
+            <text x="210" y="120" fill="#0F172A" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="12" fontWeight="700" textAnchor="middle">
+              Read comments
+            </text>
+            <text x="210" y="136" fill="#64748B" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="11" textAnchor="middle">
+              We find what fans ask for
+            </text>
+
+            {/* Stop 2 */}
+            <circle cx="390" cy="85" r="13" fill="#FFFFFF" stroke="#D9A441" strokeWidth="4" />
+            <circle cx="390" cy="85" r="5" fill="#D9A441" />
+            <text x="390" y="120" fill="#0F172A" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="12" fontWeight="700" textAnchor="middle">
+              App idea selected
+            </text>
+            <text x="390" y="136" fill="#64748B" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="11" textAnchor="middle">
+              Group repeat questions
+            </text>
+
+            {/* Stop 3 */}
+            <circle cx="570" cy="85" r="13" fill="#FFFFFF" stroke="#D9A441" strokeWidth="4" />
+            <circle cx="570" cy="85" r="5" fill="#D9A441" />
+            <text x="570" y="120" fill="#0F172A" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="12" fontWeight="700" textAnchor="middle">
+              Pick fair price
+            </text>
+            <text x="570" y="136" fill="#64748B" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="11" textAnchor="middle">
+              $29 or $49/mo plans
+            </text>
+
+            {/* ── MILESTONE CHECKPOINT PILL 1 (Directly aligned and inline in the wire) ── */}
+            <g transform="translate(745, 85)">
+              <rect x="-75" y="-17" width="150" height="34" rx="17" fill="#10B981" stroke="#FFFFFF" strokeWidth="3" />
+              <text x="0" y="5" fill="#FFFFFF" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="11" fontWeight="800" letterSpacing="0.04em" textAnchor="middle">
+                YOU APPROVE IDEA ✓
+              </text>
+            </g>
+
+            {/* Stop 4 (Row 2, First after approval) */}
+            <circle cx="680" cy="255" r="13" fill="#FFFFFF" stroke="#17A79B" strokeWidth="4" />
+            <circle cx="680" cy="255" r="5" fill="#17A79B" />
+            <text x="680" y="290" fill="#0F172A" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="12" fontWeight="700" textAnchor="middle">
+              Design the screens
+            </text>
+            <text x="680" y="306" fill="#64748B" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="11" textAnchor="middle">
+              Easy for your fans to use
+            </text>
+
+            {/* Stop 5 */}
+            <circle cx="470" cy="255" r="13" fill="#FFFFFF" stroke="#17A79B" strokeWidth="4" />
+            <circle cx="470" cy="255" r="5" fill="#17A79B" />
+            <text x="470" y="290" fill="#0F172A" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="12" fontWeight="700" textAnchor="middle">
+              We build & code
+            </text>
+            <text x="470" y="306" fill="#64748B" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="11" textAnchor="middle">
+              Our dev team writes all code
+            </text>
+
+            {/* ── MILESTONE CHECKPOINT PILL 2 (Directly aligned and inline in the wire) ── */}
+            <g transform="translate(260, 255)">
+              <rect x="-79" y="-17" width="158" height="34" rx="17" fill="#10B981" stroke="#FFFFFF" strokeWidth="3" />
+              <text x="0" y="5" fill="#FFFFFF" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="11" fontWeight="800" letterSpacing="0.04em" textAnchor="middle">
+                YOU TEST & APPROVE ✓
+              </text>
+            </g>
+
+            {/* Stop 6 */}
+            <circle cx="350" cy="425" r="13" fill="#FFFFFF" stroke="#6E61AA" strokeWidth="4" />
+            <circle cx="350" cy="425" r="5" fill="#6E61AA" />
+            <text x="350" y="460" fill="#0F172A" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="12" fontWeight="700" textAnchor="middle">
+              You post link
+            </text>
+            <text x="350" y="476" fill="#64748B" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="11" textAnchor="middle">
+              Share in your videos & bio
+            </text>
+
+            {/* Stop 7 */}
+            <circle cx="570" cy="425" r="13" fill="#FFFFFF" stroke="#6E61AA" strokeWidth="4" />
+            <circle cx="570" cy="425" r="5" fill="#6E61AA" />
+            <text x="570" y="460" fill="#0F172A" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="12" fontWeight="700" textAnchor="middle">
+              Auto Stripe split
+            </text>
+            <text x="570" y="476" fill="#64748B" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="11" textAnchor="middle">
+              50% directly to your bank
+            </text>
+
+            {/* Synchronized Pulse Halo at Arrival Point */}
+            <circle cx="800" cy="425" r="20" fill="#10B981" opacity="0">
+              <animate
+                attributeName="r"
+                values="14;48;14"
+                dur="6s"
+                keyTimes="0;0.08;1"
+                begin="5.95s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                values="0.8;0;0"
+                dur="6s"
+                keyTimes="0;0.08;1"
+                begin="5.95s"
+                repeatCount="indefinite"
+              />
+            </circle>
+
+            {/* Final Target Node: ★ SHIPPED & LIVE Badge (Direct anchor for ShippedLiveCanvas) */}
+            <g id="shippedLiveBadge" transform="translate(715, 405)">
+              <rect id="shippedLiveRect" x="0" y="0" width="170" height="40" rx="20" fill="#0F172A" stroke="#1E293B" strokeWidth="2" />
+              <text x="85" y="25" fill="#FFFFFF" fontFamily="ui-monospace, monospace" fontSize="11.5" fontWeight="800" letterSpacing="0.04em" textAnchor="middle">
+                ★ SHIPPED & LIVE
+              </text>
+            </g>
+          </svg>
+        </div>
+
+        {/* ── MOBILE CARD SUMMARY (Clean, 3-Card Stack for Small Screens) ── */}
+        <div className="lg:hidden space-y-4 text-left">
+          {/* Phase 1 */}
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <span className="text-xs font-mono font-bold uppercase text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200">
+              1 · FIND WHAT FANS WANT
+            </span>
+            <div className="space-y-2 text-xs sm:text-sm">
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#D9A441] mt-1.5 shrink-0" />
+                <div><b className="text-slate-900">What fans ask for:</b> <span className="text-slate-600">Read comments & repeat questions</span></div>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#D9A441] mt-1.5 shrink-0" />
+                <div><b className="text-slate-900">Spot popular requests:</b> <span className="text-slate-600">Group repeat questions into one app</span></div>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#D9A441] mt-1.5 shrink-0" />
+                <div><b className="text-slate-900">Set fair price:</b> <span className="text-slate-600">Pick simple $29–$49/mo subscription plans</span></div>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs font-bold text-slate-900">
+              <span>YOU APPROVE THE APP IDEA</span>
+              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[11px]">✓</span>
+            </div>
+          </div>
+
+          {/* Phase 2 */}
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <span className="text-xs font-mono font-bold uppercase text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
+              2 · WE BUILD IT IN 14 DAYS
+            </span>
+            <div className="space-y-2 text-xs sm:text-sm">
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#17A79B] mt-1.5 shrink-0" />
+                <div><b className="text-slate-900">Design the app:</b> <span className="text-slate-600">Simple screens and easy login for fans</span></div>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#17A79B] mt-1.5 shrink-0" />
+                <div><b className="text-slate-900">We code everything:</b> <span className="text-slate-600">Our team builds the complete web app</span></div>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs font-bold text-slate-900">
+              <span>YOU TEST & APPROVE THE APP</span>
+              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[11px]">✓</span>
+            </div>
+          </div>
+
+          {/* Phase 3 */}
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <span className="text-xs font-mono font-bold uppercase text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded border border-purple-200">
+              3 · LAUNCH & SPLIT PROFITS
+            </span>
+            <div className="space-y-2 text-xs sm:text-sm">
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#6E61AA] mt-1.5 shrink-0" />
+                <div><b className="text-slate-900">Share with fans:</b> <span className="text-slate-600">Put your app link in your videos</span></div>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#6E61AA] mt-1.5 shrink-0" />
+                <div><b className="text-slate-900">50/50 profit split:</b> <span className="text-slate-600">Half of every dollar goes to your bank</span></div>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#6E61AA] mt-1.5 shrink-0" />
+                <div><b className="text-slate-900">24/7 care & updates:</b> <span className="text-slate-600">We fix bugs and keep servers fast</span></div>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-900 text-white flex items-center justify-between text-xs font-mono font-bold">
+              <span>★ SHIPPED & LIVE</span>
+              <span className="text-emerald-400">$32,400/MO</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Support Tools Footer Pill */}
+        <p className="mt-8 text-center text-xs font-mono text-slate-500">
+          <span className="font-bold text-slate-700">Studio tools included:</span> Comment Reader · Fair Price Finder · App Builder · Stripe Auto-Split · 24/7 Server Shield
+        </p>
+
       </section>
 
       {/* ── VERIFIED REVIEWS & TESTIMONIALS (CURVED PINNED DECK WITH DASHED TRAJECTORY) ── */}
@@ -1241,332 +1609,6 @@ export default function Welcome() {
           </div>
 
         </div>
-      </section>
-
-      {/* ── THE PIPELINE ROUTE MAP (DANNY POSTMA S-CURVE PATTERN WITH SHIPPED & LIVE CANVAS) ── */}
-      <section id="pipeline" className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-slate-200/80">
-        <div className="text-center max-w-3xl mx-auto mb-4 sm:mb-6">
-          <span className="text-xs sm:text-sm font-mono uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full font-bold inline-block">
-            HOW THE PARTNERSHIP WORKS
-          </span>
-          <h2 className="text-3xl sm:text-5xl font-display font-black text-slate-950 mt-2.5 tracking-tight leading-[1.15]">
-            From fan comments to a live app in 14 days
-          </h2>
-          <p className="mt-2.5 text-base sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed sm:leading-8 font-normal">
-            We handle all the coding, design, and 24/7 server maintenance. You approve each step before we move forward, and we split the profits 50/50.
-          </p>
-          <div className="mt-3.5 inline-flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm font-mono text-slate-600 bg-slate-50 border border-slate-200 px-4 py-1.5 rounded-full">
-            <span className="font-bold text-slate-900">3 simple steps</span>
-            <span>·</span>
-            <span className="font-bold text-slate-900">14-day build</span>
-            <span>·</span>
-            <span className="font-bold text-slate-900">50/50 profit split</span>
-            <span>·</span>
-            <span className="text-emerald-700 font-semibold">you approve every step</span>
-          </div>
-        </div>
-
-        {/* ── DESKTOP CONTINUOUS SERPENTINE S-CURVE ROUTE (ANIMATED ENERGY FLOW & CANVAS CELEBRATION) ── */}
-        <div className="hidden lg:block relative p-6 sm:p-10 rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden group select-none">
-          
-          {/* Subtle Background Polygons in Pipeline */}
-          <FloatingPolygons variant="section" />
-
-          {/* Celebratory Canvas Particle Explosion when energy reaches ★ SHIPPED & LIVE */}
-          <ShippedLiveCanvas
-            cycleDuration={6500}
-            originXPercent={0.888}
-            originYPercent={0.830}
-          />
-
-          <svg className="w-full h-auto relative z-10" viewBox="0 0 1000 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* SVG Definitions for Glow Effects */}
-            <defs>
-              <filter id="glowGreen" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* Hidden Master S-Curve Path for Continuous Particle Tracer */}
-            <path
-              id="scurveMasterRoute"
-              d="M 90 79 L 850 79 A 84 84 0 0 1 850 247 L 160 247 A 84 84 0 0 0 160 415 L 810 415"
-              fill="none"
-              stroke="transparent"
-            />
-
-            {/* ── PHASE 1, 2, 3 HEADER LABELS (Background Layer) ─────────── */}
-            <text x="140" y="44" fill="#D9A441" fontFamily="ui-monospace, monospace" fontSize="12" fontWeight="700" letterSpacing="0.1em">
-              1 · FIND WHAT FANS WANT
-            </text>
-            <text x="740" y="214" fill="#17A79B" fontFamily="ui-monospace, monospace" fontSize="12" fontWeight="700" letterSpacing="0.1em" textAnchor="middle">
-              2 · WE BUILD IT IN 14 DAYS
-            </text>
-            <text x="210" y="380" fill="#6E61AA" fontFamily="ui-monospace, monospace" fontSize="12" fontWeight="700" letterSpacing="0.1em">
-              3 · LAUNCH & SPLIT PROFITS
-            </text>
-
-            {/* ── CONTINUOUS S-CURVE BASE ROUTE PATHS ── */}
-            {/* Row 1: Line 1 (Amber, Left-to-Right) */}
-            <line x1="90" y1="79" x2="850" y2="79" stroke="#D9A441" strokeWidth="6" strokeLinecap="round" />
-
-            {/* Turn 1: Right 180° Downward Arc into Row 2 (Teal) */}
-            <path d="M 850 79 A 84 84 0 0 1 850 247" stroke="#17A79B" strokeWidth="6" strokeLinecap="round" fill="none" />
-
-            {/* Row 2: Line 2 (Teal, Right-to-Left) */}
-            <line x1="850" y1="247" x2="160" y2="247" stroke="#17A79B" strokeWidth="6" strokeLinecap="round" />
-
-            {/* Turn 2: Left 180° Downward Arc into Row 3 (Purple) */}
-            <path d="M 160 247 A 84 84 0 0 0 160 415" stroke="#6E61AA" strokeWidth="6" strokeLinecap="round" fill="none" />
-
-            {/* Row 3: Line 3 (Purple, Left-to-Right) */}
-            <line x1="160" y1="415" x2="810" y2="415" stroke="#6E61AA" strokeWidth="6" strokeLinecap="round" />
-
-            {/* ── ANIMATED ENERGY DASH OVERLAY (Continuous Electric Flow) ── */}
-            <path
-              d="M 90 79 L 850 79 A 84 84 0 0 1 850 247 L 160 247 A 84 84 0 0 0 160 415 L 810 415"
-              fill="none"
-              stroke="#FFFFFF"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-              className="animate-path-dash opacity-70 pointer-events-none"
-            />
-
-            {/* ── CONTINUOUS TRAVELING PARTICLE ENERGY BEAM (Full Circuit into ★ SHIPPED & LIVE) ── */}
-            <circle r="8" fill="#10B981" filter="url(#glowGreen)" opacity="0.95">
-              <animateMotion
-                dur="6.5s"
-                repeatCount="indefinite"
-                path="M 90 79 L 850 79 A 84 84 0 0 1 850 247 L 160 247 A 84 84 0 0 0 160 415 L 810 415"
-              />
-            </circle>
-
-            {/* Secondary High-Speed Particle */}
-            <circle r="4.5" fill="#A3E635" opacity="0.9">
-              <animateMotion
-                dur="6.5s"
-                begin="-3.25s"
-                repeatCount="indefinite"
-                path="M 90 79 L 850 79 A 84 84 0 0 1 850 247 L 160 247 A 84 84 0 0 0 160 415 L 810 415"
-              />
-            </circle>
-
-            {/* ── STOP NODES & TEXT LABELS (Simple Non-Tech Language) ─────────────── */}
-            {/* START Badge */}
-            <rect x="24" y="62" width="68" height="34" rx="17" fill="#0F172A" />
-            <text x="58" y="83" fill="#FFFFFF" fontFamily="ui-monospace, monospace" fontSize="11" fontWeight="800" textAnchor="middle">
-              START
-            </text>
-
-            {/* Row 1 Stop 1: What fans ask for */}
-            <circle cx="230" cy="79" r="8" fill="#0F172A" stroke="#FFFFFF" strokeWidth="3" />
-            <text x="230" y="112" fill="#0F172A" fontFamily="system-ui, sans-serif" fontSize="13" fontWeight="700" textAnchor="middle">
-              What fans ask for
-            </text>
-            <text x="230" y="130" fill="#64748B" fontFamily="system-ui, sans-serif" fontSize="11" textAnchor="middle">
-              Read comments & repeat questions
-            </text>
-
-            {/* Row 1 Stop 2: Spot popular requests */}
-            <circle cx="450" cy="79" r="8" fill="#0F172A" stroke="#FFFFFF" strokeWidth="3" />
-            <text x="450" y="112" fill="#0F172A" fontFamily="system-ui, sans-serif" fontSize="13" fontWeight="700" textAnchor="middle">
-              Spot popular requests
-            </text>
-            <text x="450" y="130" fill="#64748B" fontFamily="system-ui, sans-serif" fontSize="11" textAnchor="middle">
-              Group fan requests into one app idea
-            </text>
-
-            {/* Row 1 Stop 3: Set monthly price */}
-            <circle cx="660" cy="79" r="8" fill="#0F172A" stroke="#FFFFFF" strokeWidth="3" />
-            <text x="660" y="112" fill="#0F172A" fontFamily="system-ui, sans-serif" fontSize="13" fontWeight="700" textAnchor="middle">
-              Set monthly price
-            </text>
-            <text x="660" y="130" fill="#64748B" fontFamily="system-ui, sans-serif" fontSize="11" textAnchor="middle">
-              Pick simple –/mo plans fans love
-            </text>
-
-            {/* Row 2 Stop 1: Design the app */}
-            <circle cx="650" cy="247" r="8" fill="#0F172A" stroke="#FFFFFF" strokeWidth="3" />
-            <text x="650" y="280" fill="#0F172A" fontFamily="system-ui, sans-serif" fontSize="13" fontWeight="700" textAnchor="middle">
-              Design the app
-            </text>
-            <text x="650" y="298" fill="#64748B" fontFamily="system-ui, sans-serif" fontSize="11" textAnchor="middle">
-              Clean screens and 1-click login
-            </text>
-
-            {/* Row 2 Stop 2: We write all code */}
-            <circle cx="400" cy="247" r="8" fill="#0F172A" stroke="#FFFFFF" strokeWidth="3" />
-            <text x="400" y="280" fill="#0F172A" fontFamily="system-ui, sans-serif" fontSize="13" fontWeight="700" textAnchor="middle">
-              We write all code
-            </text>
-            <text x="400" y="298" fill="#64748B" fontFamily="system-ui, sans-serif" fontSize="11" textAnchor="middle">
-              Our team codes the complete app in 14 days
-            </text>
-
-            {/* Row 3 Stop 1: Share with fans */}
-            <circle cx="280" cy="415" r="8" fill="#0F172A" stroke="#FFFFFF" strokeWidth="3" />
-            <text x="280" y="448" fill="#0F172A" fontFamily="system-ui, sans-serif" fontSize="13" fontWeight="700" textAnchor="middle">
-              Share with fans
-            </text>
-            <text x="280" y="466" fill="#64748B" fontFamily="system-ui, sans-serif" fontSize="11" textAnchor="middle">
-              Add the link to your video descriptions
-            </text>
-
-            {/* Row 3 Stop 2: 50/50 automatic split */}
-            <circle cx="480" cy="415" r="8" fill="#0F172A" stroke="#FFFFFF" strokeWidth="3" />
-            <text x="480" y="448" fill="#0F172A" fontFamily="system-ui, sans-serif" fontSize="13" fontWeight="700" textAnchor="middle">
-              50/50 automatic split
-            </text>
-            <text x="480" y="466" fill="#64748B" fontFamily="system-ui, sans-serif" fontSize="11" textAnchor="middle">
-              Half of every dollar goes to your bank
-            </text>
-
-            {/* Row 3 Stop 3: 24/7 care & updates */}
-            <circle cx="680" cy="415" r="8" fill="#0F172A" stroke="#FFFFFF" strokeWidth="3" />
-            <text x="680" y="448" fill="#0F172A" fontFamily="system-ui, sans-serif" fontSize="13" fontWeight="700" textAnchor="middle">
-              24/7 care & updates
-            </text>
-            <text x="680" y="466" fill="#64748B" fontFamily="system-ui, sans-serif" fontSize="11" textAnchor="middle">
-              We fix bugs & keep servers running
-            </text>
-
-            {/* Terminal Target: ★ SHIPPED & LIVE (With Radar Ripple Animation & Interactive Burst) */}
-            <g className="cursor-pointer">
-              {/* Radar pulse ripples on arrival */}
-              <circle cx="888" cy="415" r="30" stroke="#10B981" strokeWidth="2" fill="none" opacity="0.6">
-                <animate attributeName="r" values="24;52" dur="2.2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.85;0" dur="2.2s" repeatCount="indefinite" />
-              </circle>
-              <circle cx="888" cy="415" r="20" stroke="#A3E635" strokeWidth="2" fill="none" opacity="0.8">
-                <animate attributeName="r" values="16;42" dur="2.2s" begin="1.1s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.95;0" dur="2.2s" begin="1.1s" repeatCount="indefinite" />
-              </circle>
-
-              {/* Pill Container */}
-              <rect x="804" y="397" width="168" height="36" rx="18" fill="#0D9488" className="shadow-lg transition-transform hover:scale-105" />
-              <text x="888" y="420" fill="#FFFFFF" fontFamily="system-ui, sans-serif" fontSize="12" fontWeight="800" textAnchor="middle">
-                ★ SHIPPED & LIVE
-              </text>
-            </g>
-            <text x="888" y="452" fill="#047857" fontFamily="ui-monospace, monospace" fontSize="11" fontWeight="700" textAnchor="middle">
-              ,300/MO EARNINGS
-            </text>
-
-            {/* ── DIAMOND APPROVAL GATES (WITH ANIMATED RADAR RINGS) ── */}
-            {/* Gate 1 */}
-            <circle cx="850" cy="79" r="22" stroke="#10B981" strokeWidth="2" fill="none" opacity="0.6" className="pointer-events-none">
-              <animate attributeName="r" values="18;36" dur="2.4s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.75;0" dur="2.4s" repeatCount="indefinite" />
-            </circle>
-            <g transform="translate(850, 79)">
-              <rect x="-19" y="-19" width="38" height="38" rx="8" fill="#FFFFFF" transform="rotate(45)" />
-              <rect x="-16" y="-16" width="32" height="32" rx="6" fill="#10B981" transform="rotate(45)" />
-              <path d="M-6 0 L-2 4 L6 -4" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </g>
-            <text x="850" y="122" fill="#065F46" fontFamily="ui-monospace, monospace" fontSize="10" fontWeight="700" textAnchor="middle">
-              YOU APPROVE
-            </text>
-
-            {/* Gate 2 */}
-            <circle cx="160" cy="247" r="22" stroke="#10B981" strokeWidth="2" fill="none" opacity="0.6" className="pointer-events-none">
-              <animate attributeName="r" values="18;36" dur="2.4s" begin="1.2s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.75;0" dur="2.4s" begin="1.2s" repeatCount="indefinite" />
-            </circle>
-            <g transform="translate(160, 247)">
-              <rect x="-19" y="-19" width="38" height="38" rx="8" fill="#FFFFFF" transform="rotate(45)" />
-              <rect x="-16" y="-16" width="32" height="32" rx="6" fill="#10B981" transform="rotate(45)" />
-              <path d="M-6 0 L-2 4 L6 -4" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </g>
-            <text x="160" y="290" fill="#065F46" fontFamily="ui-monospace, monospace" fontSize="10" fontWeight="700" textAnchor="middle">
-              YOU APPROVE
-            </text>
-          </svg>
-
-        </div>
-
-        {/* Mobile Stepper Fallback (< lg) */}
-        <div className="lg:hidden mt-6 max-w-md mx-auto space-y-4 text-left">
-          {/* Phase 1 */}
-          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-            <span className="text-xs font-mono font-bold uppercase text-[#D9A441] bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200">
-              1 · FIND WHAT FANS WANT
-            </span>
-            <div className="space-y-2 text-xs sm:text-sm">
-              <div className="flex items-start gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#D9A441] mt-1.5 shrink-0" />
-                <div><b className="text-slate-900">What fans ask for:</b> <span className="text-slate-600">Read comments & repeat questions</span></div>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#D9A441] mt-1.5 shrink-0" />
-                <div><b className="text-slate-900">Spot popular requests:</b> <span className="text-slate-600">Group repeat questions into one app</span></div>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#D9A441] mt-1.5 shrink-0" />
-                <div><b className="text-slate-900">Set fair price:</b> <span className="text-slate-600">Pick simple –/mo subscription plans</span></div>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs font-bold text-slate-900">
-              <span>YOU APPROVE THE APP IDEA</span>
-              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[11px]">✓</span>
-            </div>
-          </div>
-
-          {/* Phase 2 */}
-          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-            <span className="text-xs font-mono font-bold uppercase text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
-              2 · WE BUILD IT IN 14 DAYS
-            </span>
-            <div className="space-y-2 text-xs sm:text-sm">
-              <div className="flex items-start gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#17A79B] mt-1.5 shrink-0" />
-                <div><b className="text-slate-900">Design the app:</b> <span className="text-slate-600">Simple screens and easy login for fans</span></div>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#17A79B] mt-1.5 shrink-0" />
-                <div><b className="text-slate-900">We code everything:</b> <span className="text-slate-600">Our team builds the complete web app</span></div>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs font-bold text-slate-900">
-              <span>YOU TEST & APPROVE THE APP</span>
-              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[11px]">✓</span>
-            </div>
-          </div>
-
-          {/* Phase 3 */}
-          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-            <span className="text-xs font-mono font-bold uppercase text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded border border-purple-200">
-              3 · LAUNCH & SPLIT PROFITS
-            </span>
-            <div className="space-y-2 text-xs sm:text-sm">
-              <div className="flex items-start gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#6E61AA] mt-1.5 shrink-0" />
-                <div><b className="text-slate-900">Share with fans:</b> <span className="text-slate-600">Put your app link in your videos</span></div>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#6E61AA] mt-1.5 shrink-0" />
-                <div><b className="text-slate-900">50/50 profit split:</b> <span className="text-slate-600">Half of every dollar goes to your bank</span></div>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#6E61AA] mt-1.5 shrink-0" />
-                <div><b className="text-slate-900">24/7 care & updates:</b> <span className="text-slate-600">We fix bugs and keep servers fast</span></div>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-900 text-white flex items-center justify-between text-xs font-mono font-bold">
-              <span>★ SHIPPED & LIVE</span>
-              <span className="text-emerald-400">,300/MO</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Support Tools Footer Pill */}
-        <p className="mt-8 text-center text-xs font-mono text-slate-500">
-          <span className="font-bold text-slate-700">Studio tools included:</span> Comment Reader · Fair Price Finder · App Builder · Stripe Auto-Split · 24/7 Server Shield
-        </p>
-
       </section>
 
       {/* ── STEP-BY-STEP SECTIONS (DANNY POSTMA SKELETON DOCUMENT CARDS) ──── */}
@@ -1955,70 +1997,105 @@ export default function Welcome() {
 
         </div>
 
-        {/* ── OBJECTION BUSTER CARD (Clean & Compact) ────────── */}
-        <div className="mt-8 sm:mt-10 max-w-2xl mx-auto p-5 sm:p-7 bg-slate-50 border border-slate-200 rounded-3xl text-center shadow-xs">
-          <h3 className="text-lg sm:text-xl font-display font-bold text-slate-950">
+        {/* ── OBJECTION BUSTER COMPARISON (Premium Modern Redesign) ────────── */}
+        <div className="mt-10 sm:mt-12 max-w-3xl mx-auto p-6 sm:p-8 bg-white border border-slate-200/90 rounded-3xl text-center shadow-[0_12px_32px_-8px_rgba(15,23,42,0.06)] relative overflow-hidden">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-mono font-bold text-slate-700 uppercase mb-3">
+            <span>AGENCY VS COURSES VS CREATOR FORGE</span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-display font-black text-slate-950 tracking-tight">
             "Couldn’t I just hire a software agency or sell another course?"
           </h3>
-          <p className="mt-2.5 text-sm sm:text-base text-slate-600 leading-relaxed sm:leading-7">
-            Agencies charge $60,000 to $120,000 upfront with zero skin in the game. If users cancel or things break, they bill you more hourly fees. Digital courses burn out audiences with low completion rates. Creator Forge does 100% of the engineering and 24/7 maintenance for $0 upfront. We only make money when your software succeeds.
+          <p className="mt-2.5 text-sm sm:text-base text-slate-600 max-w-xl mx-auto leading-relaxed">
+            Agencies charge $60,000 to $120,000 upfront with zero skin in the game. Digital courses burn out audiences with low completion rates. Here's how our 50/50 model wins:
           </p>
+
+          {/* 3-Column Comparison Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-6 text-left">
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+              <span className="text-xs font-mono font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded inline-block">
+                Software Agency
+              </span>
+              <p className="text-xs text-slate-600 leading-snug">
+                $60k–$120k upfront risk. Zero skin in the game. They bill you extra hourly fees for every bug.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+              <span className="text-xs font-mono font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded inline-block">
+                Selling Courses
+              </span>
+              <p className="text-xs text-slate-600 leading-snug">
+                One-off sales spikes. High audience fatigue, low completion rates (&lt;8%), no recurring revenue.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-1.5 shadow-xs ring-1 ring-emerald-500/20">
+              <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded inline-block">
+                Creator Forge (50/50)
+              </span>
+              <p className="text-xs text-slate-900 font-medium leading-snug">
+                $0 upfront cost. 100% full-stack managed. We only make money when your subscribers pay.
+              </p>
+            </div>
+          </div>
         </div>
 
       </section>
 
       {/* ── INTERACTIVE CO-FOUNDER REVENUE CALCULATOR ───────────────────────── */}
-      <section id="calculator" className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200/80">
-        <div className="p-5 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200 max-w-5xl mx-auto shadow-xs">
+      <section id="calculator" className="py-4 sm:py-6 lg:py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-200/80">
+        <div className="p-4 sm:p-5 lg:p-6 rounded-3xl bg-slate-50 border border-slate-200 max-w-5xl mx-auto shadow-xs">
           
-          <div className="text-center max-w-2xl mx-auto mb-5 sm:mb-6">
-            <span className="text-xs sm:text-sm font-mono uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full font-bold inline-block">
+          <div className="text-center max-w-xl mx-auto mb-3.5 sm:mb-4">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-0.5 rounded-full font-bold inline-block">
               MONTHLY EARNINGS CALCULATOR
             </span>
-            <h2 className="text-3xl sm:text-5xl font-display font-black text-slate-950 mt-2.5 tracking-tight leading-[1.15]">
+            <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-display font-black text-slate-950 mt-1.5 tracking-tight leading-tight">
               See how much you could earn every month
             </h2>
-            <p className="mt-2.5 text-base sm:text-xl text-slate-600 leading-relaxed sm:leading-8 font-normal">
-              Adjust the sliders below to see what your recurring income looks like based on your audience size and pricing.
+            <p className="mt-1 text-xs sm:text-sm text-slate-600 font-normal">
+              Adjust your audience size and app price to project your recurring 50/50 profit share.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-stretch">
             
-            {/* Sliders & Selectors */}
-            <div className="lg:col-span-6 space-y-4 text-left">
+            {/* Left Column: Sliders & Selectors (Equal height with right column via flex-1 cards) */}
+            <div className="lg:col-span-6 flex flex-col justify-between gap-2.5 sm:gap-3 h-full text-left">
               
-              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-2.5">
+              {/* Audience Size Slider (Minimum 100K Followers) */}
+              <div className="flex-1 flex flex-col justify-center p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label htmlFor={audienceRangeId} className="text-xs sm:text-sm font-mono font-bold text-slate-700 uppercase">
+                  <label htmlFor={audienceRangeId} className="text-xs font-mono font-bold text-slate-700 uppercase">
                     Your Audience Size
                   </label>
-                  <span className="text-base sm:text-lg font-mono font-bold text-slate-950">
+                  <span className="text-sm sm:text-base font-mono font-bold text-slate-950">
                     {calcAudience.toLocaleString()} Followers
                   </span>
                 </div>
                 <input
                   id={audienceRangeId}
                   type="range"
-                  min="10000"
+                  min="100000"
                   max="1000000"
                   step="10000"
                   value={calcAudience}
-                  onChange={(e) => setCalcAudience(Number(e.target.value))}
-                  className="w-full accent-slate-900 bg-slate-200 h-2.5 rounded-lg cursor-pointer"
+                  onChange={(e) => setCalcAudience(Math.max(100000, Number(e.target.value)))}
+                  className="w-full accent-slate-900 bg-slate-200 h-2 rounded-lg cursor-pointer"
                 />
-                <div className="flex justify-between text-[11px] font-mono text-slate-400">
-                  <span>10K fans</span>
+                <div className="flex justify-between text-[10px] sm:text-[11px] font-mono text-slate-400">
+                  <span className="font-semibold text-slate-600">100K fans</span>
                   <span>500K fans</span>
                   <span>1M+ fans</span>
                 </div>
               </div>
 
-              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-2.5">
-                <label className="text-xs sm:text-sm font-mono font-bold text-slate-700 uppercase block">
+              {/* Monthly App Price Selector */}
+              <div className="flex-1 flex flex-col justify-center p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
+                <label className="text-xs font-mono font-bold text-slate-700 uppercase block">
                   Monthly App Price
                 </label>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-3 gap-2">
                   {[
                     { price: 29, sub: '$29/mo' },
                     { price: 49, sub: '$49/mo' },
@@ -2028,7 +2105,7 @@ export default function Welcome() {
                       key={p.price}
                       type="button"
                       onClick={() => setCalcPricing(p.price)}
-                      className={`p-3 rounded-xl border text-center transition-all cursor-pointer font-mono font-bold text-xs sm:text-sm min-h-[44px] ${
+                      className={`py-2 px-2.5 rounded-xl border text-center transition-all cursor-pointer font-mono font-bold text-xs sm:text-sm min-h-[38px] ${
                         calcPricing === p.price
                           ? 'bg-[#0F172A] border-[#0F172A] text-white shadow-xs'
                           : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -2040,13 +2117,14 @@ export default function Welcome() {
                 </div>
               </div>
 
-              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-2.5">
+              {/* Fans Who Subscribe Rate */}
+              <div className="flex-1 flex flex-col justify-center p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label htmlFor={convRangeId} className="text-xs sm:text-sm font-mono font-bold text-slate-700 uppercase">
+                  <label htmlFor={convRangeId} className="text-xs font-mono font-bold text-slate-700 uppercase">
                     Fans Who Subscribe
                   </label>
-                  <span className="text-base font-mono font-bold text-emerald-700">
-                    {calcConvRate.toFixed(1)}% ({estimatedSubscribers.toLocaleString()} subscribers)
+                  <span className="text-xs sm:text-sm font-mono font-bold text-emerald-700">
+                    {calcConvRate.toFixed(1)}% ({estimatedSubscribers.toLocaleString()} subs)
                   </span>
                 </div>
                 <input
@@ -2057,79 +2135,91 @@ export default function Welcome() {
                   step="0.1"
                   value={calcConvRate}
                   onChange={(e) => setCalcConvRate(Number(e.target.value))}
-                  className="w-full accent-slate-900 bg-slate-200 h-2.5 rounded-lg cursor-pointer"
+                  className="w-full accent-slate-900 bg-slate-200 h-2 rounded-lg cursor-pointer"
                 />
-                <div className="flex justify-between text-[11px] font-mono text-slate-400">
-                  <span>0.2% (Conservative)</span>
-                  <span>1.0% (Average)</span>
-                  <span>3.0% (High Trust)</span>
+                <div className="flex justify-between text-[10px] sm:text-[11px] font-mono text-slate-400">
+                  <span>0.2% (Low)</span>
+                  <span>1.0% (Avg)</span>
+                  <span>3.0% (High)</span>
                 </div>
               </div>
 
             </div>
 
-            {/* Projected Revenue Result with TALL Growth Trajectory Graph */}
-            <div className="lg:col-span-6 p-5 sm:p-7 rounded-3xl bg-white border border-slate-200 text-left space-y-4 shadow-lg">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-500 font-bold">
+            {/* Right Column: Projected Revenue & Dynamic Non-Flatlining Histogram (Equal Height) */}
+            <div className="lg:col-span-6 flex flex-col justify-between p-4 sm:p-5 rounded-3xl bg-white border border-slate-200 text-left shadow-lg h-full space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 font-bold">
                   YOUR 50% TAKE-HOME PAY
                 </span>
-                <span className="text-xs sm:text-sm font-mono text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold">
+                <span className="text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold">
                   $0 Upfront Cost
                 </span>
               </div>
 
               <div>
-                <span className="text-xs font-mono text-slate-500 block">Deposited Directly Every Month</span>
-                <div className="text-4xl sm:text-5xl font-display font-black text-slate-950 font-mono mt-1">
+                <span className="text-[11px] font-mono text-slate-500 block">Deposited Directly Every Month</span>
+                <div className="text-3xl sm:text-4xl font-display font-black text-slate-950 font-mono mt-0.5">
                   ${creatorShareMonthly.toLocaleString()}{' '}
-                  <span className="text-sm sm:text-base font-normal text-slate-500 font-sans">/ month</span>
+                  <span className="text-xs sm:text-sm font-normal text-slate-500 font-sans">/ month</span>
                 </div>
-                <div className="text-xs sm:text-sm font-mono text-slate-600 mt-1">
+                <div className="text-[11px] sm:text-xs font-mono text-slate-600 mt-0.5">
                   ${creatorShareAnnual.toLocaleString()} yearly run-rate
                 </div>
               </div>
 
-              {/* ── TALL 6-MONTH PROJECTED TRAJECTORY GRAPH (Increased Height to h-64) ── */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
-                <div className="flex items-center justify-between text-xs sm:text-sm font-mono text-slate-500">
+              {/* ── 6-MONTH PROJECTED TRAJECTORY GRAPH (Dynamic continuous growth that never flatlines) ── */}
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-mono text-slate-500">
                   <span className="font-bold text-slate-800 uppercase tracking-wide">6-Month Cashflow Trajectory</span>
-                  <span className="text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">50% Net Share</span>
+                  <span className="text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px]">50% Net Share</span>
                 </div>
 
-                {/* Taller Bar Columns Container (h-60 on mobile, h-64 on desktop) */}
-                <div className="h-56 sm:h-64 pt-4 pb-2 flex items-end justify-between gap-2.5 border-b border-slate-200">
+                {/* Bar Columns Container (Compact h-36 to h-40 to fit comfortably in 80vh) */}
+                <div className="h-32 sm:h-36 pt-2 pb-1 flex items-end justify-between gap-1.5 sm:gap-2 border-b border-slate-200">
                   {[
-                    { month: 'M1', mult: 0.32, label: 'Launch' },
-                    { month: 'M2', mult: 0.54, label: 'Growth' },
-                    { month: 'M3', mult: 0.72, label: 'Momentum' },
-                    { month: 'M4', mult: 0.86, label: 'Adoption' },
-                    { month: 'M5', mult: 0.96, label: 'Steady' },
-                    { month: 'M6', mult: 1.12, label: 'Mature' }
+                    { month: 'M1', mult: 0.32 },
+                    { month: 'M2', mult: 0.54 },
+                    { month: 'M3', mult: 0.72 },
+                    { month: 'M4', mult: 0.86 },
+                    { month: 'M5', mult: 0.96 },
+                    { month: 'M6', mult: 1.12 }
                   ].map((m, mIdx) => {
                     const monthCreatorShare = Math.round(creatorShareMonthly * m.mult)
-                    const barHeightPercent = Math.min(100, Math.max(16, Math.round(m.mult * 85)))
+
+                    // Continuous dynamic scaling based on followers & price
+                    // Never clamps into a flat line: every month maintains its distinct staircase curve
+                    const audienceRatio = Math.max(0, Math.min(1, (calcAudience - 100000) / 900000))
+                    const priceBump = calcPricing === 99 ? 4 : calcPricing === 29 ? -4 : 0
+                    const peakHeight = Math.min(96, Math.max(52, Math.round(52 + audienceRatio * 38 + priceBump)))
+                    const monthProgressions = [0.34, 0.52, 0.69, 0.83, 0.92, 1.00]
+                    const barHeightPercent = Math.round(peakHeight * monthProgressions[mIdx])
 
                     return (
-                      <div key={mIdx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group cursor-default">
-                        {/* Monthly Dollar Badge above bar */}
-                        <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-700 group-hover:text-emerald-700 transition-colors">
-                          ${monthCreatorShare >= 1000 ? `${(monthCreatorShare / 1000).toFixed(1)}k` : monthCreatorShare}
-                        </span>
+                      <div key={mIdx} className="flex-1 flex flex-col items-center h-full justify-end group cursor-default">
+                        {/* Dedicated flex track so bars never overflow into badges */}
+                        <div className="w-full flex-1 flex flex-col justify-end items-center pb-0.5 relative">
+                          {/* Monthly Dollar Badge */}
+                          <span className="text-[9px] sm:text-[10px] font-mono font-bold text-slate-700 mb-0.5 group-hover:text-emerald-700 transition-colors whitespace-nowrap">
+                            ${monthCreatorShare >= 1000 ? `${(monthCreatorShare / 1000).toFixed(1)}k` : monthCreatorShare}
+                          </span>
 
-                        {/* Stacked Two-Tone Bar (Emerald Creator + Slate Studio) */}
-                        <div 
-                          className="w-full rounded-t-xl bg-slate-100 overflow-hidden flex flex-col justify-end transition-all duration-500 relative"
-                          style={{ height: `${barHeightPercent}%` }}
-                        >
-                          {/* Creator 50% Share (Top Segment) */}
-                          <div className="w-full h-1/2 bg-emerald-500 group-hover:bg-emerald-400 transition-colors" />
-                          {/* Studio 50% Share (Bottom Segment) */}
-                          <div className="w-full h-1/2 bg-[#0F172A]" />
+                          {/* Stacked Two-Tone Bar with dynamic rising height */}
+                          <div 
+                            className="w-full rounded-t-md sm:rounded-t-lg bg-slate-100 overflow-hidden flex flex-col justify-end relative shadow-2xs"
+                            style={{ 
+                              height: `${barHeightPercent}%`,
+                              maxHeight: 'calc(100% - 18px)',
+                              transition: 'height 250ms cubic-bezier(0.16, 1, 0.3, 1)'
+                            }}
+                          >
+                            <div className="w-full h-1/2 bg-emerald-500 group-hover:bg-emerald-400 transition-colors" />
+                            <div className="w-full h-1/2 bg-[#0F172A]" />
+                          </div>
                         </div>
 
                         {/* Month Label below bar */}
-                        <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-600">
+                        <span className="text-[9px] sm:text-[10px] font-mono font-bold text-slate-600 shrink-0 pt-0.5">
                           {m.month}
                         </span>
                       </div>
@@ -2137,47 +2227,46 @@ export default function Welcome() {
                   })}
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono text-slate-500 pt-1">
+                <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-slate-500 pt-0.5">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+                    <span className="w-2 h-2 rounded-xs bg-emerald-500" />
                     <span>Your 50% Take-Home</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#0F172A]" />
+                    <span className="w-2 h-2 rounded-xs bg-[#0F172A]" />
                     <span>Studio 50% Share</span>
                   </div>
                 </div>
               </div>
 
-              {/* Clear Stats Breakdown */}
-              <div className="space-y-2 pt-1 border-t border-slate-100 text-xs sm:text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Paying Subscribers</span>
-                  <span className="font-mono font-bold text-slate-900">{estimatedSubscribers.toLocaleString()}</span>
+              {/* Compact 3-Column Stats Breakdown Tile Grid */}
+              <div className="grid grid-cols-3 gap-2 py-1 border-t border-slate-100 text-center font-mono">
+                <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                  <span className="text-[10px] text-slate-500 block">Subscribers</span>
+                  <span className="text-xs sm:text-sm font-bold text-slate-900">{estimatedSubscribers.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Total Monthly Revenue</span>
-                  <span className="font-mono font-bold text-slate-900">${monthlyRevenue.toLocaleString()} / mo</span>
+                <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                  <span className="text-[10px] text-slate-500 block">Gross Revenue</span>
+                  <span className="text-xs sm:text-sm font-bold text-slate-900">${monthlyRevenue.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Your Cost to Build</span>
-                  <span className="font-mono font-bold text-emerald-700">$0.00 (100% Free)</span>
+                <div className="bg-emerald-50/70 p-1.5 rounded-xl border border-emerald-100">
+                  <span className="text-[10px] text-emerald-700 block">Build Cost</span>
+                  <span className="text-xs sm:text-sm font-bold text-emerald-800">$0 (Free)</span>
                 </div>
               </div>
 
-              {/* Signature Beacon Button with Ambient Halo Glow */}
+              {/* Signature Beacon Button with Ambient Halo Glow (Links to /launch) */}
               <button
                 type="button"
-                onClick={(e) => e.preventDefault()}
-                className="relative w-full py-4 px-6 rounded-2xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-display font-bold text-sm sm:text-base shadow-md hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 group select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 min-h-[52px]"
+                onClick={() => { window.location.href = '/launch' }}
+                className="relative w-full py-2.5 sm:py-3 px-5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-display font-bold text-xs sm:text-sm shadow-md hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 group select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 min-h-[42px] sm:min-h-[44px]"
               >
-                <span>Apply to Build Your App (50/50)</span>
-                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                {/* Signature Top-Right Accent Beacon Dot with Ambient Halo */}
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 pointer-events-none items-center justify-center">
-                  <span className="absolute inline-flex h-6 w-6 rounded-full bg-emerald-400/30 blur-[2px]" />
-                  <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-xs" />
+                <span>Start Engagement</span>
+                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 pointer-events-none items-center justify-center">
+                  <span className="absolute inline-flex h-5 w-5 rounded-full bg-emerald-400/30 blur-[2px]" />
+                  <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white shadow-xs" />
                 </span>
               </button>
 
@@ -2250,108 +2339,232 @@ export default function Welcome() {
 
       </section>
 
-      {/* ── FAQ SECTION ──────────────────────────────────────────────────────── */}
-      <section id="faq" className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto border-t border-slate-200/80">
+      {/* ── FAQ SECTION (PREMIUM INTERACTIVE REDESIGN) ──────────────────────── */}
+      <section id="faq" className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto border-t border-slate-200/80 relative">
         
-        <div className="text-center mb-4 sm:mb-6">
+        {/* Subtle background glow */}
+        <div 
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[350px] rounded-full blur-[140px] opacity-[0.12] pointer-events-none -z-10"
+          style={{ background: 'radial-gradient(circle, rgba(163, 230, 53, 0.4) 0%, rgba(59, 130, 246, 0.15) 60%, transparent 80%)' }}
+        />
+
+        <div className="text-center mb-8 sm:mb-12">
           <span className="text-xs sm:text-sm font-mono uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full font-bold inline-block">
             FREQUENTLY ASKED QUESTIONS
           </span>
-          <h2 className="text-3xl sm:text-5xl font-display font-black text-slate-950 mt-2.5 tracking-tight leading-[1.15]">
+          <h2 className="text-3xl sm:text-5xl font-display font-black text-slate-950 mt-3 tracking-tight leading-[1.15]">
             Common questions answered
           </h2>
-          <p className="mt-2.5 text-base sm:text-xl text-slate-600">
-            Everything you need to know about partnering with Creator Forge.
+          <p className="mt-2.5 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            Everything you need to know about our $0 upfront 50/50 venture studio model.
           </p>
         </div>
 
-        <div className="space-y-3.5 text-left">
+        <div className="space-y-4 text-left">
           {FAQS.map((faq, i) => {
             const isOpen = openFaq === i
+            const indexNumber = String(i + 1).padStart(2, '0')
+
             return (
               <div
-                key={i}
-                className="rounded-2xl bg-white border border-slate-200 shadow-xs overflow-hidden transition-all"
+                key={faq.id || i}
+                className={`rounded-2xl sm:rounded-3xl border transition-all duration-300 overflow-hidden ${
+                  isOpen 
+                    ? 'bg-white border-emerald-500/40 ring-1 ring-emerald-500/20 shadow-[0_12px_32px_-8px_rgba(15,23,42,0.08)]' 
+                    : 'bg-white/90 hover:bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-xs'
+                }`}
               >
                 <button
                   type="button"
                   onClick={() => setOpenFaq(isOpen ? null : i)}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left gap-4 cursor-pointer hover:bg-slate-50 transition-colors min-h-[48px]"
+                  className="w-full p-5 sm:p-6 flex items-start sm:items-center justify-between text-left gap-4 cursor-pointer min-h-[56px] group select-none"
                 >
-                  <span className="text-base sm:text-xl font-display font-bold text-slate-900">{faq.q}</span>
-                  <ChevronDown className={`w-5 h-5 text-slate-500 shrink-0 transition-transform ${isOpen ? 'rotate-180 text-slate-900' : ''}`} />
-                </button>
-                {isOpen && (
-                  <div className="px-5 pb-5 text-base sm:text-lg text-slate-600 leading-relaxed sm:leading-8 border-t border-slate-100 pt-3.5">
-                    {faq.a}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                        {indexNumber}
+                      </span>
+                      {faq.badge && (
+                        <span className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full shrink-0">
+                          {faq.badge}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-base sm:text-lg font-display font-extrabold text-slate-950 group-hover:text-slate-700 transition-colors">
+                      {faq.q}
+                    </span>
                   </div>
-                )}
+
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border transition-all duration-300 ${
+                    isOpen 
+                      ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' 
+                      : 'bg-slate-100 group-hover:bg-slate-200 border-slate-200 text-slate-700'
+                  }`}>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : 'rotate-0'}`} />
+                  </div>
+                </button>
+
+                {/* Smooth Animated Open/Close Transition Grid Container */}
+                <div 
+                  className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                    isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-5 sm:px-6 pb-6 pt-2 text-slate-600 border-t border-slate-100/90 text-sm sm:text-base leading-relaxed sm:leading-7 space-y-4">
+                      <p className="font-normal text-slate-700">
+                        {faq.a}
+                      </p>
+
+                      {/* Comparison Pill Matrix (e.g. Agency vs Courses vs Creator Forge) */}
+                      {faq.comparison && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                          {faq.comparison.map((comp, cIdx) => (
+                            <div 
+                              key={cIdx} 
+                              className={`p-3.5 rounded-xl border text-xs ${
+                                comp.type === 'positive'
+                                  ? 'bg-emerald-50/70 border-emerald-300 text-slate-900 ring-1 ring-emerald-500/20'
+                                  : 'bg-slate-50 border-slate-200 text-slate-600'
+                              }`}
+                            >
+                              <span className={`font-mono font-bold block mb-1 uppercase text-[10px] ${
+                                comp.type === 'positive' ? 'text-emerald-800' : 'text-slate-500'
+                              }`}>
+                                {comp.label}
+                              </span>
+                              <span className="leading-snug block">
+                                {comp.detail}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Bullet Highlights */}
+                      {faq.highlights && (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {faq.highlights.map((hl, hIdx) => (
+                            <div key={hIdx} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>{hl}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )
           })}
         </div>
 
+        {/* Quick Help Callout Banner */}
+        <div className="mt-8 sm:mt-10 p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div>
+            <h4 className="font-display font-bold text-slate-950 text-sm sm:text-base">
+              Have another question about your specific audience?
+            </h4>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+              Talk directly with our venture studio engineering leads. $0 upfront cost.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { window.location.href = '/launch' }}
+            className="px-5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-mono font-bold text-xs sm:text-sm flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-xs hover:shadow-md"
+          >
+            <span>Start Engagement</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
       </section>
 
-      {/* ── CLOSING LIGHT CTA BANNER ────────────────────────────────────────── */}
-      <section className="pb-8 sm:pb-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="p-6 sm:p-9 rounded-3xl bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900 border border-slate-200 text-center relative overflow-hidden shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
-          {/* Soft ambient radial glow */}
+      {/* ── CLOSING DARK CTA BANNER (DOT GRID MATRIX) ────────────────────────── */}
+      <section className="pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
+        <div className="p-8 sm:p-14 lg:p-16 rounded-[32px] sm:rounded-[40px] bg-[#0A0F1D] text-white border border-slate-800 text-center relative overflow-hidden shadow-[0_25px_80px_rgba(0,0,0,0.55)]">
+          
+          {/* Dot Grid Background Pattern */}
           <div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] rounded-full blur-[140px] opacity-[0.25] pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(163, 230, 53, 0.45) 0%, rgba(59, 130, 246, 0.15) 50%, transparent 70%)' }}
+            className="absolute inset-0 pointer-events-none opacity-25"
+            style={{
+              backgroundImage: 'radial-gradient(#94A3B8 1.5px, transparent 1.5px)',
+              backgroundSize: '24px 24px'
+            }}
           />
 
-          <div className="max-w-2xl mx-auto relative z-10">
-            <span className="text-xs sm:text-sm font-mono uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full font-bold inline-block">
-              ZERO-CAPITAL 50/50 PARTNERSHIP
+          {/* Radiant Lime & Emerald Ambient Glow Center */}
+          <div 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full blur-[150px] opacity-[0.30] pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(132, 204, 22, 0.45) 0%, rgba(16, 185, 129, 0.25) 45%, transparent 70%)' }}
+          />
+
+          {/* Soft Deep Indigo Corner Ambient Light */}
+          <div 
+            className="absolute top-0 right-0 w-[450px] h-[350px] rounded-full blur-[130px] opacity-[0.20] pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)' }}
+          />
+
+          <div className="max-w-3xl mx-auto relative z-10">
+            <span className="text-xs sm:text-sm font-mono uppercase tracking-wider text-lime-400 bg-lime-950/80 border border-lime-500/30 px-4 py-1.5 rounded-full font-bold inline-flex items-center gap-2 shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-lime-400" />
+              <span>ZERO-CAPITAL 50/50 PARTNERSHIP</span>
             </span>
-            <h3 className="text-3xl sm:text-5xl font-display font-black text-slate-950 mt-2.5 leading-[1.15] tracking-tight">
-              Ready to turn your audience into monthly income?
+
+            <h3 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black text-white mt-5 leading-[1.12] tracking-tight">
+              Ready to turn your audience into recurring software income?
             </h3>
-            <p className="mt-2.5 text-base sm:text-xl text-slate-600 leading-relaxed sm:leading-8">
-              We build your custom app in 14 days for free, connect payments, and split profits 50/50.
+
+            <p className="mt-4 text-base sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed sm:leading-8 font-normal">
+              We build your custom app in 14 days for free, connect automated Stripe deposits, and split recurring profits 50/50.
             </p>
 
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              {/* High-Contrast Electric Lime Primary Action Button (Neutral clean shadow, no neon green glow) */}
               <button
                 type="button"
-                onClick={(e) => e.preventDefault()}
-                className="relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-9 py-4 rounded-2xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-base sm:text-lg font-display font-bold shadow-[0_6px_24px_rgba(15,23,42,0.18)] hover:shadow-[0_10px_32px_rgba(15,23,42,0.28)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 select-none min-h-[52px]"
+                onClick={() => { window.location.href = '/launch' }}
+                className="relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-9 py-4 rounded-2xl bg-[#84CC16] hover:bg-[#A3E635] text-slate-950 text-base sm:text-lg font-display font-extrabold shadow-md hover:shadow-lg shadow-black/30 hover:shadow-black/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 select-none min-h-[54px]"
               >
-                <span>Apply to Build Your App (50/50)</span>
+                <span>Start Engagement</span>
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                {/* Signature Top-Right Accent Beacon Dot with Ambient Halo */}
+                {/* Signature Top-Right Accent Beacon Dot */}
                 <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 pointer-events-none items-center justify-center">
-                  <span className="absolute inline-flex h-6 w-6 rounded-full bg-emerald-400/30 blur-[2px]" />
-                  <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-xs" />
+                  <span className="absolute inline-flex h-5 w-5 rounded-full bg-emerald-400/20" />
+                  <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-[#0A0F1D]" />
                 </span>
               </button>
 
               <a
                 href="#creators"
                 onClick={(e) => scrollToSection(e, 'creators')}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 hover:border-slate-300 text-base font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer min-h-[52px]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 hover:border-slate-600 text-base font-semibold transition-all active:scale-[0.98] cursor-pointer min-h-[54px]"
               >
-                <Play className="w-4 h-4 text-emerald-600 fill-emerald-600" />
+                <Play className="w-4 h-4 text-lime-400 fill-lime-400" />
                 <span>See Creator Demos</span>
               </a>
             </div>
 
             {/* Micro guarantees */}
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-5 text-sm sm:text-base font-medium text-slate-600">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <div className="mt-8 pt-8 border-t border-slate-800/80 flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-sm sm:text-base font-medium text-slate-300">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-lime-400 shrink-0" />
                 <span>$0 Upfront Cost</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>14-Day Launch</span>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-lime-400 shrink-0" />
+                <span>14-Day Production Launch</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>50/50 Automatic Splits</span>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-lime-400 shrink-0" />
+                <span>50/50 Automatic Stripe Splits</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-lime-400 shrink-0" />
+                <span>You Retain 100% Brand Ownership</span>
               </div>
             </div>
 
@@ -2359,22 +2572,203 @@ export default function Welcome() {
         </div>
       </section>
 
-      {/* ── CLEAN LIGHT FOOTER ──────────────────────────────────────────────── */}
-      <footer className="border-t border-slate-200 bg-slate-50 py-6 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+      {/* ── PREMIUM MULTI-COLUMN DARK FOOTER ───────────────────────────────── */}
+      <footer className="bg-[#070B14] text-slate-400 border-t border-slate-800/80 pt-16 pb-12 relative overflow-hidden">
+        
+        {/* Subtle dot grid overlay in footer */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-15"
+          style={{
+            backgroundImage: 'radial-gradient(#94A3B8 1px, transparent 1px)',
+            backgroundSize: '24px 24px'
+          }}
+        />
+
+        {/* Ambient top light */}
+        <div 
+          className="absolute -top-24 left-1/2 -translate-x-1/2 w-[800px] h-[150px] rounded-full blur-[100px] opacity-[0.12] pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(16, 185, 129, 0.4) 0%, transparent 70%)' }}
+        />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
-          <div className="flex items-center gap-3">
-            <CreatorForgeLogo size={18} showText={true} theme="light" />
-            <span className="text-slate-300">|</span>
-            <span className="text-slate-600 font-medium">Venture Studio Software Partnerships</span>
+          {/* Main 4-Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 pb-12 border-b border-slate-800/80">
+            
+            {/* Col 1 & 2: Brand Identity & Telemetry */}
+            <div className="lg:col-span-2 space-y-5 text-left">
+              <div 
+                className="cursor-pointer inline-block"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              >
+                <CreatorForgeLogo size={22} showText={true} theme="dark" />
+              </div>
+
+              <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
+                The zero-capital venture studio co-founding software businesses with elite digital creators. We design, code, host, and split profits 50/50.
+              </p>
+
+              {/* Real-time Telemetry & Cohort Badge */}
+              <div className="space-y-2 pt-2">
+                <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs font-mono">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span className="text-slate-300 font-semibold">ALL SYSTEMS OPERATIONAL</span>
+                  <span className="text-slate-600">·</span>
+                  <span className="text-slate-400">99.99% Uptime</span>
+                </div>
+                <div className="text-xs font-mono text-emerald-400/90 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Next Intake: 3 of 5 studio partner slots filled this month</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Col 3: Studio Platform Navigation */}
+            <div className="text-left space-y-4">
+              <h5 className="font-mono text-xs uppercase tracking-wider text-slate-200 font-bold">
+                PLATFORM
+              </h5>
+              <ul className="space-y-2.5 text-sm font-medium">
+                <li>
+                  <a 
+                    href="#creators" 
+                    onClick={(e) => scrollToSection(e, 'creators')}
+                    className="hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <span>Creators Roster</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#workflow" 
+                    onClick={(e) => scrollToSection(e, 'workflow')}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    14-Day Workflow
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#reviews" 
+                    onClick={(e) => scrollToSection(e, 'reviews')}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Reviews & Testimonials
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#steps" 
+                    onClick={(e) => scrollToSection(e, 'steps')}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Step-by-Step Build
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#calculator" 
+                    onClick={(e) => scrollToSection(e, 'calculator')}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Revenue Calculator
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#faq" 
+                    onClick={(e) => scrollToSection(e, 'faq')}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Common FAQs
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 4: Venture Studio Model Guarantees */}
+            <div className="text-left space-y-4">
+              <h5 className="font-mono text-xs uppercase tracking-wider text-slate-200 font-bold">
+                VENTURE MODEL
+              </h5>
+              <ul className="space-y-2.5 text-sm">
+                <li className="flex items-center gap-2 text-slate-300">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>$0 Upfront Engineering</span>
+                </li>
+                <li className="flex items-center gap-2 text-slate-300">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>50/50 Automatic Stripe Splits</span>
+                </li>
+                <li className="flex items-center gap-2 text-slate-300">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>14-Day Turnaround</span>
+                </li>
+                <li className="flex items-center gap-2 text-slate-300">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>24/7 Managed Infrastructure</span>
+                </li>
+                <li className="flex items-center gap-2 text-slate-300">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>You Retain 100% Fan Trust</span>
+                </li>
+                <li className="flex items-center gap-2 text-slate-300">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Complete Milestone Approval</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 5: Apply as Co-Founder Card */}
+            <div className="text-left space-y-4">
+              <h5 className="font-mono text-xs uppercase tracking-wider text-slate-200 font-bold">
+                PARTNER WITH US
+              </h5>
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-lime-400 shrink-0" />
+                  <span className="text-xs font-mono font-bold text-slate-200 uppercase">Co-Founder Intake</span>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Have 50k+ followers and repeat comment requests? See what custom SaaS your audience wants.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = '/launch' }}
+                  className="w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-lime-500 hover:from-emerald-400 hover:to-lime-400 text-slate-950 font-display font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm shadow-emerald-500/20 active:scale-95"
+                >
+                  <span>Start Engagement</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1.5 justify-center pt-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>256-bit SSL · Stripe Verified</span>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          <div className="flex items-center gap-6 text-[11px] font-mono">
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-slate-700 font-semibold">SYSTEM OPERATIONAL</span>
+          {/* Bottom Bar */}
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>© {new Date().getFullYear()} CREATOR FORGE STUDIO INC.</span>
+              <span>·</span>
+              <span>ZERO CAPITAL CO-FOUNDERS</span>
+              <span>·</span>
+              <span className="text-emerald-400/90 font-medium">STRIPE VERIFIED PARTNER</span>
             </div>
-            <span>© {new Date().getFullYear()} CREATOR FORGE STUDIO. ZERO CAPITAL CO-FOUNDERS.</span>
+
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer py-1 px-2.5 rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800"
+              title="Scroll back to top"
+            >
+              <span>Back to Top</span>
+              <ChevronUp className="w-3.5 h-3.5" />
+            </button>
           </div>
 
         </div>
@@ -2797,7 +3191,7 @@ export default function Welcome() {
                   <button
                     type="button"
                     onClick={() => setDemoModalOpen(false)}
-                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 cursor-pointer min-h-[44px]"
+                    className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 cursor-pointer min-h-[36px] sm:min-h-[42px]"
                   >
                     Close Demo
                   </button>
@@ -2805,9 +3199,9 @@ export default function Welcome() {
                     type="button"
                     onClick={(e) => {
                       e.preventDefault()
-                      // Investor preview mode - does nothing
+                      window.location.href = '/launch'
                     }}
-                    className="relative flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer flex items-center justify-center gap-1.5 min-h-[44px] group"
+                    className="relative flex-1 sm:flex-none px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer flex items-center justify-center gap-1.5 min-h-[36px] sm:min-h-[42px] group"
                   >
                     <span>Apply as Co-Founder (50/50) →</span>
                     {/* Signature Top-Right Accent Beacon Dot with Ambient Halo */}

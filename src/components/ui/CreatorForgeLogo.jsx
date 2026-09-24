@@ -22,11 +22,11 @@ export default function CreatorForgeLogo({ size = 22, className = '', showText =
       </svg>
 
       {showText && (
-        <div className="flex items-center gap-2 whitespace-nowrap shrink-0">
-          <span className={`font-display font-bold text-[14px] tracking-tight uppercase whitespace-nowrap ${isLight ? 'text-[#0F172A]' : 'text-[#F5F3EA]'}`}>
+        <div className="flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0">
+          <span className={`font-display font-bold text-xs sm:text-[14px] tracking-tight uppercase whitespace-nowrap ${isLight ? 'text-[#0F172A]' : 'text-[#F5F3EA]'}`}>
             CREATOR FORGE
           </span>
-          <span className={`text-[9px] font-mono tracking-widest px-1.5 py-0.5 rounded uppercase whitespace-nowrap ${
+          <span className={`text-[8.5px] sm:text-[9px] font-mono tracking-widest px-1.5 py-0.5 rounded uppercase whitespace-nowrap hidden xs:inline-block ${
             isLight
               ? 'bg-[#F1F5F9] text-[#0F172A] border border-[#CBD5E1]'
               : 'bg-[#171C22] text-[#C8FF3D] border border-[#252B32]'
