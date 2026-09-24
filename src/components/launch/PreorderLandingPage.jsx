@@ -102,10 +102,6 @@ export default function PreorderLandingPage({ slug }) {
     }
   }, [slug])
 
-  if (isLoading && !project) {
-    return <PreorderLandingSkeleton />
-  }
-
   const productName = project?.productName || 'Software Product'
   const creatorName = project?.creatorName || 'Creator Co-Founder'
   const niche = project?.niche || 'Software'
@@ -133,6 +129,10 @@ export default function PreorderLandingPage({ slug }) {
       return { name: `Founding Annual Pass ($${foundingPrice})`, price: foundingPrice, deposit: false }
     })
   }, [foundingPrice, depositPrice])
+
+  if (isLoading && !project) {
+    return <PreorderLandingSkeleton />
+  }
 
   const handleCheckoutSubmit = (e) => {
     e?.preventDefault()
@@ -261,14 +261,14 @@ export default function PreorderLandingPage({ slug }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-slate-100 selection:bg-purple-500 selection:text-white font-sans antialiased overflow-x-hidden">
+    <div className="min-h-screen bg-[#080A0C] text-[#F5F3EA] selection:bg-[#C8FF3D] selection:text-[#080A0C] font-sans antialiased overflow-x-hidden">
       {/* Top Launch Notification Banner */}
-      <div className="bg-gradient-to-r from-purple-950/90 via-purple-900/70 to-[#07090e] border-b border-purple-500/20 py-2.5 px-3 sm:px-4 text-center text-xs">
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-semibold flex-wrap">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          <span className="text-purple-200">Exclusive Co-Founder Early Launch by</span>
-          <span className="text-white font-bold">{creatorName}</span>
-          <span className="bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase shrink-0">
+      <div className="bg-[#0D1014] border-b border-[#252B32] py-2.5 px-3 sm:px-4 text-center text-xs">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-medium flex-wrap">
+          <span className="w-2 h-2 rounded-full bg-[#78E08F] animate-pulse shrink-0" />
+          <span className="text-[#969DA6]">Exclusive Co-Founder Early Launch by</span>
+          <span className="text-[#F5F3EA] font-semibold">{creatorName}</span>
+          <span className="bg-[#C8FF3D]/10 text-[#C8FF3D] border border-[#C8FF3D]/25 px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider shrink-0">
             50% Off Lifetime Tier
           </span>
         </div>
@@ -277,19 +277,19 @@ export default function PreorderLandingPage({ slug }) {
       {/* Navigation Bar */}
       <header className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-purple-900/50 shrink-0">
+          <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-xl bg-[#171C22] border border-[#252B32] flex items-center justify-center text-[#C8FF3D] font-display font-black text-xs sm:text-sm shadow-sm shrink-0">
             {productName.slice(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <span className="font-extrabold text-white text-sm sm:text-base tracking-tight block truncate">{productName}</span>
-            <span className="text-[10px] text-purple-400 font-mono truncate block">by {creatorName}</span>
+            <span className="font-display font-bold text-[#F5F3EA] text-sm sm:text-base tracking-tight block truncate">{productName}</span>
+            <span className="text-[10px] text-[#969DA6] font-mono truncate block">co-built with {creatorName}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={() => openCheckout({ name: `Founding Annual Pass ($${foundingPrice})`, price: foundingPrice, deposit: false })}
-            className="px-3 sm:px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 sm:px-4 py-2 rounded-xl bg-[#C8FF3D] hover:bg-[#d8ff66] text-[#080A0C] font-bold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
             <CreditCard className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Claim Access</span>
@@ -300,16 +300,16 @@ export default function PreorderLandingPage({ slug }) {
 
       {/* Hero Section */}
       <main className="max-w-5xl mx-auto px-6 pt-10 pb-24 text-center space-y-8">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold">
-          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#101419] border border-[#252B32] text-[#C8FF3D] text-xs font-mono font-bold tracking-wider uppercase">
+          <Sparkles className="w-3.5 h-3.5 text-[#C8FF3D]" />
           <span>Co-Created with {creatorName}’s Community</span>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-[1.15]">
+        <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-black text-[#F5F3EA] tracking-tight leading-[1.12]">
           {headline}
         </h1>
 
-        <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-base sm:text-lg text-[#969DA6] max-w-2xl mx-auto leading-relaxed">
           {subheadline}
         </p>
 
@@ -318,7 +318,7 @@ export default function PreorderLandingPage({ slug }) {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
             <button
               onClick={() => openCheckout({ name: `Founding Annual Pass ($${foundingPrice})`, price: foundingPrice, deposit: false })}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/60 transition-all active:scale-95 cursor-pointer"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#C8FF3D] hover:bg-[#d8ff66] text-[#080A0C] font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#C8FF3D]/10 transition-all active:scale-95 cursor-pointer"
             >
               <CreditCard className="w-4 h-4" />
               <span>Claim Founding Access (${foundingPrice})</span>
@@ -326,25 +326,25 @@ export default function PreorderLandingPage({ slug }) {
 
             <button
               onClick={() => openCheckout({ name: `VIP Deposit ($${depositPrice})`, price: depositPrice, deposit: true })}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#141720] hover:bg-[#1c212e] text-slate-200 border border-white/[0.1] font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#101419] hover:bg-[#171C22] text-[#F5F3EA] border border-[#252B32] font-semibold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 text-[#78E08F]" />
               <span>Reserve with ${depositPrice} Deposit</span>
             </button>
           </div>
 
           {/* Perks Indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 pt-2">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-[#969DA6] pt-2">
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 text-[#78E08F]" />
               <span>100% Refundable Guarantee</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 text-[#78E08F]" />
               <span>{perksText}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 text-[#78E08F]" />
               <span>Direct Co-Founder Access</span>
             </div>
           </div>
@@ -352,37 +352,37 @@ export default function PreorderLandingPage({ slug }) {
 
         {/* Visual Designed Mockup Showcase (Full, Non-Editable UI Frame) */}
         <div className="pt-6">
-          <ProductMockupDisplay project={project} theme="purple" />
+          <ProductMockupDisplay project={project} theme="lime" />
         </div>
 
         {/* Value Pillars Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-12 text-left">
-          <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2.5">
-            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+          <div className="p-6 rounded-2xl bg-[#101419] border border-[#252B32] hover:border-[#C8FF3D]/40 space-y-2.5 transition-all">
+            <div className="w-9 h-9 rounded-xl bg-[#171C22] border border-[#252B32] flex items-center justify-center text-[#C8FF3D]">
               <Zap className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-white">Built for Your Workflow</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="text-sm font-bold text-[#F5F3EA]">Built for Your Workflow</h3>
+            <p className="text-xs text-[#969DA6] leading-relaxed">
               Designed specifically around the exact bottlenecks faced by {creatorName}’s audience in {niche}.
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <div className="p-6 rounded-2xl bg-[#101419] border border-[#252B32] hover:border-[#78E08F]/40 space-y-2.5 transition-all">
+            <div className="w-9 h-9 rounded-xl bg-[#171C22] border border-[#252B32] flex items-center justify-center text-[#78E08F]">
               <Star className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-white">Lifetime Founder Perks</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="text-sm font-bold text-[#F5F3EA]">Lifetime Founder Perks</h3>
+            <p className="text-xs text-[#969DA6] leading-relaxed">
               Lock in 50% lifetime pricing and priority feature requests forever on day one.
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+          <div className="p-6 rounded-2xl bg-[#101419] border border-[#252B32] hover:border-[#C8FF3D]/40 space-y-2.5 transition-all">
+            <div className="w-9 h-9 rounded-xl bg-[#171C22] border border-[#252B32] flex items-center justify-center text-[#C8FF3D]">
               <Lock className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-white">Direct Co-Founder Line</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="text-sm font-bold text-[#F5F3EA]">Direct Co-Founder Line</h3>
+            <p className="text-xs text-[#969DA6] leading-relaxed">
               Join the private VIP Slack & direct alpha advisory channels with {creatorName} & Creator Forge.
             </p>
           </div>
@@ -392,16 +392,16 @@ export default function PreorderLandingPage({ slug }) {
       {/* Checkout Modal (Stripe & PayPal Options) */}
       {checkoutModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="max-w-md w-full max-h-[90vh] flex flex-col p-5 sm:p-6 rounded-3xl bg-[#0e1117] border border-purple-500/30 shadow-2xl animate-fade-in text-left my-auto">
+          <div className="max-w-md w-full max-h-[90vh] flex flex-col p-5 sm:p-6 rounded-3xl bg-[#101419] border border-[#252B32] shadow-2xl animate-fade-in text-left my-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 shrink-0">
+            <div className="flex items-center justify-between border-b border-[#252B32] pb-3 shrink-0">
               <div>
-                <h3 className="text-sm font-bold text-white">Complete Pre-Order Reservation</h3>
-                <p className="text-[11px] text-slate-400">{selectedTier.name} — ${selectedTier.price}</p>
+                <h3 className="text-sm font-bold text-[#F5F3EA]">Complete Pre-Order Reservation</h3>
+                <p className="text-[11px] text-[#969DA6]">{selectedTier.name} — ${selectedTier.price}</p>
               </div>
               <button
                 onClick={() => setCheckoutModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center transition-colors"
+                className="w-7 h-7 rounded-full bg-[#171C22] hover:bg-[#252B32] text-[#969DA6] hover:text-[#F5F3EA] text-xs font-bold flex items-center justify-center transition-colors"
               >
                 ✕
               </button>
@@ -411,47 +411,47 @@ export default function PreorderLandingPage({ slug }) {
             <div className="overflow-y-auto pr-1 pt-3 space-y-3.5">
               {isSuccess && successReceipt ? (
                 <div className="text-center py-2 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-950/50">
+                  <div className="w-12 h-12 rounded-full bg-[#78E08F]/20 border border-[#78E08F]/40 text-[#78E08F] flex items-center justify-center mx-auto shadow-lg shadow-[#78E08F]/20">
                     <Check className="w-6 h-6" />
                   </div>
                   <div>
-                    <h4 className="text-base font-black text-white">Payment Successful! 🎉</h4>
-                    <p className="text-xs text-slate-300 mt-0.5">
-                      Welcome to the Founding Member cohort, <span className="text-white font-bold">{successReceipt.name}</span>!
+                    <h4 className="text-base font-black text-[#F5F3EA]">Payment Successful! 🎉</h4>
+                    <p className="text-xs text-[#969DA6] mt-0.5">
+                      Welcome to the Founding Member cohort, <span className="text-[#F5F3EA] font-bold">{successReceipt.name}</span>!
                     </p>
                   </div>
 
                   {/* Receipt Card */}
-                  <div className="p-3.5 rounded-2xl bg-[#141720] border border-white/[0.08] text-xs space-y-1.5 text-left">
-                    <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
-                      <span className="text-slate-400 text-[11px]">Transaction ID</span>
-                      <span className="font-mono text-purple-300 font-bold text-[11px]">{successReceipt.txId}</span>
+                  <div className="p-3.5 rounded-2xl bg-[#0D1014] border border-[#252B32] text-xs space-y-1.5 text-left">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-[#252B32]">
+                      <span className="text-[#969DA6] text-[11px]">Transaction ID</span>
+                      <span className="font-mono text-[#C8FF3D] font-bold text-[11px]">{successReceipt.txId}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-400">Payer Name</span>
-                      <span className="text-white font-semibold">{successReceipt.name}</span>
+                      <span className="text-[#969DA6]">Payer Name</span>
+                      <span className="text-[#F5F3EA] font-semibold">{successReceipt.name}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-400">Payer Email</span>
-                      <span className="text-white font-mono">{successReceipt.email}</span>
+                      <span className="text-[#969DA6]">Payer Email</span>
+                      <span className="text-[#F5F3EA] font-mono">{successReceipt.email}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-400">Payment Gateway</span>
-                      <span className="text-slate-200">{successReceipt.paymentMethod}</span>
+                      <span className="text-[#969DA6]">Payment Gateway</span>
+                      <span className="text-[#F5F3EA]">{successReceipt.paymentMethod}</span>
                     </div>
-                    <div className="flex items-center justify-between pt-1.5 border-t border-white/[0.06] font-bold text-[11px]">
-                      <span className="text-slate-300">Amount Paid</span>
-                      <span className="text-emerald-400 text-sm font-mono">+${successReceipt.amount}</span>
+                    <div className="flex items-center justify-between pt-1.5 border-t border-[#252B32] font-bold text-[11px]">
+                      <span className="text-[#969DA6]">Amount Paid</span>
+                      <span className="text-[#78E08F] text-sm font-mono">+${successReceipt.amount}</span>
                     </div>
                   </div>
 
-                  <p className="text-[10px] text-slate-400">
-                    A receipt and your private founder credentials have been sent to <strong className="text-slate-200 font-mono">{successReceipt.email}</strong>.
+                  <p className="text-[10px] text-[#969DA6]">
+                    A receipt and your private founder credentials have been sent to <strong className="text-[#F5F3EA] font-mono">{successReceipt.email}</strong>.
                   </p>
 
                   <button
                     onClick={() => setCheckoutModalOpen(false)}
-                    className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-colors shadow-lg shadow-emerald-950/40"
+                    className="w-full py-2.5 rounded-xl bg-[#C8FF3D] hover:bg-[#d8ff66] text-[#080A0C] font-bold text-xs transition-colors shadow-lg shadow-[#C8FF3D]/10"
                   >
                     Done
                   </button>
@@ -467,34 +467,34 @@ export default function PreorderLandingPage({ slug }) {
 
                   {/* Tier Selection */}
                   <div>
-                    <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] text-[#969DA6] font-bold uppercase tracking-wider block mb-1">
                       1. Select Reservation Tier
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => setSelectedTier({ name: `Founding Annual Pass ($${foundingPrice})`, price: foundingPrice, deposit: false })}
-                        className={`p-2 rounded-xl border text-left text-xs transition-all ${
+                        className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
                           !selectedTier.deposit
-                            ? 'bg-purple-600/20 border-purple-500 text-white shadow-sm'
-                            : 'bg-[#141720] border-white/[0.06] text-slate-400 hover:text-white'
+                            ? 'bg-[#C8FF3D]/10 border-[#C8FF3D] text-[#F5F3EA] shadow-sm'
+                            : 'bg-[#0D1014] border-[#252B32] text-[#969DA6] hover:text-[#F5F3EA]'
                         }`}
                       >
-                        <span className="font-bold block text-white text-[11px]">Founding Pass</span>
-                        <span className="text-emerald-400 font-mono font-bold text-xs">${foundingPrice}</span>
+                        <span className="font-bold block text-[#F5F3EA] text-[11px]">Founding Pass</span>
+                        <span className="text-[#C8FF3D] font-mono font-bold text-xs">${foundingPrice}</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setSelectedTier({ name: `VIP Deposit ($${depositPrice})`, price: depositPrice, deposit: true })}
-                        className={`p-2 rounded-xl border text-left text-xs transition-all ${
+                        className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
                           selectedTier.deposit
-                            ? 'bg-purple-600/20 border-purple-500 text-white shadow-sm'
-                            : 'bg-[#141720] border-white/[0.06] text-slate-400 hover:text-white'
+                            ? 'bg-[#C8FF3D]/10 border-[#C8FF3D] text-[#F5F3EA] shadow-sm'
+                            : 'bg-[#0D1014] border-[#252B32] text-[#969DA6] hover:text-[#F5F3EA]'
                         }`}
                       >
-                        <span className="font-bold block text-white text-[11px]">VIP Deposit</span>
-                        <span className="text-emerald-400 font-mono font-bold text-xs">${depositPrice} (Refundable)</span>
+                        <span className="font-bold block text-[#F5F3EA] text-[11px]">VIP Deposit</span>
+                        <span className="text-[#78E08F] font-mono font-bold text-xs">${depositPrice} (Refundable)</span>
                       </button>
                     </div>
                   </div>
@@ -502,7 +502,7 @@ export default function PreorderLandingPage({ slug }) {
                   {/* Required Payer Fields */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] text-[#969DA6] font-bold uppercase tracking-wider block mb-1">
                         Full Name <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -511,12 +511,12 @@ export default function PreorderLandingPage({ slug }) {
                         placeholder="Jane Doe"
                         value={buyerName}
                         onChange={e => setBuyerName(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-[#141720] border border-white/[0.08] text-xs text-white outline-none focus:border-purple-500/60"
+                        className="w-full px-3 py-2 rounded-xl bg-[#0D1014] border border-[#252B32] text-xs text-[#F5F3EA] outline-none focus:border-[#C8FF3D]"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] text-[#969DA6] font-bold uppercase tracking-wider block mb-1">
                         Email Address <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -525,14 +525,14 @@ export default function PreorderLandingPage({ slug }) {
                         placeholder="jane@example.com"
                         value={buyerEmail}
                         onChange={e => setBuyerEmail(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-[#141720] border border-white/[0.08] text-xs text-white outline-none focus:border-purple-500/60"
+                        className="w-full px-3 py-2 rounded-xl bg-[#0D1014] border border-[#252B32] text-xs text-[#F5F3EA] outline-none focus:border-[#C8FF3D]"
                       />
                     </div>
                   </div>
 
                   {/* Payment Method Selector (Stripe vs PayPal) */}
                   <div>
-                    <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] text-[#969DA6] font-bold uppercase tracking-wider block mb-1">
                       2. Payment Method
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -541,8 +541,8 @@ export default function PreorderLandingPage({ slug }) {
                         onClick={() => setPaymentMethod('stripe')}
                         className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-all ${
                           paymentMethod === 'stripe'
-                            ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
-                            : 'bg-[#141720] border-white/[0.08] text-slate-400 hover:text-white'
+                            ? 'bg-[#C8FF3D] text-[#080A0C] border-[#C8FF3D] shadow-sm'
+                            : 'bg-[#0D1014] border-[#252B32] text-[#969DA6] hover:text-[#F5F3EA]'
                         }`}
                       >
                         <CreditCard className="w-3.5 h-3.5" />
@@ -555,7 +555,7 @@ export default function PreorderLandingPage({ slug }) {
                         className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-all ${
                           paymentMethod === 'paypal'
                             ? 'bg-[#0070ba] text-white border-[#0070ba] shadow-sm'
-                            : 'bg-[#141720] border-white/[0.08] text-slate-400 hover:text-white'
+                            : 'bg-[#0D1014] border-[#252B32] text-[#969DA6] hover:text-[#F5F3EA]'
                         }`}
                       >
                         <span className="font-extrabold italic">P</span>
@@ -566,10 +566,10 @@ export default function PreorderLandingPage({ slug }) {
 
                   {/* Stripe Card Inputs Simulation */}
                   {paymentMethod === 'stripe' && (
-                    <div className="p-3 rounded-xl bg-[#141720] border border-white/[0.06] space-y-2">
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <div className="p-3 rounded-xl bg-[#0D1014] border border-[#252B32] space-y-2">
+                      <div className="flex items-center justify-between text-[10px] text-[#969DA6]">
                         <span>Card Details</span>
-                        <span className="text-emerald-400 font-mono flex items-center gap-1">
+                        <span className="text-[#78E08F] font-mono flex items-center gap-1">
                           <Lock className="w-2.5 h-2.5" />
                           <span>256-bit Encrypted</span>
                         </span>
@@ -580,7 +580,7 @@ export default function PreorderLandingPage({ slug }) {
                         placeholder="4242 •••• •••• 4242"
                         value={cardNumber}
                         onChange={e => setCardNumber(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-lg bg-[#0e1117] border border-white/[0.06] text-xs text-white outline-none font-mono focus:border-purple-500/50"
+                        className="w-full px-3 py-1.5 rounded-lg bg-[#101419] border border-[#252B32] text-xs text-[#F5F3EA] outline-none font-mono focus:border-[#C8FF3D]"
                       />
 
                       <div className="grid grid-cols-2 gap-2">
@@ -589,14 +589,14 @@ export default function PreorderLandingPage({ slug }) {
                           placeholder="MM / YY"
                           value={cardExp}
                           onChange={e => setCardExp(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg bg-[#0e1117] border border-white/[0.06] text-xs text-white outline-none font-mono focus:border-purple-500/50 text-center"
+                          className="w-full px-3 py-1.5 rounded-lg bg-[#101419] border border-[#252B32] text-xs text-[#F5F3EA] outline-none font-mono focus:border-[#C8FF3D] text-center"
                         />
                         <input
                           type="text"
                           placeholder="CVC"
                           value={cardCvc}
                           onChange={e => setCardCvc(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg bg-[#0e1117] border border-white/[0.06] text-xs text-white outline-none font-mono focus:border-purple-500/50 text-center"
+                          className="w-full px-3 py-1.5 rounded-lg bg-[#101419] border border-[#252B32] text-xs text-[#F5F3EA] outline-none font-mono focus:border-[#C8FF3D] text-center"
                         />
                       </div>
                     </div>
@@ -604,34 +604,34 @@ export default function PreorderLandingPage({ slug }) {
 
                   {/* PayPal Express Container Simulation */}
                   {paymentMethod === 'paypal' && (
-                    <div className="p-3 rounded-xl bg-[#141720] border border-white/[0.06] text-center space-y-1">
-                      <span className="text-[11px] text-slate-300 block font-semibold">
+                    <div className="p-3 rounded-xl bg-[#0D1014] border border-[#252B32] text-center space-y-1">
+                      <span className="text-[11px] text-[#F5F3EA] block font-semibold">
                         You will complete the payment securely via PayPal.
                       </span>
-                      <span className="text-[10px] text-slate-400 block">
+                      <span className="text-[10px] text-[#969DA6] block">
                         1-Click checkout with PayPal Balance, Bank, or Linked Cards.
                       </span>
                     </div>
                   )}
 
                   {/* Total Bar */}
-                  <div className="p-2.5 rounded-xl bg-[#141720] border border-white/[0.06] text-xs flex items-center justify-between">
-                    <span className="text-slate-400">Total Due Today:</span>
-                    <span className="text-sm font-bold text-emerald-400 font-mono">${selectedTier.price}.00</span>
+                  <div className="p-2.5 rounded-xl bg-[#0D1014] border border-[#252B32] text-xs flex items-center justify-between">
+                    <span className="text-[#969DA6]">Total Due Today:</span>
+                    <span className="text-sm font-bold text-[#78E08F] font-mono">${selectedTier.price}.00</span>
                   </div>
 
                   <button
                     type="submit"
                     disabled={isProcessing}
-                    className={`w-full py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 shadow-lg ${
+                    className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 shadow-lg ${
                       paymentMethod === 'paypal'
-                        ? 'bg-[#ffc439] hover:bg-[#f0b830] text-slate-950 shadow-amber-950/40'
-                        : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-950/40'
+                        ? 'bg-[#ffc439] hover:bg-[#f0b830] text-[#080A0C]'
+                        : 'bg-[#C8FF3D] hover:bg-[#d8ff66] text-[#080A0C]'
                     }`}
                   >
                     {isProcessing ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                        <Loader2 className="w-4 h-4 animate-spin text-[#080A0C]" />
                         <span>Processing Payment...</span>
                       </>
                     ) : paymentMethod === 'paypal' ? (

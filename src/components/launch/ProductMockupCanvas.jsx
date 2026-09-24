@@ -11,7 +11,7 @@ import { generateProductImageWithOpenAI } from '../../services/ai'
 export default function ProductMockupCanvas({ project, onSaveMockupImage, onShowNotification }) {
   const mockupRef = useRef(null)
   const [viewMode, setViewMode] = useState('interactive') // 'interactive' | 'ai_generated' | 'converted'
-  const [accentColor, setAccentColor] = useState('purple')
+  const [accentColor, setAccentColor] = useState('lime')
   const [isCapturing, setIsCapturing] = useState(false)
   const [isGeneratingAI, setIsGeneratingAI] = useState(false)
   const [convertedImageUrl, setConvertedImageUrl] = useState(() => project?.mockupImage || null)
@@ -67,14 +67,23 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
 
   // Accent color themes
   const themeMap = {
+    lime: {
+      border: 'border-[#252B32]',
+      glow: 'shadow-[0_20px_50px_rgba(0,0,0,0.6)]',
+      badge: 'bg-[#C8FF3D]/10 text-[#C8FF3D] border border-[#C8FF3D]/30',
+      primaryBg: 'bg-[#C8FF3D] text-[#080A0C]',
+      bar: 'bg-[#C8FF3D]',
+      text: 'text-[#C8FF3D]',
+      gradient: 'from-[#101419] to-[#0D1014]'
+    },
     purple: {
-      border: 'border-purple-500/40',
-      glow: 'shadow-purple-950/50',
-      badge: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
-      primaryBg: 'bg-purple-600',
-      bar: 'bg-purple-500',
-      text: 'text-purple-400',
-      gradient: 'from-purple-950/40 to-[#0e1117]'
+      border: 'border-[#252B32]',
+      glow: 'shadow-[0_20px_50px_rgba(0,0,0,0.6)]',
+      badge: 'bg-[#C8FF3D]/10 text-[#C8FF3D] border border-[#C8FF3D]/30',
+      primaryBg: 'bg-[#C8FF3D] text-[#080A0C]',
+      bar: 'bg-[#C8FF3D]',
+      text: 'text-[#C8FF3D]',
+      gradient: 'from-[#101419] to-[#0D1014]'
     },
     emerald: {
       border: 'border-emerald-500/40',
@@ -114,7 +123,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
     },
   }
 
-  const currentTheme = themeMap[accentColor] || themeMap.purple
+  const currentTheme = themeMap[accentColor] || themeMap.lime
 
   // Convert live rendered DOM to PNG image
   const handleConvertToImage = async () => {
@@ -181,13 +190,13 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
   return (
     <div className="space-y-4 w-full max-w-full overflow-hidden">
       {/* Compact Responsive Control Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-[#0e1117] border border-white/[0.08]">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-[#101419] border border-[#252B32]">
         {/* View Mode Tabs */}
-        <div className="flex items-center gap-1 bg-[#141720] p-1 rounded-xl border border-white/[0.06] shrink-0">
+        <div className="flex items-center gap-1 bg-[#0D1014] p-1 rounded-xl border border-[#252B32] shrink-0">
           <button
             onClick={() => setViewMode('interactive')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-              viewMode === 'interactive' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+              viewMode === 'interactive' ? 'bg-[#C8FF3D] text-[#080A0C]' : 'text-[#969DA6] hover:text-[#F5F3EA]'
             }`}
           >
             Studio
@@ -195,17 +204,17 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
           <button
             onClick={() => setViewMode('ai_generated')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${
-              viewMode === 'ai_generated' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+              viewMode === 'ai_generated' ? 'bg-[#C8FF3D] text-[#080A0C]' : 'text-[#969DA6] hover:text-[#F5F3EA]'
             }`}
           >
-            <Sparkles className="w-3 h-3 text-purple-300" />
+            <Sparkles className="w-3 h-3 text-[#C8FF3D]" />
             <span>DALL-E 3</span>
           </button>
           {convertedImageUrl && (
             <button
               onClick={() => setViewMode('converted')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-                viewMode === 'converted' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                viewMode === 'converted' ? 'bg-[#78E08F] text-[#080A0C]' : 'text-[#969DA6] hover:text-[#F5F3EA]'
               }`}
             >
               PNG
@@ -217,13 +226,13 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
         <div className="flex items-center gap-1.5 flex-wrap">
           {/* Accent Palette Selector */}
           {viewMode === 'interactive' && (
-            <div className="flex items-center gap-1 pr-1.5 border-r border-white/[0.08]">
-              {['purple', 'emerald', 'indigo', 'amber', 'rose'].map(color => (
+            <div className="flex items-center gap-1 pr-1.5 border-r border-[#252B32]">
+              {['lime', 'emerald', 'indigo', 'amber', 'rose'].map(color => (
                 <button
                   key={color}
                   onClick={() => setAccentColor(color)}
                   className={`w-4 h-4 rounded-full border transition-transform ${
-                    color === 'purple' ? 'bg-purple-500' :
+                    color === 'lime' ? 'bg-[#C8FF3D]' :
                     color === 'emerald' ? 'bg-emerald-500' :
                     color === 'indigo' ? 'bg-indigo-500' :
                     color === 'amber' ? 'bg-amber-500' : 'bg-rose-500'
@@ -239,7 +248,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
             <button
               onClick={() => setShowCustomizer(!showCustomizer)}
               className={`px-2.5 py-1 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-colors ${
-                showCustomizer ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-white/[0.04] text-slate-300 border-white/[0.08]'
+                showCustomizer ? 'bg-[#C8FF3D]/10 text-[#C8FF3D] border-[#C8FF3D]/40' : 'bg-[#171C22] text-[#969DA6] border-[#252B32] hover:text-[#F5F3EA]'
               }`}
             >
               <Settings2 className="w-3 h-3" />
@@ -252,7 +261,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
             <button
               onClick={handleConvertToImage}
               disabled={isCapturing}
-              className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+              className="px-3 py-1 rounded-xl bg-[#78E08F] hover:bg-[#8ef2a5] text-[#080A0C] text-xs font-bold flex items-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50"
             >
               {isCapturing ? (
                 <>
@@ -272,7 +281,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
           <button
             onClick={handleGenerateOpenAIImage}
             disabled={isGeneratingAI}
-            className="px-3 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+            className="px-3 py-1 rounded-xl bg-[#171C22] hover:bg-[#252B32] border border-[#252B32] text-[#F5F3EA] text-xs font-bold flex items-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50"
           >
             {isGeneratingAI ? (
               <>
@@ -281,7 +290,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
               </>
             ) : (
               <>
-                <Sparkles className="w-3 h-3 text-purple-200" />
+                <Sparkles className="w-3 h-3 text-[#C8FF3D]" />
                 <span>Generate AI</span>
               </>
             )}
@@ -302,55 +311,55 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
 
       {/* Optional Data Customizer Drawer */}
       {showCustomizer && viewMode === 'interactive' && (
-        <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.08] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs animate-fade-in">
+        <div className="p-4 rounded-xl bg-[#101419] border border-[#252B32] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs animate-fade-in">
           <div>
-            <label className="text-[10px] text-slate-400 font-bold block mb-1">Metric 1 (Label & Value)</label>
+            <label className="text-[10px] text-[#969DA6] font-mono font-bold block mb-1">Metric 1 (Label & Value)</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={m1Label}
                 onChange={e => setM1Label(e.target.value)}
-                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0e1117] border border-white/[0.08] text-white text-xs"
+                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0D1014] border border-[#252B32] text-[#F5F3EA] text-xs outline-none focus:border-[#C8FF3D]"
               />
               <input
                 type="text"
                 value={m1Val}
                 onChange={e => setM1Val(e.target.value)}
-                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0e1117] border border-white/[0.08] text-purple-300 font-bold text-xs"
+                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0D1014] border border-[#252B32] text-[#C8FF3D] font-bold text-xs outline-none focus:border-[#C8FF3D]"
               />
             </div>
           </div>
           <div>
-            <label className="text-[10px] text-slate-400 font-bold block mb-1">Metric 2 (Label & Value)</label>
+            <label className="text-[10px] text-[#969DA6] font-mono font-bold block mb-1">Metric 2 (Label & Value)</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={m2Label}
                 onChange={e => setM2Label(e.target.value)}
-                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0e1117] border border-white/[0.08] text-white text-xs"
+                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0D1014] border border-[#252B32] text-[#F5F3EA] text-xs outline-none focus:border-[#C8FF3D]"
               />
               <input
                 type="text"
                 value={m2Val}
                 onChange={e => setM2Val(e.target.value)}
-                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0e1117] border border-white/[0.08] text-emerald-300 font-bold text-xs"
+                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0D1014] border border-[#252B32] text-[#78E08F] font-bold text-xs outline-none focus:border-[#C8FF3D]"
               />
             </div>
           </div>
           <div>
-            <label className="text-[10px] text-slate-400 font-bold block mb-1">Metric 3 (Label & Value)</label>
+            <label className="text-[10px] text-[#969DA6] font-mono font-bold block mb-1">Metric 3 (Label & Value)</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={m3Label}
                 onChange={e => setM3Label(e.target.value)}
-                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0e1117] border border-white/[0.08] text-white text-xs"
+                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0D1014] border border-[#252B32] text-[#F5F3EA] text-xs outline-none focus:border-[#C8FF3D]"
               />
               <input
                 type="text"
                 value={m3Val}
                 onChange={e => setM3Val(e.target.value)}
-                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0e1117] border border-white/[0.08] text-indigo-300 font-bold text-xs"
+                className="w-1/2 px-2.5 py-1.5 rounded-lg bg-[#0D1014] border border-[#252B32] text-[#C8FF3D] font-bold text-xs outline-none focus:border-[#C8FF3D]"
               />
             </div>
           </div>
@@ -495,19 +504,19 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
 
       {/* VIEW 2: AI VISUAL MOCKUP */}
       {viewMode === 'ai_generated' && (
-        <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
+        <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" />
+              <h4 className="text-sm font-bold text-[#F5F3EA] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#C8FF3D]" />
                 <span>AI Visual Product Mockup</span>
               </h4>
-              <p className="text-xs text-slate-400">Photorealistic product design render generated by AI Design Engine.</p>
+              <p className="text-xs text-[#969DA6]">Photorealistic product design render generated by AI Design Engine.</p>
             </div>
             {aiImageUrl && (
               <button
                 onClick={handleDownload}
-                className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl bg-[#C8FF3D] hover:bg-[#d8ff66] text-[#080A0C] font-bold text-xs flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download Mockup</span>
@@ -516,7 +525,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
           </div>
 
           {aiImageUrl ? (
-            <div className="rounded-xl overflow-hidden border border-purple-500/30 shadow-2xl max-h-[420px] flex items-center justify-center bg-black">
+            <div className="rounded-xl overflow-hidden border border-[#252B32] shadow-2xl max-h-[420px] flex items-center justify-center bg-black">
               <img
                 src={aiImageUrl}
                 alt="AI Generated Mockup"
@@ -524,15 +533,15 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
               />
             </div>
           ) : (
-            <div className="py-12 text-center text-slate-400 border border-dashed border-white/[0.1] rounded-2xl space-y-3">
-              <Image className="w-10 h-10 text-purple-400 mx-auto" />
+            <div className="py-12 text-center text-[#969DA6] border border-dashed border-[#252B32] rounded-2xl space-y-3">
+              <Image className="w-10 h-10 text-[#C8FF3D] mx-auto" />
               <p className="text-xs">No visual product mockup generated yet.</p>
               <button
                 onClick={handleGenerateOpenAIImage}
                 disabled={isGeneratingAI}
-                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 mx-auto"
+                className="px-4 py-2 rounded-xl bg-[#C8FF3D] hover:bg-[#d8ff66] text-[#080A0C] font-bold text-xs flex items-center gap-1.5 mx-auto cursor-pointer"
               >
-                {isGeneratingAI ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {isGeneratingAI ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#080A0C]" /> : <Sparkles className="w-3.5 h-3.5 text-[#080A0C]" />}
                 <span>Generate AI Mockup</span>
               </button>
             </div>

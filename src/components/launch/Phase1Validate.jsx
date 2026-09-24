@@ -1720,15 +1720,15 @@ export default function Phase1Validate({
           {(assetSubTab === 'page' || assetSubTab === 'infrastructure') && (
             <div className="space-y-4 text-xs">
               {/* Top Browser Bar with Real Localhost URL */}
-              <div className="p-3 rounded-2xl bg-[#0e1117] border border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
+              <div className="p-3 rounded-2xl bg-[#101419] border border-[#252B32] flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#141720] border border-white/[0.08] text-purple-300 font-mono text-[11px] truncate flex-1 max-w-lg">
-                    <Globe className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#0D1014] border border-[#252B32] text-[#C8FF3D] font-mono text-[11px] truncate flex-1 max-w-lg">
+                    <Globe className="w-3.5 h-3.5 text-[#C8FF3D] shrink-0" />
                     <span className="truncate">
                       {`${origin}/preorder/${productSlug}`}
                     </span>
@@ -1744,7 +1744,7 @@ export default function Phase1Validate({
                         showNotification('Pre-order link copied!')
                       }
                     }}
-                    className="px-3 py-1 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 text-xs font-bold border border-white/[0.1] flex items-center gap-1 transition-colors"
+                    className="px-3 py-1 rounded-xl bg-[#171C22] hover:bg-[#252B32] text-[#F5F3EA] text-xs font-bold border border-[#252B32] flex items-center gap-1 transition-colors"
                   >
                     <Copy className="w-3 h-3" />
                     <span>Copy Link</span>
@@ -1754,7 +1754,7 @@ export default function Phase1Validate({
                     href={`${origin}/preorder/${productSlug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1 transition-colors shadow-sm"
+                    className="px-3 py-1 rounded-xl bg-[#C8FF3D] hover:bg-[#d8ff66] text-[#080A0C] text-xs font-bold flex items-center gap-1 transition-colors shadow-sm"
                   >
                     <span>Open Live Page</span>
                     <ExternalLink className="w-3 h-3" />
@@ -1763,24 +1763,24 @@ export default function Phase1Validate({
               </div>
 
               {/* Rich Live Interactive Landing Page Preview Frame */}
-              <div className="rounded-3xl bg-[#090b0e] border border-white/[0.1] overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6">
+              <div className="rounded-3xl bg-[#080A0C] border border-[#252B32] overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6">
                 {/* Top Pre-sale Badge */}
                 <div className="text-center space-y-3 max-w-2xl mx-auto">
                   <div className="flex items-center justify-center gap-2 flex-wrap">
-                    <span className="inline-block px-3.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-black uppercase tracking-wider">
+                    <span className="inline-block px-3.5 py-1 rounded-full bg-[#C8FF3D]/10 border border-[#C8FF3D]/30 text-[#C8FF3D] text-xs font-mono font-bold uppercase tracking-wider">
                       🔥 Founding Member Pre-Sale
                     </span>
                     {(campaignKit?.landingPageCopy?.activeExperimentTitle || campaignKit?.pricingConfig?.activeExperimentTitle) && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold shadow-sm">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#78E08F]/15 border border-[#78E08F]/30 text-[#78E08F] text-xs font-bold shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-[#78E08F]" />
                         <span>AI Optimization Variant Live</span>
                       </span>
                     )}
                   </div>
-                  <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                  <h2 className="font-display text-2xl sm:text-4xl font-black text-[#F5F3EA] tracking-tight leading-tight">
                     {campaignKit?.landingPageCopy?.headline || `The ${project?.productName || 'Product'} System`}
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[#969DA6] leading-relaxed">
                     {campaignKit?.landingPageCopy?.subheadline || project?.productTagline || 'Reserve early founding access and lock in lifetime benefits.'}
                   </p>
 
@@ -1823,45 +1823,45 @@ export default function Phase1Validate({
 
                 {/* Visual Designed Mockup Showcase (Full, Non-Editable UI Frame) */}
                 <div className="pt-4 max-w-4xl mx-auto">
-                  <ProductMockupDisplay project={project} theme="purple" />
+                  <ProductMockupDisplay project={project} theme="lime" />
                 </div>
               </div>
 
               {/* Infrastructure Hub: Checkout, Attribution & Waitlist */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                 {/* 1. Stripe Checkout Engine */}
-                <div className="p-4 rounded-2xl bg-[#141720] border border-white/[0.08] space-y-2.5">
+                <div className="p-4 rounded-2xl bg-[#101419] border border-[#252B32] space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Stripe Checkout</span>
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[10px] font-bold text-[#78E08F] uppercase tracking-wider font-mono">Stripe Checkout</span>
+                    <span className="w-2 h-2 rounded-full bg-[#78E08F] animate-pulse" />
                   </div>
-                  <div className="text-base font-extrabold text-white">
-                    ${presalesRevenue.toLocaleString()} <span className="text-xs text-slate-400 font-normal">Collected</span>
+                  <div className="text-base font-extrabold text-[#F5F3EA] font-display">
+                    ${presalesRevenue.toLocaleString()} <span className="text-xs text-[#969DA6] font-normal">Collected</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-[#969DA6] leading-relaxed">
                     Stripe pre-orders active. Live payment simulation updates revenue in real-time.
                   </p>
                 </div>
 
                 {/* 2. Creator Attribution & UTM Tracking */}
-                <div className="p-4 rounded-2xl bg-[#141720] border border-white/[0.08] space-y-2.5">
+                <div className="p-4 rounded-2xl bg-[#101419] border border-[#252B32] space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Attribution Tracker</span>
-                    <span className="text-[10px] font-mono text-purple-300">?ref={(project?.creatorHandle || 'creator').replace('@','')}</span>
+                    <span className="text-[10px] font-bold text-[#C8FF3D] uppercase tracking-wider font-mono">Attribution Tracker</span>
+                    <span className="text-[10px] font-mono text-[#C8FF3D]">?ref={(project?.creatorHandle || 'creator').replace('@','')}</span>
                   </div>
-                  <div className="text-base font-extrabold text-white">
-                    100% <span className="text-xs text-slate-400 font-normal">Channel Attribution</span>
+                  <div className="text-base font-extrabold text-[#F5F3EA] font-display">
+                    100% <span className="text-xs text-[#969DA6] font-normal">Channel Attribution</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-[#969DA6] leading-relaxed">
                     Tracks creator audience conversions, social link clicks, and presale attribution.
                   </p>
                 </div>
 
                 {/* 3. Waitlist & Deposit Capture */}
-                <div className="p-4 rounded-2xl bg-[#141720] border border-white/[0.08] space-y-2.5">
+                <div className="p-4 rounded-2xl bg-[#101419] border border-[#252B32] space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Waitlist System</span>
-                    <span className="text-[10px] text-indigo-300 font-bold">{reservations.length} Leads</span>
+                    <span className="text-[10px] font-bold text-[#78E08F] uppercase tracking-wider font-mono">Waitlist System</span>
+                    <span className="text-[10px] text-[#78E08F] font-mono font-bold">{reservations.length} Leads</span>
                   </div>
                   <div className="text-base font-extrabold text-white">
                     $19 <span className="text-xs text-slate-400 font-normal">Deposit Model</span>

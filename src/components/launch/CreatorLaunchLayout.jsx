@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Rocket, Target, Layers, ExternalLink, LogOut, User, X, ShieldAlert, Lock, Users, ChevronDown, Check, Plus, Loader2, Menu, Search, Send, MessageSquare, Sparkles, Award } from 'lucide-react'
+import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import AcquisitionEngine from './AcquisitionEngine'
 import ProjectOS from './ProjectOS'
 import { ProjectOSSkeleton } from './Section2Skeletons'
@@ -105,12 +106,12 @@ export default function CreatorLaunchLayout({
   const [showSection1Sidebar, setShowSection1Sidebar] = useState(false)
 
   const SECTION1_STEPS = [
-    { step: 1, label: '1. Campaign Setup', desc: 'Target Niches & Autonomous Engine', icon: Target, color: 'text-purple-400', bg: 'bg-purple-500/15' },
-    { step: 2, label: '2. Find & Qualify', desc: 'Discover & Score Creator Candidates', icon: Search, color: 'text-indigo-400', bg: 'bg-indigo-500/15' },
-    { step: 3, label: '3. Autonomous Outreach', desc: 'Personalized Inquiries & SMTP Delivery', icon: Send, color: 'text-cyan-400', bg: 'bg-cyan-500/15' },
-    { step: 4, label: '4. Interested Review', desc: 'Live Creator Inquiries & Replies CRM', icon: MessageSquare, color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
-    { step: 5, label: '5. Audience & Ideas', desc: 'Audience Analysis & 3 Engineered Concepts', icon: Sparkles, color: 'text-amber-400', bg: 'bg-amber-500/15' },
-    { step: 6, label: '6. Pitch & Select', desc: '50/50 Co-Founder Launch Agreement', icon: Award, color: 'text-pink-400', bg: 'bg-pink-500/15' },
+    { step: 1, label: '1. Campaign Setup', desc: 'Target Niches & Autonomous Engine', icon: Target, color: 'text-[#C8FF3D]', bg: 'bg-[#171C22]' },
+    { step: 2, label: '2. Find & Qualify', desc: 'Discover & Score Creator Candidates', icon: Search, color: 'text-[#F5F3EA]', bg: 'bg-[#171C22]' },
+    { step: 3, label: '3. Autonomous Outreach', desc: 'Personalized Inquiries & SMTP Delivery', icon: Send, color: 'text-[#F5F3EA]', bg: 'bg-[#171C22]' },
+    { step: 4, label: '4. Interested Review', desc: 'Live Creator Inquiries & Replies CRM', icon: MessageSquare, color: 'text-[#78E08F]', bg: 'bg-[#171C22]' },
+    { step: 5, label: '5. Audience & Ideas', desc: 'Audience Analysis & 3 Engineered Concepts', icon: Sparkles, color: 'text-[#C8FF3D]', bg: 'bg-[#171C22]' },
+    { step: 6, label: '6. Pitch & Select', desc: '50/50 Co-Founder Launch Agreement', icon: Award, color: 'text-[#C8FF3D]', bg: 'bg-[#171C22]' },
   ]
 
   const fetchCrmData = async () => {
@@ -907,39 +908,34 @@ export default function CreatorLaunchLayout({
   };
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-slate-100 font-sans flex flex-col overflow-x-hidden w-full max-w-[100vw]">
+    <div className="min-h-screen bg-[#080A0C] text-[#F5F3EA] font-sans flex flex-col overflow-x-hidden w-full max-w-[100vw]">
       {/* Top Navbar */}
-      <header className="h-14 border-b border-white/[0.08] bg-[#0d0f14]/95 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 relative">
-        {/* Workspace Switching Progress Bar (Linear / Vercel style) */}
+      <header className="h-14 border-b border-[#252B32] bg-[#0D1014]/95 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 relative">
+        {/* Workspace Switching Progress Bar */}
         {isSwitchingCreator && (
           <div className="absolute bottom-0 left-0 right-0 h-[2px] z-50 overflow-hidden bg-white/[0.05]">
-            <div className="h-full bg-gradient-to-r from-emerald-500 via-purple-400 to-emerald-400 animate-pulse w-full" />
+            <div className="h-full bg-gradient-to-r from-transparent via-[#C8FF3D] to-transparent animate-pulse w-full" />
           </div>
         )}
 
         {/* Left: Brand & Navigation */}
         <div className="flex items-center gap-3 sm:gap-5 flex-shrink-0">
           <div
-            className="flex items-center gap-2.5 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group"
             onClick={() => (window.location.href = '/')}
           >
-            <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:border-purple-500/50 transition-colors">
-              <Rocket className="w-4 h-4 text-purple-400" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-white tracking-tight text-sm">
-                Creator Launch
-              </span>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                OS
+            <CreatorForgeLogo size={28} showWordmark={true} />
+            <div className="hidden xl:flex items-center">
+              <span className="text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#171C22] text-[#C8FF3D] border border-[#252B32]">
+                OPERATOR STUDIO
               </span>
             </div>
           </div>
 
-          <div className="h-4 w-px bg-white/10 hidden md:block" />
+          <div className="h-4 w-px bg-[#252B32] hidden md:block" />
 
           {/* Section Switcher Tabs (Tablet & Desktop) */}
-          <div className="hidden md:flex items-center p-1 rounded-xl bg-white/[0.03] border border-white/[0.07]">
+          <div className="hidden md:flex items-center p-1 rounded-xl bg-[#101419] border border-[#252B32]">
             <button
               onClick={() => {
                 setActiveSection('section1')
@@ -954,21 +950,21 @@ export default function CreatorLaunchLayout({
               }}
               className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 activeSection === 'section1'
-                  ? 'bg-purple-500/20 text-purple-200 border border-purple-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-white border border-transparent'
+                  ? 'bg-[#171C22] text-[#F5F3EA] border border-[#363D47] shadow-sm'
+                  : 'text-[#969DA6] hover:text-[#F5F3EA] border border-transparent'
               }`}
             >
-              <Target className="w-3.5 h-3.5 text-purple-400" />
+              <Target className={`w-3.5 h-3.5 ${activeSection === 'section1' ? 'text-[#C8FF3D]' : 'text-[#686F78]'}`} />
               <span>Section 1: Acquisition</span>
             </button>
             <a
               href={activeProject?.id ? `/project-os?project=${activeProject.id}` : '/project-os'}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer text-slate-300 hover:text-white hover:bg-white/[0.05] border border-transparent"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer text-[#969DA6] hover:text-[#F5F3EA] hover:bg-[#171C22] border border-transparent"
               title="Open Dedicated Co-Launch Operations Center"
             >
-              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              <Layers className="w-3.5 h-3.5 text-[#78E08F]" />
               <span>Project OS</span>
-              <ExternalLink className="w-3 h-3 text-slate-400" />
+              <ExternalLink className="w-3 h-3 text-[#686F78]" />
             </a>
           </div>
 
@@ -978,21 +974,21 @@ export default function CreatorLaunchLayout({
               <button
                 type="button"
                 onClick={() => setShowSection1Menu(!showSection1Menu)}
-                className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 text-xs font-semibold text-purple-200 transition-all cursor-pointer shadow-sm"
+                className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-[#101419] hover:bg-[#171C22] border border-[#252B32] text-xs font-semibold text-[#F5F3EA] transition-all cursor-pointer shadow-sm"
                 title="Section 1 Pipeline Steps & Quick Sidebar"
               >
-                <div className="w-5 h-5 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 shrink-0">
+                <div className="w-5 h-5 rounded-lg bg-[#171C22] border border-[#252B32] flex items-center justify-center text-[#C8FF3D] shrink-0">
                   <Target className="w-3.5 h-3.5" />
                 </div>
                 <div className="hidden lg:flex flex-col text-left leading-tight">
-                  <span className="text-[11px] font-bold text-white truncate max-w-[140px]">
+                  <span className="text-[11px] font-bold text-[#F5F3EA] truncate max-w-[140px]">
                     {SECTION1_STEPS.find(s => s.step === section1ActiveStep)?.label || '1. Campaign Setup'}
                   </span>
-                  <span className="text-[9px] text-purple-400 font-mono truncate max-w-[140px]">
+                  <span className="text-[9px] text-[#C8FF3D] font-mono truncate max-w-[140px]">
                     Step {section1ActiveStep} of 6 • Pipeline
                   </span>
                 </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-purple-400 shrink-0 transition-transform ${showSection1Menu ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-[#969DA6] shrink-0 transition-transform ${showSection1Menu ? 'rotate-180' : ''}`} />
               </button>
 
               {showSection1Menu && (
@@ -1001,10 +997,10 @@ export default function CreatorLaunchLayout({
                     className="fixed inset-0 z-40"
                     onClick={() => setShowSection1Menu(false)}
                   />
-                  <div className="absolute left-0 mt-2 w-80 rounded-2xl bg-[#0f131c] border border-white/[0.12] shadow-2xl p-2 z-50 space-y-1 backdrop-blur-xl animate-in fade-in">
-                    <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-white/[0.06]">
+                  <div className="absolute left-0 mt-2 w-80 rounded-2xl bg-[#101419] border border-[#252B32] shadow-2xl p-2 z-50 space-y-1 backdrop-blur-xl animate-in fade-in">
+                    <div className="px-3 py-2 text-[10px] font-bold text-[#969DA6] uppercase tracking-wider flex items-center justify-between border-b border-[#252B32]">
                       <span>Section 1 Acquisition Steps</span>
-                      <span className="text-purple-400 font-mono">Step {section1ActiveStep} / 6</span>
+                      <span className="text-[#C8FF3D] font-mono">Step {section1ActiveStep} / 6</span>
                     </div>
 
                     <div className="max-h-72 overflow-y-auto space-y-1 py-1">
@@ -1022,39 +1018,39 @@ export default function CreatorLaunchLayout({
                             }}
                             className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer ${
                               isCur
-                                ? 'bg-purple-600/20 border border-purple-500/40 text-white shadow-sm'
-                                : 'hover:bg-white/[0.05] text-slate-300 border border-transparent'
+                                ? 'bg-[#171C22] border border-[#C8FF3D]/40 text-[#F5F3EA] shadow-sm'
+                                : 'hover:bg-[#171C22]/60 text-[#969DA6] hover:text-[#F5F3EA] border border-transparent'
                             }`}
                           >
                             <div className={`w-7 h-7 rounded-lg ${s.bg} shrink-0 flex items-center justify-center ${s.color}`}>
                               <Icon className="w-3.5 h-3.5" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="text-xs font-bold truncate text-white">
+                              <div className="text-xs font-bold truncate text-[#F5F3EA]">
                                 {s.label}
                               </div>
-                              <div className="text-[10px] text-slate-400 truncate">
+                              <div className="text-[10px] text-[#686F78] truncate">
                                 {s.desc}
                               </div>
                             </div>
                             {isCur && (
-                              <Check className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                              <Check className="w-3.5 h-3.5 text-[#C8FF3D] shrink-0" />
                             )}
                           </button>
                         )
                       })}
                     </div>
 
-                    <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2 px-1">
+                    <div className="pt-2 border-t border-[#252B32] flex items-center justify-between gap-2 px-1">
                       <button
                         type="button"
                         onClick={() => {
                           setShowSection1Menu(false)
                           setShowSection1Sidebar(true)
                         }}
-                        className="w-full py-2 px-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 border border-purple-500/25 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+                        className="w-full py-2 px-2.5 rounded-xl bg-[#171C22] hover:bg-[#252B32] text-[#F5F3EA] border border-[#252B32] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
                       >
-                        <Layers className="w-3.5 h-3.5 text-purple-400" />
+                        <Layers className="w-3.5 h-3.5 text-[#C8FF3D]" />
                         <span>Open Section 1 Sidebar Drawer</span>
                       </button>
                     </div>
@@ -1070,12 +1066,12 @@ export default function CreatorLaunchLayout({
               <button
                 type="button"
                 onClick={() => setShowPartnerMenu(!showPartnerMenu)}
-                className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] text-xs font-semibold text-white transition-all cursor-pointer shadow-sm"
+                className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-[#101419] hover:bg-[#171C22] border border-[#252B32] text-xs font-semibold text-[#F5F3EA] transition-all cursor-pointer shadow-sm"
                 title="Switch Co-Launch Partner"
               >
-                <div className="w-5 h-5 rounded-full overflow-hidden bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[10px] font-bold text-purple-300 shrink-0">
+                <div className="w-5 h-5 rounded-full overflow-hidden bg-[#171C22] border border-[#252B32] flex items-center justify-center text-[10px] font-bold text-[#C8FF3D] shrink-0">
                   {isSwitchingCreator ? (
-                    <Loader2 className="w-3 h-3 text-emerald-400 animate-spin" />
+                    <Loader2 className="w-3 h-3 text-[#78E08F] animate-spin" />
                   ) : activeProject?.creatorAvatar ? (
                     <img src={activeProject.creatorAvatar} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -1083,17 +1079,17 @@ export default function CreatorLaunchLayout({
                   )}
                 </div>
                 <div className="hidden lg:flex flex-col text-left leading-tight">
-                  <span className="text-[11px] font-bold text-white truncate max-w-[130px]">
+                  <span className="text-[11px] font-bold text-[#F5F3EA] truncate max-w-[130px]">
                     {isSwitchingCreator ? `Switching...` : (activeProject?.creatorName || activeProject?.creatorHandle || 'Select Partner')}
                   </span>
-                  <span className="text-[9px] text-emerald-400 font-mono truncate max-w-[130px]">
+                  <span className="text-[9px] text-[#78E08F] font-mono truncate max-w-[130px]">
                     {isSwitchingCreator ? (switchingTarget?.name || 'Loading') : `${activeProject?.productName || 'Project'} • P${activeProject?.currentPhase || 1}`}
                   </span>
                 </div>
                 {isSwitchingCreator ? (
-                  <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin shrink-0" />
+                  <Loader2 className="w-3.5 h-3.5 text-[#78E08F] animate-spin shrink-0" />
                 ) : (
-                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${showPartnerMenu ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#969DA6] shrink-0 transition-transform ${showPartnerMenu ? 'rotate-180' : ''}`} />
                 )}
               </button>
 
@@ -1103,8 +1099,8 @@ export default function CreatorLaunchLayout({
                     className="fixed inset-0 z-40"
                     onClick={() => setShowPartnerMenu(false)}
                   />
-                  <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-[#0f131c] border border-white/[0.12] shadow-2xl p-2 z-50 space-y-1 backdrop-blur-xl animate-in fade-in">
-                    <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-white/[0.06]">
+                  <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-[#101419] border border-[#252B32] shadow-2xl p-2 z-50 space-y-1 backdrop-blur-xl animate-in fade-in">
+                    <div className="px-3 py-2 text-[10px] font-bold text-[#969DA6] uppercase tracking-wider flex items-center justify-between border-b border-[#252B32]">
                       <span>Co-Launch Partners ({(() => {
                         const seen = new Set()
                         return (allProjects || []).filter(p => {
@@ -1114,7 +1110,7 @@ export default function CreatorLaunchLayout({
                           return true
                         }).length
                       })()})</span>
-                      <span className="text-purple-400">Section 2</span>
+                      <span className="text-[#C8FF3D] font-mono">Section 2</span>
                     </div>
                     <div className="max-h-60 overflow-y-auto space-y-1 py-1">
                       {(() => {
@@ -1138,11 +1134,11 @@ export default function CreatorLaunchLayout({
                             }}
                             className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer ${
                               isCur
-                                ? 'bg-emerald-500/15 border border-emerald-500/30 text-white'
-                                : 'hover:bg-white/[0.05] text-slate-300 border border-transparent'
+                                ? 'bg-[#171C22] border border-[#C8FF3D]/40 text-[#F5F3EA]'
+                                : 'hover:bg-[#171C22]/60 text-[#969DA6] hover:text-[#F5F3EA] border border-transparent'
                             }`}
                           >
-                            <div className="w-7 h-7 rounded-lg overflow-hidden bg-slate-800 shrink-0 flex items-center justify-center text-xs font-bold text-slate-300">
+                            <div className="w-7 h-7 rounded-lg overflow-hidden bg-[#171C22] shrink-0 flex items-center justify-center text-xs font-bold text-[#F5F3EA]">
                               {p.creatorAvatar ? (
                                 <img src={p.creatorAvatar} alt="" className="w-full h-full object-cover" />
                               ) : (
@@ -1150,31 +1146,31 @@ export default function CreatorLaunchLayout({
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="text-xs font-bold truncate text-white">
+                              <div className="text-xs font-bold truncate text-[#F5F3EA]">
                                 {p.creatorName || p.creatorHandle}
                               </div>
-                              <div className="text-[10px] text-slate-400 truncate">
-                                {p.productName} • <span className="text-emerald-400 font-mono">Phase {p.currentPhase || 1}</span>
+                              <div className="text-[10px] text-[#686F78] truncate">
+                                {p.productName} • <span className="text-[#78E08F] font-mono">Phase {p.currentPhase || 1}</span>
                               </div>
                             </div>
                             {isThisSwitching ? (
-                              <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin shrink-0" />
+                              <Loader2 className="w-3.5 h-3.5 text-[#78E08F] animate-spin shrink-0" />
                             ) : isCur ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <Check className="w-3.5 h-3.5 text-[#78E08F] shrink-0" />
                             ) : null}
                           </button>
                         );
                       })
                       })()}
                     </div>
-                    <div className="pt-1 border-t border-white/[0.06]">
+                    <div className="pt-1 border-t border-[#252B32]">
                       <button
                         type="button"
                         onClick={() => {
                           setShowPartnerMenu(false);
                           setActiveSection('section1');
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-purple-300 hover:bg-purple-500/10 transition-all cursor-pointer"
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[#C8FF3D] hover:bg-[#171C22] transition-all cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Launch Another Creator (Section 1)</span>
@@ -1193,33 +1189,33 @@ export default function CreatorLaunchLayout({
           <button
             type="button"
             onClick={() => window.open('/follow-up-crm', '_blank')}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 border border-purple-500/30 transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-[#101419] hover:bg-[#171C22] text-[#F5F3EA] border border-[#252B32] hover:border-[#363D47] transition-all cursor-pointer shadow-sm"
             title="Open Creator Outreach & Follow-Up CRM in a new tab (/follow-up-crm)"
           >
-            <Users className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+            <Users className="w-3.5 h-3.5 text-[#C8FF3D] flex-shrink-0" />
             <span>Follow-Up CRM</span>
-            <ExternalLink className="w-3 h-3 text-purple-300/80" />
+            <ExternalLink className="w-3 h-3 text-[#686F78]" />
           </button>
 
           {/* Admin Pipeline & Exception Lookup Button */}
           <button
             type="button"
             onClick={() => window.open('/admin-error-log', '_blank')}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-[#101419] hover:bg-rose-500/10 text-rose-300 border border-[#252B32] hover:border-rose-500/30 transition-all cursor-pointer shadow-sm"
             title="Open Admin Pipeline Oversight & Error Log in a new tab (/admin-error-log)"
           >
             <ShieldAlert className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
             <span>Admin Error Log</span>
-            <ExternalLink className="w-3 h-3 text-rose-300/80" />
+            <ExternalLink className="w-3 h-3 text-rose-400/60" />
           </button>
 
           {/* Individual User Logout Button */}
           <button
             onClick={handleLogout}
             title={`Logout ${userDisplayName}`}
-            className="flex items-center gap-1.5 text-xs font-semibold text-rose-300 hover:text-rose-100 px-3 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/25 transition-all cursor-pointer shadow-sm whitespace-nowrap"
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#969DA6] hover:text-rose-300 px-3 h-8 rounded-xl bg-[#101419] hover:bg-rose-500/10 border border-[#252B32] hover:border-rose-500/30 transition-all cursor-pointer shadow-sm whitespace-nowrap"
           >
-            <LogOut className="w-3.5 h-3.5 text-rose-400" />
+            <LogOut className="w-3.5 h-3.5 text-[#686F78] hover:text-rose-400" />
             <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
@@ -1230,12 +1226,12 @@ export default function CreatorLaunchLayout({
             <button
               type="button"
               onClick={() => setShowSection1Sidebar(!showSection1Sidebar)}
-              className="flex sm:hidden items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/10 border border-purple-500/25 text-xs font-semibold text-purple-200"
+              className="flex sm:hidden items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#101419] border border-[#252B32] text-xs font-semibold text-[#F5F3EA]"
               title="Open Section 1 Steps Sidebar"
             >
-              <Target className="w-3.5 h-3.5 text-purple-400" />
+              <Target className="w-3.5 h-3.5 text-[#C8FF3D]" />
               <span className="text-[11px] font-bold">Step {section1ActiveStep}</span>
-              <ChevronDown className="w-3 h-3 text-purple-400" />
+              <ChevronDown className="w-3 h-3 text-[#969DA6]" />
             </button>
           )}
 
@@ -1243,34 +1239,34 @@ export default function CreatorLaunchLayout({
             <button
               type="button"
               onClick={() => setShowPartnerMenu(!showPartnerMenu)}
-              className="flex sm:hidden items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.1] text-xs font-semibold text-white"
+              className="flex sm:hidden items-center gap-1 px-2 py-1 rounded-lg bg-[#101419] border border-[#252B32] text-xs font-semibold text-[#F5F3EA]"
               title="Switch Partner"
             >
-              <div className="w-5 h-5 rounded-full overflow-hidden bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[10px] font-bold text-purple-300">
+              <div className="w-5 h-5 rounded-full overflow-hidden bg-[#171C22] border border-[#252B32] flex items-center justify-center text-[10px] font-bold text-[#C8FF3D]">
                 {(activeProject?.creatorName || activeProject?.creatorHandle || 'P').charAt(0).toUpperCase()}
               </div>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-[#969DA6]" />
             </button>
           )}
 
           <button
             type="button"
             onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
-            className="p-2 rounded-xl bg-white/[0.05] hover:bg-white/10 border border-white/[0.1] text-slate-200 transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-[#101419] hover:bg-[#171C22] border border-[#252B32] text-[#F5F3EA] transition-colors cursor-pointer"
             aria-label="Toggle Mobile Menu"
           >
-            {mobileDrawerOpen ? <X className="w-4 h-4 text-purple-300" /> : <Menu className="w-4 h-4 text-slate-200" />}
+            {mobileDrawerOpen ? <X className="w-4 h-4 text-[#C8FF3D]" /> : <Menu className="w-4 h-4 text-[#969DA6]" />}
           </button>
         </div>
       </header>
 
       {/* Mobile Drawer Slide-Down Menu (< lg) */}
       {mobileDrawerOpen && (
-        <div className="lg:hidden fixed inset-x-0 top-14 bottom-0 z-40 bg-black/70 backdrop-blur-md animate-in fade-in">
-          <div className="bg-[#0e1117] border-b border-white/[0.1] p-4 space-y-4 max-h-[calc(100dvh-3.5rem)] overflow-y-auto shadow-2xl">
+        <div className="lg:hidden fixed inset-x-0 top-14 bottom-0 z-40 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-[#0D1014] border-b border-[#252B32] p-4 space-y-4 max-h-[calc(100dvh-3.5rem)] overflow-y-auto shadow-2xl">
             {/* Mobile Section Switcher */}
             <div className="space-y-1.5">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Studio Pipeline Sections</span>
+              <span className="text-[10px] font-bold text-[#686F78] uppercase tracking-wider block">Studio Pipeline Sections</span>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
@@ -1279,28 +1275,28 @@ export default function CreatorLaunchLayout({
                   }}
                   className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
                     activeSection === 'section1'
-                      ? 'bg-purple-600 text-white shadow-md shadow-purple-950/40 border border-purple-500/40'
-                      : 'bg-white/[0.03] text-slate-300 border border-white/[0.06]'
+                      ? 'bg-[#171C22] text-[#F5F3EA] shadow-md border border-[#C8FF3D]/40'
+                      : 'bg-[#101419] text-[#969DA6] border border-[#252B32]'
                   }`}
                 >
-                  <Target className="w-3.5 h-3.5" />
+                  <Target className="w-3.5 h-3.5 text-[#C8FF3D]" />
                   <span>Section 1: Acquisition</span>
                 </button>
                 <a
                   href={activeProject?.id ? `/project-os?project=${activeProject.id}` : '/project-os'}
-                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all bg-white/[0.03] hover:bg-white/[0.06] text-slate-300 border border-white/[0.06]"
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all bg-[#101419] hover:bg-[#171C22] text-[#969DA6] hover:text-[#F5F3EA] border border-[#252B32]"
                   title="Open Dedicated Co-Launch Operations Center"
                 >
-                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                  <Layers className="w-3.5 h-3.5 text-[#78E08F]" />
                   <span>Project OS</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                  <ExternalLink className="w-3 h-3 text-[#686F78]" />
                 </a>
               </div>
             </div>
 
             {/* Quick Access Tools */}
-            <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Studio Tools & Portals</span>
+            <div className="space-y-1.5 pt-2 border-t border-[#252B32]">
+              <span className="text-[10px] font-bold text-[#686F78] uppercase tracking-wider block">Studio Tools & Portals</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -1308,13 +1304,13 @@ export default function CreatorLaunchLayout({
                     window.open('/follow-up-crm', '_blank')
                     setMobileDrawerOpen(false)
                   }}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 border border-purple-500/25 text-xs font-bold transition-all"
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#101419] hover:bg-[#171C22] text-[#F5F3EA] border border-[#252B32] text-xs font-bold transition-all"
                 >
                   <span className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-purple-400" />
+                    <Users className="w-4 h-4 text-[#C8FF3D]" />
                     <span>Creator Follow-Up CRM</span>
                   </span>
-                  <ExternalLink className="w-3 h-3 text-purple-300/80" />
+                  <ExternalLink className="w-3 h-3 text-[#686F78]" />
                 </button>
 
                 <button
@@ -1323,22 +1319,22 @@ export default function CreatorLaunchLayout({
                     window.open('/admin-error-log', '_blank')
                     setMobileDrawerOpen(false)
                   }}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-200 border border-rose-500/25 text-xs font-bold transition-all"
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#101419] hover:bg-rose-500/10 text-rose-300 border border-[#252B32] text-xs font-bold transition-all"
                 >
                   <span className="flex items-center gap-2">
                     <ShieldAlert className="w-4 h-4 text-rose-400" />
                     <span>Admin Pipeline Error Log</span>
                   </span>
-                  <ExternalLink className="w-3 h-3 text-rose-300/80" />
+                  <ExternalLink className="w-3 h-3 text-rose-400/60" />
                 </button>
               </div>
             </div>
 
             {/* Session Footer */}
-            <div className="pt-2 border-t border-white/[0.06] flex items-center justify-end">
+            <div className="pt-2 border-t border-[#252B32] flex items-center justify-end">
               <button
                 onClick={handleLogout}
-                className="px-3.5 py-1.5 rounded-xl bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 text-xs font-semibold border border-rose-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl bg-[#101419] text-rose-300 hover:bg-rose-500/10 text-xs font-semibold border border-[#252B32] hover:border-rose-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Logout</span>
@@ -1350,34 +1346,34 @@ export default function CreatorLaunchLayout({
 
       {/* Slide-out Section 1 Sidebar Drawer */}
       {showSection1Sidebar && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm animate-in fade-in">
           <div
             className="fixed inset-0"
             onClick={() => setShowSection1Sidebar(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-[#0c0e14] border-r border-white/[0.1] shadow-2xl z-50 flex flex-col justify-between p-4 overflow-y-auto animate-in slide-in-from-left duration-200">
+          <div className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-[#0D1014] border-r border-[#252B32] shadow-2xl z-50 flex flex-col justify-between p-4 overflow-y-auto animate-in slide-in-from-left duration-200">
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#252B32]">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300">
+                  <div className="w-8 h-8 rounded-xl bg-[#171C22] border border-[#252B32] flex items-center justify-center text-[#C8FF3D]">
                     <Target className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">Section 1 Engine</h3>
-                    <p className="text-[10px] text-purple-400 font-mono">6-Step Funnel Pipeline</p>
+                    <h3 className="text-xs font-bold text-[#F5F3EA] uppercase tracking-wider font-display">Section 1 Engine</h3>
+                    <p className="text-[10px] text-[#C8FF3D] font-mono">6-Step Funnel Pipeline</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowSection1Sidebar(false)}
-                  className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg bg-[#101419] hover:bg-[#171C22] text-[#969DA6] hover:text-[#F5F3EA] border border-[#252B32] transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               <div className="space-y-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block px-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#686F78] block px-1">
                   Pipeline Steps
                 </span>
                 {SECTION1_STEPS.map((s) => {
@@ -1394,12 +1390,12 @@ export default function CreatorLaunchLayout({
                       }}
                       className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer ${
                         isCur
-                          ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50 border border-purple-400/40'
-                          : 'bg-[#121620] hover:bg-white/[0.05] text-slate-300 border border-white/[0.05]'
+                          ? 'bg-[#171C22] text-[#F5F3EA] shadow-md border border-[#C8FF3D]/40'
+                          : 'bg-[#101419] hover:bg-[#171C22]/60 text-[#969DA6] hover:text-[#F5F3EA] border border-[#252B32]'
                       }`}
                     >
                       <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center mt-0.5 ${
-                        isCur ? 'bg-white/20 text-white' : `${s.bg} ${s.color}`
+                        isCur ? 'bg-[#101419] text-[#C8FF3D] border border-[#C8FF3D]/30' : `${s.bg} ${s.color}`
                       }`}>
                         <Icon className="w-4 h-4" />
                       </div>
@@ -1407,12 +1403,12 @@ export default function CreatorLaunchLayout({
                         <div className="text-xs font-bold truncate">
                           {s.label}
                         </div>
-                        <div className={`text-[11px] leading-tight mt-0.5 ${isCur ? 'text-purple-100' : 'text-slate-400'}`}>
+                        <div className={`text-[11px] leading-tight mt-0.5 ${isCur ? 'text-[#F5F3EA]' : 'text-[#686F78]'}`}>
                           {s.desc}
                         </div>
                       </div>
                       {isCur && (
-                        <span className="w-2 h-2 rounded-full bg-white mt-1.5 shrink-0" />
+                        <span className="w-2 h-2 rounded-full bg-[#C8FF3D] mt-1.5 shrink-0" />
                       )}
                     </button>
                   )
@@ -1420,16 +1416,16 @@ export default function CreatorLaunchLayout({
               </div>
             </div>
 
-            <div className="pt-4 border-t border-white/[0.08] space-y-2">
+            <div className="pt-4 border-t border-[#252B32] space-y-2">
               <button
                 type="button"
                 onClick={() => {
                   setShowSection1Sidebar(false)
                   setActiveSection('section2')
                 }}
-                className="w-full py-2.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/25 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-xl bg-[#171C22] hover:bg-[#252B32] text-[#78E08F] border border-[#252B32] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                <Layers className="w-3.5 h-3.5 text-[#78E08F]" />
                 <span>Switch to Section 2: Project OS</span>
               </button>
             </div>
@@ -1440,24 +1436,24 @@ export default function CreatorLaunchLayout({
       {/* Main Content View */}
       <main className="flex-1 w-full max-w-[1720px] mx-auto px-2.5 sm:px-5 py-4 space-y-5 overflow-x-hidden min-w-0">
         {/* Mobile Section Switcher */}
-        <div className="flex md:hidden items-center p-1 rounded-xl bg-white/[0.03] border border-white/[0.07] gap-1 overflow-x-auto">
+        <div className="flex md:hidden items-center p-1 rounded-xl bg-[#101419] border border-[#252B32] gap-1 overflow-x-auto">
           <button
             onClick={() => setActiveSection('section1')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
-              activeSection === 'section1' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-400'
+              activeSection === 'section1' ? 'bg-[#171C22] text-[#F5F3EA] border border-[#C8FF3D]/40' : 'text-[#969DA6]'
             }`}
           >
-            <Target className="w-3.5 h-3.5" />
+            <Target className="w-3.5 h-3.5 text-[#C8FF3D]" />
             <span>Section 1: Acquisition</span>
           </button>
           <a
             href={activeProject?.id ? `/project-os?project=${activeProject.id}` : '/project-os'}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-300 hover:text-white"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap text-[#969DA6] hover:text-[#F5F3EA]"
             title="Open Dedicated Co-Launch Operations Center"
           >
-            <Layers className="w-3.5 h-3.5 text-emerald-400" />
+            <Layers className="w-3.5 h-3.5 text-[#78E08F]" />
             <span>Project OS</span>
-            <ExternalLink className="w-3 h-3 text-slate-400" />
+            <ExternalLink className="w-3 h-3 text-[#686F78]" />
           </a>
         </div>
 
@@ -1487,19 +1483,19 @@ export default function CreatorLaunchLayout({
         ) : isSwitchingCreator ? (
           <div className="space-y-6 w-full max-w-full animate-fade-in">
             {/* Minimalist Linear-style workspace switching indicator */}
-            <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#0e1117] border border-white/[0.08] text-xs shadow-sm">
+            <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#101419] border border-[#252B32] text-xs shadow-sm">
               <div className="flex items-center gap-2.5">
-                <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin flex-shrink-0" />
-                <span className="text-slate-400">
-                  Switching workspace to <span className="text-white font-semibold">{switchingTarget?.name || 'Partner'}</span>
+                <Loader2 className="w-3.5 h-3.5 text-[#78E08F] animate-spin flex-shrink-0" />
+                <span className="text-[#969DA6]">
+                  Switching workspace to <span className="text-[#F5F3EA] font-semibold">{switchingTarget?.name || 'Partner'}</span>
                 </span>
-                <span className="text-slate-600">•</span>
-                <span className="text-slate-400 font-mono text-[11px] truncate max-w-[240px]">
+                <span className="text-[#686F78]">•</span>
+                <span className="text-[#969DA6] font-mono text-[11px] truncate max-w-[240px]">
                   {switchingTarget?.productName || 'Project OS'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="flex items-center gap-2 text-[11px] font-mono text-[#686F78]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#78E08F] animate-pulse" />
                 <span>Syncing Workspace</span>
               </div>
             </div>
@@ -1517,13 +1513,13 @@ export default function CreatorLaunchLayout({
             onResetProject={handleResetProject}
           />
         ) : (
-          <div className="p-10 rounded-2xl bg-[#0e1117] border border-white/[0.08] text-center space-y-5 max-w-lg mx-auto my-12 shadow-xl">
-            <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center mx-auto text-purple-400">
+          <div className="p-10 rounded-2xl bg-[#101419] border border-[#252B32] text-center space-y-5 max-w-lg mx-auto my-12 shadow-xl">
+            <div className="w-12 h-12 rounded-2xl bg-[#171C22] border border-[#252B32] flex items-center justify-center mx-auto text-[#C8FF3D]">
               <Layers className="w-6 h-6" />
             </div>
             <div className="space-y-1.5">
-              <h2 className="text-base font-bold text-white">No Active Co-Launch Project</h2>
-              <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+              <h2 className="text-base font-bold text-[#F5F3EA] font-display">No Active Co-Launch Project</h2>
+              <p className="text-xs text-[#969DA6] leading-relaxed max-w-md mx-auto">
                 You haven't partnered with a creator yet. Qualify and pitch a lead in Section 1 to launch a live project, or initialize a demo venture below.
               </p>
             </div>
@@ -1531,14 +1527,14 @@ export default function CreatorLaunchLayout({
               <button
                 type="button"
                 onClick={() => setActiveSection('section1')}
-                className="px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 hover:text-white font-semibold text-xs border border-white/10 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#171C22] hover:bg-[#252B32] text-[#F5F3EA] font-semibold text-xs border border-[#252B32] transition-colors cursor-pointer"
               >
                 Go to Section 1: Acquisition
               </button>
               <button
                 type="button"
                 onClick={handleCreateDemoProject}
-                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-xl bg-[#C8FF3D] hover:bg-[#b8ef2d] text-[#080A0C] font-bold text-xs transition-all cursor-pointer shadow-[0_0_20px_rgba(200,255,61,0.2)] active:scale-95 flex items-center gap-1.5"
               >
                 <Rocket className="w-3.5 h-3.5" />
                 <span>Initialize Demo Venture</span>
@@ -1549,7 +1545,7 @@ export default function CreatorLaunchLayout({
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/[0.06] py-4 text-center text-xs text-slate-500 bg-[#090b0e]">
+      <footer className="border-t border-[#252B32] py-4 text-center text-xs text-[#686F78] bg-[#0D1014]">
         <p>Creator Forge Launch Engine OS &copy; {new Date().getFullYear()}</p>
       </footer>
 

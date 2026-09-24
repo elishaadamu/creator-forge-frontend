@@ -1,553 +1,810 @@
-import { useEffect, useState, useRef } from 'react'
+import { useState, useId } from 'react'
 import { useForge } from '../../App'
-import { ArrowRight, ChevronRight } from 'lucide-react'
-import WingLogo from '../ui/WingLogo'
+import {
+  ArrowRight,
+  Check,
+  TrendingUp,
+  Layers,
+  Sparkles,
+  Users,
+  ShieldCheck,
+  Zap,
+  DollarSign,
+  ArrowUpRight,
+  Activity,
+  Lock,
+  CheckCircle2,
+  ChevronDown,
+  Terminal,
+  ExternalLink,
+  Laptop,
+  Smartphone,
+  CreditCard
+} from 'lucide-react'
+import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 
-// ── Sample creator cards ──────────────────────────────────────────────────────
-
-const CREATORS = [
-  { name: 'Ali Abdaal',       handle: '@aliabdaal',     subs: '5.4M',  platform: 'YouTube', color: '#c0392b' },
-  { name: 'Codie Sanchez',    handle: '@codiesanchez',  subs: '2.1M',  platform: 'YouTube', color: '#e67e22' },
-  { name: 'Sahil Bloom',      handle: '@sahilbloom',    subs: '890K',  platform: 'Twitter', color: '#2980b9' },
-  { name: 'Lara Acosta',      handle: '@laraacosta',    subs: '780K',  platform: 'LinkedIn', color: '#8e44ad' },
-  { name: 'Chris Williamson', handle: '@chriswillxm',   subs: '2.6M',  platform: 'YouTube', color: '#16a085' },
-  { name: 'Davie Fogarty',    handle: '@daviefogarty',  subs: '3.5M',  platform: 'YouTube', color: '#c0392b' },
+// ── Portfolio Showcase Data ──────────────────────────────────────────────────
+const PORTFOLIO_PRODUCTS = [
+  {
+    id: 'crm',
+    title: 'Creator CRM OS',
+    category: 'RELATIONSHIP PIPELINE',
+    creator: 'Ali Abdaal Ecosystem',
+    mrr: '$42,300 MRR',
+    badge: 'LIVE PARTNERSHIP',
+    description: 'Sovereign brand deal, sponsor pipeline, and deliverables tracking system.',
+    metric: '28 Active Deals · 64% Win Rate'
+  },
+  {
+    id: 'intel',
+    title: 'Audience Intelligence',
+    category: 'SEMANTIC MINING',
+    creator: 'Elena Rostova Studio',
+    mrr: '$31,800 MRR',
+    badge: 'LIVE PARTNERSHIP',
+    description: 'Autonomous comment cluster analyzer converting video feedback into SaaS features.',
+    metric: '142K Comments Mined · $680K TAM'
+  },
+  {
+    id: 'community',
+    title: 'Community OS Hub',
+    category: 'PRIVATE HUB & WORKSPACE',
+    creator: 'Marcus Vance Network',
+    mrr: '$54,200 MRR',
+    badge: 'LIVE PARTNERSHIP',
+    description: 'Modular developer community hub with built-in code vault and member directories.',
+    metric: '1,840 Paid Members · 94% Retention'
+  },
+  {
+    id: 'finance',
+    title: 'Creator Finance Treasury',
+    category: 'TREASURY & SPLITS',
+    creator: 'Jamal Rivera Co-Launch',
+    mrr: '$28,600 MRR',
+    badge: 'LIVE PARTNERSHIP',
+    description: 'Automated gross revenue distribution and collaborator contract payout router.',
+    metric: '$1.4M Disbursed · 100% Split Accuracy'
+  }
 ]
 
-const FEATURES = [
+// ── FAQ Items ─────────────────────────────────────────────────────────────────
+const FAQS = [
   {
-    icon: '⚡',
-    title: 'Analyze Your Audience',
-    body: 'Forge scrapes your real engagement data — comments, sentiment, view patterns — to find exactly what your followers are asking for.',
+    q: 'Why a 50/50 co-founder partnership instead of hiring an agency?',
+    a: 'Agencies charge $50k–$120k upfront with zero skin in the game. When things break or users churn, they bill more hours. Creator Forge co-invests 100% of engineering, design, and DevOps. We only profit when your software generates recurring revenue together.'
   },
   {
-    icon: '🧠',
-    title: 'AI Blueprints the Product',
-    body: 'Based on your niche, platform, and audience signals, Forge recommends the exact product type with the highest revenue potential.',
+    q: 'What is required from the creator?',
+    a: 'You bring domain expertise and audience distribution. We handle software architecture, full-stack development, database infrastructure, security, payments, and 24/7 DevOps. You never write a line of code.'
   },
   {
-    icon: '🏗️',
-    title: 'Builds It in Minutes',
-    body: 'One click. Forge generates the full launch pack — email, social copy, pitch deck, and a product image — personalized to you.',
+    q: 'What if the audience doesn’t buy?',
+    a: 'Because you invest zero upfront capital, you have zero financial exposure. If our initial pre-order campaign does not hit its validation target, we iterate or test another opportunity without penalty.'
   },
   {
-    icon: '📈',
-    title: 'Launch on Autopilot',
-    body: 'Your AI co-founder handles the marketing calendar, content plan, and outreach. You own the product. You keep the revenue.',
-  },
+    q: 'How do revenue distributions get paid?',
+    a: 'Through automated Stripe Connect payouts. Every subscription payment is automatically split 50/50 directly into your verified bank account with real-time accounting telemetry.'
+  }
 ]
-
-const PIPELINE_STEPS = [
-  {
-    n: '1',
-    icon: '🔍',
-    title: 'Paste Your Profile Link',
-    body: 'YouTube, Instagram, TikTok, or Twitter. Forge scrapes live data — followers, engagement rate, recent content.',
-  },
-  {
-    n: '2',
-    icon: '📊',
-    title: 'Deep-Dive Audience Analysis',
-    body: 'We pull comment sentiment, recurring questions, top-performing topics, and unmet demand signals from your content.',
-  },
-  {
-    n: '3',
-    icon: '🎯',
-    title: 'Product Blueprint Recommendation',
-    body: 'Forge matches your signals to the highest-fit product — course platform, community, mobile app, or digital products.',
-  },
-  {
-    n: '4',
-    icon: '🤖',
-    title: 'AI Writes Everything',
-    body: 'Launch email, Instagram caption, X thread, TikTok script, pitch deck — Gemini generates it all in under 30 seconds.',
-  },
-]
-
-const STATS = [
-  { value: '2,400+', label: 'Creators using Forge' },
-  { value: '$8K–30K', label: 'Avg monthly revenue potential' },
-  { value: '< 30s', label: 'From analysis to launch pack' },
-]
-
-// ── Intersection observer hook ─────────────────────────────────────────────────
-
-function useInView(threshold = 0.15) {
-  const ref = useRef(null)
-  const [inView, setInView] = useState(false)
-  useEffect(() => {
-    if (!ref.current) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setInView(true) },
-      { threshold }
-    )
-    obs.observe(ref.current)
-    return () => obs.disconnect()
-  }, [threshold])
-  return [ref, inView]
-}
-
-// ── Animated section wrapper ───────────────────────────────────────────────────
-
-function FadeUp({ children, delay = 0, className = '' }) {
-  const [ref, inView] = useInView()
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? 'translateY(0)' : 'translateY(28px)',
-        transition: `opacity 0.65s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.65s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
-      }}
-    >
-      {children}
-    </div>
-  )
-}
-
-// ── Section label ──────────────────────────────────────────────────────────────
-
-function Label({ children }) {
-  return (
-    <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-3"
-      style={{ color: 'rgba(200,60,60,0.8)', letterSpacing: '0.18em' }}>
-      {children}
-    </p>
-  )
-}
-
-// ── Main component ─────────────────────────────────────────────────────────────
 
 export default function Welcome() {
   const { next, goTo, userProfile } = useForge()
-  const [visible, setVisible] = useState(false)
+  const [openFaq, setOpenFaq] = useState(0)
 
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 80)
-    return () => clearTimeout(t)
-  }, [])
+  // Interactive Co-Founder Revenue Calculator State
+  const [calcAudience, setCalcAudience] = useState(150000)
+  const [calcPricing, setCalcPricing] = useState(49)
+  const [calcConvRate, setCalcConvRate] = useState(1.0) // 1.0%
 
-  const fade = (delay = 0) => ({
-    opacity: visible ? 1 : 0,
-    transform: visible ? 'translateY(0)' : 'translateY(20px)',
-    transition: `all 0.65s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
-  })
+  // Derived Calculator Values
+  const estimatedSubscribers = Math.round(calcAudience * (calcConvRate / 100))
+  const monthlyRevenue = estimatedSubscribers * calcPricing
+  const annualRevenue = monthlyRevenue * 12
+  const creatorShareMonthly = Math.round(monthlyRevenue * 0.50)
+  const creatorShareAnnual = creatorShareMonthly * 12
+
+  // Unique accessible IDs for interactive range sliders
+  const audienceRangeId = useId()
+  const convRangeId = useId()
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#060407', color: 'white' }}>
+    <div className="min-h-screen bg-[#080A0C] text-[#F5F3EA] font-sans selection:bg-[#C8FF3D] selection:text-[#080A0C] overflow-x-hidden relative">
 
-      {/* ── Global background glow ─────────────────────────────────────────── */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse 130% 55% at 50% -5%, rgba(110,5,5,0.55) 0%, transparent 65%)',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%',
-          background: 'radial-gradient(ellipse 80% 50% at 50% 100%, rgba(90,5,5,0.35) 0%, transparent 70%)',
-        }} />
+      {/* ── Background Grid Matrix ────────────────────────────────────────── */}
+      <div 
+        className="fixed inset-0 pointer-events-none opacity-[0.035] z-0"
+        style={{
+          backgroundImage: `linear-gradient(#F5F3EA 1px, transparent 1px), linear-gradient(90deg, #F5F3EA 1px, transparent 1px)`,
+          backgroundSize: '72px 72px'
+        }}
+      />
+
+      {/* ── Ambient Radial Warm Lighting Glow ──────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div 
+          className="absolute -top-[15%] left-1/2 -translate-x-1/2 w-[1000px] h-[550px] rounded-full blur-[200px] opacity-[0.14]"
+          style={{ background: 'radial-gradient(circle, rgba(200, 255, 61, 0.3) 0%, rgba(8, 10, 12, 0) 70%)' }}
+        />
+        <div 
+          className="absolute top-[45%] right-[-10%] w-[700px] h-[700px] rounded-full blur-[220px] opacity-[0.07]"
+          style={{ background: 'radial-gradient(circle, rgba(120, 224, 143, 0.25) 0%, rgba(8, 10, 12, 0) 70%)' }}
+        />
       </div>
 
-      {/* ── Navigation ────────────────────────────────────────────────────────── */}
-      <header className="relative z-10 flex items-center justify-between px-8 py-5 border-b"
-        style={{ borderColor: 'rgba(255,255,255,0.06)', ...fade(0) }}>
-        <div className="flex items-center gap-2.5">
-          <WingLogo size={26} />
-          <span className="text-white font-semibold text-[15px] tracking-tight">Creator Forge</span>
-        </div>
-        <div className="flex items-center gap-5">
-          <span className="text-[13px] hidden sm:block" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            For Creators
-          </span>
-          {userProfile ? (
-            <button
-              onClick={() => goTo('dashboard')}
-              className="text-[13px] font-semibold px-4 py-2 rounded-xl hover:bg-white/5 transition-all duration-200"
-              style={{ color: 'rgba(255,255,255,0.75)' }}
-            >
-              Dashboard
-            </button>
-          ) : (
-            <button
-              onClick={() => goTo('login')}
-              className="text-[13px] font-semibold px-4 py-2 rounded-xl hover:bg-white/5 transition-all duration-200"
-              style={{ color: 'rgba(255,255,255,0.75)' }}
-            >
-              Login
-            </button>
-          )}
-          <button
-            onClick={next}
-            className="flex items-center gap-1.5 text-[13px] font-semibold px-4 py-2 rounded-xl transition-all duration-200"
-            style={{
-              background: 'linear-gradient(135deg, #c0392b, #a93226)',
-              color: 'white',
-              boxShadow: '0 2px 16px rgba(192,57,43,0.4)',
-            }}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 24px rgba(192,57,43,0.6)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 16px rgba(192,57,43,0.4)'}
+      {/* ── Sticky Navigation Bar ─────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#080A0C]/90 border-b border-[#252B32] transition-all">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          
+          {/* Brand Logo & Studio Pill */}
+          <div 
+            className="flex items-center gap-3 cursor-pointer group" 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
-            Get Started
-            <ChevronRight size={13} />
-          </button>
+            <CreatorForgeLogo size={22} showText={true} />
+            <div className="hidden lg:flex items-center pl-2">
+              <span className="text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#171C22] text-[#C8FF3D] border border-[#252B32]">
+                VENTURE STUDIO
+              </span>
+            </div>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium text-[#969DA6]">
+            <a href="#showcase" className="hover:text-[#F5F3EA] transition-colors">The Platform</a>
+            <a href="#discovery" className="hover:text-[#F5F3EA] transition-colors">Semantic Mining</a>
+            <a href="#engineering" className="hover:text-[#F5F3EA] transition-colors">14-Day Sprint</a>
+            <a href="#model" className="hover:text-[#F5F3EA] transition-colors">50/50 Model</a>
+            <a href="#calculator" className="hover:text-[#F5F3EA] transition-colors">Calculator</a>
+            <a href="#portfolio" className="hover:text-[#F5F3EA] transition-colors">Portfolio</a>
+            <a 
+              href="/launch" 
+              className="flex items-center gap-1.5 text-[#C8FF3D] hover:text-white font-mono text-xs px-2.5 py-1 rounded bg-[#171C22] border border-[#252B32] hover:border-[#C8FF3D]/40 transition-all"
+            >
+              <span>Operator OS</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C8FF3D] animate-pulse" />
+            </a>
+          </nav>
+
+          {/* Header Action Buttons */}
+          <div className="flex items-center gap-3">
+            {userProfile ? (
+              <button
+                onClick={() => goTo('dashboard')}
+                className="text-xs font-semibold text-[#969DA6] hover:text-[#F5F3EA] px-3.5 py-2 rounded-xl border border-[#252B32] hover:bg-[#101419] transition-all cursor-pointer"
+              >
+                Dashboard
+              </button>
+            ) : (
+              <button
+                onClick={() => goTo('login')}
+                className="text-xs font-semibold text-[#969DA6] hover:text-[#F5F3EA] px-3 py-2 rounded-xl hover:bg-[#101419] transition-all cursor-pointer"
+              >
+                Sign In
+              </button>
+            )}
+
+            <button
+              onClick={next}
+              className="flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl bg-[#C8FF3D] text-[#080A0C] hover:bg-[#b8ef2d] shadow-[0_0_20px_rgba(200,255,61,0.25)] active:scale-95 transition-all cursor-pointer"
+            >
+              <span>Apply as Co-Founder</span>
+              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* ── Hero ──────────────────────────────────────────────────────────────── */}
-      <section className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 py-24 min-h-[85vh]">
-
-        <div style={fade(100)}>
-          <Label>Audience-to-Product Engine</Label>
+      {/* ── HERO SECTION (VISUAL FIRST) ───────────────────────────────────── */}
+      <section className="relative pt-16 sm:pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
+        
+        {/* Eyebrow Pill */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#101419] border border-[#252B32] text-[11px] font-mono font-semibold uppercase tracking-[0.2em] text-[#969DA6] mb-6 animate-fade-in shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-[#C8FF3D] animate-pulse" />
+          <span>ZERO-CAPITAL SOFTWARE CO-FOUNDERS</span>
+          <span className="text-[#686F78]">/</span>
+          <span className="text-[#C8FF3D]">50/50 EQUITY</span>
         </div>
 
-        <h1
-          style={{
-            ...fade(180),
-            fontSize: 'clamp(42px, 6.5vw, 88px)',
-            fontWeight: 800,
-            lineHeight: 1.02,
-            letterSpacing: '-0.04em',
-            maxWidth: 820,
-          }}
-        >
-          Your audience is already
-          <br />
-          <span style={{ color: 'rgba(255,255,255,0.3)' }}>telling you what to build.</span>
+        {/* Hero Headline */}
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-extrabold tracking-tight text-[#F5F3EA] max-w-4xl leading-[1.07]">
+          Turn your audience into a{' '}
+          <span className="text-[#C8FF3D] relative inline-block">
+            high-margin software business.
+          </span>
         </h1>
 
-        <p style={{
-          ...fade(260),
-          fontSize: '17px',
-          color: 'rgba(255,255,255,0.42)',
-          maxWidth: 460,
-          lineHeight: 1.65,
-          marginTop: 24,
-          letterSpacing: '-0.01em',
-        }}>
-          Forge reads your content, analyzes audience demand, recommends what to build — then builds the entire launch pack in under 30 seconds.
+        {/* Punchy 1-Sentence Subheadline */}
+        <p className="mt-5 text-base sm:text-lg text-[#969DA6] max-w-2xl font-normal leading-relaxed">
+          Creator Forge discovers audience pain points, engineers custom SaaS MVPs, and co-launches 50/50 software partnerships with creators. Zero upfront capital.
         </p>
 
-        <div className="flex items-center gap-4 mt-10" style={fade(340)}>
+        {/* Action Buttons */}
+        <div className="mt-7 flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto">
           <button
             onClick={next}
-            className="flex items-center gap-2.5 text-[15px] font-bold px-8 py-4 rounded-2xl transition-all duration-200 group"
-            style={{
-              background: 'linear-gradient(135deg, #c0392b, #a93226)',
-              color: 'white',
-              boxShadow: '0 4px 28px rgba(192,57,43,0.5)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 40px rgba(192,57,43,0.7)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 28px rgba(192,57,43,0.5)'; e.currentTarget.style.transform = 'translateY(0)' }}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-[#C8FF3D] text-[#080A0C] text-sm font-bold shadow-[0_4px_24px_rgba(200,255,61,0.25)] hover:bg-[#b8ef2d] hover:shadow-[0_6px_32px_rgba(200,255,61,0.35)] active:scale-[0.98] transition-all cursor-pointer"
           >
-            Get started
-            <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+            <span>Apply as Creator Co-Founder (50/50) →</span>
           </button>
-          <button
-            className="text-[14px] font-medium px-6 py-4 rounded-2xl transition-all duration-200"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              color: 'rgba(255,255,255,0.6)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
+
+          <a
+            href="/launch"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#101419] hover:bg-[#171C22] text-[#F5F3EA] border border-[#252B32] hover:border-[#363D47] text-sm font-semibold transition-all active:scale-[0.98]"
           >
-            How it works
-          </button>
+            <Activity className="w-4 h-4 text-[#78E08F]" />
+            <span>Open Operator Studio OS</span>
+            <ExternalLink className="w-3.5 h-3.5 text-[#686F78]" />
+          </a>
         </div>
 
-        <p style={{ ...fade(420), marginTop: 14, fontSize: '12px', color: 'rgba(255,255,255,0.22)' }}>
-          No credit card required
-        </p>
-
-        {/* Creator card */}
-        <div style={{ ...fade(500), marginTop: 40 }}>
-          <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl border"
-            style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}>
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold"
-              style={{ background: 'rgba(192,57,43,0.25)', color: '#e87070' }}>K</div>
-            <div className="text-left">
-              <p className="text-[12px] font-semibold text-white">Kize Bae</p>
-              <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>YouTube · 247K subscribers</p>
-            </div>
-            <div className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-              style={{ background: 'rgba(192,57,43,0.2)', color: 'rgba(240,130,110,0.9)' }}>
-              Using Forge
-            </div>
+        {/* Guarantee Badges */}
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-6 text-xs font-mono text-[#969DA6]">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#78E08F]" />
+            <span>$0 Upfront Capital</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#78E08F]" />
+            <span>14-Day MVP Build Sprint</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#78E08F]" />
+            <span>50/50 Software Equity</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#78E08F]" />
+            <span>Full Engineering & DevOps Included</span>
           </div>
         </div>
-      </section>
 
-      {/* ── Creator showcase ───────────────────────────────────────────────────── */}
-      <section className="relative z-10 py-16 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        <FadeUp>
-          <p className="text-center text-[11px] font-semibold uppercase tracking-widest mb-8"
-            style={{ color: 'rgba(255,255,255,0.2)' }}>
-            Creators already using Forge
-          </p>
-        </FadeUp>
-        <div className="flex gap-3 overflow-x-auto px-8 pb-2" style={{ scrollbarWidth: 'none' }}>
-          {CREATORS.map((c, i) => (
-            <FadeUp key={c.handle} delay={i * 60}>
-              <div
-                className="flex-shrink-0 rounded-2xl border px-5 py-4 flex flex-col items-center gap-2 text-center"
-                style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  borderColor: 'rgba(255,255,255,0.08)',
-                  width: 160,
-                  transition: 'border-color 0.2s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(192,57,43,0.4)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
-              >
-                <div className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-[15px]"
-                  style={{ background: `${c.color}33`, color: c.color }}>
-                  {c.name.split(' ').map(w => w[0]).join('').slice(0,2)}
-                </div>
-                <p className="text-[12px] font-semibold text-white leading-tight">{c.name}</p>
-                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{c.handle}</p>
-                <div className="text-[10px] px-2 py-0.5 rounded-full"
-                  style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}>
-                  {c.subs} · {c.platform}
+        {/* ── HERO PHOTOREALISTIC DEVICE SHOWCASE ─────────────────────────── */}
+        <div id="showcase" className="mt-12 w-full max-w-5xl mx-auto relative group">
+          <div className="rounded-2xl sm:rounded-3xl border border-[#252B32] bg-[#0D1014] shadow-[0_32px_120px_rgba(0,0,0,0.9)] overflow-hidden relative">
+            
+            {/* Top Device Titlebar */}
+            <div className="h-10 bg-[#080A0C] border-b border-[#252B32] px-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#252B32]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-[#252B32]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-[#252B32]" />
+                <div className="ml-3 hidden sm:flex items-center gap-2 px-3 py-1 rounded-md bg-[#101419] border border-[#252B32] text-[10px] font-mono text-[#969DA6]">
+                  <Lock className="w-2.5 h-2.5 text-[#C8FF3D]" />
+                  <span>app.creatorforge.studio/venture/os</span>
                 </div>
               </div>
-            </FadeUp>
-          ))}
+
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#78E08F] animate-pulse" />
+                <span className="text-[10px] font-mono uppercase text-[#C8FF3D] font-bold">
+                  PRODUCTION TELEMETRY ACTIVE
+                </span>
+              </div>
+            </div>
+
+            {/* High-Resolution Hero Visual Mockup */}
+            <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#080A0C]">
+              <img
+                src="/images/hero_saas_macbook.jpg"
+                alt="Creator Forge SaaS OS Running on Space Black MacBook Pro with iPhone Telemetry"
+                className="w-full h-full object-cover object-center group-hover:scale-[1.01] transition-transform duration-700"
+                loading="eager"
+              />
+
+              {/* Floating Live Telemetry Cards Pinned Directly on Visual */}
+              <div className="absolute top-4 left-4 sm:top-6 sm:left-6 p-3 sm:p-4 rounded-2xl bg-[#080A0C]/90 backdrop-blur-md border border-[#252B32] shadow-2xl text-left hidden sm:block animate-fade-in">
+                <div className="flex items-center gap-2 text-[10px] font-mono text-[#969DA6] mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#78E08F] animate-pulse" />
+                  <span>CO-LAUNCH MRR RUN-RATE</span>
+                </div>
+                <div className="text-xl sm:text-2xl font-display font-black text-[#F5F3EA] font-mono">
+                  $38,400 <span className="text-xs text-[#78E08F] font-normal">+18.4% MoM</span>
+                </div>
+                <span className="text-[10px] font-mono text-[#C8FF3D] block mt-0.5">Automated 50/50 Stripe Split</span>
+              </div>
+
+              <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 p-3 sm:p-4 rounded-2xl bg-[#080A0C]/90 backdrop-blur-md border border-[#252B32] shadow-2xl text-right hidden sm:block animate-fade-in">
+                <div className="flex items-center justify-end gap-2 text-[10px] font-mono text-[#969DA6] mb-1">
+                  <CreditCard className="w-3.5 h-3.5 text-[#C8FF3D]" />
+                  <span>STRIPE EXPRESS PAYOUT</span>
+                </div>
+                <div className="text-xl sm:text-2xl font-display font-black text-[#C8FF3D] font-mono">
+                  $19,200.00
+                </div>
+                <span className="text-[10px] font-mono text-[#969DA6] block mt-0.5">Creator Net 50% Take-Home</span>
+              </div>
+
+            </div>
+
+          </div>
         </div>
+
       </section>
 
-      {/* ── The Shift ─────────────────────────────────────────────────────────── */}
-      <section className="relative z-10 py-24 px-6 border-t text-center"
-        style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        <FadeUp>
-          <Label>The Shift</Label>
-          <h2 style={{
-            fontSize: 'clamp(30px, 4.5vw, 54px)',
-            fontWeight: 800,
-            lineHeight: 1.1,
-            letterSpacing: '-0.035em',
-            maxWidth: 680,
-            margin: '0 auto 20px',
-          }}>
-            One-person businesses are replacing entire companies.
+      {/* ── SECTION 1: SEMANTIC MINING (IMAGE + 3 PUNCHY CARDS) ──────────── */}
+      <section id="discovery" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[#252B32]">
+        
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#C8FF3D] font-bold">
+            STEP 01 · AUDIENCE SIGNAL MINING
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-display font-bold text-[#F5F3EA] mt-1">
+            We find what your audience is desperate to buy.
           </h2>
-          <p style={{
-            fontSize: '16px',
-            color: 'rgba(255,255,255,0.4)',
-            maxWidth: 480,
-            margin: '0 auto',
-            lineHeight: 1.7,
-          }}>
-            AI can build websites, write code, run operations. But the one thing it still can't do? Get people to care. Distribution is the last human moat — and creators own it. Forge turns that moat into a product.
+          <p className="mt-3 text-sm text-[#969DA6]">
+            No guesswork. Our proprietary NLP scans your comments and DMs to locate verified willingness-to-pay.
           </p>
-        </FadeUp>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-6xl mx-auto">
+          
+          {/* Visual: Semantic Mining Engine */}
+          <div className="lg:col-span-7 rounded-2xl sm:rounded-3xl border border-[#252B32] bg-[#0D1014] overflow-hidden shadow-2xl relative group">
+            <img
+              src="/images/semantic_mining_engine.jpg"
+              alt="Semantic Signal Mining NLP Clustering Comments into SaaS Feature Specifications"
+              className="w-full h-auto object-cover group-hover:scale-[1.02] transition-transform duration-500"
+              loading="lazy"
+            />
+            <div className="absolute bottom-3 left-3 bg-[#080A0C]/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#252B32] text-[10px] font-mono text-[#C8FF3D]">
+              NLP Signal Extraction Engine · 98% Confidence Match
+            </div>
+          </div>
+
+          {/* 3 Concise Feature Cards */}
+          <div className="lg:col-span-5 space-y-4 text-left">
+            
+            <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] hover:border-[#C8FF3D]/40 transition-colors space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-[#C8FF3D]">01</span>
+                <h3 className="text-base font-display font-bold text-[#F5F3EA]">10,000+ Comments Scanned</h3>
+              </div>
+              <p className="text-xs text-[#969DA6] leading-relaxed">
+                We ingest historical video comments, community Discord threads, and content questions to identify recurring friction.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] hover:border-[#C8FF3D]/40 transition-colors space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-[#C8FF3D]">02</span>
+                <h3 className="text-base font-display font-bold text-[#F5F3EA]">Filter General Praise vs Real Demand</h3>
+              </div>
+              <p className="text-xs text-[#969DA6] leading-relaxed">
+                Our NLP strips away casual compliments to isolate verified software requests and commercial intent.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] hover:border-[#C8FF3D]/40 transition-colors space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-[#C8FF3D]">03</span>
+                <h3 className="text-base font-display font-bold text-[#F5F3EA]">Validated TAM & Pricing Architecture</h3>
+              </div>
+              <p className="text-xs text-[#969DA6] leading-relaxed">
+                Before writing a line of code, we calculate exact community TAM, feature scopes, and pricing tiers ($29–$99/mo).
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
       </section>
 
-      {/* ── How it works ──────────────────────────────────────────────────────── */}
-      <section className="relative z-10 py-20 px-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        <div className="max-w-5xl mx-auto">
-          <FadeUp>
-            <div className="text-center mb-14">
-              <Label>How It Works</Label>
-              <h2 style={{
-                fontSize: 'clamp(28px, 4vw, 48px)',
-                fontWeight: 800,
-                letterSpacing: '-0.035em',
-                lineHeight: 1.1,
-              }}>
-                The full pipeline, automated.
-              </h2>
+      {/* ── SECTION 2: 14-DAY RAPID ENGINEERING (IMAGE + 3 CARDS) ────────── */}
+      <section id="engineering" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[#252B32]">
+        
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#C8FF3D] font-bold">
+            STEP 02 · RAPID MVP ENGINEERING
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-display font-bold text-[#F5F3EA] mt-1">
+            Production software in 14 days. Zero code from you.
+          </h2>
+          <p className="mt-3 text-sm text-[#969DA6]">
+            Our full-stack venture team builds a real, responsive SaaS product on modern infrastructure.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-6xl mx-auto">
+          
+          {/* 3 Concise Feature Cards */}
+          <div className="lg:col-span-5 space-y-4 text-left order-2 lg:order-1">
+            
+            <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] hover:border-[#C8FF3D]/40 transition-colors space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-[#C8FF3D]">01</span>
+                <h3 className="text-base font-display font-bold text-[#F5F3EA]">Full-Stack React & Cloud DB</h3>
+              </div>
+              <p className="text-xs text-[#969DA6] leading-relaxed">
+                Complete web app, secure database architecture, user authentication, and automated billing built from day one.
+              </p>
             </div>
-          </FadeUp>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {FEATURES.map((f, i) => (
-              <FadeUp key={f.title} delay={i * 80}>
-                <div
-                  className="rounded-2xl p-6 h-full transition-all duration-200"
-                  style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,57,43,0.06)'; e.currentTarget.style.borderColor = 'rgba(192,57,43,0.25)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
-                >
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[20px] mb-4"
-                    style={{ background: 'rgba(192,57,43,0.15)' }}>
-                    {f.icon}
-                  </div>
-                  <h3 className="text-[15px] font-bold text-white mb-2">{f.title}</h3>
-                  <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.42)' }}>{f.body}</p>
-                </div>
-              </FadeUp>
-            ))}
+
+            <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] hover:border-[#C8FF3D]/40 transition-colors space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-[#C8FF3D]">02</span>
+                <h3 className="text-base font-display font-bold text-[#F5F3EA]">Multi-Device Responsive Studio</h3>
+              </div>
+              <p className="text-xs text-[#969DA6] leading-relaxed">
+                Engineered for desktop browsers, iPads, and mobile screens so your audience can use it across any workflow.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] hover:border-[#C8FF3D]/40 transition-colors space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-[#C8FF3D]">03</span>
+                <h3 className="text-base font-display font-bold text-[#F5F3EA]">Zero Capital Risk For You</h3>
+              </div>
+              <p className="text-xs text-[#969DA6] leading-relaxed">
+                We fund all development, server costs, API fees, and maintenance. You never pay an invoice.
+              </p>
+            </div>
+
+          </div>
+
+          {/* Visual: Multi-Device SaaS Setup */}
+          <div className="lg:col-span-7 rounded-2xl sm:rounded-3xl border border-[#252B32] bg-[#0D1014] overflow-hidden shadow-2xl relative group order-1 lg:order-2">
+            <img
+              src="/images/saas_multi_device_showcase.jpg"
+              alt="Custom Creator SaaS Platform Running across iPad, Laptop, and Mobile Phone"
+              className="w-full h-auto object-cover group-hover:scale-[1.02] transition-transform duration-500"
+              loading="lazy"
+            />
+            <div className="absolute bottom-3 left-3 bg-[#080A0C]/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#252B32] text-[10px] font-mono text-[#78E08F]">
+              Live Multi-Device MVP · $142.5K ARR Run-Rate
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ── SECTION 3: THE 50/50 MODEL (IMAGE + DUAL PILLARS) ─────────────── */}
+      <section id="model" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[#252B32]">
+        
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#C8FF3D] font-bold">
+            STEP 03 · THE 50/50 CO-FOUNDER NEXUS
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-display font-bold text-[#F5F3EA] mt-1">
+            Equal co-founders. Equal recurring cashflow.
+          </h2>
+          <p className="mt-3 text-sm text-[#969DA6]">
+            You bring the audience. We engineer the company. Revenue is split 50/50 automatically via Stripe.
+          </p>
+        </div>
+
+        {/* Photorealistic 50/50 Nexus Visual */}
+        <div className="max-w-5xl mx-auto rounded-2xl sm:rounded-3xl border border-[#252B32] bg-[#0D1014] overflow-hidden shadow-2xl relative group mb-8">
+          <img
+            src="/images/partnership_split_nexus.jpg"
+            alt="3D Architectural Pillars Showing Creator 50% and Studio 50% Connected to Stripe Payout"
+            className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-500"
+            loading="lazy"
+          />
+          <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-[#080A0C]/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-[#252B32] text-[10px] font-mono text-[#C8FF3D]">
+            Automated Stripe Connect Division · 50% Creator Equity
           </div>
         </div>
-      </section>
 
-      {/* ── Pipeline steps ────────────────────────────────────────────────────── */}
-      <section className="relative z-10 py-20 px-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        <div className="max-w-3xl mx-auto">
-          <FadeUp>
-            <div className="mb-14 text-center">
-              <Label>Watch It Work</Label>
-              <h2 style={{
-                fontSize: 'clamp(26px, 3.5vw, 44px)',
-                fontWeight: 800,
-                letterSpacing: '-0.035em',
-                lineHeight: 1.1,
-              }}>
-                From URL to launch pack in 4 steps.
-              </h2>
+        {/* Dual Pillar Comparison Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto text-left">
+          
+          <div className="p-6 rounded-2xl bg-[#101419] border border-[#252B32] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#969DA6]">CREATOR CO-FOUNDER</span>
+              <span className="text-2xl font-mono font-bold text-[#F5F3EA]">50%</span>
             </div>
-          </FadeUp>
-          <div className="space-y-6">
-            {PIPELINE_STEPS.map((step, i) => (
-              <FadeUp key={step.n} delay={i * 100}>
-                <div className="flex gap-5 items-start">
-                  <div className="flex-shrink-0 flex flex-col items-center gap-2">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[14px] border"
-                      style={{
-                        background: 'rgba(192,57,43,0.12)',
-                        borderColor: 'rgba(192,57,43,0.3)',
-                        color: '#e87070',
-                      }}>
-                      {step.n}
-                    </div>
-                    {i < PIPELINE_STEPS.length - 1 && (
-                      <div className="w-px flex-1" style={{ background: 'rgba(255,255,255,0.07)', minHeight: 24 }} />
-                    )}
-                  </div>
-                  <div className="pb-6">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[18px]">{step.icon}</span>
-                      <h3 className="text-[15px] font-bold text-white">{step.title}</h3>
-                    </div>
-                    <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.42)' }}>
-                      {step.body}
-                    </p>
-                  </div>
-                </div>
-              </FadeUp>
-            ))}
+            <ul className="text-xs text-[#969DA6] space-y-2">
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-[#C8FF3D]" />
+                <span>Audience distribution & community trust</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-[#C8FF3D]" />
+                <span>Direct feedback loops & feature approval</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-[#C8FF3D]" />
+                <span>100% control of your personal brand & content</span>
+              </li>
+            </ul>
           </div>
+
+          <div className="p-6 rounded-2xl bg-[#101419] border border-[#252B32] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#C8FF3D]">CREATOR FORGE STUDIO</span>
+              <span className="text-2xl font-mono font-bold text-[#C8FF3D]">50%</span>
+            </div>
+            <ul className="text-xs text-[#969DA6] space-y-2">
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-[#C8FF3D]" />
+                <span>Full-stack software architecture & React dev</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-[#C8FF3D]" />
+                <span>$0 upfront capital or agency retainer fees</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-[#C8FF3D]" />
+                <span>24/7 cloud servers, DevOps, and ongoing updates</span>
+              </li>
+            </ul>
+          </div>
+
         </div>
+
       </section>
 
-      {/* ── Why This Works ────────────────────────────────────────────────────── */}
-      <section className="relative z-10 py-20 px-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        <div className="max-w-4xl mx-auto text-center">
-          <FadeUp>
-            <Label>Why This Works</Label>
-            <h2 style={{
-              fontSize: 'clamp(28px, 4vw, 50px)',
-              fontWeight: 800,
-              letterSpacing: '-0.035em',
-              lineHeight: 1.12,
-              marginBottom: 16,
-            }}>
-              Creators have the audience.
-              <br />
-              <span style={{ color: 'rgba(255,255,255,0.35)' }}>Forge brings the product.</span>
+      {/* ── INTERACTIVE CO-FOUNDER REVENUE CALCULATOR ───────────────────────── */}
+      <section id="calculator" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[#252B32]">
+        <div className="p-8 sm:p-12 rounded-3xl bg-[#0D1014] border border-[#252B32] max-w-5xl mx-auto">
+          
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#C8FF3D] font-bold">
+              VENTURE CALCULATOR
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-display font-bold text-[#F5F3EA] mt-1">
+              Estimate Your 50/50 Software Earnings
             </h2>
-          </FadeUp>
-          <div className="grid sm:grid-cols-2 gap-4 mt-10">
-            {[
-              {
-                icon: '🏢',
-                title: 'For Every Creator',
-                body: 'Whether you have 10K or 10M followers, Forge finds the right product fit and generates everything you need to launch — for free.',
-              },
-              {
-                icon: '⚙️',
-                title: 'Zero Manual Work',
-                body: 'Apify scrapes your real data, Gemini AI analyzes the demand, and your full launch pack is ready before you finish your coffee.',
-              },
-            ].map((item, i) => (
-              <FadeUp key={item.title} delay={i * 100}>
-                <div className="rounded-2xl p-6 text-left"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div className="text-[22px] mb-3">{item.icon}</div>
-                  <h3 className="text-[14px] font-bold text-white mb-2">{item.title}</h3>
-                  <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.42)' }}>{item.body}</p>
+            <p className="mt-2 text-xs text-[#969DA6]">
+              Simulate recurring subscription income based on your audience reach and pricing.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Sliders & Selectors */}
+            <div className="lg:col-span-6 space-y-5 text-left">
+              
+              <div className="p-4 rounded-xl bg-[#101419] border border-[#252B32] space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor={audienceRangeId} className="text-xs font-mono font-bold text-[#969DA6] uppercase">Audience Reach</label>
+                  <span className="text-base font-mono font-bold text-[#F5F3EA]">{calcAudience.toLocaleString()} Followers</span>
                 </div>
-              </FadeUp>
-            ))}
+                <input
+                  id={audienceRangeId}
+                  type="range"
+                  min="10000"
+                  max="1000000"
+                  step="10000"
+                  value={calcAudience}
+                  onChange={(e) => setCalcAudience(Number(e.target.value))}
+                  className="w-full accent-[#C8FF3D] bg-[#171C22] h-2 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#101419] border border-[#252B32] space-y-2">
+                <label className="text-xs font-mono font-bold text-[#969DA6] uppercase block">Monthly Tier Pricing</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { price: 29, sub: '$29/mo' },
+                    { price: 49, sub: '$49/mo' },
+                    { price: 99, sub: '$99/mo' }
+                  ].map((p) => (
+                    <button
+                      key={p.price}
+                      type="button"
+                      onClick={() => setCalcPricing(p.price)}
+                      className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer font-mono font-bold text-xs ${
+                        calcPricing === p.price
+                          ? 'bg-[#171C22] border-[#C8FF3D] text-[#C8FF3D]'
+                          : 'bg-[#0D1014] border-[#252B32] text-[#969DA6]'
+                      }`}
+                    >
+                      {p.sub}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#101419] border border-[#252B32] space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor={convRangeId} className="text-xs font-mono font-bold text-[#969DA6] uppercase">Conversion Benchmark</label>
+                  <span className="text-sm font-mono font-bold text-[#C8FF3D]">{calcConvRate.toFixed(1)}%</span>
+                </div>
+                <input
+                  id={convRangeId}
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={calcConvRate}
+                  onChange={(e) => setCalcConvRate(Number(e.target.value))}
+                  className="w-full accent-[#C8FF3D] bg-[#171C22] h-2 rounded-lg cursor-pointer"
+                />
+              </div>
+
+            </div>
+
+            {/* Projected Revenue Result */}
+            <div className="lg:col-span-6 p-6 sm:p-8 rounded-2xl bg-[#101419] border border-[#252B32] text-left space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-[#252B32]">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#969DA6]">CO-FOUNDER CASHFLOW</span>
+                <span className="text-[10px] font-mono text-[#78E08F] bg-[#171C22] px-2 py-0.5 rounded-full border border-[#252B32]">
+                  $0 Upfront
+                </span>
+              </div>
+
+              <div>
+                <span className="text-xs font-mono text-[#969DA6] block">Your 50% Monthly Net Share</span>
+                <div className="text-3xl sm:text-5xl font-display font-black text-[#C8FF3D] font-mono mt-1">
+                  ${creatorShareMonthly.toLocaleString()} <span className="text-xs font-normal text-[#969DA6]">/ mo</span>
+                </div>
+                <div className="text-xs font-mono text-[#F5F3EA] mt-1">
+                  ${creatorShareAnnual.toLocaleString()} annual run-rate
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-3 border-t border-[#252B32] text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[#969DA6]">Paying Subscribers</span>
+                  <span className="font-mono font-bold text-[#F5F3EA]">{estimatedSubscribers.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#969DA6]">Total Platform MRR</span>
+                  <span className="font-mono font-bold text-[#F5F3EA]">${monthlyRevenue.toLocaleString()} / mo</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#969DA6]">Creator Capital Risk</span>
+                  <span className="font-mono font-bold text-[#78E08F]">$0.00 (Zero Risk)</span>
+                </div>
+              </div>
+
+              <button
+                onClick={next}
+                className="w-full py-3 px-4 rounded-xl bg-[#C8FF3D] text-[#080A0C] font-bold text-xs hover:bg-[#b8ef2d] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Apply as Co-Founder for Your Niche</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── PORTFOLIO SECTION ────────────────────────────────────────────────── */}
+      <section id="portfolio" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[#252B32]">
+        
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
+          <div>
+            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#C8FF3D] font-bold">
+              PORTFOLIO ARCHITECTURE
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-display font-bold text-[#F5F3EA] mt-1">
+              Active Software Ventures
+            </h2>
+          </div>
+          <p className="mt-2 md:mt-0 text-xs text-[#969DA6] max-w-sm">
+            Real SaaS businesses launched with creators as 50/50 co-founder partnerships.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {PORTFOLIO_PRODUCTS.map((prod) => (
+            <div
+              key={prod.id}
+              className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] hover:border-[#363D47] transition-all text-left flex flex-col justify-between group"
+            >
+              <div>
+                <div className="flex items-center justify-between pb-2 border-b border-[#252B32] mb-3">
+                  <span className="text-[9px] font-mono text-[#969DA6] uppercase">{prod.category}</span>
+                  <span className="text-[9px] font-mono text-[#78E08F]">{prod.badge}</span>
+                </div>
+
+                <h3 className="text-base font-display font-bold text-[#F5F3EA] group-hover:text-[#C8FF3D] transition-colors">
+                  {prod.title}
+                </h3>
+                <p className="text-xs font-mono text-[#C8FF3D] mt-0.5">{prod.mrr}</p>
+                <p className="text-xs text-[#969DA6] mt-2 leading-relaxed">
+                  {prod.description}
+                </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-[#252B32] text-[11px] font-mono text-[#F5F3EA]">
+                {prod.metric}
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </section>
+
+      {/* ── FAQ SECTION ──────────────────────────────────────────────────────── */}
+      <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto border-t border-[#252B32]">
+        
+        <div className="text-center mb-12">
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#C8FF3D] font-bold">
+            FREQUENTLY ASKED QUESTIONS
+          </span>
+          <h2 className="text-2xl sm:text-4xl font-display font-bold text-[#F5F3EA] mt-1">
+            Common Creator Questions
+          </h2>
+        </div>
+
+        <div className="space-y-3 text-left">
+          {FAQS.map((faq, i) => {
+            const isOpen = openFaq === i
+            return (
+              <div
+                key={i}
+                className="rounded-2xl bg-[#101419] border border-[#252B32] overflow-hidden transition-all"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenFaq(isOpen ? null : i)}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left gap-4 cursor-pointer"
+                >
+                  <span className="text-sm font-display font-bold text-[#F5F3EA]">{faq.q}</span>
+                  <ChevronDown className={`w-4 h-4 text-[#969DA6] shrink-0 transition-transform ${isOpen ? 'rotate-180 text-[#C8FF3D]' : ''}`} />
+                </button>
+                {isOpen && (
+                  <div className="px-5 pb-5 text-xs text-[#969DA6] leading-relaxed border-t border-[#252B32]/50 pt-3">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+      </section>
+
+      {/* ── CLOSING CTA BANNER ───────────────────────────────────────────────── */}
+      <section className="pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="p-8 sm:p-14 rounded-3xl bg-[#0D1014] border border-[#252B32] text-center relative overflow-hidden">
+          <div className="max-w-2xl mx-auto relative z-10">
+            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#C8FF3D] font-bold">
+              ZERO-CAPITAL 50/50 PARTNERSHIP
+            </span>
+            <h3 className="text-3xl sm:text-5xl font-display font-bold text-[#F5F3EA] mt-2">
+              Ready to engineer your audience software business?
+            </h3>
+            <p className="mt-3 text-[#969DA6] text-sm leading-relaxed">
+              We discover what your audience needs, build your custom SaaS MVP in 14 days, and co-launch the business together.
+            </p>
+
+            <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+              <button
+                onClick={next}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#C8FF3D] text-[#080A0C] text-sm font-bold shadow-[0_0_24px_rgba(200,255,61,0.25)] hover:bg-[#b8ef2d] active:scale-[0.98] transition-all cursor-pointer"
+              >
+                Apply as Creator Co-Founder (50/50) →
+              </button>
+
+              <a
+                href="/launch"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#171C22] hover:bg-[#252B32] text-[#F5F3EA] border border-[#252B32] text-sm font-mono font-semibold transition-all flex items-center justify-center gap-2"
+              >
+                <span>Launch Studio OS</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#C8FF3D]" />
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Stats ─────────────────────────────────────────────────────────────── */}
-      <section className="relative z-10 py-16 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        <div className="max-w-3xl mx-auto grid grid-cols-3 gap-8 px-6">
-          {STATS.map((s, i) => (
-            <FadeUp key={s.label} delay={i * 80}>
-              <div className="text-center">
-                <p style={{ fontSize: 'clamp(22px, 3.5vw, 34px)', fontWeight: 800, letterSpacing: '-0.03em' }}>
-                  {s.value}
-                </p>
-                <p className="text-[12px] mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.label}</p>
-              </div>
-            </FadeUp>
-          ))}
-        </div>
-      </section>
+      {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
+      <footer className="border-t border-[#252B32] bg-[#080A0C] py-12 text-xs text-[#686F78]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+          
+          <div className="flex items-center gap-3">
+            <CreatorForgeLogo size={18} showText={true} />
+            <span className="text-[#252B32]">|</span>
+            <span className="text-[#969DA6]">Venture Studio Software Partnerships</span>
+          </div>
 
-      {/* ── Final CTA ─────────────────────────────────────────────────────────── */}
-      <section className="relative z-10 py-28 px-6 border-t text-center"
-        style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        {/* Red glow behind CTA */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(100,5,5,0.45) 0%, transparent 70%)' }} />
-        <FadeUp>
-          <h2 style={{
-            fontSize: 'clamp(32px, 5vw, 60px)',
-            fontWeight: 800,
-            letterSpacing: '-0.04em',
-            lineHeight: 1.05,
-            marginBottom: 16,
-          }}>
-            From creator to founder.
-          </h2>
-          <p style={{
-            fontSize: '16px',
-            color: 'rgba(255,255,255,0.4)',
-            maxWidth: 400,
-            margin: '0 auto 8px',
-            lineHeight: 1.65,
-          }}>
-            We find what your audience wants, build the pitch, and generate your entire launch in minutes. You focus on creating.
-          </p>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)', marginBottom: 36 }}>
-            The entire pipeline runs on autopilot.
-          </p>
-          <button
-            onClick={next}
-            className="inline-flex items-center gap-2.5 text-[16px] font-bold px-10 py-4 rounded-2xl transition-all duration-200"
-            style={{
-              background: 'linear-gradient(135deg, #c0392b, #a93226)',
-              color: 'white',
-              boxShadow: '0 4px 36px rgba(192,57,43,0.55)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 52px rgba(192,57,43,0.75)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 36px rgba(192,57,43,0.55)'; e.currentTarget.style.transform = 'translateY(0)' }}
-          >
-            Get started
-            <ArrowRight size={17} />
-          </button>
-        </FadeUp>
-      </section>
+          <div className="flex items-center gap-6 text-[11px] font-mono">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#78E08F]" />
+              <span className="text-[#969DA6]">SYSTEM OPERATIONAL</span>
+            </div>
+            <span>© {new Date().getFullYear()} CREATOR FORGE STUDIO. ZERO CAPITAL CO-FOUNDERS.</span>
+          </div>
 
-      {/* ── Footer ────────────────────────────────────────────────────────────── */}
-      <footer className="relative z-10 py-8 px-8 border-t flex items-center justify-between"
-        style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        <div className="flex items-center gap-2">
-          <WingLogo size={18} />
-          <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.3)' }}>Creator Forge</span>
         </div>
-        <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.18)' }}>
-          © 2026 Creator Forge. All rights reserved.
-        </p>
       </footer>
 
     </div>

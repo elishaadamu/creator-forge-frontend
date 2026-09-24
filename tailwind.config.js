@@ -4,19 +4,32 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'SF Pro Display', 'Segoe UI', 'sans-serif'],
-        mono: ['SF Mono', 'JetBrains Mono', 'Menlo', 'monospace'],
+        display: ['"Space Grotesk"', 'sans-serif'],
+        sans: ['"Manrope"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
+        obsidian: {
+          DEFAULT: '#080A0C',
+          subtle: '#0D1014',
+          card: '#101419',
+          elevated: '#171C22',
+          border: '#252B32',
+        },
         forge: {
-          bg: '#080808',
-          surface: '#111111',
-          card: '#141414',
-          hover: '#1a1a1a',
-          border: 'rgba(255,255,255,0.07)',
-          'border-light': 'rgba(255,255,255,0.12)',
-          muted: 'rgba(255,255,255,0.4)',
-          subtle: 'rgba(255,255,255,0.22)',
+          bg: '#080A0C',
+          surface: '#0D1014',
+          card: '#101419',
+          hover: '#171C22',
+          border: '#252B32',
+          'border-light': '#363D47',
+          text: '#F5F3EA',
+          secondary: '#969DA6',
+          muted: '#686F78',
+          lime: '#C8FF3D',
+          'lime-dark': '#8EB82A',
+          'lime-glow': 'rgba(200, 255, 61, 0.12)',
+          positive: '#78E08F',
         }
       },
       animation: {
