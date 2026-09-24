@@ -35,6 +35,8 @@ import {
   Cpu
 } from 'lucide-react'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
+import FloatingPolygons from '../ui/FloatingPolygons'
+import ShippedLiveCanvas from '../ui/ShippedLiveCanvas'
 
 // ── Top Creators Partner Roster (Real Verified Channels) ──────────────────────
 const CREATOR_PARTNERS = [
@@ -473,13 +475,13 @@ export default function Welcome() {
             </a>
           </nav>
 
-          {/* Header Action Button (Does nothing — investor showcase) */}
+          {/* Header Action Button & Hamburger Menu */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 whitespace-nowrap">
             {/* Signature Button with Top-Right Beacon (WCAG AAA contrast, >=44px touch target) */}
             <button
               type="button"
               onClick={(e) => e.preventDefault()}
-              className="relative inline-flex items-center gap-2 text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none min-h-[44px]"
+              className="relative inline-flex items-center gap-2 text-xs sm:text-sm font-bold px-3.5 sm:px-5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none min-h-[44px]"
             >
               <span>Apply as Co-Founder</span>
               <ArrowRight className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
@@ -491,70 +493,96 @@ export default function Welcome() {
               </span>
             </button>
 
-            {/* Mobile / Tablet Menu Button (< lg) */}
+            {/* Hamburger Menu Toggle Button (Prominent across all screen sizes) */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 transition-colors cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label="Toggle Navigation Menu"
+              className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 transition-all cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              aria-label={mobileMenuOpen ? "Close Navigation Menu" : "Open Navigation Menu"}
+              title="Navigation Menu"
             >
-              {mobileMenuOpen ? <X className="w-4 h-4 text-slate-900" /> : <Menu className="w-4 h-4 text-slate-700" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 text-slate-900" /> : <Menu className="w-5 h-5 text-slate-800" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Dropdown Drawer (< lg — Clean Investor Navigation) */}
+        {/* Responsive Dropdown Drawer Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-3 animate-fade-in shadow-xl">
-            <nav className="flex flex-col space-y-1 text-sm font-medium">
+          <div className="bg-white/95 backdrop-blur-2xl border-b border-slate-200/90 px-4 sm:px-6 py-5 space-y-4 animate-fade-in shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 text-xs font-mono uppercase tracking-wider text-slate-400">
+              <span>Navigation Menu</span>
+              <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">50/50 Co-Founder Portal</span>
+            </div>
+            <nav className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm font-semibold">
               <a 
                 href="#creators" 
-                onClick={(e) => scrollToSection(e, 'creators')}
-                className="px-3 py-2 rounded-lg text-slate-600 hover:text-slate-950 hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-between"
+                onClick={(e) => {
+                  scrollToSection(e, 'creators')
+                  setMobileMenuOpen(false)
+                }}
+                className="px-4 py-3 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer flex items-center justify-between"
               >
-                <span>Creators</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Creators Roster</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </a>
               <a 
                 href="#reviews" 
-                onClick={(e) => scrollToSection(e, 'reviews')}
-                className="px-3 py-2 rounded-lg text-slate-600 hover:text-slate-950 hover:bg-slate-50 transition-colors cursor-pointer"
+                onClick={(e) => {
+                  scrollToSection(e, 'reviews')
+                  setMobileMenuOpen(false)
+                }}
+                className="px-4 py-3 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer"
               >
-                Reviews
+                Reviews & Testimonials
               </a>
               <a 
                 href="#pipeline" 
-                onClick={(e) => scrollToSection(e, 'pipeline')}
-                className="px-3 py-2 rounded-lg text-slate-600 hover:text-slate-950 hover:bg-slate-50 transition-colors cursor-pointer"
+                onClick={(e) => {
+                  scrollToSection(e, 'pipeline')
+                  setMobileMenuOpen(false)
+                }}
+                className="px-4 py-3 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer flex items-center justify-between"
               >
-                How It Works
+                <span>How It Works</span>
+                <span className="text-xs font-mono text-emerald-700 font-bold">14-Day App</span>
               </a>
               <a 
                 href="#calculator" 
-                onClick={(e) => scrollToSection(e, 'calculator')}
-                className="px-3 py-2 rounded-lg text-slate-600 hover:text-slate-950 hover:bg-slate-50 transition-colors cursor-pointer"
+                onClick={(e) => {
+                  scrollToSection(e, 'calculator')
+                  setMobileMenuOpen(false)
+                }}
+                className="px-4 py-3 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer flex items-center justify-between"
               >
-                Earnings
+                <span>50/50 Earnings</span>
+                <span className="text-xs font-mono text-emerald-700 font-bold">$0 Upfront</span>
               </a>
               <a 
                 href="#faq" 
-                onClick={(e) => scrollToSection(e, 'faq')}
-                className="px-3 py-2 rounded-lg text-slate-600 hover:text-slate-950 hover:bg-slate-50 transition-colors cursor-pointer"
+                onClick={(e) => {
+                  scrollToSection(e, 'faq')
+                  setMobileMenuOpen(false)
+                }}
+                className="px-4 py-3 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer"
               >
                 FAQ
               </a>
             </nav>
 
-            <div className="pt-2 border-t border-slate-200">
+            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-xs text-slate-500 font-mono">
+                <span className="font-bold text-slate-800">CreatorForge</span> · We code & run the app. You split profits 50/50.
+              </p>
               <button
                 type="button"
                 onClick={(e) => {
                   e.preventDefault()
                   setMobileMenuOpen(false)
                 }}
-                className="relative w-full py-2.5 text-center text-xs sm:text-sm font-bold text-white rounded-lg bg-[#0F172A] hover:bg-[#1E293B] min-h-[44px] flex items-center justify-center"
+                className="relative w-full sm:w-auto px-6 py-2.5 text-center text-xs sm:text-sm font-bold text-white rounded-xl bg-[#0F172A] hover:bg-[#1E293B] min-h-[44px] flex items-center justify-center gap-2"
               >
-                <span>Apply as Co-Founder</span>
+                <span>Apply as Co-Founder (50/50)</span>
+                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span className="absolute -top-1 -right-1 flex h-3 w-3 pointer-events-none items-center justify-center">
                   <span className="absolute inline-flex h-4 w-4 rounded-full bg-emerald-400/30 blur-[1px]" />
                   <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 opacity-60" />
@@ -566,137 +594,151 @@ export default function Welcome() {
         )}
       </header>
 
-      {/* ── HERO SECTION (LIGHT MODE EDITORIAL — TIGHTENED MARGINS, LARGER TEXT & HEIGHT) ── */}
-      <section className="relative pt-6 sm:pt-8 pb-6 sm:pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
+      {/* ── HERO SECTION (S1: STRUCTURED LIKE REFERENCE DESIGN, CREATORFORGE PALETTE, LARGE 3D HERO) ── */}
+      <section className="relative w-full px-4 sm:px-6 md:px-8 lg:px-[10%] min-h-[82vh] lg:min-h-[88vh] flex flex-col justify-center py-12 sm:py-16 lg:py-20 overflow-hidden border-b border-slate-200/60">
         
-        {/* Eyebrow Pill */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs sm:text-sm font-mono font-semibold uppercase tracking-wider text-slate-700 mb-4 animate-fade-in shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-slate-900 font-bold">WE BUILD YOUR APP FOR FREE</span>
-          <span className="text-slate-400">·</span>
-          <span className="text-emerald-700 font-bold">YOU KEEP 50% PROFIT</span>
-        </div>
+        {/* Ambient Light Green Conic Gradient Glow Aura */}
+        <div 
+          className="absolute top-1/2 right-[0%] sm:right-[5%] lg:right-[8%] -translate-y-1/2 w-[750px] sm:w-[1000px] lg:w-[1300px] h-[750px] sm:h-[1000px] lg:h-[1300px] rounded-full pointer-events-none opacity-35 sm:opacity-40 blur-[85px] sm:blur-[120px] -z-10 animate-spin-slow"
+          style={{
+            background: 'conic-gradient(from 0deg at 50% 50%, #BEF264 0deg, #A3E635 60deg, #84CC16 120deg, #34D399 180deg, #E2F952 240deg, #A3E635 300deg, #BEF264 360deg)'
+          }}
+        />
 
-        {/* Hero Headline (Enlarged Font Size & Height) */}
-        <h1 className="text-4xl sm:text-6xl lg:text-[68px] font-display font-black tracking-tight text-slate-950 max-w-4xl leading-[1.12]">
-          You have the audience.{' '}
-          <span className="text-slate-950 relative inline-block underline decoration-[#84CC16] decoration-wavy decoration-3 underline-offset-4">
-            We build the software.
-          </span>{' '}
-          We split profits 50/50.
-        </h1>
+        {/* Subtle Canvas Dot Grid Background */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-40 -z-10"
+          style={{
+            backgroundImage: 'radial-gradient(#94A3B8 1px, transparent 1px)',
+            backgroundSize: '24px 24px'
+          }}
+        />
 
-        {/* Human Non-Tech Subheadline (Enlarged Font Size & Height) */}
-        <p className="mt-4 text-lg sm:text-xl lg:text-2xl text-slate-600 max-w-3xl font-normal leading-relaxed sm:leading-9">
-          Turn your followers into monthly paying subscribers. We write 100% of the code, manage servers, and handle customer support. You pay $0 upfront and keep half of everything.
-        </p>
+        {/* Floating Background Polygons (Image 5 Style) */}
+        <FloatingPolygons variant="hero" />
 
-        {/* Action Buttons (Featuring the Signature Top-Right Beacon Button with Halo — does nothing on click) */}
-        <div className="mt-6 flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={(e) => e.preventDefault()}
-            className="relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-base sm:text-lg font-display font-bold shadow-[0_6px_24px_rgba(15,23,42,0.18)] hover:shadow-[0_10px_32px_rgba(15,23,42,0.28)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none min-h-[52px]"
-          >
-            <span>Apply to Build Your App (50/50)</span>
-            <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-            {/* Signature Top-Right Accent Beacon Dot with Soft Halo Glow */}
-            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 pointer-events-none items-center justify-center">
-              <span className="absolute inline-flex h-6 w-6 rounded-full bg-emerald-400/30 blur-[2px]" />
-              <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-xs" />
-            </span>
-          </button>
+        {/* 2-Column Balanced 50/50 Responsive Hero Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-center w-full relative z-10">
+          
+          {/* Left Column (50%): Typography & Actions with Proper Breathing Room */}
+          <div className="w-full flex flex-col items-start text-left">
+            {/* Eyebrow Pill */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-xs sm:text-sm font-mono font-semibold uppercase tracking-wider text-slate-700 mb-3.5 sm:mb-4 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-slate-900 font-bold">WE BUILD YOUR APP FOR FREE</span>
+              <span className="text-slate-400">·</span>
+              <span className="text-emerald-700 font-bold">YOU KEEP 50% PROFIT</span>
+            </div>
 
-          <a
-            href="#creators"
-            onClick={(e) => scrollToSection(e, 'creators')}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 hover:border-slate-300 text-base font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer min-h-[52px]"
-          >
-            <Play className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-            <span>Try an Interactive Demo</span>
-          </a>
-        </div>
+            {/* Headline: Perfectly Proportionate for 50/50 Layout (No Awkward 1-Word Wrapping) */}
+            <h1 className="font-display font-black tracking-tight uppercase text-3xl sm:text-4xl md:text-5xl lg:text-[46px] xl:text-[54px] 2xl:text-[60px] leading-[0.96] text-slate-950">
+              <span className="block whitespace-normal sm:whitespace-nowrap">YOU HAVE THE AUDIENCE</span>
+              <span className="block mt-1 sm:mt-1.5 whitespace-normal sm:whitespace-nowrap">
+                <span className="text-transparent font-black [-webkit-text-stroke:_1.5px_#0F172A] sm:[-webkit-text-stroke:_2px_#0F172A] lg:[-webkit-text-stroke:_2.5px_#0F172A] [text-stroke:_1.5px_#0F172A] sm:[text-stroke:_2px_#0F172A] mr-2 sm:mr-3 inline-block">
+                  WE BUILD
+                </span>
+                <span className="text-slate-950 inline-block">THE SOFTWARE.</span>
+              </span>
+            </h1>
 
-        {/* Guarantee Badges (Larger & Clearer) */}
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-5 sm:gap-7 text-sm sm:text-base font-medium text-slate-700">
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>$0 Upfront Cost</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Live in 14 Days</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>50/50 Profit Split</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Zero Tech Skills Needed</span>
-          </div>
-        </div>
-
-        {/* ── HERO PHOTOREALISTIC DEVICE SHOWCASE ─────────────────────────── */}
-        <div className="mt-6 sm:mt-8 w-full max-w-5xl mx-auto relative group">
-          <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-slate-50 shadow-[0_24px_70px_rgba(15,23,42,0.08)] overflow-hidden relative">
-            
-            {/* Top Device Titlebar */}
-            <div className="h-10 bg-slate-100/90 border-b border-slate-200 px-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-                <div className="ml-3 hidden sm:flex items-center gap-2 px-3 py-1 rounded-md bg-white border border-slate-200 text-[10px] font-mono text-slate-600 shadow-2xs">
-                  <Lock className="w-2.5 h-2.5 text-emerald-600" />
-                  <span>app.creatorforge.studio/venture/os</span>
-                </div>
+            {/* Tilted Sticker Tag Right Below Headline */}
+            <div className="mt-3.5 sm:mt-4 inline-block -rotate-2 transform hover:rotate-0 transition-transform duration-200 origin-left">
+              <div className="bg-[#84CC16] text-slate-950 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-md font-display font-black text-xs sm:text-sm md:text-base tracking-wider uppercase shadow-[0_4px_14px_rgba(132,204,22,0.32)] select-none">
+                FLY HIGH, DON'T JUST GLIDE. 50/50 PROFIT SPLIT.
               </div>
+            </div>
 
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-mono uppercase text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                  LIVE APP RUNNING
+            {/* Clear Description Paragraph */}
+            <p className="mt-4 sm:mt-5 text-sm sm:text-base lg:text-[17px] text-slate-600 max-w-lg font-normal leading-relaxed sm:leading-7">
+              Helping creators acquire more monthly paying subscribers by turning their audience into simple, high-retention software products. $0 upfront cost, 100% managed.
+            </p>
+
+            {/* Action Row: Solid Action Button + Inline Estimated Cost & Time */}
+            <div className="mt-6 sm:mt-7 flex flex-wrap items-center gap-3.5 sm:gap-4 w-full">
+              {/* Primary Signature Button with Beacon (Does nothing on click) */}
+              <button
+                type="button"
+                onClick={(e) => e.preventDefault()}
+                className="relative inline-flex items-center justify-center gap-2.5 px-6 py-3.5 sm:px-7 sm:py-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs sm:text-sm font-display font-bold shadow-[0_6px_24px_rgba(15,23,42,0.18)] hover:shadow-[0_10px_32px_rgba(15,23,42,0.28)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none min-h-[48px] shrink-0 uppercase tracking-wide"
+              >
+                <span>SUBMIT YOUR IDEA (50/50)</span>
+                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                {/* Signature Top-Right Accent Beacon Dot with Soft Halo Glow */}
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 pointer-events-none items-center justify-center">
+                  <span className="absolute inline-flex h-6 w-6 rounded-full bg-emerald-400/30 blur-[2px]" />
+                  <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-xs" />
+                </span>
+              </button>
+
+              {/* Inline Estimate Label */}
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 font-mono whitespace-nowrap">
+                <span>Estimated cost & time →</span>
+                <span className="font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-md">
+                  $0 / 14 days
                 </span>
               </div>
             </div>
 
-            {/* High-Resolution Hero Visual Mockup */}
-            <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
+            {/* Guarantee Reassurance Badges */}
+            <div className="mt-5 flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-medium text-slate-700">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>$0 Upfront Cost</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Live in 14 Days</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>50/50 Profit Split</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Zero Tech Skills Needed</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column (50%): Centered 3D Astronaut Rocket (Well-Proportioned & Isolated) */}
+          <div className="w-full relative flex items-center justify-center">
+            <div className="relative w-full max-w-[440px] sm:max-w-[480px] md:max-w-[520px] lg:max-w-[560px] xl:max-w-[620px] animate-float-slow select-none">
+              
+              {/* Transparent 3D Hero Astronaut Rocket (No background box) */}
               <img
-                src="/images/hero_saas_macbook.jpg"
-                alt="Creator Forge SaaS OS Running on Space Black MacBook Pro with iPhone Telemetry"
-                className="w-full h-full object-cover object-center group-hover:scale-[1.01] transition-transform duration-700"
-                loading="eager"
+                src="/images/hero_astronaut_rocket.png"
+                alt="Creator Forge 3D Rocket Launch"
+                className="w-full h-auto object-contain drop-shadow-[0_28px_56px_rgba(15,23,42,0.20)] transform hover:scale-[1.03] transition-transform duration-500"
               />
 
-              {/* Floating Live Telemetry Cards Pinned Directly on Visual (Light Mode Floating Cards) */}
-              <div className="absolute top-4 left-4 sm:top-6 sm:left-6 p-3 sm:p-4 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl text-left hidden sm:block animate-fade-in">
-                <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 mb-1">
+              {/* Floating Live Telemetry Badge 1: Top Right */}
+              <div className="absolute -top-3 right-2 sm:right-6 p-2.5 sm:p-3 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl text-left hidden sm:block animate-float-gentle z-20">
+                <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 mb-0.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>MONTHLY SUBSCRIBER EARNINGS</span>
+                  <span className="font-bold">MONTHLY SUBSCRIBER REVENUE</span>
                 </div>
-                <div className="text-xl sm:text-2xl font-display font-black text-slate-950 font-mono">
+                <div className="text-base sm:text-lg font-display font-black text-slate-950 font-mono">
                   $38,400 <span className="text-xs text-emerald-600 font-normal">+18.4% MoM</span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-700 font-semibold block mt-0.5">Automated 50/50 Stripe Split</span>
               </div>
 
-              <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 p-3 sm:p-4 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl text-right hidden sm:block animate-fade-in">
-                <div className="flex items-center justify-end gap-2 text-[10px] font-mono text-slate-500 mb-1">
+              {/* Floating Live Telemetry Badge 2: Bottom Right */}
+              <div className="absolute -bottom-2 right-0 sm:right-4 p-2.5 sm:p-3 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl text-right hidden sm:block animate-float-reverse z-20">
+                <div className="flex items-center justify-end gap-2 text-[10px] font-mono text-slate-500 mb-0.5">
                   <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>STRIPE PAYOUT DEPOSITED</span>
+                  <span className="font-bold">STRIPE PAYOUT DEPOSITED</span>
                 </div>
-                <div className="text-xl sm:text-2xl font-display font-black text-slate-950 font-mono">
+                <div className="text-base sm:text-lg font-display font-black text-slate-950 font-mono">
                   $19,200.00
                 </div>
                 <span className="text-[10px] font-mono text-slate-600 block mt-0.5">Creator Net 50% Take-Home</span>
               </div>
 
             </div>
-
           </div>
+
         </div>
 
       </section>
@@ -1045,6 +1087,9 @@ export default function Welcome() {
         {/* Dotted Canvas with Arched Dashed Trajectory & 3 Pinned Review Cards */}
         <div className="relative p-6 sm:p-12 lg:p-16 rounded-[32px] bg-slate-50/70 border border-slate-200/90 overflow-hidden shadow-xs">
           
+          {/* Floating Background Polygons */}
+          <FloatingPolygons variant="section" />
+
           {/* Subtle Canvas Dot Grid Background */}
           <div 
             className="absolute inset-0 pointer-events-none opacity-60"
@@ -1198,7 +1243,7 @@ export default function Welcome() {
         </div>
       </section>
 
-      {/* ── THE PIPELINE ROUTE MAP (DANNY POSTMA S-CURVE PATTERN) ────────── */}
+      {/* ── THE PIPELINE ROUTE MAP (DANNY POSTMA S-CURVE PATTERN WITH SHIPPED & LIVE CANVAS) ── */}
       <section id="pipeline" className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-slate-200/80">
         <div className="text-center max-w-3xl mx-auto mb-4 sm:mb-6">
           <span className="text-xs sm:text-sm font-mono uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full font-bold inline-block">
@@ -1221,10 +1266,39 @@ export default function Welcome() {
           </div>
         </div>
 
-        {/* ── DESKTOP CONTINUOUS SERPENTINE S-CURVE ROUTE ── */}
-        <div className="hidden lg:block relative p-6 sm:p-10 rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+        {/* ── DESKTOP CONTINUOUS SERPENTINE S-CURVE ROUTE (ANIMATED ENERGY FLOW & CANVAS CELEBRATION) ── */}
+        <div className="hidden lg:block relative p-6 sm:p-10 rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden group select-none">
           
-          <svg className="w-full h-auto" viewBox="0 0 1000 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Subtle Background Polygons in Pipeline */}
+          <FloatingPolygons variant="section" />
+
+          {/* Celebratory Canvas Particle Explosion when energy reaches ★ SHIPPED & LIVE */}
+          <ShippedLiveCanvas
+            cycleDuration={6500}
+            originXPercent={0.888}
+            originYPercent={0.830}
+          />
+
+          <svg className="w-full h-auto relative z-10" viewBox="0 0 1000 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* SVG Definitions for Glow Effects */}
+            <defs>
+              <filter id="glowGreen" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            {/* Hidden Master S-Curve Path for Continuous Particle Tracer */}
+            <path
+              id="scurveMasterRoute"
+              d="M 90 79 L 850 79 A 84 84 0 0 1 850 247 L 160 247 A 84 84 0 0 0 160 415 L 810 415"
+              fill="none"
+              stroke="transparent"
+            />
+
             {/* ── PHASE 1, 2, 3 HEADER LABELS (Background Layer) ─────────── */}
             <text x="140" y="44" fill="#D9A441" fontFamily="ui-monospace, monospace" fontSize="12" fontWeight="700" letterSpacing="0.1em">
               1 · FIND WHAT FANS WANT
@@ -1236,7 +1310,7 @@ export default function Welcome() {
               3 · LAUNCH & SPLIT PROFITS
             </text>
 
-            {/* ── CONTINUOUS S-CURVE ROUTE PATHS ── */}
+            {/* ── CONTINUOUS S-CURVE BASE ROUTE PATHS ── */}
             {/* Row 1: Line 1 (Amber, Left-to-Right) */}
             <line x1="90" y1="79" x2="850" y2="79" stroke="#D9A441" strokeWidth="6" strokeLinecap="round" />
 
@@ -1251,6 +1325,35 @@ export default function Welcome() {
 
             {/* Row 3: Line 3 (Purple, Left-to-Right) */}
             <line x1="160" y1="415" x2="810" y2="415" stroke="#6E61AA" strokeWidth="6" strokeLinecap="round" />
+
+            {/* ── ANIMATED ENERGY DASH OVERLAY (Continuous Electric Flow) ── */}
+            <path
+              d="M 90 79 L 850 79 A 84 84 0 0 1 850 247 L 160 247 A 84 84 0 0 0 160 415 L 810 415"
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              className="animate-path-dash opacity-70 pointer-events-none"
+            />
+
+            {/* ── CONTINUOUS TRAVELING PARTICLE ENERGY BEAM (Full Circuit into ★ SHIPPED & LIVE) ── */}
+            <circle r="8" fill="#10B981" filter="url(#glowGreen)" opacity="0.95">
+              <animateMotion
+                dur="6.5s"
+                repeatCount="indefinite"
+                path="M 90 79 L 850 79 A 84 84 0 0 1 850 247 L 160 247 A 84 84 0 0 0 160 415 L 810 415"
+              />
+            </circle>
+
+            {/* Secondary High-Speed Particle */}
+            <circle r="4.5" fill="#A3E635" opacity="0.9">
+              <animateMotion
+                dur="6.5s"
+                begin="-3.25s"
+                repeatCount="indefinite"
+                path="M 90 79 L 850 79 A 84 84 0 0 1 850 247 L 160 247 A 84 84 0 0 0 160 415 L 810 415"
+              />
+            </circle>
 
             {/* ── STOP NODES & TEXT LABELS (Simple Non-Tech Language) ─────────────── */}
             {/* START Badge */}
@@ -1283,7 +1386,7 @@ export default function Welcome() {
               Set monthly price
             </text>
             <text x="660" y="130" fill="#64748B" fontFamily="system-ui, sans-serif" fontSize="11" textAnchor="middle">
-              Pick simple $19–$49/mo plans fans love
+              Pick simple –/mo plans fans love
             </text>
 
             {/* Row 2 Stop 1: Design the app */}
@@ -1331,17 +1434,34 @@ export default function Welcome() {
               We fix bugs & keep servers running
             </text>
 
-            {/* Terminal Badge: SHIPPED */}
-            <rect x="804" y="397" width="168" height="36" rx="18" fill="#0D9488" />
-            <text x="888" y="420" fill="#FFFFFF" fontFamily="system-ui, sans-serif" fontSize="12" fontWeight="800" textAnchor="middle">
-              ★ SHIPPED & LIVE
-            </text>
+            {/* Terminal Target: ★ SHIPPED & LIVE (With Radar Ripple Animation & Interactive Burst) */}
+            <g className="cursor-pointer">
+              {/* Radar pulse ripples on arrival */}
+              <circle cx="888" cy="415" r="30" stroke="#10B981" strokeWidth="2" fill="none" opacity="0.6">
+                <animate attributeName="r" values="24;52" dur="2.2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.85;0" dur="2.2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="888" cy="415" r="20" stroke="#A3E635" strokeWidth="2" fill="none" opacity="0.8">
+                <animate attributeName="r" values="16;42" dur="2.2s" begin="1.1s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.95;0" dur="2.2s" begin="1.1s" repeatCount="indefinite" />
+              </circle>
+
+              {/* Pill Container */}
+              <rect x="804" y="397" width="168" height="36" rx="18" fill="#0D9488" className="shadow-lg transition-transform hover:scale-105" />
+              <text x="888" y="420" fill="#FFFFFF" fontFamily="system-ui, sans-serif" fontSize="12" fontWeight="800" textAnchor="middle">
+                ★ SHIPPED & LIVE
+              </text>
+            </g>
             <text x="888" y="452" fill="#047857" fontFamily="ui-monospace, monospace" fontSize="11" fontWeight="700" textAnchor="middle">
-              $42,300/MO EARNINGS
+              ,300/MO EARNINGS
             </text>
 
-            {/* ── DIAMOND APPROVAL GATES ── */}
+            {/* ── DIAMOND APPROVAL GATES (WITH ANIMATED RADAR RINGS) ── */}
             {/* Gate 1 */}
+            <circle cx="850" cy="79" r="22" stroke="#10B981" strokeWidth="2" fill="none" opacity="0.6" className="pointer-events-none">
+              <animate attributeName="r" values="18;36" dur="2.4s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.75;0" dur="2.4s" repeatCount="indefinite" />
+            </circle>
             <g transform="translate(850, 79)">
               <rect x="-19" y="-19" width="38" height="38" rx="8" fill="#FFFFFF" transform="rotate(45)" />
               <rect x="-16" y="-16" width="32" height="32" rx="6" fill="#10B981" transform="rotate(45)" />
@@ -1352,6 +1472,10 @@ export default function Welcome() {
             </text>
 
             {/* Gate 2 */}
+            <circle cx="160" cy="247" r="22" stroke="#10B981" strokeWidth="2" fill="none" opacity="0.6" className="pointer-events-none">
+              <animate attributeName="r" values="18;36" dur="2.4s" begin="1.2s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.75;0" dur="2.4s" begin="1.2s" repeatCount="indefinite" />
+            </circle>
             <g transform="translate(160, 247)">
               <rect x="-19" y="-19" width="38" height="38" rx="8" fill="#FFFFFF" transform="rotate(45)" />
               <rect x="-16" y="-16" width="32" height="32" rx="6" fill="#10B981" transform="rotate(45)" />
@@ -1382,7 +1506,7 @@ export default function Welcome() {
               </div>
               <div className="flex items-start gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#D9A441] mt-1.5 shrink-0" />
-                <div><b className="text-slate-900">Set fair price:</b> <span className="text-slate-600">Pick simple $19–$49/mo subscription plans</span></div>
+                <div><b className="text-slate-900">Set fair price:</b> <span className="text-slate-600">Pick simple –/mo subscription plans</span></div>
               </div>
             </div>
             <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs font-bold text-slate-900">
@@ -1433,7 +1557,7 @@ export default function Welcome() {
             </div>
             <div className="p-2.5 rounded-xl bg-slate-900 text-white flex items-center justify-between text-xs font-mono font-bold">
               <span>★ SHIPPED & LIVE</span>
-              <span className="text-emerald-400">$42,300/MO</span>
+              <span className="text-emerald-400">,300/MO</span>
             </div>
           </div>
         </div>
