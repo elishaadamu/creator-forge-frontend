@@ -19,7 +19,9 @@ import {
   ExternalLink,
   Laptop,
   Smartphone,
-  CreditCard
+  CreditCard,
+  Menu,
+  X
 } from 'lucide-react'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 
@@ -90,6 +92,27 @@ const FAQS = [
 export default function Welcome() {
   const { next, goTo, userProfile } = useForge()
   const [openFaq, setOpenFaq] = useState(0)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Smooth scroll handler with sticky header offset
+  const scrollToSection = (e, sectionId) => {
+    e.preventDefault()
+    setMobileMenuOpen(false)
+    const element = document.getElementById(sectionId)
+    if (element) {
+      const headerOffset = 72
+      const elementPosition = element.getBoundingClientRect().top
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      })
+      try {
+        window.history.pushState(null, '', `#${sectionId}`)
+      } catch (err) {}
+    }
+  }
 
   // Interactive Co-Founder Revenue Calculator State
   const [calcAudience, setCalcAudience] = useState(150000)
@@ -132,33 +155,64 @@ export default function Welcome() {
       </div>
 
       {/* ── Sticky Navigation Bar ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#080A0C]/90 border-b border-[#252B32] transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#080A0C]/95 border-b border-[#252B32] transition-all">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           
-          {/* Brand Logo & Studio Pill */}
+          {/* Brand Logo */}
           <div 
-            className="flex items-center gap-3 cursor-pointer group" 
+            className="flex items-center gap-2.5 cursor-pointer shrink-0" 
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
             <CreatorForgeLogo size={22} showText={true} />
-            <div className="hidden lg:flex items-center pl-2">
-              <span className="text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#171C22] text-[#C8FF3D] border border-[#252B32]">
-                VENTURE STUDIO
-              </span>
-            </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium text-[#969DA6]">
-            <a href="#showcase" className="hover:text-[#F5F3EA] transition-colors">The Platform</a>
-            <a href="#discovery" className="hover:text-[#F5F3EA] transition-colors">Semantic Mining</a>
-            <a href="#engineering" className="hover:text-[#F5F3EA] transition-colors">14-Day Sprint</a>
-            <a href="#model" className="hover:text-[#F5F3EA] transition-colors">50/50 Model</a>
-            <a href="#calculator" className="hover:text-[#F5F3EA] transition-colors">Calculator</a>
-            <a href="#portfolio" className="hover:text-[#F5F3EA] transition-colors">Portfolio</a>
+          {/* Navigation Links (Desktop) */}
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs font-medium text-[#969DA6] whitespace-nowrap shrink-0">
+            <a 
+              href="#showcase" 
+              onClick={(e) => scrollToSection(e, 'showcase')} 
+              className="hover:text-[#F5F3EA] transition-colors whitespace-nowrap cursor-pointer"
+            >
+              Platform
+            </a>
+            <a 
+              href="#discovery" 
+              onClick={(e) => scrollToSection(e, 'discovery')} 
+              className="hover:text-[#F5F3EA] transition-colors whitespace-nowrap cursor-pointer"
+            >
+              Discovery
+            </a>
+            <a 
+              href="#engineering" 
+              onClick={(e) => scrollToSection(e, 'engineering')} 
+              className="hover:text-[#F5F3EA] transition-colors whitespace-nowrap cursor-pointer"
+            >
+              14-Day MVP
+            </a>
+            <a 
+              href="#model" 
+              onClick={(e) => scrollToSection(e, 'model')} 
+              className="hover:text-[#F5F3EA] transition-colors whitespace-nowrap cursor-pointer"
+            >
+              50/50 Model
+            </a>
+            <a 
+              href="#calculator" 
+              onClick={(e) => scrollToSection(e, 'calculator')} 
+              className="hover:text-[#F5F3EA] transition-colors whitespace-nowrap cursor-pointer"
+            >
+              Calculator
+            </a>
+            <a 
+              href="#portfolio" 
+              onClick={(e) => scrollToSection(e, 'portfolio')} 
+              className="hover:text-[#F5F3EA] transition-colors whitespace-nowrap cursor-pointer"
+            >
+              Portfolio
+            </a>
             <a 
               href="/launch" 
-              className="flex items-center gap-1.5 text-[#C8FF3D] hover:text-white font-mono text-xs px-2.5 py-1 rounded bg-[#171C22] border border-[#252B32] hover:border-[#C8FF3D]/40 transition-all"
+              className="flex items-center gap-1.5 text-[#C8FF3D] hover:text-white font-mono text-[11px] px-2.5 py-1 rounded-lg bg-[#171C22] border border-[#252B32] hover:border-[#C8FF3D]/40 transition-all whitespace-nowrap shrink-0"
             >
               <span>Operator OS</span>
               <span className="w-1.5 h-1.5 rounded-full bg-[#C8FF3D] animate-pulse" />
@@ -166,18 +220,18 @@ export default function Welcome() {
           </nav>
 
           {/* Header Action Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 whitespace-nowrap">
             {userProfile ? (
               <button
                 onClick={() => goTo('dashboard')}
-                className="text-xs font-semibold text-[#969DA6] hover:text-[#F5F3EA] px-3.5 py-2 rounded-xl border border-[#252B32] hover:bg-[#101419] transition-all cursor-pointer"
+                className="hidden sm:inline-flex text-xs font-semibold text-[#969DA6] hover:text-[#F5F3EA] px-3.5 py-2 rounded-xl border border-[#252B32] hover:bg-[#101419] transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Dashboard
               </button>
             ) : (
               <button
                 onClick={() => goTo('login')}
-                className="text-xs font-semibold text-[#969DA6] hover:text-[#F5F3EA] px-3 py-2 rounded-xl hover:bg-[#101419] transition-all cursor-pointer"
+                className="hidden sm:inline-flex text-xs font-semibold text-[#969DA6] hover:text-[#F5F3EA] px-3.5 py-2 rounded-xl hover:bg-[#101419] transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Sign In
               </button>
@@ -185,13 +239,102 @@ export default function Welcome() {
 
             <button
               onClick={next}
-              className="flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl bg-[#C8FF3D] text-[#080A0C] hover:bg-[#b8ef2d] shadow-[0_0_20px_rgba(200,255,61,0.25)] active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs font-bold px-3.5 sm:px-4 py-2 rounded-xl bg-[#C8FF3D] text-[#080A0C] hover:bg-[#b8ef2d] shadow-[0_0_20px_rgba(200,255,61,0.25)] active:scale-95 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               <span>Apply as Co-Founder</span>
-              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+            </button>
+
+            {/* Mobile / Tablet Menu Button (< lg) */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-xl bg-[#101419] hover:bg-[#171C22] border border-[#252B32] text-[#F5F3EA] transition-colors cursor-pointer shrink-0"
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4 text-[#C8FF3D]" /> : <Menu className="w-4 h-4 text-[#969DA6]" />}
             </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Drawer (< lg) */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden bg-[#0D1014] border-b border-[#252B32] px-4 py-4 space-y-3 animate-fade-in shadow-2xl">
+            <nav className="flex flex-col space-y-1 text-xs font-medium">
+              <a 
+                href="#showcase" 
+                onClick={(e) => scrollToSection(e, 'showcase')}
+                className="px-3 py-2 rounded-lg text-[#969DA6] hover:text-[#F5F3EA] hover:bg-[#101419] transition-colors cursor-pointer"
+              >
+                Platform
+              </a>
+              <a 
+                href="#discovery" 
+                onClick={(e) => scrollToSection(e, 'discovery')}
+                className="px-3 py-2 rounded-lg text-[#969DA6] hover:text-[#F5F3EA] hover:bg-[#101419] transition-colors cursor-pointer"
+              >
+                Discovery
+              </a>
+              <a 
+                href="#engineering" 
+                onClick={(e) => scrollToSection(e, 'engineering')}
+                className="px-3 py-2 rounded-lg text-[#969DA6] hover:text-[#F5F3EA] hover:bg-[#101419] transition-colors cursor-pointer"
+              >
+                14-Day MVP Sprint
+              </a>
+              <a 
+                href="#model" 
+                onClick={(e) => scrollToSection(e, 'model')}
+                className="px-3 py-2 rounded-lg text-[#969DA6] hover:text-[#F5F3EA] hover:bg-[#101419] transition-colors cursor-pointer"
+              >
+                50/50 Model
+              </a>
+              <a 
+                href="#calculator" 
+                onClick={(e) => scrollToSection(e, 'calculator')}
+                className="px-3 py-2 rounded-lg text-[#969DA6] hover:text-[#F5F3EA] hover:bg-[#101419] transition-colors cursor-pointer"
+              >
+                Venture Calculator
+              </a>
+              <a 
+                href="#portfolio" 
+                onClick={(e) => scrollToSection(e, 'portfolio')}
+                className="px-3 py-2 rounded-lg text-[#969DA6] hover:text-[#F5F3EA] hover:bg-[#101419] transition-colors cursor-pointer"
+              >
+                Portfolio
+              </a>
+              <a 
+                href="/launch" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3 py-2 rounded-lg text-[#C8FF3D] font-mono text-xs bg-[#171C22] border border-[#252B32] mt-1"
+              >
+                <span>Launch Operator OS</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#C8FF3D] animate-pulse" />
+              </a>
+            </nav>
+
+            <div className="pt-2 border-t border-[#252B32] flex items-center justify-between gap-2">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  goTo('login')
+                }}
+                className="flex-1 py-2 text-center text-xs font-semibold text-[#969DA6] hover:text-[#F5F3EA] rounded-lg bg-[#101419] border border-[#252B32]"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  next()
+                }}
+                className="flex-1 py-2 text-center text-xs font-bold text-[#080A0C] rounded-lg bg-[#C8FF3D] hover:bg-[#b8ef2d]"
+              >
+                Apply as Co-Founder
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ── HERO SECTION (VISUAL FIRST) ───────────────────────────────────── */}

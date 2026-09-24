@@ -1,6 +1,6 @@
 export default function CreatorForgeLogo({ size = 22, className = '', showText = true }) {
   return (
-    <div className={`inline-flex items-center gap-3 select-none ${className}`}>
+    <div className={`inline-flex items-center gap-2.5 select-none shrink-0 ${className}`}>
       {/* Geometric Forge / Catalyst Symbol (creator → idea → product → business) */}
       <svg
         width={size}
@@ -21,11 +21,11 @@ export default function CreatorForgeLogo({ size = 22, className = '', showText =
       </svg>
 
       {showText && (
-        <div className="flex items-center gap-2">
-          <span className="font-display font-bold text-[14px] tracking-tight text-[#F5F3EA] uppercase">
+        <div className="flex items-center gap-2 whitespace-nowrap shrink-0">
+          <span className="font-display font-bold text-[14px] tracking-tight text-[#F5F3EA] uppercase whitespace-nowrap">
             CREATOR FORGE
           </span>
-          <span className="text-[9px] font-mono tracking-widest px-1.5 py-0.5 rounded bg-[#171C22] text-[#969DA6] border border-[#252B32] uppercase">
+          <span className="text-[9px] font-mono tracking-widest px-1.5 py-0.5 rounded bg-[#171C22] text-[#C8FF3D] border border-[#252B32] uppercase whitespace-nowrap">
             STUDIO
           </span>
         </div>

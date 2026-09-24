@@ -88,6 +88,8 @@
   }
 
   html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
