@@ -6,7 +6,12 @@ import React from "react";
  * Converts bold (**text**), italics (*text*), headers (### text), lists (• / - / 1.),
  * links ([text](url)), and cleanly separates internal studio tracking tokens.
  */
-export default function FormattedMarkdownBody({ text = "", className = "", showRefTag = true }) {
+export default function FormattedMarkdownBody({
+  text = "",
+  className = "",
+  showRefTag = true,
+  isDark = false,
+}) {
   if (!text || typeof text !== "string") return null;
 
   // 1. Extract internal tracking tokens (Ref: [CF-STAGE:...])
@@ -33,18 +38,13 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
     if (!str) return null;
 
     // Tokenize string for links, bold, italics, and code
-    // Patterns:
-    // [text](url)
-    // **bold**
-    // *italic*
-    // `code`
-    // bare url
     const tokens = [];
     let remaining = str;
     let keyIdx = 0;
 
     // Regex matching markdown link, bold, italic, code, or bare URL
-    const inlineRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(\*\*[^*]+\*\*)|(\*[^*]+\*)|(`[^`]+`)|(https?:\/\/[^\s<]+)/;
+    const inlineRegex =
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(\*\*[^*]+\*\*)|(\*[^*]+\*)|(`[^`]+`)|(https?:\/\/[^\s<]+)/;
 
     while (remaining) {
       const match = remaining.match(inlineRegex);
@@ -71,7 +71,11 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
             href={linkUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-purple-400 hover:text-purple-300 font-semibold underline underline-offset-2 transition-colors"
+            className={
+              isDark
+                ? "text-purple-400 hover:text-purple-300 font-semibold underline underline-offset-2 transition-colors"
+                : "text-purple-600 hover:text-purple-700 font-semibold underline underline-offset-2 transition-colors"
+            }
           >
             {linkText}
           </a>
@@ -79,14 +83,20 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
       } else if (boldText) {
         const cleanBold = boldText.slice(2, -2);
         tokens.push(
-          <strong key={keyIdx++} className="font-bold text-white">
+          <strong
+            key={keyIdx++}
+            className={isDark ? "font-bold text-white" : "font-bold text-slate-900"}
+          >
             {renderInline(cleanBold)}
           </strong>
         );
       } else if (italicText) {
         const cleanItalic = italicText.slice(1, -1);
         tokens.push(
-          <em key={keyIdx++} className="italic text-slate-200">
+          <em
+            key={keyIdx++}
+            className={isDark ? "italic text-slate-200" : "italic text-slate-700"}
+          >
             {renderInline(cleanItalic)}
           </em>
         );
@@ -95,7 +105,11 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
         tokens.push(
           <code
             key={keyIdx++}
-            className="px-1.5 py-0.5 rounded bg-white/[0.08] text-purple-300 font-mono text-[11px]"
+            className={
+              isDark
+                ? "px-1.5 py-0.5 rounded bg-white/[0.08] text-purple-300 font-mono text-[11px]"
+                : "px-1.5 py-0.5 rounded bg-slate-100 text-purple-700 border border-slate-200 font-mono text-[11px]"
+            }
           >
             {cleanCode}
           </code>
@@ -107,7 +121,11 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
             href={bareUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-purple-400 hover:text-purple-300 font-medium underline underline-offset-2 break-all transition-colors"
+            className={
+              isDark
+                ? "text-purple-400 hover:text-purple-300 font-medium underline underline-offset-2 break-all transition-colors"
+                : "text-purple-600 hover:text-purple-700 font-medium underline underline-offset-2 break-all transition-colors"
+            }
           >
             {bareUrl}
           </a>
@@ -161,34 +179,58 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
   const blocks = preprocessMarkdownContent(content).split(/\n\s*\n/);
 
   return (
-    <div className={`space-y-3 font-sans ${className}`}>
+    <div
+      className={`space-y-3 font-sans ${
+        isDark ? "text-slate-200" : "text-slate-900"
+      } ${className}`}
+    >
       {blocks.map((block, bIdx) => {
         const trimmed = block.trim();
         if (!trimmed) return null;
 
         // Divider
         if (trimmed === "---") {
-          return <hr key={bIdx} className="border-white/10 my-3" />;
+          return (
+            <hr
+              key={bIdx}
+              className={`my-3 ${isDark ? "border-white/10" : "border-slate-200"}`}
+            />
+          );
         }
 
         // Headings
         if (trimmed.startsWith("### ")) {
           return (
-            <h4 key={bIdx} className="text-sm font-bold text-white tracking-tight mt-2 mb-1">
+            <h4
+              key={bIdx}
+              className={`text-sm font-bold tracking-tight mt-2 mb-1 ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
+            >
               {renderInline(trimmed.slice(4))}
             </h4>
           );
         }
         if (trimmed.startsWith("## ")) {
           return (
-            <h3 key={bIdx} className="text-base font-extrabold text-white tracking-tight mt-2.5 mb-1">
+            <h3
+              key={bIdx}
+              className={`text-base font-extrabold tracking-tight mt-2.5 mb-1 ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
+            >
               {renderInline(trimmed.slice(3))}
             </h3>
           );
         }
         if (trimmed.startsWith("# ")) {
           return (
-            <h2 key={bIdx} className="text-lg font-black text-white tracking-tight mt-3 mb-1">
+            <h2
+              key={bIdx}
+              className={`text-lg font-black tracking-tight mt-3 mb-1 ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
+            >
               {renderInline(trimmed.slice(2))}
             </h2>
           );
@@ -196,10 +238,17 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
 
         // Check if block is a list (all non-empty lines begin with bullet •/-/* or numbered item)
         const lines = trimmed.split("\n").filter((l) => Boolean(l.trim()));
-        const isList = lines.length >= 1 && lines.every((l) => {
-          const s = l.trim();
-          return s.startsWith("•") || s.startsWith("-") || s.startsWith("*") || /^\d+[.)]/.test(s);
-        });
+        const isList =
+          lines.length >= 1 &&
+          lines.every((l) => {
+            const s = l.trim();
+            return (
+              s.startsWith("•") ||
+              s.startsWith("-") ||
+              s.startsWith("*") ||
+              /^\d+[.)]/.test(s)
+            );
+          });
 
         if (isList) {
           return (
@@ -209,8 +258,19 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
                 if (!s) return null;
                 const cleanItem = s.replace(/^(?:[•\-*]|\d+[.)])\s*/, "").trim();
                 return (
-                  <li key={lIdx} className="flex items-start gap-2 text-xs text-slate-200 leading-relaxed">
-                    <span className="text-purple-400 font-bold mt-0.5">•</span>
+                  <li
+                    key={lIdx}
+                    className={`flex items-start gap-2 text-xs leading-relaxed ${
+                      isDark ? "text-slate-200" : "text-slate-900 font-medium"
+                    }`}
+                  >
+                    <span
+                      className={`font-bold mt-0.5 ${
+                        isDark ? "text-purple-400" : "text-purple-600"
+                      }`}
+                    >
+                      •
+                    </span>
                     <span className="flex-1">{renderInline(cleanItem)}</span>
                   </li>
                 );
@@ -221,7 +281,12 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
 
         // Regular paragraph (may contain linebreaks)
         return (
-          <p key={bIdx} className="text-xs text-slate-200 leading-relaxed">
+          <p
+            key={bIdx}
+            className={`text-xs leading-relaxed ${
+              isDark ? "text-slate-200" : "text-slate-900 font-medium"
+            }`}
+          >
             {lines.map((line, lIdx) => (
               <React.Fragment key={lIdx}>
                 {renderInline(line)}
@@ -234,9 +299,21 @@ export default function FormattedMarkdownBody({ text = "", className = "", showR
 
       {/* Discrete Studio Reference Tag */}
       {showRefTag && refToken && (
-        <div className="pt-2 mt-2 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-slate-500 font-mono">
+        <div
+          className={`pt-2 mt-2 border-t flex items-center justify-between text-[10px] font-mono ${
+            isDark
+              ? "border-white/[0.06] text-slate-500"
+              : "border-slate-200 text-slate-500"
+          }`}
+        >
           <span>Tracking Ref:</span>
-          <span className="text-slate-400 bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/[0.04]">
+          <span
+            className={`px-1.5 py-0.5 rounded border ${
+              isDark
+                ? "text-slate-400 bg-white/[0.04] border-white/[0.04]"
+                : "text-slate-700 bg-slate-100 border-slate-200 font-semibold"
+            }`}
+          >
             {refToken}
           </span>
         </div>

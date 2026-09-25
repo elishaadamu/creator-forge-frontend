@@ -8055,7 +8055,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               <strong className="text-emerald-700">Subject:</strong>{" "}
                               {activeReviewCreator.replyInfo.subject || "Re: Partnership Inquiry"}
                             </p>
-                            <div className="p-3.5 rounded-xl bg-white border border-emerald-200/80 text-xs text-slate-800 shadow-2xs">
+                            <div className="p-3.5 rounded-xl bg-white border border-emerald-200/80 text-xs text-slate-900 shadow-2xs font-mono">
                               <FormattedMarkdownBody
                                 text={
                                   activeReviewCreator.replyInfo.snippet ||
@@ -8356,7 +8356,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 : "Recently"}
                             </span>
                           </div>
-                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-800">
+                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-900 font-mono">
                             <FormattedMarkdownBody text={msg.body} />
                           </div>
                         </div>
@@ -8564,12 +8564,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           </div>
 
           {step5Error ? (
-            <div className="p-6 rounded-2xl bg-red-950/20 border border-red-500/30 text-slate-300 space-y-4 shadow-lg">
-              <div className="flex items-center gap-2.5 text-red-400 font-bold text-sm">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
+            <div className="p-6 rounded-2xl bg-rose-50 border border-rose-200 text-slate-800 space-y-4 shadow-sm">
+              <div className="flex items-center gap-2.5 text-rose-700 font-bold text-sm">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
                 <span>AI Audience Research & Concept Synthesis Delayed</span>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-xs text-slate-700 leading-relaxed">
                 {step5Error}
               </p>
               <div className="flex items-center gap-3 pt-1">

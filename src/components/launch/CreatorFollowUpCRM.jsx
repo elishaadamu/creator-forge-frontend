@@ -1954,7 +1954,7 @@ export default function CreatorFollowUpCRM({
                                       {event.timestamp ? new Date(event.timestamp).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "Logged"}
                                     </span>
                                   </div>
-                                  <p className="text-[11px] opacity-90">{event.body}</p>
+                                  <p className="text-[11px] font-medium text-slate-800">{event.body}</p>
                                 </div>
                               );
                             }
@@ -1964,8 +1964,8 @@ export default function CreatorFollowUpCRM({
                                 key={event.id || idx}
                                 className={`p-4 rounded-xl border text-xs space-y-2.5 shadow-2xs ${
                                   isInbound
-                                    ? "bg-gradient-to-br from-emerald-50/50 via-white to-white border-emerald-200 text-slate-800"
-                                    : "bg-white border-slate-200 text-slate-800"
+                                    ? "bg-gradient-to-br from-emerald-50/50 via-white to-white border-emerald-200 text-slate-900"
+                                    : "bg-white border-slate-200 text-slate-900"
                                 }`}
                               >
                                 <div className="flex items-center justify-between text-[11px] border-b border-slate-100 pb-2">
@@ -2004,7 +2004,7 @@ export default function CreatorFollowUpCRM({
                                   </p>
                                 )}
 
-                                <p className="text-slate-800 whitespace-pre-wrap leading-relaxed font-mono bg-slate-50/70 p-3 rounded-lg border border-slate-200 text-[11px]">
+                                <p className="text-slate-900 whitespace-pre-wrap leading-relaxed font-mono bg-white p-3 rounded-lg border border-slate-200 text-xs font-normal">
                                   {event.body}
                                 </p>
                               </div>
