@@ -58,6 +58,7 @@ import ActionNotificationToast from "../ui/ActionNotificationToast";
 import ConfirmationModal from "../ui/ConfirmationModal";
 import FormattedMarkdownBody from "./FormattedMarkdownBody";
 import Step5SkeletonLoader from "./Step5SkeletonLoader";
+import CreatorForgeLogo from "../ui/CreatorForgeLogo";
 import {
   CreatorCardSkeleton,
   ConceptCardSkeleton,
@@ -5600,19 +5601,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
   return (
     <div className="space-y-6">
       {/* Header & Campaign Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-4 sm:p-6 rounded-2xl bg-[#101419] border border-[#252B32] shadow-2xl relative overflow-hidden min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs relative overflow-hidden min-w-0">
         <div className="space-y-1 z-10 max-w-xl min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-base sm:text-xl font-extrabold text-[#F5F3EA] tracking-tight flex items-center gap-2 font-display">
-              <Zap className="w-4 sm:w-5 h-4 sm:h-5 text-[#C8FF3D] fill-[#C8FF3D] shrink-0" />
+            <h1 className="text-base sm:text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2 font-display">
+              <Zap className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-600 fill-emerald-600 shrink-0" />
               <span>Creator Acquisition Engine</span>
             </h1>
-            <span className="px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold rounded-full bg-[#171C22] text-[#78E08F] border border-[#252B32] whitespace-nowrap flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#78E08F] animate-pulse" />
+            <span className="px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>Live Telemetry</span>
             </span>
           </div>
-          <p className="text-xs text-[#969DA6] leading-relaxed">
+          <p className="text-xs text-slate-600 leading-relaxed">
             Autonomous creator discovery, audience signal extraction, AI software
             opportunity modeling, and outreach orchestration.
           </p>
@@ -5622,7 +5623,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           <button
             onClick={handleDeleteAllCreators}
             disabled={isDeletingAll}
-            className="flex items-center gap-2 px-3.5 h-8 sm:h-9 rounded-xl text-xs font-bold transition-all border bg-[#171C22] border-[#252B32] text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 cursor-pointer whitespace-nowrap flex-shrink-0 disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 h-8 sm:h-9 rounded-xl text-xs font-bold transition-all border bg-white border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-200 cursor-pointer whitespace-nowrap flex-shrink-0 disabled:opacity-50 shadow-2xs"
             title="Delete all creators from database and reset pipeline"
           >
             <Trash2 className="w-3.5 h-3.5 flex-shrink-0" />
@@ -5673,12 +5674,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               onClick={() => setActiveStep(item.step)}
               className={`flex flex-col items-start p-2.5 sm:p-3 rounded-xl text-left transition-all border cursor-pointer shrink-0 min-w-[120px] sm:min-w-0 sm:w-auto ${
                 isActive
-                  ? "bg-[#171C22] border-[#C8FF3D]/50 text-[#F5F3EA] shadow-[0_0_15px_rgba(200,255,61,0.08)]"
-                  : "bg-[#101419] border-[#252B32] text-[#969DA6] hover:border-[#363D47] hover:text-[#F5F3EA]"
+                  ? "bg-white border-slate-900 text-slate-950 shadow-xs ring-1 ring-slate-900/10"
+                  : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-950 hover:bg-slate-50/80"
               }`}
             >
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center mb-2 ${
-                isActive ? "bg-[#101419] text-[#C8FF3D] border border-[#C8FF3D]/30" : "bg-[#171C22] text-[#686F78]"
+                isActive ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"
               }`}>
                 <Icon className="w-4 h-4" />
               </div>
@@ -5690,25 +5691,26 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         })}
       </div>
 
+
       {/* STEP 1: CAMPAIGN SETUP */}
       {activeStep === 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full min-w-0">
           <div className="lg:col-span-2 space-y-6 w-full min-w-0">
             {/* Parameters Card */}
-            <div className="p-3.5 sm:p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5 min-w-0 w-full">
-              <div className="border-b border-white/[0.07] pb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
-                <h2 className="text-sm font-bold text-[#F5F3EA] flex items-center gap-2 min-w-0 font-display">
-                  <Target className="w-4 h-4 text-[#C8FF3D] shrink-0" />
+            <div className="p-3.5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-5 min-w-0 w-full">
+              <div className="border-b border-slate-100 pb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 min-w-0 font-display">
+                  <Target className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span className="truncate">Campaign Parameters & Lead Discovery</span>
                 </h2>
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={handleStartFresh}
-                    className="text-[11px] font-bold text-[#969DA6] hover:text-[#F5F3EA] bg-[#171C22] hover:bg-[#252B32] border border-[#252B32] px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                    className="text-[11px] font-bold text-slate-600 hover:text-slate-950 bg-white hover:bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs"
                     title="Clear cached creators and start completely fresh"
                   >
-                    <RefreshCw className="w-3 h-3 text-[#C8FF3D] shrink-0" />
+                    <RefreshCw className="w-3 h-3 text-slate-500 shrink-0" />
                     <span>Reset Fresh</span>
                   </button>
                 </div>
@@ -5717,9 +5719,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               {/* Target Niches with Cancel Tags */}
               <div className="space-y-2.5 min-w-0 w-full">
                 <div className="flex items-center justify-between min-w-0">
-                  <label className="text-xs text-[#F5F3EA] font-semibold flex items-center gap-1.5 min-w-0">
+                  <label className="text-xs text-slate-900 font-semibold flex items-center gap-1.5 min-w-0">
                     <span>Target Niche(s)</span>
-                    <span className="text-[10px] text-[#C8FF3D] bg-[#171C22] border border-[#252B32] px-2 py-0.5 rounded-md font-mono shrink-0">
+                    <span className="text-[10px] text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md font-mono shrink-0">
                       {niches.length} selected
                     </span>
                   </label>
@@ -5727,7 +5729,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <button
                       type="button"
                       onClick={() => setNiches([])}
-                      className="text-[11px] text-[#686F78] hover:text-rose-400 transition-colors cursor-pointer shrink-0"
+                      className="text-[11px] text-slate-400 hover:text-rose-600 transition-colors cursor-pointer shrink-0"
                     >
                       Clear all
                     </button>
@@ -5735,17 +5737,17 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
 
                 {/* Interactive Niche Box with Remove Cancel Buttons */}
-                <div className="p-2.5 rounded-xl bg-[#0D1014] border border-[#252B32] flex flex-wrap items-center gap-1.5 focus-within:border-[#C8FF3D] transition-all min-h-[48px] min-w-0 w-full">
+                <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-200 flex flex-wrap items-center gap-1.5 focus-within:border-slate-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-slate-900/10 transition-all min-h-[48px] min-w-0 w-full">
                   {niches.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center justify-between gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#171C22] text-[#F5F3EA] border border-[#363D47] shadow-sm max-w-full min-w-0"
+                      className="inline-flex items-center justify-between gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-900 border border-slate-200 shadow-2xs max-w-full min-w-0"
                     >
                       <span className="truncate">{tag}</span>
                       <button
                         type="button"
                         onClick={() => removeNiche(tag)}
-                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-rose-500/20 text-[#969DA6] hover:text-rose-300 transition-colors cursor-pointer shrink-0"
+                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer shrink-0"
                         title={`Remove ${tag}`}
                       >
                         <X className="w-2.5 h-2.5" />
@@ -5768,20 +5770,20 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         ? "Type niche & press Enter..."
                         : "+ Add another..."
                     }
-                    className="flex-1 min-w-[100px] max-w-full bg-transparent text-xs text-[#F5F3EA] placeholder:text-[#686F78] focus:outline-none py-1 px-1 font-medium"
+                    className="flex-1 min-w-[100px] max-w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none py-1 px-1 font-medium"
                   />
                 </div>
 
                 {/* Available Niches - Equal Width Uniform Grid */}
                 <div className="space-y-2 pt-1.5 min-w-0 w-full">
                   <div className="flex items-center justify-between min-w-0">
-                    <span className="text-[11px] font-semibold text-[#969DA6] flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 flex-wrap">
                       <span>Available Niches</span>
-                      <span className="text-[10px] text-[#686F78] font-normal">
+                      <span className="text-[10px] text-slate-400 font-normal">
                         (Click to toggle on / off)
                       </span>
                     </span>
-                    <span className="text-[10px] text-[#C8FF3D] font-mono shrink-0">
+                    <span className="text-[10px] text-slate-600 font-mono shrink-0">
                       {niches.length} active
                     </span>
                   </div>
@@ -5798,18 +5800,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           onClick={() =>
                             isAdded ? removeNiche(tag) : addNiche(tag)
                           }
-                          className={`w-full h-9 px-2.5 sm:px-3 rounded-lg text-xs font-medium border transition-all cursor-pointer flex items-center justify-between gap-1 min-w-0 ${
+                          className={`w-full h-9 px-2.5 sm:px-3 rounded-lg text-xs font-medium border transition-all cursor-pointer flex items-center justify-between gap-1 min-w-0 shadow-2xs ${
                             isAdded
-                              ? "bg-[#171C22] text-[#F5F3EA] border-[#C8FF3D]/50 shadow-sm font-semibold"
-                              : "bg-[#0D1014] text-[#969DA6] hover:text-[#F5F3EA] border-[#252B32] hover:border-[#363D47] hover:bg-[#171C22]/50"
+                              ? "bg-slate-900 text-white border-slate-900 font-semibold"
+                              : "bg-white text-slate-700 hover:text-slate-950 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                           }`}
                           title={isAdded ? `Click to remove ${tag}` : `Click to add ${tag}`}
                         >
                           <span className="truncate">{tag}</span>
                           {isAdded ? (
-                            <Check className="w-3.5 h-3.5 text-[#C8FF3D] shrink-0" />
+                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                           ) : (
-                            <Plus className="w-3.5 h-3.5 text-[#686F78] shrink-0" />
+                            <Plus className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           )}
                         </button>
                       );
@@ -5820,17 +5822,17 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
               {/* Target Platforms Multi-select */}
               <div className="space-y-2 min-w-0 w-full">
-                <label className="text-xs text-[#F5F3EA] font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <label className="text-xs text-slate-900 font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <span>Target Platforms</span>
-                  <span className="text-[11px] text-[#686F78] font-normal">
+                  <span className="text-[11px] text-slate-500 font-normal">
                     Select platforms for lead discovery
                   </span>
                 </label>
                 <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full min-w-0">
                   {[
-                    { id: "youtube", label: "YouTube", icon: Youtube, color: "text-red-400" },
-                    { id: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-400" },
-                    { id: "tiktok", label: "TikTok", icon: Music, color: "text-cyan-400" },
+                    { id: "youtube", label: "YouTube", icon: Youtube, color: "text-red-500" },
+                    { id: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-500" },
+                    { id: "tiktok", label: "TikTok", icon: Music, color: "text-slate-800" },
                   ].map((p) => {
                     const isSelected = selectedPlatforms.includes(p.id);
                     const PlatformIcon = p.icon;
@@ -5839,16 +5841,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         key={p.id}
                         type="button"
                         onClick={() => togglePlatform(p.id)}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-bold transition-all cursor-pointer w-full min-w-0 ${
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-bold transition-all cursor-pointer w-full min-w-0 shadow-2xs ${
                           isSelected
-                            ? "bg-[#171C22] border-[#C8FF3D]/50 text-[#F5F3EA] shadow-sm"
-                            : "bg-[#0D1014] border-[#252B32] text-[#969DA6] hover:text-[#F5F3EA] hover:border-[#363D47]"
+                            ? "bg-slate-900 border-slate-900 text-white"
+                            : "bg-white border-slate-200 text-slate-700 hover:text-slate-950 hover:border-slate-300 hover:bg-slate-50"
                         }`}
                       >
                         <PlatformIcon className={`w-3.5 h-3.5 ${p.color} shrink-0`} />
                         <span className="truncate">{p.label}</span>
                         {isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#C8FF3D] ml-0.5 shrink-0" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-0.5 shrink-0" />
                         )}
                       </button>
                     );
@@ -5859,13 +5861,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               {/* Targeting Parameters: Sliders, Geography & Ranges */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 pt-2 min-w-0 w-full">
                 {/* Target Geography Selector */}
-                <div className="space-y-2 md:col-span-2 p-3.5 rounded-xl bg-[#0D1014] border border-[#252B32] min-w-0 w-full">
+                <div className="space-y-2 md:col-span-2 p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 min-w-0 w-full">
                   <div className="flex items-center justify-between min-w-0">
-                    <label className="text-xs text-[#F5F3EA] font-semibold flex items-center gap-1.5 min-w-0">
-                      <Globe className="w-3.5 h-3.5 text-[#C8FF3D] shrink-0" />
+                    <label className="text-xs text-slate-900 font-semibold flex items-center gap-1.5 min-w-0">
+                      <Globe className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>Target Geography</span>
                     </label>
-                    <span className="text-[11px] text-[#C8FF3D] font-mono font-bold bg-[#171C22] px-2 py-0.5 rounded border border-[#252B32] shrink-0">
+                    <span className="text-[11px] text-slate-800 font-mono font-bold bg-white px-2 py-0.5 rounded border border-slate-200 shrink-0">
                       {selectedGeography} Selected
                     </span>
                   </div>
@@ -5884,10 +5886,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           key={geo.id}
                           type="button"
                           onClick={() => setSelectedGeography(geo.id)}
-                          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center truncate w-full min-w-0 ${
+                          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center truncate w-full min-w-0 shadow-2xs ${
                             active
-                              ? "bg-[#171C22] border-[#C8FF3D]/50 text-[#F5F3EA] shadow-sm"
-                              : "bg-[#101419] border-[#252B32] text-[#969DA6] hover:text-[#F5F3EA] hover:border-[#363D47]"
+                              ? "bg-slate-900 border-slate-900 text-white"
+                              : "bg-white border-slate-200 text-slate-700 hover:text-slate-950 hover:border-slate-300 hover:bg-slate-50"
                           }`}
                           title={geo.label}
                         >
@@ -5900,13 +5902,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                 {/* Sliders and Ranges */}
                 {/* 50 Creators Slider Control */}
-                <div className="space-y-2 p-3.5 rounded-xl bg-[#0D1014] border border-[#252B32] min-w-0 w-full">
+                <div className="space-y-2 p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 min-w-0 w-full">
                   <div className="flex items-center justify-between min-w-0">
-                    <label className="text-xs text-[#F5F3EA] font-bold flex items-center gap-1.5 min-w-0">
-                      <Cpu className="w-3.5 h-3.5 text-[#C8FF3D] shrink-0" />
+                    <label className="text-xs text-slate-900 font-bold flex items-center gap-1.5 min-w-0">
+                      <Cpu className="w-3.5 h-3.5 text-slate-700 shrink-0" />
                       <span>Batch Discovery Count</span>
                     </label>
-                    <span className="text-xs font-mono font-black text-[#080A0C] bg-[#C8FF3D] px-2 py-0.5 rounded-md shrink-0">
+                    <span className="text-xs font-mono font-bold text-white bg-slate-900 px-2 py-0.5 rounded-md shrink-0">
                       {creatorsBatchCount} Creators
                     </span>
                   </div>
@@ -5923,9 +5925,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         localStorage.setItem("forge_launch_creators_batch_count", String(countVal));
                       } catch {}
                     }}
-                    className="w-full accent-[#C8FF3D] cursor-pointer h-2 bg-[#171C22] rounded-lg"
+                    className="w-full accent-slate-900 cursor-pointer h-2 bg-slate-200 rounded-lg"
                   />
-                  <div className="flex justify-between text-[10px] text-[#686F78] font-mono">
+                  <div className="flex justify-between text-[10px] text-slate-500 font-mono">
                     <span>1 Creator</span>
                     <span>25 Creators</span>
                     <span>50 Max</span>
@@ -5933,12 +5935,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
 
                 {/* Min Engagement */}
-                <div className="space-y-2 p-3.5 rounded-xl bg-[#0D1014] border border-[#252B32] min-w-0 w-full">
+                <div className="space-y-2 p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 min-w-0 w-full">
                   <div className="flex items-center justify-between min-w-0">
-                    <label className="text-xs text-[#F5F3EA] font-semibold min-w-0">
+                    <label className="text-xs text-slate-900 font-semibold min-w-0">
                       Min Engagement Rate
                     </label>
-                    <span className="text-xs font-bold text-[#78E08F] font-mono shrink-0">
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-mono shrink-0">
                       ≥ {minEngagement}%
                     </span>
                   </div>
@@ -5949,9 +5951,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     step="0.5"
                     value={minEngagement}
                     onChange={(e) => setMinEngagement(Number(e.target.value))}
-                    className="w-full accent-[#78E08F] cursor-pointer h-2 bg-[#171C22] rounded-lg"
+                    className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 rounded-lg"
                   />
-                  <div className="flex justify-between text-[10px] text-[#686F78] font-mono">
+                  <div className="flex justify-between text-[10px] text-slate-500 font-mono">
                     <span>1.0%</span>
                     <span>5.0%</span>
                     <span>10.0%</span>
@@ -5960,7 +5962,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                 {/* Follower Range */}
                 <div className="space-y-1.5 md:col-span-2 min-w-0 w-full">
-                  <label className="text-xs text-[#F5F3EA] font-semibold">
+                  <label className="text-xs text-slate-900 font-semibold">
                     Follower Range (100K – 1M Target Tier)
                   </label>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full min-w-0">
@@ -5969,17 +5971,17 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         type="number"
                         value={minFollowers}
                         onChange={(e) => setMinFollowers(Number(e.target.value))}
-                        className="w-full min-w-0 bg-[#0D1014] border border-[#252B32] focus:border-[#C8FF3D] rounded-xl px-3 py-2 text-xs text-[#F5F3EA] font-mono outline-none"
+                        className="w-full min-w-0 bg-white border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900/10 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono outline-none shadow-2xs"
                         placeholder="Min followers"
                       />
                     </div>
-                    <span className="text-[#686F78] text-xs font-bold text-center self-center shrink-0">TO</span>
+                    <span className="text-slate-400 text-xs font-bold text-center self-center shrink-0">TO</span>
                     <div className="flex-1 w-full min-w-0">
                       <input
                         type="number"
                         value={maxFollowers}
                         onChange={(e) => setMaxFollowers(Number(e.target.value))}
-                        className="w-full min-w-0 bg-[#0D1014] border border-[#252B32] focus:border-[#C8FF3D] rounded-xl px-3 py-2 text-xs text-[#F5F3EA] font-mono outline-none"
+                        className="w-full min-w-0 bg-white border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900/10 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono outline-none shadow-2xs"
                         placeholder="Max followers"
                       />
                     </div>
@@ -5988,35 +5990,36 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
             </div>
 
+
             {/* ── Luxury Email Outreach Studio (Step 1) ────────────────────── */}
-            <div className="rounded-2xl bg-[#101419] border border-[#252B32] shadow-2xl overflow-hidden space-y-0 min-w-0 w-full">
+            <div className="rounded-2xl bg-white border border-slate-200/90 shadow-xs overflow-hidden space-y-0 min-w-0 w-full">
               {/* Window Titlebar */}
-              <div className="bg-[#0D1014] px-3.5 sm:px-4 py-3 border-b border-[#252B32] flex items-center justify-between flex-wrap gap-2 min-w-0">
+              <div className="bg-white px-3.5 sm:px-4 py-3 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2 min-w-0">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                    <Mail className="w-4 h-4 text-[#C8FF3D] shrink-0" />
-                    <span className="text-xs font-bold text-[#F5F3EA] tracking-wide truncate font-display">
+                    <Mail className="w-4 h-4 text-slate-900 shrink-0" />
+                    <span className="text-xs font-bold text-slate-900 tracking-wide truncate font-display">
                       Outreach Email Studio
                     </span>
-                    <span className="text-[10px] text-[#78E08F] bg-[#171C22] border border-[#252B32] px-2 py-0.5 rounded-full font-mono font-semibold shrink-0">
+                    <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-mono font-semibold shrink-0">
                       🔒 TLS Ready
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-[#171C22] p-1 rounded-xl border border-[#252B32] shrink-0">
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
                   <button
                     type="button"
                     onClick={() => setStep1EmailTab("editor")}
                     className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       step1EmailTab === "editor"
-                        ? "bg-[#101419] text-[#F5F3EA] border border-[#363D47] shadow-sm"
-                        : "text-[#969DA6] hover:text-[#F5F3EA]"
+                        ? "bg-white text-slate-900 border border-slate-200/80 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     Edit Template
@@ -6026,20 +6029,20 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     onClick={() => setStep1EmailTab("preview")}
                     className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                       step1EmailTab === "preview"
-                        ? "bg-[#101419] text-[#F5F3EA] border border-[#363D47] shadow-sm"
-                        : "text-[#969DA6] hover:text-[#F5F3EA]"
+                        ? "bg-white text-slate-900 border border-slate-200/80 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
-                    <Eye className="w-3.5 h-3.5 shrink-0 text-[#C8FF3D]" />
+                    <Eye className="w-3.5 h-3.5 shrink-0 text-slate-700" />
                     <span>Live Preview</span>
                   </button>
                 </div>
               </div>
 
               {/* Merge Tags Insertion Toolbar */}
-              <div className="px-3.5 sm:px-5 py-2.5 bg-[#0D1014] border-b border-[#252B32] flex items-center gap-2 overflow-x-auto text-[11px] max-w-full">
-                <span className="text-[#969DA6] font-bold uppercase tracking-wider text-[10px] flex-shrink-0 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-[#C8FF3D]" />
+              <div className="px-3.5 sm:px-5 py-2.5 bg-slate-50/70 border-b border-slate-200 flex items-center gap-2 overflow-x-auto text-[11px] max-w-full">
+                <span className="text-slate-600 font-bold uppercase tracking-wider text-[10px] flex-shrink-0 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
                   <span>Insert Tags:</span>
                 </span>
                 {[
@@ -6056,7 +6059,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     onClick={() => {
                       setTemplateBody((prev) => `${prev} ${item.tag}`);
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-[#171C22] hover:bg-[#252B32] border border-[#252B32] hover:border-[#363D47] text-[#C8FF3D] font-mono text-[10px] font-semibold transition-all cursor-pointer flex-shrink-0"
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-800 font-mono text-[10px] font-semibold transition-all cursor-pointer flex-shrink-0 shadow-2xs"
                     title={`Click to append ${item.tag}`}
                   >
                     +{item.tag}
@@ -6066,9 +6069,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
               {/* Editor Mode */}
               {step1EmailTab === "editor" ? (
-                <div className="p-3.5 sm:p-5 space-y-4 min-w-0 w-full bg-[#101419]">
+                <div className="p-3.5 sm:p-5 space-y-4 min-w-0 w-full bg-white">
                   <div className="min-w-0 w-full">
-                    <label className="text-[11px] font-bold text-[#969DA6] uppercase tracking-wider block mb-1.5">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1.5">
                       Email Subject
                     </label>
                     <div className="relative min-w-0 w-full">
@@ -6076,71 +6079,68 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         type="text"
                         value={templateSubject}
                         onChange={(e) => setTemplateSubject(e.target.value)}
-                        className="w-full bg-[#0D1014] border border-[#252B32] rounded-xl px-3.5 sm:px-4 py-2.5 text-xs text-[#F5F3EA] font-mono focus:outline-none focus:border-[#C8FF3D] transition-colors min-w-0"
+                        className="w-full bg-white border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900/10 rounded-xl px-3.5 sm:px-4 py-2.5 text-xs text-slate-900 font-mono transition-colors min-w-0 shadow-2xs outline-none"
                       />
                     </div>
                   </div>
 
                   <div className="min-w-0 w-full">
-                    <label className="text-[11px] font-bold text-[#969DA6] uppercase tracking-wider block mb-1.5">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1.5">
                       Email Message Body
                     </label>
                     <textarea
                       rows={7}
                       value={templateBody}
                       onChange={(e) => setTemplateBody(e.target.value)}
-                      className="w-full bg-[#0D1014] border border-[#252B32] rounded-xl p-3.5 sm:p-4 text-xs text-[#F5F3EA] font-mono focus:outline-none focus:border-[#C8FF3D] leading-relaxed transition-colors resize-y min-w-0"
+                      className="w-full bg-white border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900/10 rounded-xl p-3.5 sm:p-4 text-xs text-slate-900 font-mono leading-relaxed transition-colors resize-y min-w-0 shadow-2xs outline-none"
                     />
                   </div>
                 </div>
               ) : (
-                /* Live Client Preview Mode */
-                <div className="p-3.5 sm:p-5 space-y-4 animate-in fade-in min-w-0 w-full bg-[#101419]">
-                  <div className="rounded-xl bg-[#0D1014] border border-[#252B32] p-3.5 sm:p-5 space-y-4 shadow-inner min-w-0 w-full overflow-hidden">
-                    {/* Fake Email Client Metadata Header */}
-                    <div className="space-y-2 border-b border-[#252B32] pb-3 text-xs min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[#969DA6] font-bold w-12 shrink-0">
-                            From:
-                          </span>
-                          <span className="text-[#F5F3EA] font-mono text-[11px] sm:text-xs truncate break-all">
-                            Creator Forge Studio &lt;partnerships@creatorforge.com&gt;
-                          </span>
+                /* Live Client Preview Mode ("Real Email Message") */
+                <div className="p-4 sm:p-6 space-y-4 animate-in fade-in min-w-0 w-full bg-slate-100/70">
+                  <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-8 space-y-6 shadow-sm max-w-2xl mx-auto min-w-0 w-full">
+                    {/* Subject Line */}
+                    <div className="min-w-0 pb-1">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug tracking-tight font-sans">
+                        {templateSubject
+                          .replace("{{display_name}}", "Marcus Vance")
+                          .replace("{{first_name}}", "Marcus")}
+                      </h3>
+                    </div>
+
+                    {/* Real Email Metadata & Sender Header */}
+                    <div className="flex items-start justify-between gap-3 pt-1 pb-4 border-b border-slate-100 text-xs min-w-0">
+                      <div className="flex items-start gap-3 min-w-0">
+                        {/* Circular white-bg avatar with light CreatorForgeLogo */}
+                        <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-2xs shrink-0 mt-0.5">
+                          <CreatorForgeLogo size={20} showText={false} theme="light" />
                         </div>
-                        <span className="text-[10px] text-[#C8FF3D] font-mono font-bold shrink-0">
-                          Step 1 Outreach Wave
-                        </span>
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-slate-900 text-sm">Creator Forge Studio</span>
+                            <span className="text-slate-500 font-mono text-[11px] truncate">&lt;partnerships@creatorforge.com&gt;</span>
+                          </div>
+                          <div className="text-xs text-slate-500 flex items-center gap-1.5 flex-wrap">
+                            <span>to</span>
+                            <span className="font-medium text-slate-800">Marcus Vance</span>
+                            <span className="text-slate-400 font-mono text-[11px]">&lt;marcus@channel.com&gt;</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono font-medium">320K YouTube</span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0">
-                        <span className="text-[#969DA6] font-bold w-12 shrink-0">
-                          To:
-                        </span>
-                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                          <span className="px-2 py-0.5 rounded-full bg-[#171C22] border border-[#363D47] text-[#F5F3EA] font-mono text-[10px] sm:text-[11px] font-bold truncate max-w-full">
-                            Marcus Vance (marcus@channel.com)
-                          </span>
-                          <span className="text-[10px] text-[#686F78] font-mono shrink-0">
-                            • 320K YouTube
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start sm:items-center gap-2 pt-1 min-w-0">
-                        <span className="text-[#969DA6] font-bold w-12 shrink-0">
-                          Subject:
-                        </span>
-                        <span className="text-[#F5F3EA] font-bold text-xs break-words min-w-0">
-                          {templateSubject
-                            .replace("{{display_name}}", "Marcus Vance")
-                            .replace("{{first_name}}", "Marcus")}
+                      <div className="text-right shrink-0 text-[11px] text-slate-400 flex flex-col items-end gap-1">
+                        <span>Today, 10:42 AM</span>
+                        <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 font-medium">
+                          <Lock className="w-2.5 h-2.5 text-emerald-600" />
+                          <span>TLS Security</span>
                         </span>
                       </div>
                     </div>
 
-                    {/* Email Rendered Body */}
-                    <div className="text-xs text-[#F5F3EA] font-mono whitespace-pre-wrap leading-relaxed space-y-3 break-words min-w-0">
+                    {/* Email Rendered Body (Real Message Style) */}
+                    <div className="font-sans text-[13.5px] sm:text-[14px] text-slate-800 whitespace-pre-wrap leading-relaxed space-y-3 break-words min-w-0">
                       {templateBody
                         .replace(/\{\{first_name\}\}/g, "Marcus")
                         .replace(/\{\{display_name\}\}/g, "Marcus Vance")
@@ -6150,31 +6150,21 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         .replace(/\{\{product_name\}\}/g, "Marcus OS")}
                     </div>
 
-                    {/* Co-founder Guarantee Box */}
-                    <div className="p-3 rounded-xl bg-[#171C22] border border-[#252B32] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-[#F5F3EA] min-w-0">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <CheckCircle2 className="w-4 h-4 text-[#78E08F] shrink-0" />
-                        <span className="font-semibold text-[11px] sm:text-xs">
-                          50/50 Revenue Split • Zero Upfront Cost
-                        </span>
+                    {/* Real 1-on-1 Executive Email Signature */}
+                    <div className="pt-6 border-t border-slate-100 flex items-start gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-2xs shrink-0">
+                        <CreatorForgeLogo size={20} showText={false} theme="light" />
                       </div>
-                      <span className="text-[10px] font-mono text-[#C8FF3D] shrink-0">
-                        Venture Studio Model
-                      </span>
-                    </div>
-
-                    {/* Studio Signature */}
-                    <div className="pt-3 border-t border-[#252B32] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-[#969DA6] font-mono min-w-0">
-                      <div className="min-w-0">
-                        <div className="font-bold text-[#F5F3EA] text-xs">
-                          Creator Forge Studio Team
+                      <div className="space-y-1 text-xs min-w-0">
+                        <div className="font-bold text-slate-900 text-sm">Alex Rivera</div>
+                        <div className="text-slate-600 font-medium">Head of Venture Partnerships · Creator Forge</div>
+                        <div className="text-slate-500 text-[11px] flex items-center gap-2 flex-wrap pt-0.5">
+                          <a href="mailto:partnerships@creatorforge.com" className="hover:underline text-slate-700">partnerships@creatorforge.com</a>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-slate-600">creatorforge.com</span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-slate-500">San Francisco, CA</span>
                         </div>
-                        <div className="text-[10px] text-[#686F78]">
-                          Co-Founding Software Empires with Digital Creators
-                        </div>
-                      </div>
-                      <div className="text-left sm:text-right text-[10px] text-[#686F78] break-all">
-                        San Francisco, CA • studio@creatorforge.com
                       </div>
                     </div>
                   </div>
@@ -6185,41 +6175,41 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
           {/* Engine Summary & Start Button (Right Sidebar) */}
           <div className="space-y-4 w-full min-w-0">
-            <div className="p-4 sm:p-6 rounded-2xl bg-[#101419] border border-[#252B32] space-y-5 lg:sticky lg:top-20 min-w-0 w-full shadow-xl">
+            <div className="p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/90 space-y-5 lg:sticky lg:top-20 min-w-0 w-full shadow-xs">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-[#969DA6] uppercase tracking-wider font-display">
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider font-display">
                   Campaign Summary
                 </h4>
               </div>
 
-              <div className="p-3.5 sm:p-4 rounded-xl bg-[#0D1014] border border-[#252B32] space-y-3 text-xs min-w-0 w-full">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50/70 border border-slate-200 space-y-3 text-xs min-w-0 w-full">
                 <div className="flex justify-between gap-2">
-                  <span className="text-[#969DA6]">Target Range</span>
-                  <span className="text-[#F5F3EA] font-mono font-bold">100K – 1M</span>
+                  <span className="text-slate-600 font-medium">Target Range</span>
+                  <span className="text-slate-900 font-mono font-bold">100K – 1M</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-[#969DA6]">Geography</span>
-                  <span className="text-[#F5F3EA] font-bold">{selectedGeography}</span>
+                  <span className="text-slate-600 font-medium">Geography</span>
+                  <span className="text-slate-900 font-bold">{selectedGeography}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-[#969DA6]">Batch Discovery Size</span>
-                  <span className="text-[#C8FF3D] font-mono font-bold">
+                  <span className="text-slate-600 font-medium">Batch Discovery Size</span>
+                  <span className="text-slate-900 font-mono font-bold bg-white px-2 py-0.5 rounded border border-slate-200">
                     {creatorsBatchCount} Creators
                   </span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-[#969DA6]">Min Engagement</span>
-                  <span className="text-[#78E08F] font-mono font-bold">
+                  <span className="text-slate-600 font-medium">Min Engagement</span>
+                  <span className="text-emerald-700 font-mono font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
                     ≥ {minEngagement}%
                   </span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-[#969DA6]">Follow-up Rule</span>
-                  <span className="text-[#F5F3EA] font-bold truncate">Auto-follow up (7d)</span>
+                  <span className="text-slate-600 font-medium">Follow-up Rule</span>
+                  <span className="text-slate-900 font-bold truncate">Auto-follow up (7d)</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-[#969DA6]">Response Handling</span>
-                  <span className="text-[#78E08F] font-bold truncate">
+                  <span className="text-slate-600 font-medium">Response Handling</span>
+                  <span className="text-emerald-700 font-bold truncate">
                     Stop Sequence
                   </span>
                 </div>
@@ -6229,26 +6219,27 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               <button
                 onClick={handleStartEngine}
                 disabled={discovering}
-                className="w-full py-3.5 rounded-xl bg-[#C8FF3D] hover:bg-[#b8ef2d] text-[#080A0C] font-extrabold text-sm flex items-center justify-center gap-2 border border-transparent transition-all disabled:opacity-50 cursor-pointer shadow-[0_0_20px_rgba(200,255,61,0.2)] active:scale-95 tracking-tight font-sans"
+                className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-center gap-2 border border-transparent transition-all disabled:opacity-50 cursor-pointer shadow-xs active:scale-95 tracking-tight font-sans"
               >
                 {discovering ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-[#080A0C]" />
+                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
                     <span>Discovering & Enriching Leads...</span>
                   </>
                 ) : (
                   <>
-                    <Search className="w-4 h-4 text-[#080A0C]" />
+                    <Search className="w-4 h-4 text-white" />
                     <span>Start Lead Discovery</span>
                   </>
                 )}
               </button>
 
-              <p className="text-[11px] text-[#686F78] text-center leading-relaxed">
+              <p className="text-[11px] text-slate-500 text-center leading-relaxed">
                 Scouts and enriches qualifying creator candidate profiles for your review and approval in Step 2.
               </p>
             </div>
           </div>
+
         </div>
       )}
 
