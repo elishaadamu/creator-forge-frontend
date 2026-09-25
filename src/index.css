@@ -103,8 +103,8 @@
   }
 
   ::selection {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--theme-text);
+    background: #0F172A;
+    color: #FFFFFF;
   }
 
   ::-webkit-scrollbar {

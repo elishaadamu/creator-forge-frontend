@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Users,
   Search,
@@ -362,7 +363,7 @@ export default function CreatorFollowUpCRM({
 
   // ── 2. Helper to resolve creator pipeline stage & status badge ───────────────
   const getCreatorPipelineStage = (c) => {
-    if (!c) return { stageId: "unknown", stageName: "Unknown", badgeClass: "bg-slate-500/20 text-slate-400 border-slate-500/40", dotClass: "bg-slate-400", description: "" };
+    if (!c) return { stageId: "unknown", stageName: "Unknown", badgeClass: "bg-slate-100 text-slate-700 border-slate-200", dotClass: "bg-slate-400", description: "" };
 
     const cleanH = (c.handle || "").toLowerCase().replace(/^@/, "");
     const overrideStatus = statusOverrides[c.id] || statusOverrides[cleanH] || "";
@@ -377,8 +378,8 @@ export default function CreatorFollowUpCRM({
       return {
         stageId: "rejected",
         stageName: "Rejected by Studio",
-        badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40 font-bold",
-        dotClass: "bg-rose-400",
+        badgeClass: "bg-rose-50 text-rose-700 border-rose-200 font-semibold",
+        dotClass: "bg-rose-500",
         description: "Lead archived by studio admin",
       };
     }
@@ -393,8 +394,8 @@ export default function CreatorFollowUpCRM({
       return {
         stageId: "section2",
         stageName: "Active Co-Launch Venture",
-        badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold shadow-xs",
-        dotClass: "bg-emerald-400 animate-pulse",
+        badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold shadow-2xs",
+        dotClass: "bg-emerald-500 animate-pulse",
         description: "Venture greenlit & active in Section 2 (Phase 1: Validation)",
       };
     }
@@ -404,8 +405,8 @@ export default function CreatorFollowUpCRM({
       return {
         stageId: "step6_pitch",
         stageName: "Step 6: In Pitch / Proposal Sent",
-        badgeClass: "bg-purple-500/20 text-purple-300 border-purple-500/40 font-bold",
-        dotClass: "bg-purple-400",
+        badgeClass: "bg-purple-50 text-purple-700 border-purple-200 font-semibold",
+        dotClass: "bg-purple-500",
         description: "Opportunity Deck & 3 SaaS Concepts active in pitch",
       };
     }
@@ -415,8 +416,8 @@ export default function CreatorFollowUpCRM({
       return {
         stageId: "approved",
         stageName: "Step 5: Approved • In Product Review",
-        badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold",
-        dotClass: "bg-emerald-400",
+        badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold",
+        dotClass: "bg-emerald-500",
         description: "Qualified & approved by studio for Step 5 Audience & Product Synthesis",
       };
     }
@@ -431,8 +432,8 @@ export default function CreatorFollowUpCRM({
         return {
           stageId: "interested",
           stageName: "Interested Reply Received",
-          badgeClass: "bg-teal-500/20 text-teal-300 border-teal-500/40 font-bold",
-          dotClass: "bg-teal-400",
+          badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold",
+          dotClass: "bg-emerald-500",
           description: "Creator replied positively with interest",
         };
       }
@@ -441,8 +442,8 @@ export default function CreatorFollowUpCRM({
         return {
           stageId: "question",
           stageName: "Questions / Clarification",
-          badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold",
-          dotClass: "bg-amber-400",
+          badgeClass: "bg-amber-50 text-amber-700 border-amber-200 font-semibold",
+          dotClass: "bg-amber-500",
           description: "Creator asked questions about revenue or tech stack",
         };
       }
@@ -451,8 +452,8 @@ export default function CreatorFollowUpCRM({
         return {
           stageId: "not_interested",
           stageName: "Hesitant / Uninterested",
-          badgeClass: "bg-orange-500/20 text-orange-300 border-orange-500/40 font-bold",
-          dotClass: "bg-orange-400",
+          badgeClass: "bg-orange-50 text-orange-700 border-orange-200 font-semibold",
+          dotClass: "bg-orange-500",
           description: "Creator expressed hesitation or soft pass",
         };
       }
@@ -461,7 +462,7 @@ export default function CreatorFollowUpCRM({
         return {
           stageId: "unsubscribe",
           stageName: "Unsubscribed",
-          badgeClass: "bg-slate-500/20 text-slate-400 border-slate-500/40 font-bold",
+          badgeClass: "bg-slate-100 text-slate-700 border-slate-200 font-semibold",
           dotClass: "bg-slate-400",
           description: "Creator opted out of outreach",
         };
@@ -470,8 +471,8 @@ export default function CreatorFollowUpCRM({
       return {
         stageId: "inbound_reply",
         stageName: "Inbound Reply Received",
-        badgeClass: "bg-teal-500/20 text-teal-300 border-teal-500/40 font-bold",
-        dotClass: "bg-teal-400",
+        badgeClass: "bg-teal-50 text-teal-700 border-teal-200 font-semibold",
+        dotClass: "bg-teal-500",
         description: "Creator sent a response to outreach",
       };
     }
@@ -481,8 +482,8 @@ export default function CreatorFollowUpCRM({
       return {
         stageId: "no_email",
         stageName: "Missing Contact Email",
-        badgeClass: "bg-yellow-500/20 text-yellow-300 border-yellow-500/40",
-        dotClass: "bg-yellow-400",
+        badgeClass: "bg-amber-50 text-amber-700 border-amber-200 font-semibold",
+        dotClass: "bg-amber-500",
         description: "No verified email address found",
       };
     }
@@ -490,8 +491,8 @@ export default function CreatorFollowUpCRM({
     return {
       stageId: "awaiting_reply",
       stageName: "Outreach Sent • Awaiting Reply",
-      badgeClass: "bg-blue-500/20 text-blue-300 border-blue-500/40",
-      dotClass: "bg-blue-400",
+      badgeClass: "bg-blue-50 text-blue-700 border-blue-200 font-semibold",
+      dotClass: "bg-blue-500",
       description: "Initial outreach sent, waiting for creator response",
     };
   };
@@ -773,7 +774,7 @@ export default function CreatorFollowUpCRM({
         stepKey: "rejected",
         stepName: "Rejected / Archived",
         badgeText: "Lead Archived",
-        badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40",
+        badgeClass: "bg-rose-50 text-rose-700 border-rose-200 font-semibold",
         buttonLabel: "Lead Archived",
         targetStep: 4,
       };
@@ -785,7 +786,7 @@ export default function CreatorFollowUpCRM({
         stepKey: "section2",
         stepName: "Section 2: Active Project OS",
         badgeText: "Project Launched 🚀",
-        badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+        badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold shadow-2xs",
         buttonLabel: "Open Project OS 🚀",
         targetStep: "section2",
         matchedProject: matchedDbProj || null,
@@ -800,7 +801,7 @@ export default function CreatorFollowUpCRM({
         stepKey: "step6",
         stepName: "Step 6: Pitch & Co-Launch Studio",
         badgeText: "Step 6: Concept Selected",
-        badgeClass: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+        badgeClass: "bg-purple-50 text-purple-700 border-purple-200 font-semibold",
         buttonLabel: "Step 6 Pitch Studio →",
         targetStep: 6,
       };
@@ -813,7 +814,7 @@ export default function CreatorFollowUpCRM({
         stepKey: "step5",
         stepName: "Step 5: Audience & 3 Product Ideas",
         badgeText: "Step 5: 3 Ideas Ready",
-        badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+        badgeClass: "bg-amber-50 text-amber-700 border-amber-200 font-semibold",
         buttonLabel: "Step 5 Product Studio →",
         targetStep: 5,
       };
@@ -825,7 +826,7 @@ export default function CreatorFollowUpCRM({
         stepKey: "step4",
         stepName: "Step 4: Interested Reply Received",
         badgeText: "Step 4: Reply Review",
-        badgeClass: "bg-teal-500/20 text-teal-300 border-teal-500/40",
+        badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold",
         buttonLabel: "Step 4 Review Reply →",
         targetStep: 4,
       };
@@ -837,7 +838,7 @@ export default function CreatorFollowUpCRM({
         stepKey: "step3",
         stepName: "Step 3: Autonomous Outreach Sent",
         badgeText: "Step 3: Outreach Sent",
-        badgeClass: "bg-blue-500/20 text-blue-300 border-blue-500/40",
+        badgeClass: "bg-blue-50 text-blue-700 border-blue-200 font-semibold",
         buttonLabel: "Step 4 Review →",
         targetStep: 4,
       };
@@ -848,7 +849,7 @@ export default function CreatorFollowUpCRM({
       stepKey: "step2",
       stepName: "Step 2: Discovered & Qualified",
       badgeText: "Step 2: Qualified Lead",
-      badgeClass: "bg-slate-500/20 text-slate-300 border-slate-500/40",
+      badgeClass: "bg-slate-100 text-slate-700 border-slate-200 font-semibold",
       buttonLabel: "Step 3 Outreach →",
       targetStep: 3,
     };
@@ -1230,23 +1231,23 @@ export default function CreatorFollowUpCRM({
   if (!isPage && !isOpen) return null;
 
   const crmContent = (
-    <div className={`w-full ${isPage ? "rounded-2xl" : "max-w-6xl rounded-2xl max-h-[92vh]"} bg-[#0b0e14] border border-white/[0.12] shadow-2xl flex flex-col overflow-hidden`}>
+    <div className={`w-full ${isPage ? "rounded-2xl" : "max-w-6xl rounded-2xl max-h-[92vh]"} bg-white border border-slate-200/90 shadow-sm flex flex-col overflow-hidden`}>
         {/* Header Titlebar */}
-        <div className="bg-[#121620] px-6 py-4 border-b border-white/[0.08] flex items-center justify-between flex-wrap gap-3">
+        <div className="bg-slate-50/70 px-6 py-4 border-b border-slate-200/90 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-2xs">
               <Users className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-white tracking-wide">
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">
                   Creator Outreach & Follow-Up CRM Directory
                 </h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-mono">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
                   {enrichedCreators.length} Total Leads
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Track creator interest, review full back-and-forth messages, manage step 6 pitches, and advance co-launch partnerships.
               </p>
             </div>
@@ -1257,7 +1258,7 @@ export default function CreatorFollowUpCRM({
               type="button"
               onClick={onSyncImap}
               disabled={isSyncingImap}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-50 flex-shrink-0"
               title="Poll Gmail IMAP for latest creator replies"
             >
               <RefreshCw className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${isSyncingImap ? "animate-spin" : ""}`} />
@@ -1267,7 +1268,7 @@ export default function CreatorFollowUpCRM({
             <button
               type="button"
               onClick={handleExportCSV}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold transition-all shadow-2xs cursor-pointer flex-shrink-0"
               title="Export all lead statuses to CSV"
             >
               <Download className="w-3.5 h-3.5 flex-shrink-0" />
@@ -1278,7 +1279,7 @@ export default function CreatorFollowUpCRM({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer flex-shrink-0"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer flex-shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1287,52 +1288,57 @@ export default function CreatorFollowUpCRM({
         </div>
 
         {/* KPI Status Pills */}
-        <div className="p-4 bg-[#0e121a] border-b border-white/[0.06] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        <div className="p-4 bg-white border-b border-slate-200/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {[
-            { id: "all", label: "All Leads", count: counts.all, color: "text-white", border: "border-white/20", dot: "bg-purple-400" },
-            { id: "interested", label: "Interested", count: counts.interested, color: "text-teal-400", border: "border-teal-500/30", dot: "bg-teal-400" },
-            { id: "question", label: "Questions", count: counts.question, color: "text-amber-400", border: "border-amber-500/30", dot: "bg-amber-400" },
-            { id: "awaiting_reply", label: "Awaiting Reply", count: counts.awaiting_reply, color: "text-blue-400", border: "border-blue-500/30", dot: "bg-blue-400" },
-            { id: "unsubscribe", label: "Unsubscribed", count: counts.unsubscribe, color: "text-slate-400", border: "border-slate-500/30", dot: "bg-slate-400" },
-          ].map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setStatusFilter(item.id)}
-              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                statusFilter === item.id
-                  ? `bg-white/[0.08] ${item.border} shadow-sm ring-1 ring-white/20`
-                  : "bg-white/[0.02] border-white/[0.05] hover:border-white/15"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5 truncate">
-                  {item.dot && <span className={`w-1.5 h-1.5 rounded-full ${item.dot} flex-shrink-0`} />}
-                  <span className="truncate">{item.label}</span>
-                </span>
-                <span className={`text-xs font-mono font-bold ${item.color} ml-1`}>
-                  {item.count}
-                </span>
-              </div>
-            </button>
-          ))}
+            { id: "all", label: "All Leads", count: counts.all, color: "text-slate-900", activeBg: "bg-slate-900 text-white border-slate-900 ring-slate-900", dot: "bg-slate-400" },
+            { id: "interested", label: "Interested", count: counts.interested, color: "text-emerald-700", activeBg: "bg-emerald-600 text-white border-emerald-600 ring-emerald-600", dot: "bg-emerald-500" },
+            { id: "question", label: "Questions", count: counts.question, color: "text-amber-700", activeBg: "bg-amber-600 text-white border-amber-600 ring-amber-600", dot: "bg-amber-500" },
+            { id: "awaiting_reply", label: "Awaiting Reply", count: counts.awaiting_reply, color: "text-blue-700", activeBg: "bg-blue-600 text-white border-blue-600 ring-blue-600", dot: "bg-blue-500" },
+            { id: "unsubscribe", label: "Unsubscribed", count: counts.unsubscribe, color: "text-slate-600", activeBg: "bg-slate-700 text-white border-slate-700 ring-slate-700", dot: "bg-slate-400" },
+          ].map((item) => {
+            const isActive = statusFilter === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setStatusFilter(item.id)}
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer shadow-2xs ${
+                  isActive
+                    ? `${item.activeBg} ring-1 shadow-xs`
+                    : "bg-slate-50/70 border-slate-200/90 hover:bg-slate-100/70 text-slate-700"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`text-[11px] font-semibold flex items-center gap-1.5 truncate ${isActive ? "text-white/90" : "text-slate-600"}`}>
+                    {item.dot && (
+                      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-white" : item.dot} flex-shrink-0`} />
+                    )}
+                    <span className="truncate">{item.label}</span>
+                  </span>
+                  <span className={`text-sm font-mono font-bold ml-1 ${isActive ? "text-white" : item.color}`}>
+                    {item.count}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Filter Controls & Search Bar */}
-        <div className="p-4 bg-[#0e121a] border-b border-white/[0.06] flex items-center justify-between flex-wrap gap-3">
+        <div className="p-4 bg-slate-50/50 border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-3">
           <div className="relative flex-1 min-w-[240px] max-w-md">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by creator name, handle, email, or niche..."
-              className="w-full bg-[#141824] border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500"
+              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-2xs transition-all"
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">
               Platform:
             </span>
             {[
@@ -1345,10 +1351,10 @@ export default function CreatorFollowUpCRM({
                 key={p.id}
                 type="button"
                 onClick={() => setPlatformFilter(p.id)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer shadow-2xs ${
                   platformFilter === p.id
-                    ? "bg-purple-600 text-white border-purple-500"
-                    : "bg-[#141824] border-white/10 text-slate-400 hover:text-white"
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
                 {p.label}
@@ -1361,9 +1367,9 @@ export default function CreatorFollowUpCRM({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {filteredCreators.length === 0 ? (
             <div className="text-center py-16 text-slate-500 text-xs space-y-2">
-              <Users className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="font-semibold text-slate-400">No creators found matching your filter criteria.</p>
-              <p className="text-[11px]">Try adjusting your search terms or reply status filter.</p>
+              <Users className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="font-semibold text-slate-600">No creators found matching your filter criteria.</p>
+              <p className="text-[11px] text-slate-400">Try adjusting your search terms or reply status filter.</p>
             </div>
           ) : (
             filteredCreators.map((c) => {
@@ -1375,18 +1381,18 @@ export default function CreatorFollowUpCRM({
               return (
                 <div
                   key={c.id}
-                  className={`p-5 sm:p-6 rounded-2xl border transition-all duration-200 flex flex-col gap-4 shadow-xl ${
+                  className={`p-5 sm:p-6 rounded-2xl border transition-all duration-200 flex flex-col gap-4 shadow-sm ${
                     c.isRejected
-                      ? "bg-[#141014]/60 border-rose-500/20 opacity-70 hover:opacity-90"
+                      ? "bg-slate-50 border-slate-200 opacity-70 hover:opacity-90"
                       : c.stageInfo.stageId === "step6_pitch"
-                        ? "bg-gradient-to-r from-[#171328] to-[#121622] border-purple-500/30 hover:border-purple-500/60 shadow-purple-950/10"
+                        ? "bg-gradient-to-r from-purple-50/40 via-white to-white border-purple-200 hover:border-purple-300 shadow-purple-100/50"
                         : c.isApproved
-                          ? "bg-gradient-to-r from-[#0f1f1a] to-[#121622] border-emerald-500/30 hover:border-emerald-500/50"
-                          : "bg-[#111522]/90 border-white/[0.08] hover:border-white/20 hover:bg-[#141928]"
+                          ? "bg-gradient-to-r from-emerald-50/40 via-white to-white border-emerald-200 hover:border-emerald-300 shadow-emerald-100/50"
+                          : "bg-white border-slate-200/90 hover:border-slate-300 hover:shadow-md"
                   }`}
                 >
                   {/* 1. Header Banner */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
                     <div className="flex items-center gap-3.5 min-w-0">
                       <div className="relative flex-shrink-0">
                         <img
@@ -1396,38 +1402,38 @@ export default function CreatorFollowUpCRM({
                             `https://ui-avatars.com/api/?name=${encodeURIComponent(c.handle || "Creator")}&background=6366f1&color=fff`
                           }
                           alt=""
-                          className="w-12 h-12 rounded-2xl object-cover border border-white/10 shadow-sm"
+                          className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shadow-2xs"
                         />
-                        <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-[#0e1117] border border-white/10 shadow-xs">
+                        <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-white border border-slate-200 shadow-2xs">
                           {c.platform?.toLowerCase() === "instagram" ? (
-                            <Instagram className="w-2.5 h-2.5 text-pink-400" />
+                            <Instagram className="w-2.5 h-2.5 text-pink-500" />
                           ) : c.platform?.toLowerCase() === "tiktok" ? (
-                            <Music className="w-2.5 h-2.5 text-cyan-400" />
+                            <Music className="w-2.5 h-2.5 text-cyan-600" />
                           ) : (
-                            <Youtube className="w-2.5 h-2.5 text-red-400" />
+                            <Youtube className="w-2.5 h-2.5 text-red-500" />
                           )}
                         </div>
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-bold text-white text-base tracking-tight truncate">
+                          <h4 className="font-bold text-slate-900 text-base tracking-tight truncate">
                             {c.name || c.display_name}
                           </h4>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-400 font-mono mt-0.5 flex-wrap">
-                          <span className="text-purple-300 font-medium">@{c.handle?.replace(/^@/, "")}</span>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 font-mono mt-0.5 flex-wrap">
+                          <span className="text-emerald-700 font-medium">@{c.handle?.replace(/^@/, "")}</span>
                           <span>•</span>
-                          <span className="text-slate-300 capitalize">{c.platform || "Youtube"}</span>
+                          <span className="text-slate-600 capitalize">{c.platform || "Youtube"}</span>
                           <span>•</span>
-                          <span className="text-slate-300 font-semibold">{c.followerStr || c.follower_count || "112K"} followers</span>
+                          <span className="text-slate-700 font-semibold">{c.followerStr || c.follower_count || "112K"} followers</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Stage / AI Classification Badge */}
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 shadow-xs ${stage.badgeClass}`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 shadow-2xs ${stage.badgeClass}`}>
                         <span className={`w-2 h-2 rounded-full ${stage.dotClass} animate-pulse`} />
                         <span>
                           {reply.hasReply
@@ -1439,48 +1445,48 @@ export default function CreatorFollowUpCRM({
                   </div>
 
                   {/* 2. CREATOR PROFILE & AUDIENCE Section */}
-                  <div className="p-4 rounded-xl bg-[#090b0e] border border-white/[0.08] space-y-3.5 shadow-inner">
+                  <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-3 shadow-2xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-semibold">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                         Creator Profile & Audience
                       </span>
-                      <span className="text-xs font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg shadow-xs font-mono">
+                      <span className="text-xs font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg shadow-2xs font-mono">
                         Creator Score: {c.creatorScore || c.score || 75}/100
                       </span>
                     </div>
 
                     {/* 6 Stats Tiles */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                      <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.05] text-center">
-                        <span className="text-[9px] text-slate-500 block uppercase tracking-wider font-semibold">Followers</span>
-                        <span className="text-xs font-bold text-white">{c.followerStr || c.follower_count || "112K"}</span>
+                      <div className="p-2 rounded-lg bg-white border border-slate-200/80 text-center shadow-2xs">
+                        <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Followers</span>
+                        <span className="text-xs font-bold text-slate-800">{c.followerStr || c.follower_count || "112K"}</span>
                       </div>
-                      <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.05] text-center">
-                        <span className="text-[9px] text-slate-500 block uppercase tracking-wider font-semibold">Engagement</span>
-                        <span className="text-xs font-bold text-emerald-400">{c.engagement || "3.9"}%</span>
+                      <div className="p-2 rounded-lg bg-white border border-slate-200/80 text-center shadow-2xs">
+                        <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Engagement</span>
+                        <span className="text-xs font-bold text-emerald-600">{c.engagement || "3.9"}%</span>
                       </div>
-                      <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.05] text-center">
-                        <span className="text-[9px] text-slate-500 block uppercase tracking-wider font-semibold">Niche Fit</span>
-                        <span className="text-xs font-bold text-purple-300">{c.nicheFit || c.niche_fit || "95% Match"}</span>
+                      <div className="p-2 rounded-lg bg-white border border-slate-200/80 text-center shadow-2xs">
+                        <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Niche Fit</span>
+                        <span className="text-xs font-bold text-indigo-600">{c.nicheFit || c.niche_fit || "95% Match"}</span>
                       </div>
-                      <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.05] text-center">
-                        <span className="text-[9px] text-slate-500 block uppercase tracking-wider font-semibold">Consistency</span>
-                        <span className="text-xs font-bold text-cyan-300">{c.postingConsistency || c.posting_consistency || "Weekly"}</span>
+                      <div className="p-2 rounded-lg bg-white border border-slate-200/80 text-center shadow-2xs">
+                        <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Consistency</span>
+                        <span className="text-xs font-bold text-teal-600">{c.postingConsistency || c.posting_consistency || "Weekly"}</span>
                       </div>
-                      <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.05] text-center">
-                        <span className="text-[9px] text-slate-500 block uppercase tracking-wider font-semibold">Authenticity</span>
-                        <span className="text-xs font-bold text-blue-300">{c.audienceAuthenticity || c.audience_authenticity || "91%"}</span>
+                      <div className="p-2 rounded-lg bg-white border border-slate-200/80 text-center shadow-2xs">
+                        <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Authenticity</span>
+                        <span className="text-xs font-bold text-blue-600">{c.audienceAuthenticity || c.audience_authenticity || "91%"}</span>
                       </div>
-                      <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.05] text-center">
-                        <span className="text-[9px] text-slate-500 block uppercase tracking-wider font-semibold">Commercial</span>
-                        <span className="text-xs font-bold text-amber-300">{c.commercialPotential || c.commercial_potential || "Strong"}</span>
+                      <div className="p-2 rounded-lg bg-white border border-slate-200/80 text-center shadow-2xs">
+                        <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Commercial</span>
+                        <span className="text-xs font-bold text-amber-600">{c.commercialPotential || c.commercial_potential || "Strong"}</span>
                       </div>
                     </div>
 
                     {/* Bio / Relevant Content snippet */}
-                    <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.05]">
-                      <span className="text-[9px] text-slate-500 block uppercase tracking-wider mb-1 font-semibold">Relevant Content / Bio</span>
-                      <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-2">
+                    <div className="p-2.5 rounded-lg bg-white border border-slate-200/80 shadow-2xs">
+                      <span className="text-[9px] text-slate-400 block uppercase tracking-wider mb-1 font-semibold">Relevant Content / Bio</span>
+                      <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
                         {c.bio ||
                           c.relevantContent ||
                           c.summary ||
@@ -1489,42 +1495,42 @@ export default function CreatorFollowUpCRM({
                     </div>
 
                     {/* Summary Strip */}
-                    <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-1 border-t border-white/[0.04] flex-wrap">
+                    <div className="flex items-center gap-3 text-[11px] text-slate-500 pt-1 border-t border-slate-200/60 flex-wrap">
                       <span className="flex items-center gap-1">
-                        <Mail className="w-3 h-3 text-blue-400" />
-                        <strong className="text-slate-200">Email:</strong> {email || "Not set"}
+                        <Mail className="w-3 h-3 text-blue-500" />
+                        <strong className="text-slate-700">Email:</strong> {email || "Not set"}
                       </span>
-                      <span className="text-slate-600">|</span>
+                      <span className="text-slate-300">|</span>
                       <span className="flex items-center gap-1">
-                        <Send className="w-3 h-3 text-cyan-400" />
-                        <strong className="text-slate-200">Outreach:</strong> {c.outreach_sent ? "Sent" : "Pending"}
+                        <Send className="w-3 h-3 text-teal-500" />
+                        <strong className="text-slate-700">Outreach:</strong> {c.outreach_sent ? "Sent" : "Pending"}
                       </span>
-                      <span className="text-slate-600">|</span>
+                      <span className="text-slate-300">|</span>
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-purple-400" />
-                        <strong className="text-slate-200">Platform:</strong> {c.platform || "Youtube"}
+                        <Clock className="w-3 h-3 text-indigo-500" />
+                        <strong className="text-slate-700">Platform:</strong> {c.platform || "Youtube"}
                       </span>
                     </div>
                   </div>
 
                   {/* 3. Status & AI Classification Analysis Card */}
-                  <div className="p-3.5 rounded-xl bg-black/40 border border-white/[0.06] space-y-1.5 text-xs shadow-inner">
+                  <div className="p-3.5 rounded-xl bg-slate-50/90 border border-slate-200/80 space-y-1.5 text-xs shadow-2xs">
                     <div className="flex items-center justify-between text-[11px] font-mono flex-wrap gap-2">
-                      <span className="text-slate-400">
+                      <span className="text-slate-600">
                         Status:{" "}
                         <strong
                           className={
                             c.stepInfo?.stepNumber === 7
-                              ? "text-emerald-300 font-bold"
+                              ? "text-emerald-700 font-bold"
                               : c.stepInfo?.stepNumber === 6
-                              ? "text-purple-300 font-bold"
+                              ? "text-purple-700 font-bold"
                               : c.isApproved
-                              ? "text-emerald-400 font-bold"
+                              ? "text-emerald-700 font-bold"
                               : reply.hasReply
-                              ? "text-teal-400 font-bold"
+                              ? "text-teal-700 font-bold"
                               : reply.classification === "no_email"
-                              ? "text-amber-400 font-bold"
-                              : "text-blue-400 font-bold"
+                              ? "text-amber-700 font-bold"
+                              : "text-blue-700 font-bold"
                           }
                         >
                           {c.stepInfo?.stepNumber === 7
@@ -1540,9 +1546,9 @@ export default function CreatorFollowUpCRM({
                             : "Waiting for Response"}
                         </strong>
                       </span>
-                      <span className="text-slate-400">
+                      <span className="text-slate-600">
                         Sentiment:{" "}
-                        <strong className="text-purple-300 font-mono font-bold">
+                        <strong className="text-purple-700 font-mono font-bold">
                           {c.stepInfo?.stepNumber === 7
                             ? "partnered"
                             : c.stepInfo?.stepNumber === 6
@@ -1553,8 +1559,8 @@ export default function CreatorFollowUpCRM({
                         </strong>
                       </span>
                     </div>
-                    <p className="text-slate-300 text-[11px] leading-relaxed">
-                      <strong className="text-slate-400">Analysis:</strong>{" "}
+                    <p className="text-slate-600 text-[11px] leading-relaxed">
+                      <strong className="text-slate-700">Analysis:</strong>{" "}
                       {c.stepInfo?.stepNumber === 7
                         ? "Co-Launch venture is active in Section 2 (Phase 1: Validation). Tracking pre-order presales, traffic milestones, and human approval gates."
                         : c.stepInfo?.stepNumber === 6
@@ -1569,13 +1575,13 @@ export default function CreatorFollowUpCRM({
                   </div>
 
                   {/* 4. Action Footer */}
-                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/[0.06] flex-wrap">
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
                       {reply.classification === "interested" && !c.isApproved && (c.stepInfo?.stepNumber < 5) && !c.isRejected && (
                         <button
                           type="button"
                           onClick={() => handleDirectApprove(c.id)}
-                          className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95"
+                          className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Approve Lead</span>
@@ -1586,7 +1592,7 @@ export default function CreatorFollowUpCRM({
                         <button
                           type="button"
                           onClick={() => handleDirectReject(c.id)}
-                          className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
+                          className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
                         >
                           <XCircle className="w-3.5 h-3.5" />
                           <span>Reject</span>
@@ -1602,10 +1608,10 @@ export default function CreatorFollowUpCRM({
                                 if (onClose) onClose();
                                 handleOpenStudioForCreator(c, 5, "Step 5 Product Ideas");
                               }}
-                              className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all shadow-sm flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap"
+                              className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap"
                               title="Jump directly to Step 5: Audience & 3 Product Ideas"
                             >
-                              <Sparkles className="w-3 h-3 text-amber-300" />
+                              <Sparkles className="w-3 h-3 text-amber-600" />
                               <span>Step 5 Ideas</span>
                             </button>
                           )}
@@ -1616,13 +1622,7 @@ export default function CreatorFollowUpCRM({
                               if (onClose) onClose();
                               handleOpenStudioForCreator(c, targetStep, c.stepInfo?.buttonLabel);
                             }}
-                            className={`px-3.5 py-1.5 rounded-xl text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap ${
-                              c.stepInfo?.stepNumber === 6
-                                ? "bg-purple-600 hover:bg-purple-500 shadow-purple-900/30"
-                                : c.stepInfo?.stepNumber === 7
-                                ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30"
-                                : "bg-purple-600 hover:bg-purple-500 shadow-purple-900/30"
-                            }`}
+                            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
                             title={`Advance to ${c.stepInfo?.stepName || "Studio"}`}
                           >
                             <Sparkles className="w-3.5 h-3.5" />
@@ -1635,7 +1635,7 @@ export default function CreatorFollowUpCRM({
                         type="button"
                         onClick={(e) => handleDeleteCreator(c, e)}
                         disabled={deletingCreatorId === c.id}
-                        className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-200 border border-rose-500/25 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
                         title="Delete creator and all chats from database"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1646,26 +1646,26 @@ export default function CreatorFollowUpCRM({
                     <button
                       type="button"
                       onClick={() => setSelectedDetailCreatorId(c.id)}
-                      className="px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 hover:text-white text-xs font-bold transition-all border border-purple-500/40 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                      className="px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 hover:text-emerald-900 text-xs font-bold transition-all border border-emerald-200 flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
                     >
-                      <MessageSquare className="w-3.5 h-3.5 text-purple-400" />
+                      <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
                       <span>View Full Details & Chat History</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-purple-300" />
+                      <ChevronRight className="w-3.5 h-3.5 text-emerald-600" />
                     </button>
                   </div>
 
                   {/* Inline Email Address Editor / Finder Drawer */}
                   {isEditingThisEmail && (
-                    <div className="p-3.5 rounded-xl bg-[#090c13] border border-purple-500/30 text-xs space-y-2.5 mt-1 animate-in fade-in">
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-emerald-200 text-xs space-y-2.5 mt-1 shadow-2xs animate-in fade-in">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
-                          <Mail className="w-3.5 h-3.5" />
+                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-emerald-600" />
                           <span>{email ? "Update Creator Contact Email" : "No Email Address Set — Add or Auto-Discover Below"}</span>
                         </span>
                         <button
                           type="button"
                           onClick={() => setEditingEmailId(null)}
-                          className="text-xs text-slate-400 hover:text-white"
+                          className="text-xs text-slate-500 hover:text-slate-800 cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -1676,12 +1676,12 @@ export default function CreatorFollowUpCRM({
                           placeholder="e.g. sponsor@creator.com"
                           value={emailInputs[c.id] !== undefined ? emailInputs[c.id] : email || ""}
                           onChange={(e) => setEmailInputs((prev) => ({ ...prev, [c.id]: e.target.value }))}
-                          className="bg-[#121622] border border-white/15 focus:border-purple-500 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none flex-1 font-mono placeholder:text-slate-600"
+                          className="bg-white border border-slate-300 focus:border-emerald-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none flex-1 font-mono placeholder:text-slate-400"
                         />
                         <button
                           type="button"
                           onClick={() => handleSaveEmail(c.id)}
-                          className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                          className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs active:scale-95"
                         >
                           <Save className="w-3.5 h-3.5" />
                           <span>Save Email</span>
@@ -1690,12 +1690,12 @@ export default function CreatorFollowUpCRM({
                           type="button"
                           onClick={() => handleFindBusinessEmail(c)}
                           disabled={findingEmailId === c.id}
-                          className="px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                          className="px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
                         >
                           {findingEmailId === c.id ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400 inline-block origin-center" />
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600 inline-block origin-center" />
                           ) : (
-                            <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                            <Zap className="w-3.5 h-3.5 text-emerald-600" />
                           )}
                           <span>Auto-Find Email</span>
                         </button>
@@ -1709,11 +1709,11 @@ export default function CreatorFollowUpCRM({
         </div>
 
         {/* Selected Creator Detail & Chat History Modal */}
-        {detailCreator && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in">
-            <div className="w-full max-w-5xl rounded-2xl max-h-[92vh] bg-[#0b0e14] border border-white/[0.15] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
+        {detailCreator && typeof document !== "undefined" && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+            <div className="w-full max-w-5xl rounded-2xl max-h-[90vh] bg-white border border-slate-200 shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 my-auto">
               {/* Modal Top Header */}
-              <div className="bg-[#121620] px-6 py-4 border-b border-white/[0.08] flex items-center justify-between flex-wrap gap-3">
+              <div className="bg-slate-50/80 px-6 py-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3.5 min-w-0">
                   <img
                     src={
@@ -1722,23 +1722,23 @@ export default function CreatorFollowUpCRM({
                       `https://ui-avatars.com/api/?name=${encodeURIComponent(detailCreator.handle || "Creator")}&background=6366f1&color=fff`
                     }
                     alt=""
-                    className="w-11 h-11 rounded-xl object-cover border border-white/10 flex-shrink-0"
+                    className="w-11 h-11 rounded-xl object-cover border border-slate-200 flex-shrink-0 shadow-2xs"
                   />
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-base font-bold text-white">{detailCreator.name || detailCreator.display_name}</h3>
-                      <span className="text-xs font-mono text-purple-300">@{detailCreator.handle?.replace(/^@/, "")}</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${detailCreator.stageInfo.badgeClass}`}>
+                      <h3 className="text-base font-bold text-slate-900">{detailCreator.name || detailCreator.display_name}</h3>
+                      <span className="text-xs font-mono text-emerald-700">@{detailCreator.handle?.replace(/^@/, "")}</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1 shadow-2xs ${detailCreator.stageInfo.badgeClass}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${detailCreator.stageInfo.dotClass}`} />
                         <span>{detailCreator.stageInfo.stageName}</span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5 flex-wrap">
                       <span>{detailCreator.platform} • {detailCreator.followerStr || detailCreator.follower_count} Followers</span>
                       <span>•</span>
-                      <span className="text-purple-300 font-semibold">{detailCreator.niche || "Creator Economy"}</span>
+                      <span className="text-indigo-600 font-semibold">{detailCreator.niche || "Creator Economy"}</span>
                       <span>•</span>
-                      <span className="font-mono text-emerald-300">{detailCreator.email || detailCreator.email_public || "No email"}</span>
+                      <span className="font-mono text-emerald-700">{detailCreator.email || detailCreator.email_public || "No email"}</span>
                     </div>
                   </div>
                 </div>
@@ -1753,10 +1753,10 @@ export default function CreatorFollowUpCRM({
                           if (onClose) onClose();
                           handleOpenStudioForCreator(detailCreator, 5, "Step 5 Product Ideas");
                         }}
-                        className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
                         title="Jump directly to Step 5: Audience & 3 Product Ideas"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                         <span>Step 5 Ideas →</span>
                       </button>
 
@@ -1768,11 +1768,7 @@ export default function CreatorFollowUpCRM({
                           if (onClose) onClose();
                           handleOpenStudioForCreator(detailCreator, targetStep, detailCreator.stepInfo?.buttonLabel);
                         }}
-                        className={`px-4 py-1.5 rounded-xl text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap ${
-                          detailCreator.stepInfo?.stepNumber === 7
-                            ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30"
-                            : "bg-purple-600 hover:bg-purple-500 shadow-purple-900/30"
-                        }`}
+                        className="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
                       >
                         <Rocket className="w-3.5 h-3.5 text-white" />
                         <span>{detailCreator.stepInfo?.buttonLabel || "Open Studio →"}</span>
@@ -1783,7 +1779,7 @@ export default function CreatorFollowUpCRM({
                   <button
                     type="button"
                     onClick={() => setSelectedDetailCreatorId(null)}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                     title="Close Modal"
                   >
                     <X className="w-5 h-5" />
@@ -1792,20 +1788,20 @@ export default function CreatorFollowUpCRM({
               </div>
 
               {/* Visual Pipeline Progress Stepper */}
-              <div className="px-6 py-3.5 bg-[#0a0d14] border-b border-white/[0.08] space-y-2">
+              <div className="px-6 py-3.5 bg-slate-50/50 border-b border-slate-200 space-y-2">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Live Pipeline Progress
                     </span>
-                    <span className="text-slate-600">•</span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1.5 ${detailCreator.stepInfo?.badgeClass || "bg-purple-500/20 text-purple-300 border-purple-500/40"}`}>
+                    <span className="text-slate-300">•</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1.5 shadow-2xs ${detailCreator.stepInfo?.badgeClass || "bg-slate-100 text-slate-700 border-slate-200"}`}>
                       <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                       <span>{detailCreator.stepInfo?.stepName || "Step 5: Audience & 3 Product Ideas"}</span>
                     </span>
                   </div>
                   {stageMap[detailCreator.id]?.updatedAt && (
-                    <span className="text-[10px] text-slate-500 font-mono">
+                    <span className="text-[10px] text-slate-400 font-mono">
                       Last action: {new Date(stageMap[detailCreator.id].updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
@@ -1824,12 +1820,12 @@ export default function CreatorFollowUpCRM({
                           if (onClose) onClose();
                           handleOpenStudioForCreator(detailCreator, step.num, step.title);
                         }}
-                        className={`p-2 rounded-xl border text-left transition-all cursor-pointer group ${
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer group shadow-2xs ${
                           isCurrent
-                            ? "bg-purple-950/40 border-purple-500 ring-1 ring-purple-500/50 shadow-md"
+                            ? "bg-slate-900 border-slate-900 text-white shadow-xs"
                             : isPassed
-                            ? "bg-emerald-950/20 border-emerald-500/30 hover:border-emerald-500/60"
-                            : "bg-white/[0.02] border-white/[0.06] hover:border-white/20 opacity-60"
+                            ? "bg-emerald-50 border-emerald-200 hover:border-emerald-300"
+                            : "bg-white border-slate-200 hover:border-slate-300"
                         }`}
                         title={`Click to jump to ${step.title}`}
                       >
@@ -1837,21 +1833,21 @@ export default function CreatorFollowUpCRM({
                           <span
                             className={`w-4 h-4 rounded text-[9px] font-black flex items-center justify-center ${
                               isCurrent
-                                ? "bg-purple-600 text-white font-bold"
+                                ? "bg-white text-slate-900 font-bold"
                                 : isPassed
-                                ? "bg-emerald-500/30 text-emerald-300"
-                                : "bg-white/10 text-slate-400"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-slate-100 text-slate-500"
                             }`}
                           >
                             {isPassed ? "✓" : step.num}
                           </span>
                           {isCurrent && (
-                            <span className="text-[8px] font-extrabold uppercase px-1 rounded bg-purple-500/30 text-purple-200">
+                            <span className="text-[8px] font-extrabold uppercase px-1 rounded bg-white/20 text-white">
                               Active
                             </span>
                           )}
                         </div>
-                        <p className={`text-[10px] font-bold truncate ${isCurrent ? "text-purple-200" : isPassed ? "text-emerald-300" : "text-slate-400 group-hover:text-slate-200"}`}>
+                        <p className={`text-[10px] font-bold truncate ${isCurrent ? "text-white" : isPassed ? "text-emerald-800" : "text-slate-600 group-hover:text-slate-900"}`}>
                           {step.title}
                         </p>
                       </div>
@@ -1865,13 +1861,13 @@ export default function CreatorFollowUpCRM({
                 <div className="grid lg:grid-cols-12 gap-6">
                   {/* Left Column (5 cols): 3 Engineered Software Concepts & Terms */}
                   <div className="lg:col-span-5 space-y-4">
-                    <div className="p-4 rounded-xl bg-[#121622] border border-white/[0.08] space-y-3">
+                    <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200 space-y-3">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                           <span>Engineered Software Concepts</span>
                         </h4>
-                        <span className="text-[10px] text-slate-400 font-mono">
+                        <span className="text-[10px] text-slate-500 font-mono">
                           3 Concepts Tailored
                         </span>
                       </div>
@@ -1884,30 +1880,30 @@ export default function CreatorFollowUpCRM({
                           return (
                             <div
                               key={concept.id || idx}
-                              className="p-3.5 rounded-xl border border-white/[0.08] bg-black/40 space-y-2 hover:border-white/20 transition-all"
+                              className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2 hover:border-slate-300 shadow-2xs transition-all"
                             >
                               <div className="flex items-center justify-between">
-                                <span className="font-bold text-white text-xs flex items-center gap-1.5">
-                                  <span className="w-5 h-5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-black flex items-center justify-center">
+                                <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                                  <span className="w-5 h-5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black flex items-center justify-center">
                                     #{idx + 1}
                                   </span>
                                   <span>{concept.name}</span>
                                 </span>
-                                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">{concept.pricing}</span>
+                                <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">{concept.pricing}</span>
                               </div>
-                              <p className="text-[11px] text-purple-300 font-medium">{concept.tagline}</p>
+                              <p className="text-[11px] text-emerald-700 font-medium">{concept.tagline}</p>
                               {concept.problem && (
-                                <p className="text-[10px] text-slate-300 leading-relaxed">
-                                  <strong className="text-slate-400">Solves:</strong> {concept.problem}
+                                <p className="text-[10px] text-slate-600 leading-relaxed">
+                                  <strong className="text-slate-700">Solves:</strong> {concept.problem}
                                 </p>
                               )}
                               {concept.keyFeatures && (
-                                <div className="pt-1.5 border-t border-white/[0.04] text-[10px] text-slate-400 space-y-1">
-                                  <span className="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Features:</span>
+                                <div className="pt-1.5 border-t border-slate-100 text-[10px] text-slate-500 space-y-1">
+                                  <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Features:</span>
                                   <ul className="space-y-0.5">
                                     {concept.keyFeatures.slice(0, 2).map((feat, fi) => (
-                                      <li key={fi} className="flex items-center gap-1 text-slate-300">
-                                        <span className="text-emerald-400 text-[10px]">•</span> {feat}
+                                      <li key={fi} className="flex items-center gap-1 text-slate-600">
+                                        <span className="text-emerald-600 text-[10px]">•</span> {feat}
                                       </li>
                                     ))}
                                   </ul>
@@ -1922,13 +1918,13 @@ export default function CreatorFollowUpCRM({
 
                   {/* Right Column (7 cols): Full Chronological Activity & Email Stream */}
                   <div className="lg:col-span-7 space-y-4">
-                    <div className="rounded-xl bg-[#121622] border border-white/[0.08] overflow-hidden">
-                      <div className="p-3.5 bg-[#161a28] border-b border-white/[0.06] flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-bold text-white">
-                          <MessageSquare className="w-4 h-4 text-purple-400" />
+                    <div className="rounded-xl bg-slate-50/70 border border-slate-200 overflow-hidden">
+                      <div className="p-3.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                          <MessageSquare className="w-4 h-4 text-emerald-600" />
                           <span>Full Message History & Admin Activities</span>
                         </div>
-                        <span className="text-[10px] font-mono text-emerald-400">
+                        <span className="text-[10px] font-mono text-emerald-700 font-bold">
                           {detailCreatorActivities.length} Events Logged
                         </span>
                       </div>
@@ -1943,10 +1939,10 @@ export default function CreatorFollowUpCRM({
                               return (
                                 <div
                                   key={event.id || idx}
-                                  className={`p-3 rounded-xl border text-xs space-y-1 ${
+                                  className={`p-3 rounded-xl border text-xs space-y-1 shadow-2xs ${
                                     event.badgeColor === "emerald"
-                                      ? "bg-emerald-950/20 border-emerald-500/40 text-emerald-200"
-                                      : "bg-rose-950/20 border-rose-500/40 text-rose-200"
+                                      ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                                      : "bg-rose-50 border-rose-200 text-rose-800"
                                   }`}
                                 >
                                   <div className="flex items-center justify-between font-bold text-[11px]">
@@ -1954,7 +1950,7 @@ export default function CreatorFollowUpCRM({
                                       <ShieldCheck className="w-3.5 h-3.5" />
                                       <span>{event.label}</span>
                                     </span>
-                                    <span className="text-slate-500 font-mono text-[10px]">
+                                    <span className="text-slate-400 font-mono text-[10px]">
                                       {event.timestamp ? new Date(event.timestamp).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "Logged"}
                                     </span>
                                   </div>
@@ -1966,33 +1962,33 @@ export default function CreatorFollowUpCRM({
                             return (
                               <div
                                 key={event.id || idx}
-                                className={`p-4 rounded-xl border text-xs space-y-2.5 shadow-md ${
+                                className={`p-4 rounded-xl border text-xs space-y-2.5 shadow-2xs ${
                                   isInbound
-                                    ? "bg-gradient-to-br from-emerald-950/20 via-[#0e1612] to-[#090b0e] border-emerald-500/30 text-emerald-300"
-                                    : "bg-[#161a26] border-white/[0.08] text-slate-200"
+                                    ? "bg-gradient-to-br from-emerald-50/50 via-white to-white border-emerald-200 text-slate-800"
+                                    : "bg-white border-slate-200 text-slate-800"
                                 }`}
                               >
-                                <div className="flex items-center justify-between text-[11px] border-b border-white/[0.06] pb-2">
+                                <div className="flex items-center justify-between text-[11px] border-b border-slate-100 pb-2">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     {isInbound ? (
-                                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-[9px] border border-emerald-500/40">
+                                      <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-[9px] border border-emerald-200 shadow-2xs">
                                         {(detailCreator.name || event.sender || "C").slice(0, 2).toUpperCase()}
                                       </div>
                                     ) : (
-                                      <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-[9px]">
+                                      <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-[9px]">
                                         CF
                                       </div>
                                     )}
-                                    <span className="font-bold text-white text-xs">
+                                    <span className="font-bold text-slate-900 text-xs">
                                       {isInbound ? (detailCreator.name || event.sender) : "Creator Forge Studio Team (Admin)"}
                                     </span>
                                     {isInbound && (
-                                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] text-emerald-300 font-mono flex items-center gap-1 font-bold">
+                                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-200 text-[10px] text-emerald-800 font-mono flex items-center gap-1 font-bold">
                                         <span>✨ Inbound Response</span>
                                       </span>
                                     )}
                                     {!isInbound && (
-                                      <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[9px] font-bold uppercase tracking-wider">
+                                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[9px] font-bold uppercase tracking-wider">
                                         {event.label || "Outreach Email"}
                                       </span>
                                     )}
@@ -2003,12 +1999,12 @@ export default function CreatorFollowUpCRM({
                                 </div>
 
                                 {event.subject && (
-                                  <p className="text-emerald-400 font-mono text-xs">
-                                    <strong className="text-emerald-400 font-bold">Subject:</strong> {event.subject}
+                                  <p className="text-emerald-800 font-mono text-xs font-bold">
+                                    <span>Subject:</span> {event.subject}
                                   </p>
                                 )}
 
-                                <p className="text-slate-200 whitespace-pre-wrap leading-relaxed font-mono bg-black/40 p-3 rounded-lg border border-white/[0.04] text-[11px]">
+                                <p className="text-slate-800 whitespace-pre-wrap leading-relaxed font-mono bg-slate-50/70 p-3 rounded-lg border border-slate-200 text-[11px]">
                                   {event.body}
                                 </p>
                               </div>
@@ -2016,19 +2012,19 @@ export default function CreatorFollowUpCRM({
                           })
                         ) : (
                           <div className="p-8 text-center text-xs text-slate-400 space-y-1 italic">
-                            <Mail className="w-6 h-6 text-slate-600 mx-auto" />
+                            <Mail className="w-6 h-6 text-slate-300 mx-auto" />
                             <p>No email messages or admin activities logged yet for this creator.</p>
-                            <p className="text-[10px] text-slate-500">Replies synced via IMAP will automatically show up here.</p>
+                            <p className="text-[10px] text-slate-400">Replies synced via IMAP will automatically show up here.</p>
                           </div>
                         )}
                       </div>
                     </div>
 
                     {/* Direct Reply Composer */}
-                    <div className="p-4 rounded-xl bg-[#121622] border border-white/[0.08] space-y-3 shadow-lg">
+                    <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-3 shadow-2xs">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <Send className="w-3.5 h-3.5 text-purple-400" />
+                        <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <Send className="w-3.5 h-3.5 text-emerald-600" />
                           <span>Direct Email Reply Composer</span>
                         </span>
                         <span className="text-[10px] font-mono text-slate-400">
@@ -2042,7 +2038,7 @@ export default function CreatorFollowUpCRM({
                           placeholder={`Subject: Re: Partnering with Creator Forge - ${detailCreator.name || detailCreator.handle}`}
                           value={replySubject}
                           onChange={(e) => setReplySubject(e.target.value)}
-                          className="w-full bg-[#0b0e14] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500 font-mono"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white font-mono shadow-2xs"
                         />
 
                         <textarea
@@ -2050,13 +2046,13 @@ export default function CreatorFollowUpCRM({
                           placeholder={`Hi ${detailCreator.name?.split(" ")[0] || "there"}, thanks for replying! We'd love to partner with you on building...`}
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
-                          className="w-full bg-[#0b0e14] border border-white/10 rounded-xl p-3.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500 font-sans leading-relaxed resize-none"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white font-sans leading-relaxed resize-none shadow-2xs"
                         />
                       </div>
 
                       {/* Quick Suggestion Chips */}
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mr-1">Templates:</span>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mr-1">Templates:</span>
                         {[
                           "Excited to partner! Let's review concept #1",
                           "Here are the 70/30 revenue share terms",
@@ -2068,22 +2064,22 @@ export default function CreatorFollowUpCRM({
                             onClick={() => {
                               setReplyText((prev) => (prev ? `${prev}\n\n${suggestion}` : suggestion));
                             }}
-                            className="text-[10px] bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-white/[0.06] transition-all cursor-pointer truncate max-w-[220px]"
+                            className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 transition-all cursor-pointer truncate max-w-[220px]"
                           >
                             {suggestion}
                           </button>
                         ))}
                       </div>
 
-                      <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
-                        <span className="text-[11px] font-mono text-emerald-400">
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                        <span className="text-[11px] font-mono text-emerald-700">
                           Recipient: {detailCreator.email || detailCreator.email_public || "No email set"}
                         </span>
                         <button
                           type="button"
                           onClick={handleSendDirectReply}
                           disabled={isSendingReply || (!detailCreator.email && !detailCreator.email_public)}
-                          className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-xs transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95"
+                          className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
                         >
                           {isSendingReply ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -2099,23 +2095,24 @@ export default function CreatorFollowUpCRM({
               </div>
 
               {/* Modal Footer */}
-              <div className="p-4 bg-[#0e121a] border-t border-white/[0.06] flex items-center justify-end">
+              <div className="p-4 bg-slate-50/80 border-t border-slate-200 flex items-center justify-end">
                 <button
                   type="button"
                   onClick={() => setSelectedDetailCreatorId(null)}
-                  className="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-all cursor-pointer"
+                  className="px-4 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-200 shadow-2xs transition-all cursor-pointer"
                 >
                   Close Modal
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Footer */}
-        <div className="p-4 bg-[#0e121a] border-t border-white/[0.06] flex items-center justify-between text-xs text-slate-400">
+        <div className="p-4 bg-slate-50/70 border-t border-slate-200/90 flex items-center justify-between text-xs text-slate-500">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
             <span>
               {detailCreator ? `Viewing conversation details & admin activities for ${detailCreator.name || detailCreator.display_name}` : `Showing ${filteredCreators.length} of ${enrichedCreators.length} leads in Creator Forge CRM`}
             </span>
@@ -2124,7 +2121,7 @@ export default function CreatorFollowUpCRM({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-all cursor-pointer"
+              className="px-4 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-semibold border border-slate-200 shadow-2xs transition-all cursor-pointer"
             >
               Close Directory
             </button>
@@ -2141,9 +2138,11 @@ export default function CreatorFollowUpCRM({
     );
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in">
+  const modalWrapper = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
       {crmContent}
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(modalWrapper, document.body) : modalWrapper;
 }

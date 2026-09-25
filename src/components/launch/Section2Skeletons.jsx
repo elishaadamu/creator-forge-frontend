@@ -461,38 +461,38 @@ export function CRMSkeleton() {
   return (
     <div className="space-y-4 w-full animate-fade-in">
       {/* Search & Filter Bar Skeleton */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-[#0e1117] border border-white/[0.08]">
-        <Skeleton rounded="rounded-xl" className="w-full sm:w-64 h-9" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
+        <div className="w-full sm:w-64 h-9 rounded-xl bg-slate-100 animate-pulse" />
         <div className="flex items-center gap-2">
-          <Skeleton rounded="rounded-lg" className="w-20 h-8" />
-          <Skeleton rounded="rounded-lg" className="w-20 h-8" />
-          <Skeleton rounded="rounded-lg" className="w-24 h-8" variant="purple" />
+          <div className="w-20 h-8 rounded-lg bg-slate-100 animate-pulse" />
+          <div className="w-20 h-8 rounded-lg bg-slate-100 animate-pulse" />
+          <div className="w-24 h-8 rounded-lg bg-slate-900/10 animate-pulse" />
         </div>
       </div>
 
       {/* Directory Table Rows */}
-      <div className="rounded-2xl bg-[#0e1117] border border-white/[0.08] overflow-hidden divide-y divide-white/[0.04]">
+      <div className="rounded-2xl bg-white border border-slate-200/90 shadow-sm overflow-hidden divide-y divide-slate-100">
         {[1, 2, 3, 4, 5, 6].map(i => (
-          <div key={i} className="p-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <SkeletonCircle size={36} variant="purple" />
+          <div key={i} className="p-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-2xl bg-slate-100 animate-pulse shrink-0" />
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <Skeleton rounded="rounded-full" className="w-32 h-3.5" />
-                  <Skeleton rounded="rounded-full" className="w-16 h-3" />
+                  <div className="w-32 h-3.5 rounded-full bg-slate-200 animate-pulse" />
+                  <div className="w-16 h-3 rounded-full bg-slate-100 animate-pulse" />
                 </div>
-                <Skeleton rounded="rounded-full" className="w-48 h-2.5" />
+                <div className="w-48 h-2.5 rounded-full bg-slate-100 animate-pulse" />
               </div>
             </div>
 
             <div className="hidden sm:flex items-center gap-3">
-              <Skeleton variant="emerald" rounded="rounded-full" className="w-20 h-5" />
-              <Skeleton rounded="rounded-full" className="w-16 h-4" />
+              <div className="w-24 h-6 rounded-full bg-emerald-50 border border-emerald-100 animate-pulse" />
+              <div className="w-16 h-4 rounded-full bg-slate-100 animate-pulse" />
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <SkeletonButton width={70} height={28} variant="default" />
-              <SkeletonButton width={80} height={28} variant="purple" />
+              <div className="w-20 h-8 rounded-xl bg-slate-100 animate-pulse" />
+              <div className="w-24 h-8 rounded-xl bg-slate-900/10 animate-pulse" />
             </div>
           </div>
         ))}

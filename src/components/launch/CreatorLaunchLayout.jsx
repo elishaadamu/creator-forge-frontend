@@ -9,6 +9,7 @@ import CreatorFollowUpCRM from './CreatorFollowUpCRM'
 import { createCoLaunchProject, getCoLaunchProject, getCoLaunchProjects } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
 import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from '../../utils/expiringStorage'
+import FloatingPolygons, { HeroShallowPolygons } from '../ui/FloatingPolygons'
 
 export default function CreatorLaunchLayout({
   initialProject = null,
@@ -37,7 +38,7 @@ export default function CreatorLaunchLayout({
           window.location.replace(nextUrl.toString())
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }, [])
 
   const [activeSection, setActiveSection] = useState('section1')
@@ -296,7 +297,7 @@ export default function CreatorLaunchLayout({
         const passedConceptId = isObj ? (creatorOrId.selectedConceptId || creatorOrId.selected_concept_id || passedConcept?.id) : null
         const passedName = isObj ? (creatorOrId.productName || passedConcept?.name) : null
         const passedPricing = isObj ? (creatorOrId.pricing || passedConcept?.pricing) : null
-        
+
         if (passedName && (passedName !== matched.productName || (passedPricing && passedPricing !== matched.pricing))) {
           matched = {
             ...matched,
@@ -312,7 +313,7 @@ export default function CreatorLaunchLayout({
               productTagline: matched.productTagline,
               pricing: matched.pricing,
               selectedConcept: matched.selectedConcept
-            }).catch(() => {})
+            }).catch(() => { })
           })
         }
 
@@ -342,14 +343,14 @@ export default function CreatorLaunchLayout({
             (c.handle && c.handle.replace(/^@/, '').toLowerCase() === cleanTarget) ||
             (targetEmail && (c.email || c.email_public)?.toLowerCase() === targetEmail.toLowerCase())
           )
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // If still not found, try fetching individual creator by ID
       if (!creatorProfile && targetId && !targetId.startsWith('proj_')) {
         try {
           creatorProfile = await getCreator(targetId)
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // CRITICAL SAFEGUARD: If creator does NOT exist in database, NEVER fabricate a phantom project with raw UUID!
@@ -361,7 +362,7 @@ export default function CreatorLaunchLayout({
           url.searchParams.delete('creatorId')
           url.searchParams.delete('project')
           window.history.replaceState({}, '', url.toString())
-        } catch (e) {}
+        } catch (e) { }
         setIsSwitchingCreator(false)
         setSwitchingTarget(null)
         if (!activeProject) {
@@ -394,12 +395,12 @@ export default function CreatorLaunchLayout({
         creatorProfile?.selected_concept ||
         chosenConceptFromList ||
         allConcepts[0] || {
-          name: `${creatorName} Pro Hub`,
-          tagline: `All-in-one software platform built for ${creatorName}'s audience`,
-          pricing: '$29/mo Starter • $79/mo Pro',
-          revenueModel: 'Monthly SaaS Subscription',
-          presaleTarget: 12500,
-        }
+        name: `${creatorName} Pro Hub`,
+        tagline: `All-in-one software platform built for ${creatorName}'s audience`,
+        pricing: '$29/mo Starter • $79/mo Pro',
+        revenueModel: 'Monthly SaaS Subscription',
+        presaleTarget: 12500,
+      }
 
       const newProjPayload = {
         id: `proj_${Date.now()}`,
@@ -470,9 +471,9 @@ export default function CreatorLaunchLayout({
           map[finalProject.creatorHandle.replace(/^@/, '').toLowerCase()] = map[finalProject.creatorId]
         }
         setExpiringItem('forge_creator_stage_map', map, ONE_HOUR_MS)
-        updateWorkflowState({ creator_stage_map: map }).catch(() => {})
+        updateWorkflowState({ creator_stage_map: map }).catch(() => { })
         if (creatorProfile?.id) {
-          updateCreatorDetails(creatorProfile.id, { status: 'partnered' }).catch(() => {})
+          updateCreatorDetails(creatorProfile.id, { status: 'partnered' }).catch(() => { })
         }
         const nextUrl = new URL('/project-os', window.location.origin)
         nextUrl.searchParams.set('project', finalProject.id)
@@ -580,7 +581,7 @@ export default function CreatorLaunchLayout({
           // If the backend workflow state still references a phantom raw UUID, wipe it
           if (ws.selected_creator_id && isUuid(ws.selected_creator_id)) {
             import('../../services/opsApi').then(({ resetWorkflowState }) => {
-              resetWorkflowState().catch(() => {})
+              resetWorkflowState().catch(() => { })
             })
           }
         }
@@ -671,7 +672,7 @@ export default function CreatorLaunchLayout({
               }
               try {
                 setExpiringItem('forge_launch_active_project', merged, ONE_HOUR_MS)
-              } catch {}
+              } catch { }
               return merged
             })
           } else {
@@ -685,7 +686,7 @@ export default function CreatorLaunchLayout({
               // Self-heal: persist the active local project to the database in background
               if (current.creatorId || current.productName) {
                 import('../../services/opsApi').then(({ createCoLaunchProject }) => {
-                  createCoLaunchProject(current).catch(() => {})
+                  createCoLaunchProject(current).catch(() => { })
                 })
               }
             } else {
@@ -712,7 +713,7 @@ export default function CreatorLaunchLayout({
       if (!next) return next
       try {
         setExpiringItem('forge_launch_active_project', next, ONE_HOUR_MS)
-      } catch (e) {}
+      } catch (e) { }
 
       // Persist to backend database tables in SQLite / PostgreSQL
       if (next.id) {
@@ -787,7 +788,7 @@ export default function CreatorLaunchLayout({
       url.searchParams.set('project', cleanProject.id)
       if (cleanProject.creatorId) url.searchParams.set('creator', cleanProject.creatorId)
       window.history.replaceState({}, '', url.toString())
-    } catch (e) {}
+    } catch (e) { }
     setActiveSection('section2')
 
     // Persist to backend database tables in SQLite
@@ -803,7 +804,7 @@ export default function CreatorLaunchLayout({
           const merged = { ...(prev || {}), ...dbProj }
           try {
             setExpiringItem('forge_launch_active_project', merged, ONE_HOUR_MS)
-          } catch {}
+          } catch { }
           return merged
         })
         setAllProjects(prev => [dbProj, ...prev.filter(p => p.id !== dbProj.id)])
@@ -850,9 +851,9 @@ export default function CreatorLaunchLayout({
 
       const { deleteAllCreators, deleteCoLaunchProject } = await import('../../services/opsApi')
       if (activeProject?.id) {
-        await deleteCoLaunchProject(activeProject.id).catch(() => {})
+        await deleteCoLaunchProject(activeProject.id).catch(() => { })
       }
-      await deleteAllCreators().catch(() => {})
+      await deleteAllCreators().catch(() => { })
     } catch (e) {
       console.warn('Reset project and acquisition error:', e)
     }
@@ -908,7 +909,20 @@ export default function CreatorLaunchLayout({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col overflow-x-hidden w-full max-w-[100vw]">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col overflow-x-clip w-full max-w-[100vw] relative">
+      {/* Subtle Ambient Core & Linear Background Gradients */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-[15%] -left-[10%] w-[55vw] h-[55vw] rounded-full bg-gradient-to-br from-indigo-200/25 via-purple-100/20 to-transparent blur-3xl" />
+        <div className="absolute top-[25%] -right-[15%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-bl from-emerald-200/20 via-teal-100/15 to-transparent blur-3xl" />
+        <div className="absolute -bottom-[20%] left-[20%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tr from-amber-100/20 via-rose-100/15 to-transparent blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-transparent to-slate-100/40" />
+      </div>
+
+      {/* Shallow Asymmetrical Polygons (Strictly BEHIND the cards - z-0, pointer-events-none) */}
+      <div className="absolute top-14 inset-x-0 h-[920px] pointer-events-none overflow-hidden select-none z-0" aria-hidden="true">
+        <HeroShallowPolygons className="z-0" />
+      </div>
+
       {/* Top Navbar */}
       <header className="h-14 border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 relative shadow-2xs">
         {/* Workspace Switching Progress Bar */}
@@ -944,15 +958,14 @@ export default function CreatorLaunchLayout({
                   url.searchParams.set('section', 'section1')
                   window.history.replaceState({}, '', url.toString())
                   import('../../services/opsApi').then(({ updateWorkflowState }) => {
-                    updateWorkflowState({ active_section: 'section1' }).catch(() => {})
+                    updateWorkflowState({ active_section: 'section1' }).catch(() => { })
                   })
-                } catch {}
+                } catch { }
               }}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                activeSection === 'section1'
+              className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeSection === 'section1'
                   ? 'bg-white text-slate-950 border border-slate-200/80 shadow-xs'
                   : 'text-slate-600 hover:text-slate-950 border border-transparent'
-              }`}
+                }`}
             >
               <Target className={`w-3.5 h-3.5 ${activeSection === 'section1' ? 'text-emerald-600' : 'text-slate-400'}`} />
               <span>Section 1: Acquisition</span>
@@ -1016,11 +1029,10 @@ export default function CreatorLaunchLayout({
                               setAcquisitionNavState({ step: s.step, nonce: Date.now() })
                               setShowSection1Menu(false)
                             }}
-                            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer ${
-                              isCur
+                            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer ${isCur
                                 ? 'bg-slate-100 border border-slate-300 text-slate-950 shadow-2xs font-semibold'
                                 : 'hover:bg-slate-50 text-slate-700 hover:text-slate-950 border border-transparent'
-                            }`}
+                              }`}
                           >
                             <div className={`w-7 h-7 rounded-lg ${isCur ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'} shrink-0 flex items-center justify-center`}>
                               <Icon className="w-3.5 h-3.5" />
@@ -1124,43 +1136,42 @@ export default function CreatorLaunchLayout({
                         return uniqueProjects.map((p) => {
                           const isCur = p.id === activeProject?.id;
                           const isThisSwitching = isSwitchingCreator && (switchingTarget?.id === p.id || switchingTarget?.id === p.creatorId);
-                        return (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => {
-                              handleSwitchToCreatorProject(p);
-                              setShowPartnerMenu(false);
-                            }}
-                            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer ${
-                              isCur
-                                ? 'bg-slate-100 border border-slate-300 text-slate-950 font-semibold'
-                                : 'hover:bg-slate-50 text-slate-700 hover:text-slate-950 border border-transparent'
-                            }`}
-                          >
-                            <div className="w-7 h-7 rounded-lg overflow-hidden bg-slate-100 shrink-0 flex items-center justify-center text-xs font-bold text-slate-700">
-                              {p.creatorAvatar ? (
-                                <img src={p.creatorAvatar} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                (p.creatorName || p.creatorHandle || 'P').charAt(0).toUpperCase()
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-xs font-bold truncate text-slate-900">
-                                {p.creatorName || p.creatorHandle}
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => {
+                                handleSwitchToCreatorProject(p);
+                                setShowPartnerMenu(false);
+                              }}
+                              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer ${isCur
+                                  ? 'bg-slate-100 border border-slate-300 text-slate-950 font-semibold'
+                                  : 'hover:bg-slate-50 text-slate-700 hover:text-slate-950 border border-transparent'
+                                }`}
+                            >
+                              <div className="w-7 h-7 rounded-lg overflow-hidden bg-slate-100 shrink-0 flex items-center justify-center text-xs font-bold text-slate-700">
+                                {p.creatorAvatar ? (
+                                  <img src={p.creatorAvatar} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  (p.creatorName || p.creatorHandle || 'P').charAt(0).toUpperCase()
+                                )}
                               </div>
-                              <div className="text-[10px] text-slate-500 truncate">
-                                {p.productName} • <span className="text-emerald-700 font-mono">Phase {p.currentPhase || 1}</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs font-bold truncate text-slate-900">
+                                  {p.creatorName || p.creatorHandle}
+                                </div>
+                                <div className="text-[10px] text-slate-500 truncate">
+                                  {p.productName} • <span className="text-emerald-700 font-mono">Phase {p.currentPhase || 1}</span>
+                                </div>
                               </div>
-                            </div>
-                            {isThisSwitching ? (
-                              <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin shrink-0" />
-                            ) : isCur ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            ) : null}
-                          </button>
-                        );
-                      })
+                              {isThisSwitching ? (
+                                <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin shrink-0" />
+                              ) : isCur ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              ) : null}
+                            </button>
+                          );
+                        })
                       })()}
                     </div>
                     <div className="pt-1 border-t border-slate-100">
@@ -1273,11 +1284,10 @@ export default function CreatorLaunchLayout({
                     setActiveSection('section1')
                     setMobileDrawerOpen(false)
                   }}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                    activeSection === 'section1'
+                  className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${activeSection === 'section1'
                       ? 'bg-slate-900 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-600 border border-slate-200'
-                  }`}
+                    }`}
                 >
                   <Target className="w-3.5 h-3.5" />
                   <span>Section 1: Acquisition</span>
@@ -1388,15 +1398,13 @@ export default function CreatorLaunchLayout({
                         setAcquisitionNavState({ step: s.step, nonce: Date.now() })
                         setShowSection1Sidebar(false)
                       }}
-                      className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer ${
-                        isCur
+                      className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer ${isCur
                           ? 'bg-slate-100 text-slate-950 shadow-xs border border-slate-300 font-semibold'
                           : 'bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-950 border border-slate-100'
-                      }`}
+                        }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center mt-0.5 ${
-                        isCur ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
-                      }`}>
+                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center mt-0.5 ${isCur ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
+                        }`}>
                         <Icon className="w-4 h-4" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -1434,14 +1442,13 @@ export default function CreatorLaunchLayout({
       )}
 
       {/* Main Content View */}
-      <main className="flex-1 w-full max-w-[1720px] mx-auto px-2.5 sm:px-5 py-4 space-y-5 overflow-x-hidden min-w-0">
+      <main className="flex-1 w-full max-w-[1720px] mx-auto px-2.5 sm:px-5 py-4 space-y-5 overflow-x-clip min-w-0 relative z-10">
         {/* Mobile Section Switcher */}
         <div className="flex md:hidden items-center p-1 rounded-xl bg-slate-100 border border-slate-200 gap-1 overflow-x-auto">
           <button
             onClick={() => setActiveSection('section1')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
-              activeSection === 'section1' ? 'bg-white text-slate-950 border border-slate-200/80 shadow-xs' : 'text-slate-600'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap ${activeSection === 'section1' ? 'bg-white text-slate-950 border border-slate-200/80 shadow-xs' : 'text-slate-600'
+              }`}
           >
             <Target className="w-3.5 h-3.5 text-emerald-600" />
             <span>Section 1: Acquisition</span>
@@ -1474,7 +1481,7 @@ export default function CreatorLaunchLayout({
                 removeExpiringItem('forge_launch_active_project')
                 localStorage.removeItem('forge_launch_active_section')
                 window.history.replaceState({}, '', '/launch')
-              } catch (e) {}
+              } catch (e) { }
             }}
             initialActiveStep={acquisitionNavState?.step}
             initialSelectedCreatorId={acquisitionNavState?.creatorId}
@@ -1484,19 +1491,19 @@ export default function CreatorLaunchLayout({
         ) : isSwitchingCreator ? (
           <div className="space-y-6 w-full max-w-full animate-fade-in">
             {/* Minimalist Linear-style workspace switching indicator */}
-            <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#101419] border border-[#252B32] text-xs shadow-sm">
+            <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xs shadow-2xs">
               <div className="flex items-center gap-2.5">
-                <Loader2 className="w-3.5 h-3.5 text-[#78E08F] animate-spin flex-shrink-0" />
-                <span className="text-[#969DA6]">
-                  Switching workspace to <span className="text-[#F5F3EA] font-semibold">{switchingTarget?.name || 'Partner'}</span>
+                <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin flex-shrink-0" />
+                <span className="text-slate-600">
+                  Switching workspace to <span className="text-slate-900 font-semibold">{switchingTarget?.name || 'Partner'}</span>
                 </span>
-                <span className="text-[#686F78]">•</span>
-                <span className="text-[#969DA6] font-mono text-[11px] truncate max-w-[240px]">
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-500 font-mono text-[11px] truncate max-w-[240px]">
                   {switchingTarget?.productName || 'Project OS'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-[11px] font-mono text-[#686F78]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#78E08F] animate-pulse" />
+              <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>Syncing Workspace</span>
               </div>
             </div>
@@ -1514,13 +1521,13 @@ export default function CreatorLaunchLayout({
             onResetProject={handleResetProject}
           />
         ) : (
-          <div className="p-10 rounded-2xl bg-[#101419] border border-[#252B32] text-center space-y-5 max-w-lg mx-auto my-12 shadow-xl">
-            <div className="w-12 h-12 rounded-2xl bg-[#171C22] border border-[#252B32] flex items-center justify-center mx-auto text-[#C8FF3D]">
-              <Layers className="w-6 h-6" />
+          <div className="p-10 rounded-2xl bg-white border border-slate-200/90 text-center space-y-5 max-w-lg mx-auto my-12 shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-900">
+              <Layers className="w-6 h-6 text-emerald-600" />
             </div>
             <div className="space-y-1.5">
-              <h2 className="text-base font-bold text-[#F5F3EA] font-display">No Active Co-Launch Project</h2>
-              <p className="text-xs text-[#969DA6] leading-relaxed max-w-md mx-auto">
+              <h2 className="text-base font-bold text-slate-900 font-display">No Active Co-Launch Project</h2>
+              <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
                 You haven't partnered with a creator yet. Qualify and pitch a lead in Section 1 to launch a live project, or initialize a demo venture below.
               </p>
             </div>
@@ -1528,16 +1535,20 @@ export default function CreatorLaunchLayout({
               <button
                 type="button"
                 onClick={() => setActiveSection('section1')}
-                className="px-4 py-2 rounded-xl bg-[#171C22] hover:bg-[#252B32] text-[#F5F3EA] font-semibold text-xs border border-[#252B32] transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 transition-colors cursor-pointer shadow-2xs"
               >
                 Go to Section 1: Acquisition
               </button>
               <button
                 type="button"
                 onClick={handleCreateDemoProject}
-                className="px-5 py-2.5 rounded-xl bg-[#C8FF3D] hover:bg-[#b8ef2d] text-[#080A0C] font-bold text-xs transition-all cursor-pointer shadow-[0_0_20px_rgba(200,255,61,0.2)] active:scale-95 flex items-center gap-1.5"
+                className="relative inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
               >
-                <Rocket className="w-3.5 h-3.5" />
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <Rocket className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Initialize Demo Venture</span>
               </button>
             </div>
@@ -1546,7 +1557,7 @@ export default function CreatorLaunchLayout({
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#252B32] py-4 text-center text-xs text-[#686F78] bg-[#0D1014]">
+      <footer className="border-t border-slate-200/80 py-4 text-center text-xs text-slate-500 bg-white">
         <p>Creator Forge Launch Engine OS &copy; {new Date().getFullYear()}</p>
       </footer>
 
@@ -1588,7 +1599,7 @@ export default function CreatorLaunchLayout({
               url.searchParams.set('step', String(stepNum))
               if (cid) url.searchParams.set('creator', cid)
               window.history.replaceState({}, '', url.toString())
-            } catch (e) {}
+            } catch (e) { }
           }
         }}
         onDeleteCreator={() => {

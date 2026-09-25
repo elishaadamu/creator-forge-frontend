@@ -49,11 +49,26 @@ import {
   UserCheck,
   Lock,
   Unlock,
+  SlidersHorizontal,
+  Laptop,
+  Code,
+  Cloud,
+  DollarSign,
+  Video,
+  Gamepad2,
+  Heart,
+  ShoppingBag,
+  BarChart3,
+  Box,
+  Palette,
+  GraduationCap,
+  Megaphone,
 } from "lucide-react";
 import { deleteAllCreators } from "../../services/opsApi";
 import { buildSmartFallbackPlan } from "../../services/ai";
 import AdminPipelineLookup from "./AdminPipelineLookup";
 import CreatorFollowUpCRM from "./CreatorFollowUpCRM";
+import FloatingPolygons, { HeroShallowPolygons } from "../ui/FloatingPolygons";
 import ActionNotificationToast from "../ui/ActionNotificationToast";
 import ConfirmationModal from "../ui/ConfirmationModal";
 import FormattedMarkdownBody from "./FormattedMarkdownBody";
@@ -114,13 +129,137 @@ export function getDeletedCreatorIds() {
       // Auto-heal localStorage to plain JSON array so all callers remain safe
       try {
         window.localStorage.setItem("forge_deleted_creator_ids", JSON.stringify(list));
-      } catch (e) {}
+      } catch (e) { }
     }
     return Array.isArray(list) ? list : [];
   } catch {
     return [];
   }
 }
+
+const VENTURE_ARTIFACTS = {
+  agreement: {
+    id: "CF-5050",
+    title: "50/50 Co-Founder Venture Agreement",
+    shortTitle: "CF-5050 Agreement",
+    subtitle: "Standard Mutual Operating Covenant & Revenue Split Agreement",
+    badge: "Verified Legal Spec",
+    badgeClass: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    summary: "The legally binding operating partnership agreement guaranteeing zero upfront capital expenditure from the creator and an automated 50/50 net platform revenue split via Stripe Connect.",
+    stats: [
+      { label: "Revenue Split", val: "50% / 50%" },
+      { label: "Upfront Cost", val: "$0.00" },
+      { label: "MVP SLA", val: "7 Days" },
+      { label: "Audience IP", val: "100% Creator" },
+    ],
+    clauses: [
+      {
+        num: "01",
+        title: "50/50 Net Revenue Automation",
+        body: "All platform customer subscriptions and one-time payments processed through Stripe are subject to an automated daily 50/50 payout split between Creator and Operator Studio. Payouts execute directly to connected creator bank accounts without intermediary withholding or manual invoices."
+      },
+      {
+        num: "02",
+        title: "$0 Upfront Development CapEx",
+        body: "Creator incurs strictly $0 in upfront engineering, hosting, or tool development costs. Operator Studio commits 100% full-stack product engineering, cloud infrastructure provisioning, and production maintenance as sweat equity."
+      },
+      {
+        num: "03",
+        title: "7-Day MVP Turnaround & Pre-Order SLA",
+        body: "Studio guarantees a production-ready MVP with integrated authentication, database, payment processing, and pre-order waitlist within 7 calendar days of niche selection and concept alignment."
+      },
+      {
+        num: "04",
+        title: "IP & Audience Sovereignty",
+        body: "Creator retains 100% complete ownership of their personal brand, channel trademarks, content catalog, and direct relationship with audience subscribers. The joint venture owns the software source code and platform revenue stream."
+      },
+      {
+        num: "05",
+        title: "Non-Exclusive Safe Harbor",
+        body: "This agreement does not restrict Creator's ongoing sponsorships, merchandise, or traditional content deals. Creator retains full discretion over promotion cadence and software feature roadmaps."
+      }
+    ]
+  },
+  architecture: {
+    id: "ARCH-PROD-24",
+    title: "Production Software Architecture Blueprint",
+    shortTitle: "Tech Architecture",
+    subtitle: "Zero-DevOps Full-Stack Cloud & Intelligence Infrastructure",
+    badge: "Infrastructure Pre-Wired",
+    badgeClass: "bg-blue-50 text-blue-800 border-blue-200",
+    summary: "Complete technical architecture pre-configured for every co-launched venture. Engineered for instantaneous deployment with zero server maintenance overhead.",
+    stats: [
+      { label: "Frontend", val: "Next.js 14 App" },
+      { label: "Backend Core", val: "FastAPI Async" },
+      { label: "Database", val: "Postgres 16" },
+      { label: "Payments", val: "Stripe Connect" },
+    ],
+    specs: [
+      {
+        tier: "Frontend Experience Layer",
+        tech: "Next.js 14 App Router · React 18 · Tailwind CSS · Lucide",
+        details: "Server-side rendering, sub-100ms first contentful paint, mobile-first responsive layout, and integrated creator brand theming engine."
+      },
+      {
+        tier: "Microservice Core & API",
+        tech: "Python 3.11 FastAPI · Asyncpg · Pydantic v2",
+        details: "High-throughput asynchronous REST API endpoints, automated OpenAPI documentation, rate limiting, and sub-50ms query latency."
+      },
+      {
+        tier: "Database & Real-time Queue",
+        tech: "PostgreSQL 16 Relational Engine · Redis 7 Cluster",
+        details: "ACID-compliant customer data isolation, automated point-in-time daily backups, and BullMQ background task processing for outreach automation."
+      },
+      {
+        tier: "AI Intelligence & LLM Synthesis",
+        tech: "Anthropic Claude 3.5 Sonnet · OpenAI GPT-4o",
+        details: "Dynamic prompt chaining for audience comment mining, problem extraction, personalized email generation, and instant MVP feature synthesis."
+      },
+      {
+        tier: "Payments & Automated Splits",
+        tech: "Stripe Connect Express · Webhook Engine",
+        details: "Instantaneous onboarding for creators, automated sales tax calculation, fraud protection, and instant 50/50 revenue routing."
+      }
+    ]
+  },
+  signals: {
+    id: "SIG-WTP-01",
+    title: "Audience Demand Synthesis & WTP Model",
+    shortTitle: "Demand Signals",
+    subtitle: "Algorithmic Monetization Signal Extraction Rules",
+    badge: "Signal Parser Active",
+    badgeClass: "bg-amber-50 text-amber-800 border-amber-200",
+    summary: "The empirical rule engine that analyzes creator comment sections, community Discord/Reddit threads, and engagement ratios to identify recurring software-solvable pain points.",
+    stats: [
+      { label: "WTP Threshold", val: "≥ 8.8 / 10" },
+      { label: "Cluster Rule", val: "5+ Mentions" },
+      { label: "Blueprints", val: "3 Micro-SaaS" },
+      { label: "Target MRR", val: "$15K–$45K" },
+    ],
+    metrics: [
+      {
+        label: "Willingness-to-Pay (WTP) Score",
+        value: "8.8 / 10 Threshold",
+        desc: "Requires empirical evidence of audience expressing intent to purchase a tool, software, or workflow replacement rather than generic entertainment."
+      },
+      {
+        label: "Problem Clustering Engine",
+        value: "5+ Recurring Mentions",
+        desc: "Aggregates video comments into semantic vectors to isolate highest-friction friction points among active subscribers."
+      },
+      {
+        label: "Micro-SaaS Concept Generator",
+        value: "3 Tailored Blueprints",
+        desc: "Synthesizes three tailored software concepts per creator: Productivity Utility, AI Content Assistant, or Workflow Automation OS."
+      },
+      {
+        label: "Audience Conversion Forecast",
+        value: "2.5% – 5.2% Estimate",
+        desc: "Forecasts conservative MRR potential based on verified channel subscriber volume, engagement rates, and average subscription tier ($19–$49/mo)."
+      }
+    ]
+  }
+};
 
 export default function AcquisitionEngine({
   initialCreators = [],
@@ -151,7 +290,7 @@ export default function AcquisitionEngine({
         if (Array.isArray(projs) && projs.length > 0) {
           setDbProjects(projs);
         }
-      }).catch(() => {});
+      }).catch(() => { });
     });
   }, []);
 
@@ -186,7 +325,7 @@ export default function AcquisitionEngine({
     setPipelineMode(mode);
     try {
       localStorage.setItem("forge_pipeline_mode", mode);
-    } catch (e) {}
+    } catch (e) { }
     if (mode === "human") {
       setTimerPaused(true);
       setCampaignRunning(false);
@@ -241,7 +380,7 @@ export default function AcquisitionEngine({
                 });
               }
             }
-          }).catch(() => {});
+          }).catch(() => { });
         });
         return prev;
       });
@@ -257,6 +396,8 @@ export default function AcquisitionEngine({
     "Productivity",
   ]);
   const [customNicheInput, setCustomNicheInput] = useState("");
+  const [activeNicheCategory, setActiveNicheCategory] = useState("all");
+  const [nicheSearchQuery, setNicheSearchQuery] = useState("");
   const [minFollowers, setMinFollowers] = useState(100000);
   const [maxFollowers, setMaxFollowers] = useState(1000000);
   const [minEngagement, setMinEngagement] = useState(2.0);
@@ -280,6 +421,9 @@ export default function AcquisitionEngine({
     "tiktok",
     "instagram",
   ]);
+  const [step2PlatformFilter, setStep2PlatformFilter] = useState("ALL");
+  const [step2EmailOnly, setStep2EmailOnly] = useState(false);
+  const [step2SearchQuery, setStep2SearchQuery] = useState("");
   const [templateSubject, setTemplateSubject] = useState(
     "Quick idea for {{display_name}}",
   );
@@ -315,7 +459,7 @@ export default function AcquisitionEngine({
         if (saved && Array.isArray(saved) && saved.length > 0) {
           list = saved;
         }
-      } catch {}
+      } catch { }
     }
 
     if (deletedSet.size > 0) {
@@ -395,7 +539,7 @@ export default function AcquisitionEngine({
     try {
       setExpiringItem("forge_launch_acquisition_step", String(activeStep), ONE_HOUR_MS);
       import("../../services/opsApi").then(({ updateWorkflowState }) => {
-        updateWorkflowState({ active_step: activeStep, selected_creator_id: selectedCreatorId }).catch(() => {});
+        updateWorkflowState({ active_step: activeStep, selected_creator_id: selectedCreatorId }).catch(() => { });
       });
     } catch (error) {
       console.warn(
@@ -411,15 +555,15 @@ export default function AcquisitionEngine({
       if (discoveryAbortRef.current) {
         try {
           discoveryAbortRef.current.abort();
-        } catch (e) {}
+        } catch (e) { }
         discoveryAbortRef.current = null;
       }
       setDiscovering(false);
       try {
         import("../../services/opsApi").then(({ stopAutonomousDiscovery }) => {
-          stopAutonomousDiscovery().catch(() => {});
+          stopAutonomousDiscovery().catch(() => { });
         });
-      } catch (e) {}
+      } catch (e) { }
     }
   }, [activeStep, discovering]);
 
@@ -436,7 +580,7 @@ export default function AcquisitionEngine({
         if (creatorParam) {
           setSelectedCreatorId(creatorParam);
         }
-      } catch (e) {}
+      } catch (e) { }
     };
 
     handleUrlSync();
@@ -507,7 +651,7 @@ export default function AcquisitionEngine({
           if (Array.isArray(updated)) {
             setCreators(updated);
           }
-        } catch (err) {}
+        } catch (err) { }
       }
       if (e.key === "forge_last_deleted_timestamp") {
         try {
@@ -525,7 +669,7 @@ export default function AcquisitionEngine({
               })
             );
           }
-        } catch (err) {}
+        } catch (err) { }
       }
     };
 
@@ -541,6 +685,8 @@ export default function AcquisitionEngine({
   const [toasts, setToasts] = useState([]);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [activeArtifactTab, setActiveArtifactTab] = useState(null);
+  const [artifactCopied, setArtifactCopied] = useState(false);
 
   const notify = useCallback((type, title, message, duration = 3500) => {
     const id = "toast_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5);
@@ -601,10 +747,10 @@ export default function AcquisitionEngine({
       try {
         await deleteAllCreators();
         const { resetWorkflowState } = await import("../../services/opsApi");
-        await resetWorkflowState().catch(() => {});
+        await resetWorkflowState().catch(() => { });
         try {
           window.history.replaceState({}, "", "/launch");
-        } catch (e) {}
+        } catch (e) { }
       } catch (err) {
         console.warn("Backend delete all creators failed or offline:", err);
       }
@@ -669,7 +815,7 @@ export default function AcquisitionEngine({
       });
       try {
         setExpiringItem("forge_launch_discovered_creators", updated, ONE_HOUR_MS);
-      } catch (err) {}
+      } catch (err) { }
       return updated;
     });
 
@@ -854,7 +1000,7 @@ export default function AcquisitionEngine({
             return c;
           }),
         );
-        saveEditEmail(creator.id, { preventDefault: () => {} }, res.email);
+        saveEditEmail(creator.id, { preventDefault: () => { } }, res.email);
         setApifyStatusMsg((prev) => ({
           ...prev,
           [creator.id]: `Verified Email: ${res.email}`,
@@ -882,24 +1028,35 @@ export default function AcquisitionEngine({
   };
 
   // Comprehensive curated list of popular creator niches
-  const popularNiches = [
-    "Tech",
-    "Software",
-    "SaaS",
-    "Fintech",
-    "Productivity",
-    "AI Tools",
-    "Creator Economy",
-    "Gaming",
-    "Fitness & Health",
-    "E-Commerce",
-    "Finance",
-    "Crypto & Web3",
-    "Design & Creative",
-    "Education",
-    "Beauty & Lifestyle",
-    "Marketing",
+  const ALL_AVAILABLE_NICHES = [
+    { id: "tech", label: "Tech", category: "tech", count: "14.2k", icon: Laptop },
+    { id: "software", label: "Software", category: "tech", count: "9.8k", icon: Code },
+    { id: "saas", label: "SaaS", category: "tech", count: "6.4k", icon: Cloud },
+    { id: "fintech", label: "Fintech", category: "business", count: "5.1k", icon: DollarSign },
+    { id: "productivity", label: "Productivity", category: "business", count: "11.3k", icon: Zap },
+    { id: "ai-tools", label: "AI Tools", category: "tech", count: "8.7k", icon: Lightbulb },
+    { id: "creator-economy", label: "Creator Economy", category: "creative", count: "7.5k", icon: Video },
+    { id: "gaming", label: "Gaming", category: "creative", count: "22.1k", icon: Gamepad2 },
+    { id: "fitness-health", label: "Fitness & Health", category: "lifestyle", count: "13.9k", icon: Heart },
+    { id: "e-commerce", label: "E-Commerce", category: "business", count: "8.2k", icon: ShoppingBag },
+    { id: "finance", label: "Finance", category: "business", count: "6.9k", icon: BarChart3 },
+    { id: "crypto-web3", label: "Crypto & Web3", category: "business", count: "4.8k", icon: Box },
+    { id: "design-creative", label: "Design & Creative", category: "creative", count: "9.1k", icon: Palette },
+    { id: "education", label: "Education", category: "lifestyle", count: "10.5k", icon: GraduationCap },
+    { id: "beauty-lifestyle", label: "Beauty & Lifestyle", category: "lifestyle", count: "16.7k", icon: Sparkles },
+    { id: "marketing", label: "Marketing", category: "business", count: "8.4k", icon: Megaphone },
   ];
+
+  const popularNiches = ALL_AVAILABLE_NICHES.map((n) => n.label);
+
+  const filteredAvailableNiches = ALL_AVAILABLE_NICHES.filter((item) => {
+    const matchesCategory =
+      activeNicheCategory === "all" || item.category === activeNicheCategory;
+    const matchesSearch =
+      !nicheSearchQuery ||
+      item.label.toLowerCase().includes(nicheSearchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   // Merge popular niches with any active/custom niches so every niche is in the list with equal width
   const allNicheOptions = Array.from(
@@ -942,7 +1099,7 @@ export default function AcquisitionEngine({
     const fetchGlobalState = async () => {
       try {
         const { getCreators, getWorkflowState, getThreads } = await import("../../services/opsApi");
-        
+
         // 1. Sync global workflow state (step, pitch map, choices) across devices
         const ws = await getWorkflowState().catch(() => null);
         if (isMounted && ws) {
@@ -975,7 +1132,7 @@ export default function AcquisitionEngine({
           if (ths.length === 0) {
             try {
               localStorage.removeItem("forge_launch_real_threads");
-            } catch (e) {}
+            } catch (e) { }
           }
         }
 
@@ -994,157 +1151,157 @@ export default function AcquisitionEngine({
             try {
               localStorage.removeItem("forge_launch_discovered_creators");
               localStorage.removeItem("forge_launch_ai_choice_map");
-            } catch (e) {}
+            } catch (e) { }
           } else if (rawList.length > 0) {
             setCreators((prev) => {
-            const formattedDbCreators = rawList
-              .filter((dbItem) => {
-                const cleanHandle = (dbItem.handle || "").toLowerCase().replace(/^@/, "");
-                return (
-                  !deletedSet.has(String(dbItem.id)) &&
-                  !deletedSet.has(cleanHandle) &&
-                  !deletedSet.has(String(dbItem.handle))
-                );
-              })
-              .map((dbItem) => {
-                const dbStatus = dbItem.status || "discovered";
-                return {
-                  id: dbItem.id,
-                  name: dbItem.display_name || dbItem.name || dbItem.handle,
-                  display_name: dbItem.display_name || dbItem.name || dbItem.handle,
-                  handle: dbItem.handle,
-                  platform: dbItem.platform || "youtube",
-                  followers: dbItem.follower_count || 100000,
-                  follower_count: dbItem.follower_count || 100000,
-                  avatar: dbItem.avatar_url || "",
-                  bio: dbItem.bio || "",
-                  email: dbItem.email_public || dbItem.email || ((dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)?.[0] || ""),
-                  email_public: dbItem.email_public || dbItem.email || ((dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)?.[0] || ""),
-                  email_verified: Boolean(dbItem.email_verified || dbItem.email_public || (dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)),
-                  status: dbStatus,
-                  isApproved: dbStatus === "approved",
-                  isRejected: dbStatus === "rejected",
-                  replyClassification: (() => {
-                    const raw = dbItem.reply_text;
-                    const isCorrupt = raw && (raw.startsWith("Creator responded") || raw.includes("qualified for partnership pitch") || raw === "Yes, I would be interested.");
-                    if (dbItem.reply_classification === "interested" && (isCorrupt || !raw)) {
-                      return dbStatus === "approved" ? "qualified" : "awaiting_reply";
-                    }
-                    return dbItem.reply_classification;
-                  })(),
-                  reply_classification: (() => {
-                    const raw = dbItem.reply_text;
-                    const isCorrupt = raw && (raw.startsWith("Creator responded") || raw.includes("qualified for partnership pitch") || raw === "Yes, I would be interested.");
-                    if (dbItem.reply_classification === "interested" && (isCorrupt || !raw)) {
-                      return dbStatus === "approved" ? "qualified" : "awaiting_reply";
-                    }
-                    return dbItem.reply_classification;
-                  })(),
-                  replyText: (() => {
-                    const raw = dbItem.reply_text;
-                    const isCorrupt = raw && (raw.startsWith("Creator responded") || raw.includes("qualified for partnership pitch") || raw === "Yes, I would be interested.");
-                    return isCorrupt ? null : raw;
-                  })(),
-                  creatorScore: (() => {
-                    if (dbItem.score) return Math.min(99, Math.max(50, Number(dbItem.score)));
-                    if (dbItem.creatorScore) return Math.min(99, Math.max(50, Number(dbItem.creatorScore)));
-                    if (dbItem.engagement_score) {
-                      // engagement_score is stored as an engagement rate % (e.g., 7.2, 5.2, 3.9)
-                      const engRate = Number(dbItem.engagement_score);
-                      const engPts = Math.min(22, Math.max(5, Math.round(engRate * 3.0)));
-                      const emailPts = (dbItem.email_public || dbItem.email) ? 8 : 0;
-                      return Math.min(98, Math.max(60, 68 + engPts + emailPts));
-                    }
-                    return 85;
-                  })(),
-                };
-              });
-
-            const currentBatchLimit = (() => {
-              try {
-                const saved = localStorage.getItem("forge_launch_creators_batch_count");
-                if (saved && Number(saved) !== 3) {
-                  return Math.max(1, Number(saved));
-                }
-                return creatorsBatchCount || 25;
-              } catch {
-                return creatorsBatchCount || 25;
-              }
-            })();
-
-            if (!prev || prev.length === 0) {
-              return formattedDbCreators.slice(0, currentBatchLimit);
-            }
-
-            const merged = [];
-            const seenKeys = new Set();
-
-            formattedDbCreators.forEach((dbC) => {
-              const cleanHandle = (dbC.handle || "").toLowerCase().replace(/^@/, "");
-              const cleanEmail = (dbC.email || dbC.email_public || "").toLowerCase().trim();
-              const existing = prev.find((p) => {
-                const pHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
-                const pEmail = (p.email || p.email_public || "").toLowerCase().trim();
-                return (
-                  p.id === dbC.id ||
-                  (pHandle && cleanHandle && pHandle === cleanHandle) ||
-                  (pEmail && cleanEmail && pEmail === cleanEmail)
-                );
-              });
-
-              if (existing) {
-                // User manual email edits take priority over un-refreshed DB polling values
-                const userEmail = (existing.email || existing.email_public || "").trim();
-                const dbEmail = (dbC.email || dbC.email_public || "").trim();
-                const resolvedEmail = userEmail || dbEmail;
-                merged.push({
-                  ...existing,
-                  ...dbC,
-                  email: resolvedEmail,
-                  email_public: resolvedEmail,
-                  email_verified: Boolean(resolvedEmail && resolvedEmail.includes("@")),
+              const formattedDbCreators = rawList
+                .filter((dbItem) => {
+                  const cleanHandle = (dbItem.handle || "").toLowerCase().replace(/^@/, "");
+                  return (
+                    !deletedSet.has(String(dbItem.id)) &&
+                    !deletedSet.has(cleanHandle) &&
+                    !deletedSet.has(String(dbItem.handle))
+                  );
+                })
+                .map((dbItem) => {
+                  const dbStatus = dbItem.status || "discovered";
+                  return {
+                    id: dbItem.id,
+                    name: dbItem.display_name || dbItem.name || dbItem.handle,
+                    display_name: dbItem.display_name || dbItem.name || dbItem.handle,
+                    handle: dbItem.handle,
+                    platform: dbItem.platform || "youtube",
+                    followers: dbItem.follower_count || 100000,
+                    follower_count: dbItem.follower_count || 100000,
+                    avatar: dbItem.avatar_url || "",
+                    bio: dbItem.bio || "",
+                    email: dbItem.email_public || dbItem.email || ((dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)?.[0] || ""),
+                    email_public: dbItem.email_public || dbItem.email || ((dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)?.[0] || ""),
+                    email_verified: Boolean(dbItem.email_verified || dbItem.email_public || (dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)),
+                    status: dbStatus,
+                    isApproved: dbStatus === "approved",
+                    isRejected: dbStatus === "rejected",
+                    replyClassification: (() => {
+                      const raw = dbItem.reply_text;
+                      const isCorrupt = raw && (raw.startsWith("Creator responded") || raw.includes("qualified for partnership pitch") || raw === "Yes, I would be interested.");
+                      if (dbItem.reply_classification === "interested" && (isCorrupt || !raw)) {
+                        return dbStatus === "approved" ? "qualified" : "awaiting_reply";
+                      }
+                      return dbItem.reply_classification;
+                    })(),
+                    reply_classification: (() => {
+                      const raw = dbItem.reply_text;
+                      const isCorrupt = raw && (raw.startsWith("Creator responded") || raw.includes("qualified for partnership pitch") || raw === "Yes, I would be interested.");
+                      if (dbItem.reply_classification === "interested" && (isCorrupt || !raw)) {
+                        return dbStatus === "approved" ? "qualified" : "awaiting_reply";
+                      }
+                      return dbItem.reply_classification;
+                    })(),
+                    replyText: (() => {
+                      const raw = dbItem.reply_text;
+                      const isCorrupt = raw && (raw.startsWith("Creator responded") || raw.includes("qualified for partnership pitch") || raw === "Yes, I would be interested.");
+                      return isCorrupt ? null : raw;
+                    })(),
+                    creatorScore: (() => {
+                      if (dbItem.score) return Math.min(99, Math.max(50, Number(dbItem.score)));
+                      if (dbItem.creatorScore) return Math.min(99, Math.max(50, Number(dbItem.creatorScore)));
+                      if (dbItem.engagement_score) {
+                        // engagement_score is stored as an engagement rate % (e.g., 7.2, 5.2, 3.9)
+                        const engRate = Number(dbItem.engagement_score);
+                        const engPts = Math.min(22, Math.max(5, Math.round(engRate * 3.0)));
+                        const emailPts = (dbItem.email_public || dbItem.email) ? 8 : 0;
+                        return Math.min(98, Math.max(60, 68 + engPts + emailPts));
+                      }
+                      return 85;
+                    })(),
+                  };
                 });
-              } else {
-                merged.push(dbC);
-              }
-              seenKeys.add(dbC.id);
-              if (cleanHandle) seenKeys.add(cleanHandle);
-              if (cleanEmail) seenKeys.add(cleanEmail);
-            });
 
-            prev.forEach((p) => {
-              const cleanHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
-              const cleanEmail = (p.email || p.email_public || "").toLowerCase().trim();
-              const isDeleted =
-                deletedSet.has(String(p.id)) ||
-                deletedSet.has(cleanHandle) ||
-                deletedSet.has(String(p.handle)) ||
-                (cleanEmail && deletedSet.has(cleanEmail));
-
-              if (!isDeleted && !seenKeys.has(p.id) && (!cleanHandle || !seenKeys.has(cleanHandle))) {
-                const isDbUuid = p.id && /^[0-9a-f-]{36}$/i.test(p.id);
-                if (!isDbUuid) {
-                  merged.push(p);
+              const currentBatchLimit = (() => {
+                try {
+                  const saved = localStorage.getItem("forge_launch_creators_batch_count");
+                  if (saved && Number(saved) !== 3) {
+                    return Math.max(1, Number(saved));
+                  }
+                  return creatorsBatchCount || 25;
+                } catch {
+                  return creatorsBatchCount || 25;
                 }
+              })();
+
+              if (!prev || prev.length === 0) {
+                return formattedDbCreators.slice(0, currentBatchLimit);
               }
+
+              const merged = [];
+              const seenKeys = new Set();
+
+              formattedDbCreators.forEach((dbC) => {
+                const cleanHandle = (dbC.handle || "").toLowerCase().replace(/^@/, "");
+                const cleanEmail = (dbC.email || dbC.email_public || "").toLowerCase().trim();
+                const existing = prev.find((p) => {
+                  const pHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
+                  const pEmail = (p.email || p.email_public || "").toLowerCase().trim();
+                  return (
+                    p.id === dbC.id ||
+                    (pHandle && cleanHandle && pHandle === cleanHandle) ||
+                    (pEmail && cleanEmail && pEmail === cleanEmail)
+                  );
+                });
+
+                if (existing) {
+                  // User manual email edits take priority over un-refreshed DB polling values
+                  const userEmail = (existing.email || existing.email_public || "").trim();
+                  const dbEmail = (dbC.email || dbC.email_public || "").trim();
+                  const resolvedEmail = userEmail || dbEmail;
+                  merged.push({
+                    ...existing,
+                    ...dbC,
+                    email: resolvedEmail,
+                    email_public: resolvedEmail,
+                    email_verified: Boolean(resolvedEmail && resolvedEmail.includes("@")),
+                  });
+                } else {
+                  merged.push(dbC);
+                }
+                seenKeys.add(dbC.id);
+                if (cleanHandle) seenKeys.add(cleanHandle);
+                if (cleanEmail) seenKeys.add(cleanEmail);
+              });
+
+              prev.forEach((p) => {
+                const cleanHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
+                const cleanEmail = (p.email || p.email_public || "").toLowerCase().trim();
+                const isDeleted =
+                  deletedSet.has(String(p.id)) ||
+                  deletedSet.has(cleanHandle) ||
+                  deletedSet.has(String(p.handle)) ||
+                  (cleanEmail && deletedSet.has(cleanEmail));
+
+                if (!isDeleted && !seenKeys.has(p.id) && (!cleanHandle || !seenKeys.has(cleanHandle))) {
+                  const isDbUuid = p.id && /^[0-9a-f-]{36}$/i.test(p.id);
+                  if (!isDbUuid) {
+                    merged.push(p);
+                  }
+                }
+              });
+
+              return merged.slice(0, currentBatchLimit);
             });
 
-            return merged.slice(0, currentBatchLimit);
-          });
-
-          setSelectedCreatorId((prevId) => {
-            if (prevId && deletedSet.has(String(prevId))) return null;
-            return prevId || rawList[0]?.id || null;
-          });
+            setSelectedCreatorId((prevId) => {
+              if (prevId && deletedSet.has(String(prevId))) return null;
+              return prevId || rawList[0]?.id || null;
+            });
+          }
         }
-      }
 
-      // Enable state synchronizer now that DB fetch has completed
-      isInitialLoadDone.current = true;
-    } catch (err) {
-      console.warn("[AcquisitionEngine] Global state fetch error:", err);
-      isInitialLoadDone.current = true;
-    }
+        // Enable state synchronizer now that DB fetch has completed
+        isInitialLoadDone.current = true;
+      } catch (err) {
+        console.warn("[AcquisitionEngine] Global state fetch error:", err);
+        isInitialLoadDone.current = true;
+      }
     };
 
     fetchGlobalState();
@@ -1166,12 +1323,12 @@ export default function AcquisitionEngine({
       const newTarget = Date.now() + countdownSeconds * 1000;
       try {
         localStorage.setItem("forge_step2_timer_target", newTarget.toString());
-      } catch {}
+      } catch { }
       setTimerPaused(false);
     } else {
       try {
         localStorage.removeItem("forge_step2_timer_target");
-      } catch {}
+      } catch { }
       setTimerPaused(true);
     }
   };
@@ -1191,13 +1348,13 @@ export default function AcquisitionEngine({
         if (saved) {
           target = parseInt(saved, 10);
         }
-      } catch {}
+      } catch { }
 
       if (!target || isNaN(target) || target <= Date.now()) {
         target = Date.now() + 30 * 1000;
         try {
           localStorage.setItem("forge_step2_timer_target", target.toString());
-        } catch {}
+        } catch { }
       }
 
       const syncRemaining = () => {
@@ -1207,21 +1364,21 @@ export default function AcquisitionEngine({
         if (remaining <= 0) {
           try {
             localStorage.removeItem("forge_step2_timer_target");
-          } catch {}
+          } catch { }
           if (editingEmailCreatorId && tempEmailValue.trim()) {
             saveEditEmail(editingEmailCreatorId, null, tempEmailValue.trim());
           }
           // Explicitly halt active discovery when auto-advancing to Step 3
           if (discoveryAbortRef.current) {
-            try { discoveryAbortRef.current.abort(); } catch (e) {}
+            try { discoveryAbortRef.current.abort(); } catch (e) { }
             discoveryAbortRef.current = null;
           }
           setDiscovering(false);
           try {
             import("../../services/opsApi").then(({ stopAutonomousDiscovery }) => {
-              stopAutonomousDiscovery().catch(() => {});
+              stopAutonomousDiscovery().catch(() => { });
             });
-          } catch (e) {}
+          } catch (e) { }
           setActiveStep(3);
         }
       };
@@ -1260,7 +1417,7 @@ export default function AcquisitionEngine({
           try {
             worker.postMessage("stop");
             worker.terminate();
-          } catch {}
+          } catch { }
         }
         clearInterval(interval);
         document.removeEventListener(
@@ -1272,7 +1429,7 @@ export default function AcquisitionEngine({
     } else if (activeStep !== 2) {
       try {
         localStorage.removeItem("forge_step2_timer_target");
-      } catch {}
+      } catch { }
     }
   }, [
     activeStep,
@@ -1309,7 +1466,7 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_launch_active_step");
       localStorage.removeItem("forge_launch_acquisition_step");
       localStorage.removeItem("forge_launch_creators_batch_count");
-    } catch (e) {}
+    } catch (e) { }
     setCreatorsBatchCount(25);
     setCountdownSeconds(30);
     setActiveStep(1);
@@ -1319,7 +1476,7 @@ export default function AcquisitionEngine({
   const handleStartEngine = async () => {
     // Abort any prior in-flight request
     if (discoveryAbortRef.current) {
-      try { discoveryAbortRef.current.abort(); } catch (e) {}
+      try { discoveryAbortRef.current.abort(); } catch (e) { }
       discoveryAbortRef.current = null;
     }
 
@@ -1343,13 +1500,13 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_launch_ai_choice_map");
       localStorage.removeItem("forge_launch_active_step");
       localStorage.removeItem("forge_launch_acquisition_step");
-    } catch (e) {}
+    } catch (e) { }
 
     setDiscovering(true);
     setActiveStep(2); // Transition to Step 2
     try {
       localStorage.removeItem("forge_step2_timer_target");
-    } catch (e) {}
+    } catch (e) { }
     setCountdownSeconds(30);
     const targetCount = Math.max(1, Number(creatorsBatchCount) || 25);
     const parsedMinFollowers = Math.max(1000, Number(minFollowers) || 100000);
@@ -1460,14 +1617,14 @@ export default function AcquisitionEngine({
     if (discoveryAbortRef.current) {
       try {
         discoveryAbortRef.current.abort();
-      } catch (e) {}
+      } catch (e) { }
       discoveryAbortRef.current = null;
     }
     setDiscovering(false);
     try {
       const { stopAutonomousDiscovery } = await import("../../services/opsApi");
-      await stopAutonomousDiscovery().catch(() => {});
-    } catch (e) {}
+      await stopAutonomousDiscovery().catch(() => { });
+    } catch (e) { }
     notify(
       "info",
       "Scouting Stopped",
@@ -2916,9 +3073,9 @@ export default function AcquisitionEngine({
         text: cleanReplyText || latestReply.body,
         time: latestReply.received_at
           ? new Date(latestReply.received_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : "Recently",
         sentiment:
           latestReply.sentiment ||
@@ -3307,7 +3464,7 @@ export default function AcquisitionEngine({
       if (stageMap[c.id]?.step >= 5 || (c.handle && stageMap[c.handle.replace(/^@/, "").toLowerCase()]?.step >= 5)) {
         return true;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // 4. In Step 5 or 6, creator's reply was classified as interested / qualified with authentic reply
     const rInfo = c.replyInfo || getCreatorReply(c);
@@ -3351,24 +3508,24 @@ export default function AcquisitionEngine({
   const rawSelectedCreator =
     activeStep >= 5
       ? interestedCreators.find((c) => c.id === selectedCreatorId) ||
-        interestedCreators.find((c) => selectedCreatorId && (c.handle === selectedCreatorId || c.email === selectedCreatorId)) ||
-        interestedCreators[0] ||
-        (selectedCreatorId ? creators.find((c) => c.id === selectedCreatorId) : null) ||
-        creators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
-        null
+      interestedCreators.find((c) => selectedCreatorId && (c.handle === selectedCreatorId || c.email === selectedCreatorId)) ||
+      interestedCreators[0] ||
+      (selectedCreatorId ? creators.find((c) => c.id === selectedCreatorId) : null) ||
+      creators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
+      null
       : creators.find((c) => c.id === selectedCreatorId && (c.status || "").toLowerCase() !== "rejected") ||
-        creators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
-        null;
+      creators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
+      null;
 
   const selectedCreator = rawSelectedCreator
     ? {
-        ...rawSelectedCreator,
-        productConcepts:
-          rawSelectedCreator.productConcepts &&
+      ...rawSelectedCreator,
+      productConcepts:
+        rawSelectedCreator.productConcepts &&
           rawSelectedCreator.productConcepts.length > 0
-            ? rawSelectedCreator.productConcepts
-            : (activeStep === 5 ? null : ensureCreatorConcepts(rawSelectedCreator)),
-      }
+          ? rawSelectedCreator.productConcepts
+          : (activeStep === 5 ? null : ensureCreatorConcepts(rawSelectedCreator)),
+    }
     : null;
   const [autoLaunchCountdown, setAutoLaunchCountdown] = useState(null);
   const [hasAutoCreatedProject, setHasAutoCreatedProject] = useState(false);
@@ -3382,7 +3539,7 @@ export default function AcquisitionEngine({
         const next = { ...prev, [creatorId]: conceptId };
         try {
           setExpiringItem("forge_creator_concept_selection_map", next, ONE_HOUR_MS);
-        } catch {}
+        } catch { }
         return next;
       });
       setCreators((prev) =>
@@ -3395,7 +3552,7 @@ export default function AcquisitionEngine({
                 updateCreatorDetails(creatorId, {
                   selected_concept_id: conceptId,
                   selected_concept: chosen,
-                }).catch(() => {});
+                }).catch(() => { });
               });
             }
             return {
@@ -3449,10 +3606,10 @@ export default function AcquisitionEngine({
       );
       if (pitchSentMap && Object.keys(pitchSentMap).length > 0) {
         import("../../services/opsApi").then(({ updateWorkflowState }) => {
-          updateWorkflowState({ pitch_sent_map: pitchSentMap }).catch(() => {});
+          updateWorkflowState({ pitch_sent_map: pitchSentMap }).catch(() => { });
         });
       }
-    } catch {}
+    } catch { }
   }, [pitchSentMap]);
 
   useEffect(() => {
@@ -3465,10 +3622,10 @@ export default function AcquisitionEngine({
       );
       if (persuasionSentMap && Object.keys(persuasionSentMap).length > 0) {
         import("../../services/opsApi").then(({ updateWorkflowState }) => {
-          updateWorkflowState({ persuasion_sent_map: persuasionSentMap }).catch(() => {});
+          updateWorkflowState({ persuasion_sent_map: persuasionSentMap }).catch(() => { });
         });
       }
-    } catch {}
+    } catch { }
   }, [persuasionSentMap]);
 
   useEffect(() => {
@@ -3481,10 +3638,10 @@ export default function AcquisitionEngine({
       );
       if (answerSentMap && Object.keys(answerSentMap).length > 0) {
         import("../../services/opsApi").then(({ updateWorkflowState }) => {
-          updateWorkflowState({ answer_sent_map: answerSentMap }).catch(() => {});
+          updateWorkflowState({ answer_sent_map: answerSentMap }).catch(() => { });
         });
       }
-    } catch {}
+    } catch { }
   }, [answerSentMap]);
 
   useEffect(() => {
@@ -3497,10 +3654,10 @@ export default function AcquisitionEngine({
       );
       if (aiDetectedChoiceMap && Object.keys(aiDetectedChoiceMap).length > 0) {
         import("../../services/opsApi").then(({ updateWorkflowState }) => {
-          updateWorkflowState({ ai_choice_map: aiDetectedChoiceMap }).catch(() => {});
+          updateWorkflowState({ ai_choice_map: aiDetectedChoiceMap }).catch(() => { });
         });
       }
-    } catch {}
+    } catch { }
   }, [aiDetectedChoiceMap]);
 
   const currentPitchSent =
@@ -3672,7 +3829,7 @@ export default function AcquisitionEngine({
           updatedMap,
           ONE_HOUR_MS,
         );
-      } catch {}
+      } catch { }
 
       // Persist pitched status to PostgreSQL DB for instant cross-device correlation
       try {
@@ -3719,7 +3876,7 @@ export default function AcquisitionEngine({
     setStep5Error(null);
     try {
       const { generateAudienceAndConcepts } = await import("../../services/opsApi");
-      
+
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(
           () => reject(new Error("AI synthesis timed out after 25s. The model took too long to return structured concepts.")),
@@ -3744,11 +3901,11 @@ export default function AcquisitionEngine({
           prev.map((c) =>
             c.id === creator.id
               ? {
-                  ...c,
-                  productConcepts: res.product_concepts,
-                  audienceIntelligence: res.audience_intelligence,
-                  hasAiConcepts: true,
-                }
+                ...c,
+                productConcepts: res.product_concepts,
+                audienceIntelligence: res.audience_intelligence,
+                hasAiConcepts: true,
+              }
               : c,
           ),
         );
@@ -3829,7 +3986,7 @@ export default function AcquisitionEngine({
           map[(creator.handle || "").replace(/^@/, "").toLowerCase()] = map[creator.id];
         }
         setExpiringItem("forge_creator_stage_map", map, ONE_HOUR_MS);
-      } catch (e) {}
+      } catch (e) { }
 
       setActiveStep(6);
       notify(
@@ -3861,7 +4018,7 @@ export default function AcquisitionEngine({
         map[(creator.handle || "").replace(/^@/, "").toLowerCase()] = map[creator.id];
       }
       setExpiringItem("forge_creator_stage_map", map, ONE_HOUR_MS);
-    } catch (e) {}
+    } catch (e) { }
     setActiveStep(6);
   };
 
@@ -3928,15 +4085,15 @@ export default function AcquisitionEngine({
 
     const persuasionBody = isConfused
       ? `Hi ${firstName},\n\nI completely understand! We made it sound far more complicated than it actually is — sorry about that!\n\nHere is the simple 30-second version of why our creator partners love this:\n\n` +
-        `1. Zero Tech Work For You:\n   Creator Forge Studio funds and handles 100% of software engineering, cloud servers, billing, and customer support. You write zero lines of code and handle zero tickets.\n\n` +
-        `2. Built Specifically for Your Community:\n   Based on audience analysis of your ${creator.followerStr || "100k+"} followers in ${creator.niche}, your community is actively seeking a tool like "${topConcept?.name}".\n\n` +
-        `3. Compounding 50% Net Revenue with Zero Capital Risk:\n   You invest zero dollars. We split all monthly recurring profits 50/50 from day one. You only provide feedback and announce the tool during your regular content releases (<2 hours/month).\n\n` +
-        `Would you be open to a quick 2-minute look at the interactive preview before you make a final decision?\n\nBest,\nCreator Forge Studio Team\n\n---\nRef: [CF-CID:${cId} | Handle:@${cleanHandle}]`
+      `1. Zero Tech Work For You:\n   Creator Forge Studio funds and handles 100% of software engineering, cloud servers, billing, and customer support. You write zero lines of code and handle zero tickets.\n\n` +
+      `2. Built Specifically for Your Community:\n   Based on audience analysis of your ${creator.followerStr || "100k+"} followers in ${creator.niche}, your community is actively seeking a tool like "${topConcept?.name}".\n\n` +
+      `3. Compounding 50% Net Revenue with Zero Capital Risk:\n   You invest zero dollars. We split all monthly recurring profits 50/50 from day one. You only provide feedback and announce the tool during your regular content releases (<2 hours/month).\n\n` +
+      `Would you be open to a quick 2-minute look at the interactive preview before you make a final decision?\n\nBest,\nCreator Forge Studio Team\n\n---\nRef: [CF-CID:${cId} | Handle:@${cleanHandle}]`
       : `Hi ${firstName},\n\nI completely understand your hesitation! Most creators initially decline because they assume launching a software product requires 20+ hours a week of coding, technical management, and customer support.\n\nHere is why this is completely different and why our partner creators agree to work with us:\n\n` +
-        `1. Zero Time Commitment On Your End:\n   Creator Forge handles 100% of the engineering, product design, cloud hosting, payment billing, and customer support. You write zero lines of code.\n\n` +
-        `2. Built Specifically for Your Community:\n   Based on audience analysis of your ${creator.followerStr || "100k+"} subscribers in ${creator.niche}, your community is actively asking for "${topConcept?.name}".\n\n` +
-        `3. 50/50 Revenue Split with Zero Capital Risk:\n   You invest zero dollars. You simply announce the finished tool to your community, and we split all monthly recurring revenue 50/50.\n\n` +
-        `Could we do a quick 3-minute look at the interactive preview before you make a final decision?\n\nBest,\nCreator Forge Venture Studio\n\n---\nRef: [CF-CID:${cId} | Handle:@${cleanHandle}]`;
+      `1. Zero Time Commitment On Your End:\n   Creator Forge handles 100% of the engineering, product design, cloud hosting, payment billing, and customer support. You write zero lines of code.\n\n` +
+      `2. Built Specifically for Your Community:\n   Based on audience analysis of your ${creator.followerStr || "100k+"} subscribers in ${creator.niche}, your community is actively asking for "${topConcept?.name}".\n\n` +
+      `3. 50/50 Revenue Split with Zero Capital Risk:\n   You invest zero dollars. You simply announce the finished tool to your community, and we split all monthly recurring revenue 50/50.\n\n` +
+      `Could we do a quick 3-minute look at the interactive preview before you make a final decision?\n\nBest,\nCreator Forge Venture Studio\n\n---\nRef: [CF-CID:${cId} | Handle:@${cleanHandle}]`;
 
     try {
       if (targetEmail && targetEmail.includes("@")) {
@@ -3966,7 +4123,7 @@ export default function AcquisitionEngine({
       setPersuasionSentMap(updatedMap);
       try {
         setExpiringItem("forge_launch_persuasion_sent_map", updatedMap, ONE_HOUR_MS);
-      } catch {}
+      } catch { }
       notify(
         "info",
         "Persuasion Outreach Dispatched",
@@ -4061,7 +4218,7 @@ export default function AcquisitionEngine({
         map[target.handle.replace(/^@/, "").toLowerCase()] = map[targetId];
       }
       setExpiringItem("forge_creator_stage_map", map, ONE_HOUR_MS);
-    } catch (e) {}
+    } catch (e) { }
 
     // 3. Persist to database (source of truth)
     try {
@@ -4616,7 +4773,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
           try {
             await updateCreatorDetails(c.id, { status: "contacted" });
-          } catch {}
+          } catch { }
         } catch (sendErr) {
           console.warn(`[AcquisitionEngine] Failed email to ${targetEmail}:`, sendErr);
           errors.push(`${cName} (${targetEmail}): ${sendErr.message || "Failed"}`);
@@ -4631,8 +4788,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           5000
         );
         setOutreachLog(
-          `[Delivered] Outreach wave successfully sent to ${sentCount} creator${sentCount > 1 ? "s" : ""}.${
-            errors.length > 0 ? ` (${errors.length} failed: ${errors.join(", ")})` : ""
+          `[Delivered] Outreach wave successfully sent to ${sentCount} creator${sentCount > 1 ? "s" : ""}.${errors.length > 0 ? ` (${errors.length} failed: ${errors.join(", ")})` : ""
           } Transitioning to Step 4...`,
         );
         if (autoAdvance) {
@@ -4711,14 +4867,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       prev.map((c) =>
         c.id === creator.id
           ? {
-              ...c,
-              hasReplied: true,
-              replyClassification: reply.classification || "interested",
-              reply_classification: reply.classification || "interested",
-              replyText: reply.text,
-              replyTime: reply.time || "Recently",
-              productConcepts: ensureCreatorConcepts(c),
-            }
+            ...c,
+            hasReplied: true,
+            replyClassification: reply.classification || "interested",
+            reply_classification: reply.classification || "interested",
+            replyText: reply.text,
+            replyTime: reply.time || "Recently",
+            productConcepts: ensureCreatorConcepts(c),
+          }
           : c,
       ),
     );
@@ -4755,7 +4911,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           ONE_HOUR_MS,
         );
       }
-    } catch (e) {}
+    } catch (e) { }
   }, [realThreads]);
 
   const syncImapReplies = async (isManual = false) => {
@@ -5239,7 +5395,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       setPitchSentMap(updatedMap);
       try {
         setExpiringItem("forge_launch_pitch_sent_map", updatedMap, ONE_HOUR_MS);
-      } catch {}
+      } catch { }
       notify(
         "info",
         "Preview Nudge Sent",
@@ -5386,7 +5542,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       setAnswerSentMap(updatedMap);
       try {
         setExpiringItem("forge_launch_answer_sent_map", updatedMap, ONE_HOUR_MS);
-      } catch {}
+      } catch { }
       notify(
         "info",
         "Clarification Dispatched",
@@ -5599,396 +5755,472 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header & Campaign Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs relative overflow-hidden min-w-0">
-        <div className="space-y-1 z-10 max-w-xl min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-base sm:text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2 font-display">
-              <Zap className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-600 fill-emerald-600 shrink-0" />
-              <span>Creator Acquisition Engine</span>
-            </h1>
-            <span className="px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Live Telemetry</span>
-            </span>
-          </div>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            Autonomous creator discovery, audience signal extraction, AI software
-            opportunity modeling, and outreach orchestration.
-          </p>
-        </div>
+    <div className="space-y-6 selection:bg-slate-900 selection:text-white">
+      {/* ── PHASE NAVIGATION STEPPER WITH FLOATING POLYGONS ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-3 sm:p-4 shadow-xs">
+        {/* Subtle Canvas Dot Grid Background */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 -z-0"
+          style={{
+            backgroundImage: 'radial-gradient(#94A3B8 1px, transparent 1px)',
+            backgroundSize: '24px 24px'
+          }}
+        />
 
-        <div className="flex items-center gap-2.5 z-10 flex-shrink-0">
-          <button
-            onClick={handleDeleteAllCreators}
-            disabled={isDeletingAll}
-            className="flex items-center gap-2 px-3.5 h-8 sm:h-9 rounded-xl text-xs font-bold transition-all border bg-white border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-200 cursor-pointer whitespace-nowrap flex-shrink-0 disabled:opacity-50 shadow-2xs"
-            title="Delete all creators from database and reset pipeline"
-          >
-            <Trash2 className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{isDeletingAll ? "Deleting..." : "Delete All Leads"}</span>
-          </button>
+        {/* Stepper Buttons (Matching User HTML Design) */}
+        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 w-full min-w-0">
+          {[
+            { step: 1, num: "Step 01", label: "Campaign Setup", icon: Target },
+            { step: 2, num: "Step 02", label: "Find & Qualify", icon: Search },
+            { step: 3, num: "Step 03", label: "Direct Outreach", icon: Send },
+            { step: 4, num: "Step 04", label: "Interested Review", icon: MessageSquare },
+            { step: 5, num: "Step 05", label: "Audience & Ideas", icon: Sparkles },
+            { step: 6, num: "Step 06", label: "Pitch & Select", icon: Award },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = activeStep === item.step;
+            return (
+              <button
+                key={item.step}
+                onClick={() => setActiveStep(item.step)}
+                className={`relative flex items-center gap-3 p-3 rounded-xl text-left transition cursor-pointer group min-w-0 ${
+                  isActive
+                    ? "bg-slate-900 text-white border border-slate-900 shadow-sm"
+                    : "hover:bg-slate-50 border border-transparent hover:border-slate-200 text-slate-600"
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    isActive ? "bg-white/10 text-white" : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    {item.num}
+                  </span>
+                  <span className={`text-xs truncate block ${isActive ? "font-semibold text-white" : "font-medium text-slate-700"}`}>
+                    {item.label}
+                  </span>
+                </div>
+                {isActive && (
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                )}
+              </button>
+            );
+          })}
         </div>
-      </div>
-
-      {/* Phase Navigation - Unified Venture Studio Stepper */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none sm:grid sm:grid-cols-3 lg:grid-cols-6 w-full min-w-0">
-        {[
-          {
-            step: 1,
-            label: "1. Campaign Setup",
-            icon: Target,
-          },
-          {
-            step: 2,
-            label: "2. Find & Qualify",
-            icon: Search,
-          },
-          {
-            step: 3,
-            label: "3. Direct Outreach",
-            icon: Send,
-          },
-          {
-            step: 4,
-            label: "4. Interested Review",
-            icon: MessageSquare,
-          },
-          {
-            step: 5,
-            label: "5. Audience & Ideas",
-            icon: Sparkles,
-          },
-          {
-            step: 6,
-            label: "6. Pitch & Select",
-            icon: Award,
-          },
-        ].map((item) => {
-          const Icon = item.icon;
-          const isActive = activeStep === item.step;
-          return (
-            <button
-              key={item.step}
-              onClick={() => setActiveStep(item.step)}
-              className={`flex flex-col items-start p-2.5 sm:p-3 rounded-xl text-left transition-all border cursor-pointer shrink-0 min-w-[120px] sm:min-w-0 sm:w-auto ${
-                isActive
-                  ? "bg-white border-slate-900 text-slate-950 shadow-xs ring-1 ring-slate-900/10"
-                  : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-950 hover:bg-slate-50/80"
-              }`}
-            >
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center mb-2 ${
-                isActive ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"
-              }`}>
-                <Icon className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-bold truncate w-full">
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
       </div>
 
 
       {/* STEP 1: CAMPAIGN SETUP */}
       {activeStep === 1 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full min-w-0">
-          <div className="lg:col-span-2 space-y-6 w-full min-w-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full min-w-0 items-start">
+          <div className="lg:col-span-8 space-y-6 w-full min-w-0">
             {/* Parameters Card */}
-            <div className="p-3.5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-5 min-w-0 w-full">
-              <div className="border-b border-slate-100 pb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
-                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 min-w-0 font-display">
-                  <Target className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="truncate">Campaign Parameters & Lead Discovery</span>
-                </h2>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={handleStartFresh}
-                    className="text-[11px] font-bold text-slate-600 hover:text-slate-950 bg-white hover:bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs"
-                    title="Clear cached creators and start completely fresh"
-                  >
-                    <RefreshCw className="w-3 h-3 text-slate-500 shrink-0" />
-                    <span>Reset Fresh</span>
-                  </button>
-                </div>
-              </div>
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-sm min-w-0 w-full relative overflow-hidden">
 
-              {/* Target Niches with Cancel Tags */}
-              <div className="space-y-2.5 min-w-0 w-full">
-                <div className="flex items-center justify-between min-w-0">
-                  <label className="text-xs text-slate-900 font-semibold flex items-center gap-1.5 min-w-0">
-                    <span>Target Niche(s)</span>
-                    <span className="text-[10px] text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md font-mono shrink-0">
-                      {niches.length} selected
-                    </span>
-                  </label>
-                  {niches.length > 0 && (
+              <div className="relative z-10 space-y-6">
+                {/* Header row of the card */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                      <SlidersHorizontal className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h1 className="text-lg font-bold text-slate-900">Campaign Parameters & Lead Discovery</h1>
+                      <p className="text-xs text-slate-500">Configure target verticals, outreach filters, and platform criteria.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setNiches([])}
-                      className="text-[11px] text-slate-400 hover:text-rose-600 transition-colors cursor-pointer shrink-0"
+                      onClick={handleStartFresh}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
+                      title="Clear cached creators and start completely fresh"
                     >
-                      Clear all
+                      <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Reset Fresh</span>
                     </button>
-                  )}
+                  </div>
                 </div>
 
-                {/* Interactive Niche Box with Remove Cancel Buttons */}
-                <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-200 flex flex-wrap items-center gap-1.5 focus-within:border-slate-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-slate-900/10 transition-all min-h-[48px] min-w-0 w-full">
-                  {niches.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center justify-between gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-900 border border-slate-200 shadow-2xs max-w-full min-w-0"
-                    >
-                      <span className="truncate">{tag}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeNiche(tag)}
-                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer shrink-0"
-                        title={`Remove ${tag}`}
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </span>
-                  ))}
-
-                  <input
-                    type="text"
-                    value={customNicheInput}
-                    onChange={(e) => setCustomNicheInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === ",") {
-                        e.preventDefault();
-                        addNiche(customNicheInput);
-                      }
-                    }}
-                    placeholder={
-                      niches.length === 0
-                        ? "Type niche & press Enter..."
-                        : "+ Add another..."
-                    }
-                    className="flex-1 min-w-[100px] max-w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none py-1 px-1 font-medium"
-                  />
-                </div>
-
-                {/* Available Niches - Equal Width Uniform Grid */}
-                <div className="space-y-2 pt-1.5 min-w-0 w-full">
-                  <div className="flex items-center justify-between min-w-0">
-                    <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 flex-wrap">
-                      <span>Available Niches</span>
-                      <span className="text-[10px] text-slate-400 font-normal">
-                        (Click to toggle on / off)
+                {/* SECTION: Selected Niches Bar */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Target Niche(s)</span>
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                        {niches.length} selected
                       </span>
-                    </span>
-                    <span className="text-[10px] text-slate-600 font-mono shrink-0">
-                      {niches.length} active
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full min-w-0">
-                    {allNicheOptions.map((tag) => {
-                      const isAdded = niches.some(
-                        (n) => n.toLowerCase() === tag.toLowerCase(),
-                      );
-                      return (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() =>
-                            isAdded ? removeNiche(tag) : addNiche(tag)
-                          }
-                          className={`w-full h-9 px-2.5 sm:px-3 rounded-lg text-xs font-medium border transition-all cursor-pointer flex items-center justify-between gap-1 min-w-0 shadow-2xs ${
-                            isAdded
-                              ? "bg-slate-900 text-white border-slate-900 font-semibold"
-                              : "bg-white text-slate-700 hover:text-slate-950 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                          }`}
-                          title={isAdded ? `Click to remove ${tag}` : `Click to add ${tag}`}
-                        >
-                          <span className="truncate">{tag}</span>
-                          {isAdded ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          ) : (
-                            <Plus className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Target Platforms Multi-select */}
-              <div className="space-y-2 min-w-0 w-full">
-                <label className="text-xs text-slate-900 font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <span>Target Platforms</span>
-                  <span className="text-[11px] text-slate-500 font-normal">
-                    Select platforms for lead discovery
-                  </span>
-                </label>
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full min-w-0">
-                  {[
-                    { id: "youtube", label: "YouTube", icon: Youtube, color: "text-red-500" },
-                    { id: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-500" },
-                    { id: "tiktok", label: "TikTok", icon: Music, color: "text-slate-800" },
-                  ].map((p) => {
-                    const isSelected = selectedPlatforms.includes(p.id);
-                    const PlatformIcon = p.icon;
-                    return (
+                    </div>
+                    {niches.length > 0 && (
                       <button
-                        key={p.id}
                         type="button"
-                        onClick={() => togglePlatform(p.id)}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-bold transition-all cursor-pointer w-full min-w-0 shadow-2xs ${
-                          isSelected
-                            ? "bg-slate-900 border-slate-900 text-white"
-                            : "bg-white border-slate-200 text-slate-700 hover:text-slate-950 hover:border-slate-300 hover:bg-slate-50"
-                        }`}
+                        onClick={() => setNiches([])}
+                        className="text-xs font-medium text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                       >
-                        <PlatformIcon className={`w-3.5 h-3.5 ${p.color} shrink-0`} />
-                        <span className="truncate">{p.label}</span>
-                        {isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-0.5 shrink-0" />
-                        )}
+                        Clear all
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Targeting Parameters: Sliders, Geography & Ranges */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 pt-2 min-w-0 w-full">
-                {/* Target Geography Selector */}
-                <div className="space-y-2 md:col-span-2 p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 min-w-0 w-full">
-                  <div className="flex items-center justify-between min-w-0">
-                    <label className="text-xs text-slate-900 font-semibold flex items-center gap-1.5 min-w-0">
-                      <Globe className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>Target Geography</span>
-                    </label>
-                    <span className="text-[11px] text-slate-800 font-mono font-bold bg-white px-2 py-0.5 rounded border border-slate-200 shrink-0">
-                      {selectedGeography} Selected
-                    </span>
+                    )}
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 sm:gap-2 pt-1 w-full min-w-0">
-                    {[
-                      { id: "GLOBAL", label: "Global" },
-                      { id: "US", label: "United States" },
-                      { id: "UK", label: "United Kingdom" },
-                      { id: "CA", label: "Canada" },
-                      { id: "EU", label: "Europe" },
-                      { id: "AU", label: "Australia" },
-                    ].map((geo) => {
-                      const active = selectedGeography === geo.id;
-                      return (
+
+                  {/* Active tags container + Add input */}
+                  <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 flex flex-wrap items-center gap-2 min-h-[50px]">
+                    {niches.map((niche) => (
+                      <div
+                        key={niche}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300/80 shadow-xs transition hover:bg-emerald-100"
+                      >
+                        <span>{niche}</span>
                         <button
-                          key={geo.id}
                           type="button"
-                          onClick={() => setSelectedGeography(geo.id)}
-                          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center truncate w-full min-w-0 shadow-2xs ${
-                            active
-                              ? "bg-slate-900 border-slate-900 text-white"
-                              : "bg-white border-slate-200 text-slate-700 hover:text-slate-950 hover:border-slate-300 hover:bg-slate-50"
-                          }`}
-                          title={geo.label}
+                          onClick={() => removeNiche(niche)}
+                          title="Remove"
+                          className="text-emerald-500 hover:text-emerald-800 transition-colors p-0.5 rounded-full hover:bg-emerald-200/50 cursor-pointer"
                         >
-                          {geo.label}
+                          <X className="w-3 h-3" />
                         </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Sliders and Ranges */}
-                {/* 50 Creators Slider Control */}
-                <div className="space-y-2 p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 min-w-0 w-full">
-                  <div className="flex items-center justify-between min-w-0">
-                    <label className="text-xs text-slate-900 font-bold flex items-center gap-1.5 min-w-0">
-                      <Cpu className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-                      <span>Batch Discovery Count</span>
-                    </label>
-                    <span className="text-xs font-mono font-bold text-white bg-slate-900 px-2 py-0.5 rounded-md shrink-0">
-                      {creatorsBatchCount} Creators
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="50"
-                    step="1"
-                    value={creatorsBatchCount}
-                    onChange={(e) => {
-                      const countVal = Number(e.target.value);
-                      setCreatorsBatchCount(countVal);
-                      try {
-                        localStorage.setItem("forge_launch_creators_batch_count", String(countVal));
-                      } catch {}
-                    }}
-                    className="w-full accent-slate-900 cursor-pointer h-2 bg-slate-200 rounded-lg"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                    <span>1 Creator</span>
-                    <span>25 Creators</span>
-                    <span>50 Max</span>
-                  </div>
-                </div>
-
-                {/* Min Engagement */}
-                <div className="space-y-2 p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 min-w-0 w-full">
-                  <div className="flex items-center justify-between min-w-0">
-                    <label className="text-xs text-slate-900 font-semibold min-w-0">
-                      Min Engagement Rate
-                    </label>
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-mono shrink-0">
-                      ≥ {minEngagement}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1.0"
-                    max="10.0"
-                    step="0.5"
-                    value={minEngagement}
-                    onChange={(e) => setMinEngagement(Number(e.target.value))}
-                    className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 rounded-lg"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                    <span>1.0%</span>
-                    <span>5.0%</span>
-                    <span>10.0%</span>
-                  </div>
-                </div>
-
-                {/* Follower Range */}
-                <div className="space-y-1.5 md:col-span-2 min-w-0 w-full">
-                  <label className="text-xs text-slate-900 font-semibold">
-                    Follower Range (100K – 1M Target Tier)
-                  </label>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full min-w-0">
-                    <div className="flex-1 w-full min-w-0">
+                      </div>
+                    ))}
+                    <div className="inline-flex items-center">
                       <input
-                        type="number"
-                        value={minFollowers}
-                        onChange={(e) => setMinFollowers(Number(e.target.value))}
-                        className="w-full min-w-0 bg-white border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900/10 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono outline-none shadow-2xs"
-                        placeholder="Min followers"
+                        type="text"
+                        value={customNicheInput}
+                        onChange={(e) => setCustomNicheInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === ",") {
+                            e.preventDefault();
+                            addNiche(customNicheInput);
+                          }
+                        }}
+                        placeholder="+ Add custom..."
+                        className="text-xs bg-white border border-dashed border-slate-300 rounded-lg px-2.5 py-1 focus:outline-none focus:border-emerald-500 text-slate-700 placeholder-slate-400"
                       />
                     </div>
-                    <span className="text-slate-400 text-xs font-bold text-center self-center shrink-0">TO</span>
-                    <div className="flex-1 w-full min-w-0">
+                  </div>
+                </div>
+
+                {/* SECTION: Available Niches Interactive Grid (Redesigned) */}
+                <div className="pt-6 border-t border-slate-100 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-800">Available Niches</span>
+                        <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                          {niches.length} active
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">Toggle verticals to dynamically calibrate audience targeting algorithms.</p>
+                    </div>
+
+                    {/* Instant Search Input */}
+                    <div className="relative min-w-[210px]">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                       <input
-                        type="number"
-                        value={maxFollowers}
-                        onChange={(e) => setMaxFollowers(Number(e.target.value))}
-                        className="w-full min-w-0 bg-white border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900/10 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono outline-none shadow-2xs"
-                        placeholder="Max followers"
+                        type="text"
+                        placeholder="Filter niches..."
+                        value={nicheSearchQuery}
+                        onChange={(e) => setNicheSearchQuery(e.target.value)}
+                        className="w-full text-xs pl-8 pr-7 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
                       />
+                      {nicheSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setNicheSearchQuery("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Category Filter Bar + Quick Select Controls */}
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {[
+                        { id: "all", label: "All (16)" },
+                        { id: "tech", label: "Tech & Dev" },
+                        { id: "business", label: "Business & Web3" },
+                        { id: "creative", label: "Creative & Media" },
+                        { id: "lifestyle", label: "Lifestyle" },
+                      ].map((cat) => {
+                        const isActive = activeNicheCategory === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setActiveNicheCategory(cat.id)}
+                            className={`px-3 py-1 rounded-lg text-xs transition cursor-pointer ${
+                              isActive
+                                ? "font-semibold bg-slate-900 text-white shadow-xs"
+                                : "font-medium text-slate-600 hover:bg-slate-100"
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Quick Bulk Actions */}
+                    <div className="flex items-center gap-2 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const toAdd = filteredAvailableNiches.map((n) => n.label);
+                          setNiches((prev) => Array.from(new Set([...prev, ...toAdd])));
+                        }}
+                        className="text-xs font-semibold text-emerald-600 hover:underline cursor-pointer"
+                      >
+                        Select Filtered
+                      </button>
+                      <span className="text-slate-300">·</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const toRemove = new Set(filteredAvailableNiches.map((n) => n.label.toLowerCase()));
+                          setNiches((prev) => prev.filter((t) => !toRemove.has(t.toLowerCase())));
+                        }}
+                        className="text-xs font-medium text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        Deselect Filtered
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Niches 4-Column Card Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                    {filteredAvailableNiches.length === 0 ? (
+                      <div className="col-span-full py-8 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                        <p className="text-xs text-slate-400">No niches matched your search criteria.</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNicheSearchQuery("");
+                            setActiveNicheCategory("all");
+                          }}
+                          className="text-xs font-semibold text-emerald-600 hover:underline mt-1 cursor-pointer"
+                        >
+                          Clear search query
+                        </button>
+                      </div>
+                    ) : (
+                      filteredAvailableNiches.map((item) => {
+                        const Icon = item.icon;
+                        const isAdded = niches.some((n) => n.toLowerCase() === item.label.toLowerCase());
+                        return isAdded ? (
+                          <div
+                            key={item.id}
+                            onClick={() => removeNiche(item.label)}
+                            className="group relative cursor-pointer select-none p-3 rounded-xl border border-emerald-500/80 bg-gradient-to-br from-emerald-50/90 to-teal-50/40 shadow-xs transition-all duration-200 hover:shadow-md hover:border-emerald-500"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                                  <Icon className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-xs font-bold text-slate-900 truncate block">{item.label}</span>
+                              </div>
+                              <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                                <Check className="w-3 h-3 stroke-[2.5]" />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            key={item.id}
+                            onClick={() => addNiche(item.label)}
+                            className="group relative cursor-pointer select-none p-3 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 hover:border-slate-300 shadow-xs transition-all duration-200"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 group-hover:text-slate-700 flex items-center justify-center flex-shrink-0 transition-colors">
+                                  <Icon className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-xs font-medium text-slate-700 truncate block group-hover:text-slate-900">{item.label}</span>
+                              </div>
+                              <div className="w-5 h-5 rounded-full border border-slate-300 group-hover:border-slate-400 flex items-center justify-center flex-shrink-0 text-slate-400 group-hover:text-slate-600 transition-colors">
+                                <Plus className="w-3 h-3" />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* SECTION: Target Platforms */}
+                <div className="pt-6 border-t border-slate-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Target Platforms</span>
+                      <p className="text-xs text-slate-400">Select platforms where lead crawler discovers qualified influencers.</p>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-mono">Select at least 1</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* YouTube Card */}
+                    <button
+                      type="button"
+                      onClick={() => togglePlatform("youtube")}
+                      className={`relative p-3.5 rounded-xl border flex items-center justify-between group transition-all duration-150 cursor-pointer ${
+                        selectedPlatforms.includes("youtube")
+                          ? "border-emerald-500/40 bg-emerald-50/20"
+                          : "border-slate-200 bg-white opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-red-50 text-red-500 flex items-center justify-center border border-red-200">
+                          <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        </div>
+                        <div className="text-left">
+                          <span className="text-xs font-bold text-slate-800 block">YouTube</span>
+                          <span className="text-[10px] text-slate-400 font-mono">Long-form & Shorts</span>
+                        </div>
+                      </div>
+                      <span className={`status-dot w-2.5 h-2.5 rounded-full transition-colors ${
+                        selectedPlatforms.includes("youtube")
+                          ? "bg-emerald-500 shadow-sm shadow-emerald-500/50"
+                          : "bg-slate-300"
+                      }`} />
+                    </button>
+
+                    {/* Instagram Card */}
+                    <button
+                      type="button"
+                      onClick={() => togglePlatform("instagram")}
+                      className={`relative p-3.5 rounded-xl border flex items-center justify-between group transition-all duration-150 cursor-pointer ${
+                        selectedPlatforms.includes("instagram")
+                          ? "border-emerald-500/40 bg-emerald-50/20"
+                          : "border-slate-200 bg-white opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-pink-50 text-pink-500 flex items-center justify-center border border-pink-200">
+                          <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                        </div>
+                        <div className="text-left">
+                          <span className="text-xs font-bold text-slate-800 block">Instagram</span>
+                          <span className="text-[10px] text-slate-400 font-mono">Reels & Carousels</span>
+                        </div>
+                      </div>
+                      <span className={`status-dot w-2.5 h-2.5 rounded-full transition-colors ${
+                        selectedPlatforms.includes("instagram")
+                          ? "bg-emerald-500 shadow-sm shadow-emerald-500/50"
+                          : "bg-slate-300"
+                      }`} />
+                    </button>
+
+                    {/* TikTok Card */}
+                    <button
+                      type="button"
+                      onClick={() => togglePlatform("tiktok")}
+                      className={`relative p-3.5 rounded-xl border flex items-center justify-between group transition-all duration-150 cursor-pointer ${
+                        selectedPlatforms.includes("tiktok")
+                          ? "border-emerald-500/40 bg-emerald-50/20"
+                          : "border-slate-200 bg-white opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center border border-cyan-200">
+                          <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-1.01-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+                        </div>
+                        <div className="text-left">
+                          <span className="text-xs font-bold text-slate-800 block">TikTok</span>
+                          <span className="text-[10px] text-slate-400 font-mono">Viral Short Video</span>
+                        </div>
+                      </div>
+                      <span className={`status-dot w-2.5 h-2.5 rounded-full transition-colors ${
+                        selectedPlatforms.includes("tiktok")
+                          ? "bg-emerald-500 shadow-sm shadow-emerald-500/50"
+                          : "bg-slate-300"
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* SECTION: Audience Sizing & Filter Criteria */}
+                <div className="pt-6 border-t border-slate-100">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-4">
+                    Audience Sizing & Filter Criteria
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {/* Target Range */}
+                    <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-slate-600">Target Range</span>
+                        <span className="text-xs font-mono font-bold text-emerald-600">
+                          {minFollowers >= 1000000 ? `${(minFollowers / 1000000).toFixed(1).replace(/\.0$/, "")}M` : `${Math.round(minFollowers / 1000)}K`} – {maxFollowers >= 1000000 ? `${(maxFollowers / 1000000).toFixed(1).replace(/\.0$/, "")}M` : `${Math.round(maxFollowers / 1000)}K`}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="4"
+                        value={
+                          minFollowers < 100000 ? 1 :
+                          maxFollowers <= 1000000 ? 2 :
+                          maxFollowers <= 5000000 ? 3 : 4
+                        }
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          if (val === 1) { setMinFollowers(10000); setMaxFollowers(100000); }
+                          else if (val === 2) { setMinFollowers(100000); setMaxFollowers(1000000); }
+                          else if (val === 3) { setMinFollowers(1000000); setMaxFollowers(5000000); }
+                          else { setMinFollowers(5000000); setMaxFollowers(20000000); }
+                        }}
+                        className="w-full accent-emerald-600 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                        <span>10K-100K</span>
+                        <span>100K-1M</span>
+                        <span>1M-5M</span>
+                        <span>5M+</span>
+                      </div>
+                    </div>
+
+                    {/* Geography Selector */}
+                    <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
+                      <label className="text-xs font-medium text-slate-600 block mb-2">Geography</label>
+                      <select
+                        value={selectedGeography}
+                        onChange={(e) => setSelectedGeography(e.target.value)}
+                        className="w-full text-xs font-medium bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-800"
+                      >
+                        <option value="GLOBAL">🌍 Global (Worldwide)</option>
+                        <option value="US">🇺🇸 United States & Canada</option>
+                        <option value="EU">🇪🇺 UK & Western Europe</option>
+                        <option value="APAC">🌏 Asia-Pacific</option>
+                        <option value="LATAM">🌎 Latin America</option>
+                      </select>
+                      <span className="text-[10px] text-slate-400 block mt-1">Multi-region targeting active</span>
+                    </div>
+
+                    {/* Min Engagement */}
+                    <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-medium text-slate-600">Min Engagement</label>
+                        <span className="text-xs font-mono font-bold text-emerald-600">≥ {minEngagement.toFixed(1)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="80"
+                        value={Math.round(minEngagement * 10)}
+                        onChange={(e) => setMinEngagement(Number(e.target.value) / 10)}
+                        className="w-full accent-emerald-600 cursor-pointer"
+                      />
+                      <span className="text-[10px] text-slate-400 block mt-1 font-mono">Strict threshold applied</span>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
 
             {/* ── Luxury Email Outreach Studio (Step 1) ────────────────────── */}
@@ -6016,22 +6248,20 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <button
                     type="button"
                     onClick={() => setStep1EmailTab("editor")}
-                    className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      step1EmailTab === "editor"
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${step1EmailTab === "editor"
                         ? "bg-white text-slate-900 border border-slate-200/80 shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     Edit Template
                   </button>
                   <button
                     type="button"
                     onClick={() => setStep1EmailTab("preview")}
-                    className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                      step1EmailTab === "preview"
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${step1EmailTab === "preview"
                         ? "bg-white text-slate-900 border border-slate-200/80 shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     <Eye className="w-3.5 h-3.5 shrink-0 text-slate-700" />
                     <span>Live Preview</span>
@@ -6170,73 +6400,128 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </div>
                 </div>
               )}
+              </div>
             </div>
           </div>
 
-          {/* Engine Summary & Start Button (Right Sidebar) */}
-          <div className="space-y-4 w-full min-w-0">
-            <div className="p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/90 space-y-5 lg:sticky lg:top-20 min-w-0 w-full shadow-xs">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider font-display">
-                  Campaign Summary
-                </h4>
+          {/* Campaign Summary & Start Button (Right Sidebar - Matching User HTML Design) */}
+          <div className="lg:col-span-4 w-full min-w-0 lg:sticky lg:top-24 space-y-4 z-20">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm relative overflow-hidden space-y-5">
+              {/* Ambient top gradient accent */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600" />
+
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 block">Preview Deck</span>
+                  <h2 className="text-sm font-bold tracking-tight text-slate-900 uppercase">Campaign Summary</h2>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Live Spec
+                </span>
               </div>
 
-              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50/70 border border-slate-200 space-y-3 text-xs min-w-0 w-full">
-                <div className="flex justify-between gap-2">
-                  <span className="text-slate-600 font-medium">Target Range</span>
-                  <span className="text-slate-900 font-mono font-bold">100K – 1M</span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-slate-600 font-medium">Geography</span>
-                  <span className="text-slate-900 font-bold">{selectedGeography}</span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-slate-600 font-medium">Batch Discovery Size</span>
-                  <span className="text-slate-900 font-mono font-bold bg-white px-2 py-0.5 rounded border border-slate-200">
-                    {creatorsBatchCount} Creators
+              {/* Summary Metric list with clean typography */}
+              <div className="divide-y divide-slate-100 py-2">
+                <div className="py-2.5 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Target Range</span>
+                  <span className="font-mono font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+                    {minFollowers && maxFollowers
+                      ? `${minFollowers >= 1000000 ? (minFollowers / 1000000).toFixed(1).replace(/\.0$/, "") + "M" : Math.round(minFollowers / 1000) + "K"} – ${maxFollowers >= 1000000 ? (maxFollowers / 1000000).toFixed(1).replace(/\.0$/, "") + "M" : Math.round(maxFollowers / 1000) + "K"}`
+                      : "100K – 1M"}
                   </span>
                 </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-slate-600 font-medium">Min Engagement</span>
-                  <span className="text-emerald-700 font-mono font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+
+                <div className="py-2.5 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Geography</span>
+                  <span className="font-mono font-semibold text-slate-900 uppercase">{selectedGeography}</span>
+                </div>
+
+                <div className="py-2.5 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Batch Discovery Size</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setCreatorsBatchCount(Math.max(4, creatorsBatchCount - 2))}
+                      className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 transition cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="font-mono font-bold text-slate-900 px-1.5">{creatorsBatchCount}</span>
+                    <button
+                      type="button"
+                      onClick={() => setCreatorsBatchCount(Math.min(60, creatorsBatchCount + 2))}
+                      className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 transition cursor-pointer"
+                    >
+                      +
+                    </button>
+                    <span className="text-[10px] text-slate-400">Creators</span>
+                  </div>
+                </div>
+
+                <div className="py-2.5 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Min Engagement</span>
+                  <span className="font-mono font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
                     ≥ {minEngagement}%
                   </span>
                 </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-slate-600 font-medium">Follow-up Rule</span>
-                  <span className="text-slate-900 font-bold truncate">Auto-follow up (7d)</span>
+
+                <div className="py-2.5 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Follow-up Rule</span>
+                  <span className="font-mono font-medium text-slate-700">Auto-follow up (7d)</span>
                 </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-slate-600 font-medium">Response Handling</span>
-                  <span className="text-emerald-700 font-bold truncate">
-                    Stop Sequence
+
+                <div className="py-2.5 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Response Handling</span>
+                  <span className="font-mono text-xs font-semibold text-rose-600">Stop Sequence</span>
+                </div>
+
+                <div className="py-2.5 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Estimated Match Pool</span>
+                  <span className="font-mono font-bold text-emerald-600">
+                    ~{((niches.length || 5) * 380 * 3).toLocaleString()} profiles
                   </span>
                 </div>
               </div>
 
-              {/* PRIMARY ENGINE START BUTTON */}
-              <button
-                onClick={handleStartEngine}
-                disabled={discovering}
-                className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-center gap-2 border border-transparent transition-all disabled:opacity-50 cursor-pointer shadow-xs active:scale-95 tracking-tight font-sans"
-              >
-                {discovering ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                    <span>Discovering & Enriching Leads...</span>
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-4 h-4 text-white" />
-                    <span>Start Lead Discovery</span>
-                  </>
-                )}
-              </button>
+              {/* Primary Call to Action Button */}
+              <div className="mt-5 space-y-3">
+                <button
+                  type="button"
+                  onClick={handleStartEngine}
+                  disabled={discovering}
+                  className="w-full group relative overflow-hidden flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-sm tracking-wide shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/25 transition-all transform active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                >
+                  {discovering ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>Discovering & Enriching Leads...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4 transition-transform group-hover:rotate-45" />
+                      <span>Start Lead Discovery</span>
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </button>
 
-              <p className="text-[11px] text-slate-500 text-center leading-relaxed">
-                Scouts and enriches qualifying creator candidate profiles for your review and approval in Step 2.
-              </p>
+                <p className="text-[11px] text-center text-slate-400 leading-relaxed px-2">
+                  Scouts and enriches qualifying creator candidate profiles for your review and approval in Step 2.
+                </p>
+              </div>
+
+              {/* Agreement Footer Spec */}
+              <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-400">Venture Spec:</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveArtifactTab("agreement")}
+                  className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-emerald-600 hover:underline cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  CF-5050 Agreement (50/50)
+                </button>
+              </div>
             </div>
           </div>
 
@@ -6245,39 +6530,39 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
       {/* QUALIFIED LEADS: FIND & QUALIFY CREATORS */}
       {activeStep === 2 && (
-        <div className="p-3.5 sm:p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5 min-w-0 w-full">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.07] pb-4 min-w-0">
+        <div className="p-3.5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-5 min-w-0 w-full relative overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4 min-w-0 relative z-10">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 font-display">
                   Discovered Leads
                 </span>
-                <span className="text-xs text-slate-500">•</span>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-300">•</span>
+                <span className="text-xs text-slate-500">
                   Profile & Contact Intelligence
                 </span>
               </div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
-                <Search className="w-4 h-4 text-indigo-400 shrink-0" />
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 mt-0.5 font-display">
+                <Search className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>Find & Qualify Creators</span>
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Review discovered creator profiles and verified contact emails before launching outreach.
               </p>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-shrink-0 max-w-full">
               {creators.length > 0 && !discovering && (
-                <div className="h-9 px-3 rounded-xl bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono flex items-center gap-2 shadow-sm whitespace-nowrap">
-                  <Clock className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+                <div className="h-9 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-mono flex items-center gap-2 shadow-2xs whitespace-nowrap">
+                  <Clock className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
                   <span>
                     Auto-Advance to Step 3 in:{" "}
-                    <strong className="text-white">{formatCountdown(countdownSeconds)}</strong>
+                    <strong className="text-slate-900">{formatCountdown(countdownSeconds)}</strong>
                   </span>
                   <button
                     type="button"
                     onClick={toggleStep2Timer}
-                    className="ml-1 text-[11px] underline text-purple-300 hover:text-white cursor-pointer font-sans"
+                    className="ml-1 text-[11px] underline text-slate-600 hover:text-slate-950 cursor-pointer font-sans"
                   >
                     {timerPaused ? "Resume" : "Pause"}
                   </button>
@@ -6288,21 +6573,21 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={handleStopDiscovery}
-                  className="h-9 px-3.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-sm"
+                  className="h-9 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-2xs"
                   title="Stop discovery early and keep currently scouted creators"
                 >
-                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                  <XCircle className="w-3.5 h-3.5 text-rose-600" />
                   <span>Stop Scouting ({creators.length} Found)</span>
                 </button>
               ) : (
                 <button
                   onClick={handleStartEngine}
                   disabled={discovering}
-                  className="h-9 px-3.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-200 hover:text-white font-semibold text-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer border border-white/10 whitespace-nowrap active:scale-95"
+                  className="h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-950 font-semibold text-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer border border-slate-200 whitespace-nowrap active:scale-95 shadow-2xs"
                   title="Re-run discovery"
                 >
                   <RefreshCw
-                    className={`w-3.5 h-3.5 text-indigo-400 ${discovering ? "animate-spin" : ""}`}
+                    className={`w-3.5 h-3.5 text-slate-500 ${discovering ? "animate-spin" : ""}`}
                   />
                   <span>{discovering ? "Scouting..." : "Re-Discover"}</span>
                 </button>
@@ -6318,10 +6603,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   }
                   setActiveStep(3);
                 }}
-                className="h-9 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-indigo-500/40 shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
+                className="relative inline-flex items-center justify-center gap-2 h-9 px-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
               >
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
                 <span>Proceed to Step 3: Outreach Wave</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 text-emerald-400" />
               </button>
             </div>
           </div>
@@ -6329,21 +6618,21 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           {/* Active Scouting State: Streamlined Cycling Icon Header + Shimmer Skeleton Grid */}
           {discovering && (
             <div className="space-y-4 animate-in fade-in">
-              <div className="p-4 sm:p-5 rounded-2xl bg-[#0e1117] border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-xl">
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 shadow-sm">
-                    <RotateCw className="w-5 h-5 animate-spin text-indigo-400" />
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100/60 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0 shadow-2xs">
+                    <RotateCw className="w-5 h-5 animate-spin text-emerald-600" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-bold text-white tracking-wide">
+                      <h3 className="text-sm font-bold text-slate-900 tracking-wide font-display">
                         Discovering Target Creators
                       </h3>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
                         Target: {creatorsBatchCount || 25}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 truncate">
+                    <p className="text-xs text-slate-500 truncate">
                       Scouting verified creators across {(niches.length > 0 ? niches : ["Tech", "Software", "SaaS"]).join(", ")}
                     </p>
                   </div>
@@ -6353,7 +6642,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <button
                     type="button"
                     onClick={handleStopDiscovery}
-                    className="px-3.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                    className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
                   >
                     <X className="w-3.5 h-3.5" />
                     <span>Stop Discovery</span>
@@ -6375,376 +6664,543 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               <button
                 onClick={handleStartEngine}
                 disabled={discovering}
-                className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer shadow-md"
+                className="relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
               >
-                <Search className="w-4 h-4 text-purple-200" />
+                <Search className="w-4 h-4 text-emerald-400" />
                 <span>
                   Start Lead Discovery ({creatorsBatchCount} Creators)
                 </span>
               </button>
             </div>
-          ) : creators.length > 0 ? (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 border-b border-white/[0.04] pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-white uppercase tracking-wider text-[11px]">
-                    Top Qualified Creators ({Math.min(creators.length, creatorsBatchCount || 25)})
-                  </span>
-                  <span className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-mono">
-                    {creators.slice(0, creatorsBatchCount || 25).filter((c) => (c.creatorScore || 85) >= minScoreThreshold).length} Advanceable (≥{minScoreThreshold})
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-400 font-medium">Score Gate:</span>
-                  <div className="flex items-center gap-1">
-                    {[60, 70, 80, 85].map((threshold) => (
-                      <button
-                        key={threshold}
-                        type="button"
-                        onClick={() => setMinScoreThreshold(threshold)}
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
-                          minScoreThreshold === threshold
-                            ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                            : "bg-white/[0.02] text-slate-400 hover:text-white border-white/[0.06]"
-                        }`}
-                      >
-                        ≥{threshold}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+          ) : creators.length > 0 ? (() => {
+            const validCreators = Array.isArray(creators) ? creators.slice(0, creatorsBatchCount || 25) : [];
+            const advanceableCount = validCreators.filter((c) => (c.creatorScore || 85) >= minScoreThreshold).length;
+            const verifiedEmailCount = validCreators.filter((c) => {
+              const bioMatch = (c.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+              return Boolean(c.email_public || c.email || bioMatch);
+            }).length;
+            const ytCount = validCreators.filter(c => (c.platform || "").toLowerCase() === 'youtube').length;
+            const igCount = validCreators.filter(c => (c.platform || "").toLowerCase() === 'instagram').length;
+            const ttCount = validCreators.filter(c => (c.platform || "").toLowerCase() === 'tiktok').length;
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(Array.isArray(creators) ? creators.slice(0, creatorsBatchCount || 25) : []).map((c) => {
-                  const cleanHandle = (c.handle || "").replace(/^@/, "");
-                  const platformSlug = (c.platform || "youtube").toLowerCase();
-                  const profileUrl =
-                    c.profile_url ||
-                    c.url ||
-                    (platformSlug === "youtube"
-                      ? `https://www.youtube.com/@${cleanHandle}`
-                      : platformSlug === "instagram"
-                        ? `https://www.instagram.com/${cleanHandle}`
-                        : platformSlug === "tiktok"
-                          ? `https://www.tiktok.com/@${cleanHandle}`
-                          : `https://twitter.com/${cleanHandle}`);
-                  const bioEmailMatch = (c.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
-                  const effectiveEmail = c.email_public || c.email || (bioEmailMatch ? bioEmailMatch[0].trim() : "");
-                  const hasEmail = Boolean(effectiveEmail);
+            const filteredCreators = validCreators.filter((c) => {
+              const pSlug = (c.platform || "youtube").toLowerCase();
+              if (step2PlatformFilter !== "ALL" && pSlug !== step2PlatformFilter.toLowerCase()) {
+                return false;
+              }
+              const bioMatch = (c.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+              const effectiveEmail = c.email_public || c.email || (bioMatch ? bioMatch[0].trim() : "");
+              if (step2EmailOnly && !effectiveEmail) {
+                return false;
+              }
+              if (step2SearchQuery.trim()) {
+                const q = step2SearchQuery.toLowerCase().trim();
+                const nameMatch = (c.name || c.display_name || "").toLowerCase().includes(q);
+                const handleMatch = (c.handle || "").toLowerCase().includes(q);
+                const nicheMatch = (c.niche || "").toLowerCase().includes(q);
+                if (!nameMatch && !handleMatch && !nicheMatch) return false;
+              }
+              return true;
+            });
 
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => setSelectedCreatorId(c.id)}
-                      className={`p-4 rounded-xl border transition-all cursor-pointer space-y-3 relative ${
-                        selectedCreatorId === c.id
-                          ? "bg-purple-950/30 border-purple-500/60 shadow-sm"
-                          : "bg-[#161a23] border-white/[0.08] hover:border-white/20"
-                      }`}
-                    >
-                      {/* Creator Header */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <img
-                            src={
-                              c.avatar ||
-                              c.avatar_url ||
-                              `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanHandle || "Creator")}&background=6366f1&color=fff`
-                            }
-                            alt=""
-                            className="w-11 h-11 rounded-full object-cover border border-purple-500/30 flex-shrink-0 bg-[#090b0e]"
-                            onError={(e) => {
-                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanHandle || "Creator")}&background=6366f1&color=fff`;
-                            }}
-                          />
-                          <div className="min-w-0">
-                            <h3 className="text-xs font-bold text-white truncate">
-                              {c.name || c.display_name}
-                            </h3>
-                            <p className="text-[11px] text-slate-400 truncate font-mono">
-                              @{cleanHandle} • {c.platform}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="text-right flex-shrink-0">
-                          {(() => {
-                            const score = c.creatorScore || 85;
-                            const isAbove = score >= minScoreThreshold;
-                            return (
-                              <span
-                                className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border block ${
-                                  isAbove
-                                    ? "text-amber-300 bg-amber-500/10 border-amber-500/30"
-                                    : "text-slate-400 bg-slate-800/40 border-slate-700"
-                                }`}
-                              >
-                                Score: {score}/100 {isAbove ? "✓" : "↓"}
-                              </span>
-                            );
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Stats & Channel Action Bar */}
-                      <div className="grid grid-cols-3 gap-1.5 text-[11px] p-2.5 rounded-lg bg-black/40 border border-white/[0.04]">
-                        <div>
-                          <span className="text-slate-500 block text-[9px] uppercase">
-                            Followers
-                          </span>
-                          <span className="text-slate-200 font-bold">
-                            {c.followerStr || c.follower_count || "100K+"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[9px] uppercase">
-                            Engagement
-                          </span>
-                          <span className="text-emerald-400 font-bold">
-                            {c.engagement || 3.5}%
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[9px] uppercase">
-                            Niche Fit
-                          </span>
-                          <span className="text-purple-300 font-bold">
-                            {c.nicheFit || c.niche_fit || "95% Match"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[9px] uppercase">
-                            Consistency
-                          </span>
-                          <span className="text-cyan-300 font-bold">
-                            {c.postingConsistency || c.posting_consistency || "Weekly"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[9px] uppercase">
-                            Authenticity
-                          </span>
-                          <span className="text-blue-300 font-bold">
-                            {c.audienceAuthenticity || c.audience_authenticity || "92%"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[9px] uppercase">
-                            Commercial
-                          </span>
-                          <span className="text-amber-300 font-bold">
-                            {c.commercialPotential || c.commercial_potential || "Strong"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Scraped Bio Description */}
-                      {c.bio && (
-                        <p className="text-[11px] text-slate-300 line-clamp-2 leading-relaxed bg-black/30 p-2 rounded-lg border border-white/[0.04]">
-                          {c.bio}
-                        </p>
-                      )}
-
-                      {/* External Channel Link + Contact Info / Email Modifier */}
-                      <div className="pt-1">
-                        {editingEmailCreatorId === c.id ? (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                            }}
-                            className="p-1.5 px-2 rounded-lg bg-[#090b0e] border border-purple-500/60 flex items-center gap-1.5 text-xs shadow-sm"
-                          >
-                            <Mail className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
-                            <input
-                              type="email"
-                              autoFocus
-                              value={tempEmailValue}
-                              onChange={(e) =>
-                                setTempEmailValue(e.target.value)
-                              }
-                              onBlur={(e) => {
-                                if (tempEmailValue.trim()) {
-                                  saveEditEmail(c.id, e);
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveEditEmail(c.id, e);
-                                if (e.key === "Escape") cancelEditEmail(e);
-                              }}
-                              placeholder="Enter creator email..."
-                              className="bg-transparent text-white font-mono text-[11px] focus:outline-none flex-1 min-w-0"
-                            />
-                            <button
-                              type="button"
-                              onClick={(e) => saveEditEmail(c.id, e)}
-                              className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer shadow-sm"
-                              title="Save Email"
-                            >
-                              <Check className="w-3 h-3" />
-                              <span>Save</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => cancelEditEmail(e)}
-                              className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10 transition-all cursor-pointer"
-                              title="Cancel"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between gap-2">
-                              {hasEmail ? (
-                                <div className="p-1.5 px-2.5 rounded-lg bg-white/[0.02] border border-white/[0.05] flex items-center justify-between gap-2 text-[11px] min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 min-w-0">
-                                    <Mail className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                                    <span className="font-mono text-emerald-400 truncate">
-                                      {effectiveEmail}
-                                    </span>
-                                    {(c.hunter_score || hunterDataMap[c.id]?.score) ? (
-                                      <span
-                                        className="text-[9px] font-extrabold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap"
-                                        title={`Hunter.io Verification: Score ${c.hunter_score || hunterDataMap[c.id]?.score}%, Status: ${c.hunter_status || hunterDataMap[c.id]?.status}`}
-                                      >
-                                        <Check className="w-2.5 h-2.5 text-emerald-400" />
-                                        <span>{c.hunter_score || hunterDataMap[c.id]?.score}% Valid</span>
-                                      </span>
-                                    ) : (
-                                      <span
-                                        className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded"
-                                        title="Verified Business Contact"
-                                      >
-                                        <span className="flex items-center gap-0.5"><Check className="w-2.5 h-2.5 text-emerald-400" /> Verified</span>
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCopyEmail(effectiveEmail);
-                                      }}
-                                      className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
-                                      title="Copy Email"
-                                    >
-                                      {copiedEmail === effectiveEmail ? (
-                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                      ) : (
-                                        <Copy className="w-3.5 h-3.5" />
-                                      )}
-                                    </button>
-                                    <button
-                                      onClick={(e) => handleHunterVerifyEmail({ ...c, email: effectiveEmail, email_public: effectiveEmail }, e)}
-                                      disabled={hunterLoadingId === c.id}
-                                      className="p-1 text-slate-400 hover:text-emerald-300 rounded hover:bg-white/10 transition-colors disabled:opacity-50"
-                                      title="Verify deliverability with Hunter.io"
-                                    >
-                                      {hunterLoadingId === c.id && hunterActionType === 'verify' ? (
-                                        <RefreshCw className="w-3 h-3 text-emerald-400 animate-spin" />
-                                      ) : (
-                                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                                      )}
-                                    </button>
-                                    <button
-                                      onClick={(e) =>
-                                        startEditEmail(
-                                          c.id,
-                                          effectiveEmail,
-                                          e,
-                                        )
-                                      }
-                                      className="p-1 text-slate-400 hover:text-purple-300 rounded hover:bg-white/10 transition-colors"
-                                      title="Modify Email"
-                                    >
-                                      <Pencil className="w-3 h-3 text-purple-400" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => handleHunterFindEmail(c, e)}
-                                    disabled={hunterLoadingId === c.id}
-                                    className="p-1.5 px-3 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 hover:border-purple-500/40 text-purple-300 hover:text-white flex items-center gap-1.5 text-[11px] font-semibold transition-all cursor-pointer shadow-sm disabled:opacity-50"
-                                    title="Auto-search bio, Hunter.io B2B, and social directory for verified contact"
-                                  >
-                                    {hunterLoadingId === c.id && hunterActionType === 'find' ? (
-                                      <RefreshCw className="w-3 h-3 animate-spin text-purple-400" />
-                                    ) : (
-                                      <Sparkles className="w-3 h-3 text-purple-400" />
-                                    )}
-                                    <span>
-                                      {hunterLoadingId === c.id && hunterActionType === 'find'
-                                        ? "Searching..."
-                                        : "Auto-Find Email"}
-                                    </span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => startEditEmail(c.id, "", e)}
-                                    className="p-1.5 px-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/15 text-slate-400 hover:text-white flex items-center gap-1 text-[11px] font-medium transition-all cursor-pointer"
-                                    title="Manually enter email address"
-                                  >
-                                    <Pencil className="w-2.5 h-2.5 text-slate-400" />
-                                    <span>Edit</span>
-                                  </button>
-                                </div>
-                              )}
-
-                              {/* Direct URL Button (Opens in New Tab) */}
-                              <a
-                                href={profileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 hover:text-white border border-purple-500/30 transition-all flex-shrink-0"
-                                title="Open creator profile in new tab"
-                              >
-                                <span>Profile</span>
-                                <ExternalLink className="w-3 h-3 text-purple-300" />
-                              </a>
-                            </div>
-
-                            {apifyStatusMsg[c.id] && (
-                              <p className="text-[10px] text-emerald-400/90 font-mono px-1">
-                                {apifyStatusMsg[c.id]}
-                              </p>
-                            )}
-                          </div>
-                        )}
+            return (
+              <div className="space-y-4">
+                {/* 4 Pastel Lily-Anderson KPI Overview Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
+                  {/* 1. Scouted Leads */}
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100/90 shadow-2xs space-y-1 relative overflow-hidden group">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider font-display">
+                        Candidates Scouted
+                      </span>
+                      <div className="w-7 h-7 rounded-xl bg-indigo-100/80 text-indigo-700 flex items-center justify-center">
+                        <Users className="w-3.5 h-3.5" />
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="text-xl sm:text-2xl font-black text-indigo-950 font-display">
+                      {validCreators.length}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-indigo-800/80 pt-0.5">
+                      <span>Target: {creatorsBatchCount || 25}</span>
+                      <span className="font-semibold text-indigo-900 bg-indigo-100/70 px-2 py-0.5 rounded-full text-[10px]">
+                        ↑ Live Pipeline
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 2. Qualified Fit */}
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100/90 shadow-2xs space-y-1 relative overflow-hidden group">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider font-display">
+                        High Fit (≥{minScoreThreshold})
+                      </span>
+                      <div className="w-7 h-7 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center">
+                        <Target className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black text-emerald-950 font-display">
+                      {advanceableCount}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-emerald-800/80 pt-0.5">
+                      <span>Advanceable</span>
+                      <span className="font-semibold text-emerald-900 bg-emerald-100/70 px-2 py-0.5 rounded-full text-[10px]">
+                        {Math.round((advanceableCount / (validCreators.length || 1)) * 100)}% Pass
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 3. Verified Contacts */}
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-purple-50/70 border border-purple-100/90 shadow-2xs space-y-1 relative overflow-hidden group">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-purple-900 uppercase tracking-wider font-display">
+                        Verified Contacts
+                      </span>
+                      <div className="w-7 h-7 rounded-xl bg-purple-100/80 text-purple-700 flex items-center justify-center">
+                        <Mail className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black text-purple-950 font-display">
+                      {verifiedEmailCount}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-purple-800/80 pt-0.5">
+                      <span>Direct Inboxes</span>
+                      <span className="font-semibold text-purple-900 bg-purple-100/70 px-2 py-0.5 rounded-full text-[10px]">
+                        {Math.round((verifiedEmailCount / (validCreators.length || 1)) * 100)}% Verified
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 4. Platform Diversity */}
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-rose-50/70 border border-rose-100/90 shadow-2xs space-y-1 relative overflow-hidden group">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-rose-900 uppercase tracking-wider font-display">
+                        Platform Mix
+                      </span>
+                      <div className="w-7 h-7 rounded-xl bg-rose-100/80 text-rose-700 flex items-center justify-center">
+                        <Globe className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black text-rose-950 font-display flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-mono font-bold">{ytCount} YT</span>
+                      <span className="text-xs text-rose-300">•</span>
+                      <span className="text-xs font-mono font-bold">{igCount} IG</span>
+                      <span className="text-xs text-rose-300">•</span>
+                      <span className="text-xs font-mono font-bold">{ttCount} TT</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-rose-800/80 pt-0.5">
+                      <span>Omni-channel</span>
+                      <span className="font-semibold text-rose-900 bg-rose-100/70 px-2 py-0.5 rounded-full text-[10px]">
+                        Multi-Source
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lily-Anderson Style Filter Pills & Score Gate Bar */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-2.5 rounded-2xl bg-slate-50/80 border border-slate-200/90 shadow-2xs">
+                  {/* Left: Platform Pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                    {[
+                      { id: "ALL", label: `All (${validCreators.length})` },
+                      { id: "youtube", label: `YouTube (${ytCount})` },
+                      { id: "instagram", label: `Instagram (${igCount})` },
+                      { id: "tiktok", label: `TikTok (${ttCount})` },
+                    ].map((tab) => {
+                      const active = step2PlatformFilter === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setStep2PlatformFilter(tab.id)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs ${active
+                              ? "bg-slate-900 text-white shadow-xs"
+                              : "bg-white text-slate-600 hover:text-slate-950 border border-slate-200/80 hover:border-slate-300"
+                            }`}
+                        >
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+
+                    {/* Verified email toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setStep2EmailOnly(!step2EmailOnly)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-2xs ${step2EmailOnly
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "bg-white text-slate-600 hover:text-slate-950 border border-slate-200/80 hover:border-slate-300"
+                        }`}
+                    >
+                      <Mail className="w-3 h-3" />
+                      <span>Verified Email</span>
+                    </button>
+                  </div>
+
+                  {/* Right: Quick Search & Score Gate */}
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <div className="relative flex-1 sm:w-44">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={step2SearchQuery}
+                        onChange={(e) => setStep2SearchQuery(e.target.value)}
+                        placeholder="Search creators..."
+                        className="w-full pl-8 pr-7 py-1 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 font-medium"
+                      />
+                      {step2SearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setStep2SearchQuery("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs">
+                      <span className="text-[10px] text-slate-400 font-bold px-1.5 uppercase">Gate</span>
+                      {[60, 70, 80, 85].map((threshold) => (
+                        <button
+                          key={threshold}
+                          type="button"
+                          onClick={() => setMinScoreThreshold(threshold)}
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${minScoreThreshold === threshold
+                              ? "bg-slate-900 text-white shadow-2xs"
+                              : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+                            }`}
+                        >
+                          ≥{threshold}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Creators Cards Grid */}
+                {filteredCreators.length === 0 ? (
+                  <div className="p-8 text-center rounded-2xl bg-slate-50/70 border border-slate-200 text-xs text-slate-500 space-y-2">
+                    <p className="font-semibold text-slate-700">No creators match your active filter.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep2PlatformFilter("ALL");
+                        setStep2EmailOnly(false);
+                        setStep2SearchQuery("");
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-950 font-bold shadow-2xs cursor-pointer"
+                    >
+                      Reset Filters
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredCreators.map((c) => {
+                      const cleanHandle = (c.handle || "").replace(/^@/, "");
+                      const platformSlug = (c.platform || "youtube").toLowerCase();
+                      const profileUrl =
+                        c.profile_url ||
+                        c.url ||
+                        (platformSlug === "youtube"
+                          ? `https://www.youtube.com/@${cleanHandle}`
+                          : platformSlug === "instagram"
+                            ? `https://www.instagram.com/${cleanHandle}`
+                            : platformSlug === "tiktok"
+                              ? `https://www.tiktok.com/@${cleanHandle}`
+                              : `https://twitter.com/${cleanHandle}`);
+                      const bioEmailMatch = (c.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+                      const effectiveEmail = c.email_public || c.email || (bioEmailMatch ? bioEmailMatch[0].trim() : "");
+                      const hasEmail = Boolean(effectiveEmail);
+                      const score = c.creatorScore || 85;
+                      const isAbove = score >= minScoreThreshold;
+
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => setSelectedCreatorId(c.id)}
+                          className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-3 relative ${selectedCreatorId === c.id
+                              ? "bg-emerald-50/40 border-emerald-400 shadow-xs ring-2 ring-emerald-500/20"
+                              : "bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-xs"
+                            }`}
+                        >
+                          {/* Creator Header */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="relative shrink-0">
+                                <img
+                                  src={
+                                    c.avatar ||
+                                    c.avatar_url ||
+                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanHandle || "Creator")}&background=0f172a&color=fff`
+                                  }
+                                  alt=""
+                                  className="w-12 h-12 rounded-2xl object-cover border border-slate-200 bg-slate-100 shadow-2xs"
+                                  onError={(e) => {
+                                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanHandle || "Creator")}&background=0f172a&color=fff`;
+                                  }}
+                                />
+                                <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-xs ${platformSlug === 'youtube'
+                                    ? 'bg-red-600 text-white'
+                                    : platformSlug === 'instagram'
+                                      ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white'
+                                      : 'bg-slate-950 text-cyan-400'
+                                  }`}>
+                                  {platformSlug === 'youtube' ? (
+                                    <Youtube className="w-2.5 h-2.5" />
+                                  ) : platformSlug === 'instagram' ? (
+                                    <Instagram className="w-2.5 h-2.5" />
+                                  ) : (
+                                    <Music className="w-2.5 h-2.5" />
+                                  )}
+                                </div>
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="text-sm font-bold text-slate-900 truncate font-display">
+                                  {c.name || c.display_name}
+                                </h3>
+                                <p className="text-[11px] text-slate-500 truncate font-mono">
+                                  @{cleanHandle} • {c.platform}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="text-right flex-shrink-0">
+                              <span
+                                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1 shadow-2xs ${isAbove
+                                    ? "text-emerald-950 bg-emerald-50 border-emerald-300"
+                                    : "text-slate-600 bg-slate-100 border-slate-200"
+                                  }`}
+                              >
+                                <Sparkles className="w-3 h-3 text-amber-500" />
+                                <span>{score}/100</span>
+                                {isAbove && <span className="text-emerald-600">✓</span>}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Stats 4-Grid in soft pastel tiles */}
+                          <div className="grid grid-cols-4 gap-1.5 text-center text-[11px]">
+                            <div className="p-2 rounded-xl bg-slate-50/90 border border-slate-200/70">
+                              <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Followers</span>
+                              <span className="text-xs font-black text-slate-900 font-mono truncate block">{c.followerStr || c.follower_count || "100K+"}</span>
+                            </div>
+                            <div className="p-2 rounded-xl bg-emerald-50/70 border border-emerald-200/70">
+                              <span className="text-[9px] uppercase font-bold text-emerald-700 block tracking-wider">Engage</span>
+                              <span className="text-xs font-black text-emerald-950 font-mono truncate block">{c.engagement || 3.5}%</span>
+                            </div>
+                            <div className="p-2 rounded-xl bg-purple-50/70 border border-purple-200/70">
+                              <span className="text-[9px] uppercase font-bold text-purple-700 block tracking-wider">Niche Fit</span>
+                              <span className="text-xs font-black text-purple-950 font-mono truncate block">{c.nicheFit || c.niche_fit || "95%"}</span>
+                            </div>
+                            <div className="p-2 rounded-xl bg-amber-50/70 border border-amber-200/70">
+                              <span className="text-[9px] uppercase font-bold text-amber-700 block tracking-wider">Potential</span>
+                              <span className="text-xs font-black text-amber-950 font-mono truncate block">{c.commercialPotential || c.commercial_potential || "Strong"}</span>
+                            </div>
+                          </div>
+
+                          {/* Scraped Bio Description */}
+                          {c.bio && (
+                            <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed bg-slate-50/70 p-2.5 rounded-xl border border-slate-200/70 italic">
+                              "{c.bio}"
+                            </p>
+                          )}
+
+                          {/* External Channel Link + Contact Info / Email Modifier */}
+                          <div className="pt-1">
+                            {editingEmailCreatorId === c.id ? (
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                }}
+                                className="p-1.5 px-2 rounded-xl bg-white border border-slate-300 flex items-center gap-1.5 text-xs shadow-xs"
+                              >
+                                <Mail className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                                <input
+                                  type="email"
+                                  autoFocus
+                                  value={tempEmailValue}
+                                  onChange={(e) =>
+                                    setTempEmailValue(e.target.value)
+                                  }
+                                  onBlur={(e) => {
+                                    if (tempEmailValue.trim()) {
+                                      saveEditEmail(c.id, e);
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") saveEditEmail(c.id, e);
+                                    if (e.key === "Escape") cancelEditEmail(e);
+                                  }}
+                                  placeholder="Enter creator email..."
+                                  className="bg-transparent text-slate-900 font-mono text-[11px] focus:outline-none flex-1 min-w-0"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={(e) => saveEditEmail(c.id, e)}
+                                  className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                                  title="Save Email"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  <span>Save</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => cancelEditEmail(e)}
+                                  className="p-1 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-100 transition-all cursor-pointer"
+                                  title="Cancel"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  {hasEmail ? (
+                                    <div className="p-1.5 px-2.5 rounded-xl bg-emerald-50/90 border border-emerald-200 flex items-center justify-between gap-2 text-xs min-w-0 flex-1 shadow-2xs">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <Mail className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                                        <span className="font-mono text-emerald-950 truncate font-bold text-[11px]">
+                                          {effectiveEmail}
+                                        </span>
+                                        {(c.hunter_score || hunterDataMap[c.id]?.score) ? (
+                                          <span
+                                            className="text-[9px] font-extrabold text-emerald-900 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap"
+                                            title={`Hunter.io: ${c.hunter_score || hunterDataMap[c.id]?.score}%`}
+                                          >
+                                            <Check className="w-2.5 h-2.5 text-emerald-600" />
+                                            <span>{c.hunter_score || hunterDataMap[c.id]?.score}%</span>
+                                          </span>
+                                        ) : (
+                                          <span className="text-[9px] font-bold text-emerald-900 bg-emerald-100/80 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap">
+                                            <Check className="w-2.5 h-2.5 text-emerald-600" />
+                                            <span>Verified</span>
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleCopyEmail(effectiveEmail);
+                                          }}
+                                          className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-emerald-100/60 transition-colors"
+                                          title="Copy Email"
+                                        >
+                                          {copiedEmail === effectiveEmail ? (
+                                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                          ) : (
+                                            <Copy className="w-3.5 h-3.5" />
+                                          )}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => handleHunterVerifyEmail({ ...c, email: effectiveEmail, email_public: effectiveEmail }, e)}
+                                          disabled={hunterLoadingId === c.id}
+                                          className="p-1 text-slate-500 hover:text-emerald-700 rounded hover:bg-emerald-100/60 transition-colors disabled:opacity-50"
+                                          title="Verify deliverability with Hunter.io"
+                                        >
+                                          {hunterLoadingId === c.id && hunterActionType === 'verify' ? (
+                                            <RefreshCw className="w-3 h-3 text-emerald-600 animate-spin" />
+                                          ) : (
+                                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                          )}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => startEditEmail(c.id, effectiveEmail, e)}
+                                          className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-emerald-100/60 transition-colors"
+                                          title="Modify Email"
+                                        >
+                                          <Pencil className="w-3 h-3 text-slate-500" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => handleHunterFindEmail(c, e)}
+                                        disabled={hunterLoadingId === c.id}
+                                        className="p-1.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 flex items-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                                        title="Auto-search bio, Hunter.io B2B, and social directory for verified contact"
+                                      >
+                                        {hunterLoadingId === c.id && hunterActionType === 'find' ? (
+                                          <RefreshCw className="w-3 h-3 animate-spin text-emerald-600" />
+                                        ) : (
+                                          <Sparkles className="w-3 h-3 text-emerald-600" />
+                                        )}
+                                        <span>
+                                          {hunterLoadingId === c.id && hunterActionType === 'find'
+                                            ? "Searching..."
+                                            : "Auto-Find Email"}
+                                        </span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => startEditEmail(c.id, "", e)}
+                                        className="p-1.5 px-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-950 flex items-center gap-1 text-[11px] font-semibold transition-all cursor-pointer shadow-2xs"
+                                        title="Manually enter email address"
+                                      >
+                                        <Pencil className="w-2.5 h-2.5 text-slate-400" />
+                                        <span>Edit</span>
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {/* Direct Channel URL Button */}
+                                  <a
+                                    href={profileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 border border-slate-200 transition-all flex-shrink-0"
+                                    title="Open creator profile in new tab"
+                                  >
+                                    <span>Channel</span>
+                                    <ExternalLink className="w-3 h-3 text-slate-500" />
+                                  </a>
+                                </div>
+
+                                {apifyStatusMsg[c.id] && (
+                                  <p className="text-[10px] text-emerald-700 font-mono px-1">
+                                    {apifyStatusMsg[c.id]}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ) : null}
+            );
+          })() : null}
         </div>
       )}
 
       {/* STEP 3: AUTONOMOUS OUTREACH */}
       {activeStep === 3 && (
-        <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-5 text-slate-900">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 font-display">
                   Outreach Wave
                 </span>
-                <span className="text-xs text-slate-500">•</span>
-                <span className="text-xs text-slate-300">
+                <span className="text-xs text-slate-300">•</span>
+                <span className="text-xs text-slate-500">
                   Outreach Execution & Sequence Engine
                 </span>
               </div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
-                <Send className="w-4 h-4 text-blue-400" />
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 mt-0.5 font-display">
+                <Send className="w-4 h-4 text-emerald-600" />
                 <span>Personalized Outreach Queue</span>
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Review personalized outreach drafts, confirm verified contacts, and dispatch email waves to creators.
               </p>
             </div>
@@ -6753,10 +7209,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               <button
                 onClick={() => handleSendBulkOutreach({ autoAdvance: true })}
                 disabled={sendingBulk || creators.length === 0}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 transition-all disabled:opacity-50 shadow-md cursor-pointer"
+                className="relative inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
               >
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
                 <Send
-                  className={`w-3.5 h-3.5 ${sendingBulk ? "animate-pulse" : ""}`}
+                  className={`w-3.5 h-3.5 text-emerald-400 ${sendingBulk ? "animate-pulse" : ""}`}
                 />
                 <span>
                   {sendingBulk
@@ -6766,48 +7226,48 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </button>
               <button
                 onClick={() => setActiveStep(4)}
-                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95"
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
               >
                 <span>Proceed to Step 4: Creator Replies</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 text-slate-600" />
               </button>
             </div>
           </div>
 
           {outreachLog && (
-            <div className="p-4 rounded-xl bg-blue-950/30 border border-blue-500/30 text-xs font-mono text-blue-300">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-700">
               {outreachLog}
             </div>
           )}
 
-          {/* Sequence Automation Cards (Matching Screenshot) */}
+          {/* Sequence Automation Cards */}
           <div className="grid md:grid-cols-3 gap-4 text-xs">
-            <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
-              <span className="text-slate-400 font-medium">Batch Size</span>
-              <p className="text-xl font-bold text-white">
+            <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
+              <span className="text-slate-500 font-medium">Batch Size</span>
+              <p className="text-xl font-bold text-slate-900 font-display">
                 {creators.length} Creators
               </p>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-slate-400">
                 Targeting 100K–1M verified profiles
               </span>
             </div>
-            <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
-              <span className="text-slate-400 font-medium">
+            <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
+              <span className="text-slate-500 font-medium">
                 Auto Follow-up Rule
               </span>
-              <p className="text-xl font-bold text-purple-300">{followUpDays} Days Timing</p>
-              <span className="text-[11px] text-slate-500">
+              <p className="text-xl font-bold text-emerald-700 font-display">{followUpDays} Days Timing</p>
+              <span className="text-[11px] text-slate-400">
                 No response → follow up in {followUpDays} days
               </span>
             </div>
-            <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
-              <span className="text-slate-400 font-medium">
+            <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
+              <span className="text-slate-500 font-medium">
                 Sequence Termination
               </span>
-              <p className="text-xl font-bold text-emerald-400">
+              <p className="text-xl font-bold text-emerald-700 font-display">
                 Response → Stop
               </p>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-slate-400">
                 Replies tracked automatically
               </span>
             </div>
@@ -6815,12 +7275,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
           {/* Queue preview table */}
           <div className="space-y-3 pt-2">
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-display">
               Active Outreach Queue ({Math.min(creators.length, creatorsBatchCount || 25)})
             </h3>
-            <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-[#161a23]">
+            <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-2xs">
               <table className="w-full text-left text-xs">
-                <thead className="bg-black/40 text-slate-400 text-[11px] border-b border-white/[0.06]">
+                <thead className="bg-slate-50 text-slate-500 text-[11px] border-b border-slate-200 font-semibold">
                   <tr>
                     <th className="p-3">Creator</th>
                     <th className="p-3">Platform</th>
@@ -6829,25 +7289,25 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <th className="p-3">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.04]">
+                <tbody className="divide-y divide-slate-100">
                   {creators.slice(0, creatorsBatchCount || 25).map((c) => {
                     const emailVal = c.email || c.email_public || "";
                     const isEditing = editingEmailCreatorId === c.id;
 
                     return (
-                      <tr key={c.id} className="hover:bg-white/[0.02]">
-                        <td className="p-3 font-bold text-white flex items-center gap-2">
+                      <tr key={c.id} className="hover:bg-slate-50/60">
+                        <td className="p-3 font-bold text-slate-900 flex items-center gap-2 font-display">
                           <img
                             src={c.avatar}
                             alt=""
-                            className="w-6 h-6 rounded-full object-cover border border-purple-500/20"
+                            className="w-6 h-6 rounded-full object-cover border border-slate-200 bg-slate-100"
                           />
                           <span className="truncate max-w-[180px]">
                             {c.name || c.display_name}
                           </span>
                         </td>
-                        <td className="p-3 text-slate-300">{c.platform}</td>
-                        <td className="p-3 font-mono text-slate-300">
+                        <td className="p-3 text-slate-600">{c.platform}</td>
+                        <td className="p-3 font-mono text-slate-600">
                           {c.followerStr || c.follower_count}
                         </td>
                         <td className="p-3 font-mono">
@@ -6869,12 +7329,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                   if (e.key === "Enter") saveEditEmail(c.id, e);
                                   if (e.key === "Escape") cancelEditEmail(e);
                                 }}
-                                className="bg-[#090b0e] border border-purple-500 rounded px-2 py-0.5 text-xs text-white focus:outline-none flex-1 font-mono"
+                                className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs text-slate-900 focus:outline-none flex-1 font-mono shadow-2xs"
                               />
                               <button
                                 type="button"
                                 onClick={(e) => saveEditEmail(c.id, e)}
-                                className="p-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white"
+                                className="p-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-2xs"
                                 title="Save"
                               >
                                 <Check className="w-3 h-3" />
@@ -6882,7 +7342,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               <button
                                 type="button"
                                 onClick={(e) => cancelEditEmail(e)}
-                                className="p-1 rounded bg-white/10 hover:bg-white/20 text-slate-300"
+                                className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
                                 title="Cancel"
                               >
                                 <X className="w-3 h-3" />
@@ -6891,11 +7351,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           ) : (
                             <div className="flex items-center gap-1.5 group">
                               {emailVal ? (
-                                <span className="text-emerald-400 font-mono">
+                                <span className="text-emerald-700 font-mono font-medium">
                                   {emailVal}
                                 </span>
                               ) : (
-                                <span className="text-amber-400/80 text-[11px] italic">
+                                <span className="text-amber-600 text-[11px] italic">
                                   No email set
                                 </span>
                               )}
@@ -6904,7 +7364,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 onClick={(e) =>
                                   startEditEmail(c.id, emailVal, e)
                                 }
-                                className="p-0.5 text-slate-500 hover:text-purple-300 rounded opacity-70 group-hover:opacity-100 transition-opacity"
+                                className="p-0.5 text-slate-400 hover:text-slate-700 rounded opacity-70 group-hover:opacity-100 transition-opacity cursor-pointer"
                                 title="Edit Email"
                               >
                                 <Pencil className="w-3 h-3" />
@@ -6914,15 +7374,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         </td>
                         <td className="p-3">
                           <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
-                              c.status === "rejected"
-                                ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${c.status === "rejected"
+                                ? "bg-rose-50 text-rose-700 border-rose-200"
                                 : c.status === "approved"
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                   : emailVal
-                                    ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                                    : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                            }`}
+                                    ? "bg-slate-100 text-slate-700 border-slate-200"
+                                    : "bg-amber-50 text-amber-700 border-amber-200"
+                              }`}
                           >
                             {c.status === "rejected"
                               ? "Archived (Rejected)"
@@ -6985,16 +7444,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             null;
 
           return (
-            <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
+            <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-5 text-slate-900">
               {/* Header */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <h2 className="text-base font-bold text-white flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-emerald-400" />
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 font-display">
+                    <MessageSquare className="w-4 h-4 text-emerald-600" />
                     <span>
                       Interested Creator Review ({filteredReplies.length})
                     </span>
                   </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Review incoming creator responses, qualify sentiment, and advance interested leads to Step 5.
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-2.5 flex-shrink-0">
@@ -7002,11 +7464,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     type="button"
                     onClick={() => syncImapReplies(true)}
                     disabled={pollingImap}
-                    className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 text-white font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 flex-shrink-0"
+                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 flex-shrink-0 shadow-2xs"
                     title="Check inbox for new creator replies"
                   >
                     <RefreshCw
-                      className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center text-purple-400 ${pollingImap ? "animate-spin" : ""}`}
+                      className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center text-slate-500 ${pollingImap ? "animate-spin" : ""}`}
                     />
                     <span className="flex-shrink-0">Sync Replies</span>
                   </button>
@@ -7018,17 +7480,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={() => setReplyFilter("all")}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    replyFilter === "all"
-                      ? "bg-purple-500/20 border-purple-500/50 shadow-sm text-white"
-                      : "bg-[#161a23] border-white/[0.06] hover:border-white/20"
-                  }`}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${replyFilter === "all"
+                      ? "bg-slate-900 border-slate-900 shadow-2xs text-white"
+                      : "bg-white border-slate-200 hover:border-slate-300 text-slate-700"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-300">
+                    <span className="text-[11px] font-bold">
                       All Leads
                     </span>
-                    <span className="text-xs font-mono font-bold text-white bg-white/10 px-1.5 py-0.5 rounded">
+                    <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${replyFilter === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"}`}>
                       {creatorsWithReplies.length}
                     </span>
                   </div>
@@ -7037,20 +7498,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={() => setReplyFilter("interested")}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    replyFilter === "interested"
-                      ? "bg-emerald-500/20 border-emerald-500/50 shadow-sm text-white"
-                      : "bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40"
-                  }`}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${replyFilter === "interested"
+                      ? "bg-emerald-700 border-emerald-700 shadow-2xs text-white"
+                      : "bg-emerald-50/60 border-emerald-200/80 hover:border-emerald-300 text-emerald-900"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                      <span className="text-[11px] font-bold text-emerald-300">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="text-[11px] font-bold">
                         Interested
                       </span>
                     </div>
-                    <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded">
+                    <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${replyFilter === "interested" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
                       {interestedCount}
                     </span>
                   </div>
@@ -7059,20 +7519,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={() => setReplyFilter("question")}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    replyFilter === "question"
-                      ? "bg-amber-500/20 border-amber-500/50 shadow-sm text-white"
-                      : "bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40"
-                  }`}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${replyFilter === "question"
+                      ? "bg-amber-600 border-amber-600 shadow-2xs text-white"
+                      : "bg-amber-50/60 border-amber-200/80 hover:border-amber-300 text-amber-900"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-amber-400" />
-                      <span className="text-[11px] font-bold text-amber-300">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      <span className="text-[11px] font-bold">
                         Question
                       </span>
                     </div>
-                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">
+                    <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${replyFilter === "question" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"}`}>
                       {questionCount}
                     </span>
                   </div>
@@ -7081,20 +7540,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={() => setReplyFilter("not_interested")}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    replyFilter === "not_interested"
-                      ? "bg-red-500/20 border-red-500/50 shadow-sm text-white"
-                      : "bg-red-500/5 border-red-500/20 hover:border-red-500/40"
-                  }`}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${replyFilter === "not_interested"
+                      ? "bg-rose-700 border-rose-700 shadow-2xs text-white"
+                      : "bg-rose-50/60 border-rose-200/80 hover:border-rose-300 text-rose-900"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-red-400" />
-                      <span className="text-[11px] font-bold text-red-300">
+                      <span className="w-2 h-2 rounded-full bg-rose-500" />
+                      <span className="text-[11px] font-bold">
                         Not Interested
                       </span>
                     </div>
-                    <span className="text-xs font-mono font-bold text-red-400 bg-red-500/15 px-1.5 py-0.5 rounded">
+                    <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${replyFilter === "not_interested" ? "bg-white/20 text-white" : "bg-rose-100 text-rose-800"}`}>
                       {notInterestedCount}
                     </span>
                   </div>
@@ -7103,20 +7561,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={() => setReplyFilter("unsubscribe")}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    replyFilter === "unsubscribe"
-                      ? "bg-slate-500/20 border-slate-500/50 shadow-sm text-white"
-                      : "bg-slate-500/5 border-slate-500/20 hover:border-slate-500/40"
-                  }`}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${replyFilter === "unsubscribe"
+                      ? "bg-slate-800 border-slate-800 shadow-2xs text-white"
+                      : "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-slate-400" />
-                      <span className="text-[11px] font-bold text-slate-300">
+                      <span className="text-[11px] font-bold">
                         Unsubscribe
                       </span>
                     </div>
-                    <span className="text-xs font-mono font-bold text-slate-400 bg-slate-500/15 px-1.5 py-0.5 rounded">
+                    <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${replyFilter === "unsubscribe" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
                       {unsubCount}
                     </span>
                   </div>
@@ -7125,20 +7582,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={() => setReplyFilter("other")}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    replyFilter === "other"
-                      ? "bg-indigo-500/20 border-indigo-500/50 shadow-sm text-white"
-                      : "bg-indigo-500/5 border-indigo-500/20 hover:border-indigo-500/40"
-                  }`}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${replyFilter === "other"
+                      ? "bg-slate-900 border-slate-900 shadow-2xs text-white"
+                      : "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-indigo-400" />
-                      <span className="text-[11px] font-bold text-indigo-300">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                      <span className="text-[11px] font-bold">
                         Other
                       </span>
                     </div>
-                    <span className="text-xs font-mono font-bold text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded">
+                    <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${replyFilter === "other" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
                       {otherCount}
                     </span>
                   </div>
@@ -7147,16 +7603,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={() => setReplyFilter("awaiting_reply")}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    replyFilter === "awaiting_reply"
-                      ? "bg-blue-500/20 border-blue-500/50 shadow-sm text-white"
-                      : "bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40"
-                  }`}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${replyFilter === "awaiting_reply"
+                      ? "bg-blue-700 border-blue-700 shadow-2xs text-white"
+                      : "bg-blue-50/60 border-blue-200/80 hover:border-blue-300 text-blue-900"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <Clock className="w-3 h-3 text-blue-400" />
-                      <span className="text-[11px] font-bold text-blue-300">
+                      <Clock className="w-3 h-3 text-blue-600" />
+                      <span className="text-[11px] font-bold">
                         Awaiting ({awaitingCount})
                       </span>
                     </div>
@@ -7166,16 +7621,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={() => setReplyFilter("no_email")}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    replyFilter === "no_email"
-                      ? "bg-amber-500/20 border-amber-500/50 shadow-sm text-white"
-                      : "bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40"
-                  }`}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${replyFilter === "no_email"
+                      ? "bg-amber-600 border-amber-600 shadow-2xs text-white"
+                      : "bg-amber-50/60 border-amber-200/80 hover:border-amber-300 text-amber-900"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-[11px] font-bold text-amber-300">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                      <span className="text-[11px] font-bold">
                         No Email ({noEmailCount})
                       </span>
                     </div>
@@ -7185,7 +7639,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
               {/* Master-Detail Split Layout */}
               {filteredReplies.length === 0 ? (
-                <div className="text-center py-16 text-slate-500 text-xs bg-[#161a23] rounded-2xl border border-white/[0.05] space-y-2">
+                <div className="text-center py-16 text-slate-500 text-xs bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
                   <p>No creators matching this category filter.</p>
                   <p className="text-slate-400 text-[11px]">
                     When creators reply to your outreach emails, click{" "}
@@ -7207,15 +7661,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         <div
                           key={c.id}
                           onClick={() => setSelectedCreatorId(c.id)}
-                          className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2.5 ${
-                            isSelected
-                              ? "bg-purple-950/25 border-purple-500/70 shadow-lg shadow-purple-950/40 ring-1 ring-purple-500/40"
+                          className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2.5 ${isSelected
+                              ? "bg-emerald-50/40 border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/20"
                               : isApproved
-                                ? "bg-emerald-950/10 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-950/20"
+                                ? "bg-emerald-50/20 border-emerald-200 hover:border-emerald-300"
                                 : isRejected
-                                  ? "bg-red-950/10 border-red-500/20 opacity-60 hover:opacity-90"
-                                  : "bg-[#141824] border-white/[0.08] hover:border-white/20 hover:bg-[#181d2c]"
-                          }`}
+                                  ? "bg-rose-50/20 border-rose-200 opacity-60 hover:opacity-90"
+                                  : "bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-xs"
+                            }`}
                         >
                           {/* Card Header: Avatar, Name/Handle & Classification Badge */}
                           <div className="flex items-center justify-between gap-2.5">
@@ -7224,20 +7677,20 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 src={
                                   c.avatar ||
                                   c.avatar_url ||
-                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || c.handle || "Creator")}&background=6366f1&color=fff`
+                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || c.handle || "Creator")}&background=0f172a&color=fff`
                                 }
                                 onError={(e) => {
                                   e.currentTarget.onerror = null;
-                                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || c.handle || "Creator")}&background=6366f1&color=fff`;
+                                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || c.handle || "Creator")}&background=0f172a&color=fff`;
                                 }}
                                 alt=""
-                                className="w-9 h-9 rounded-full object-cover border border-white/15 flex-shrink-0 shadow-sm"
+                                className="w-9 h-9 rounded-full object-cover border border-slate-200 bg-slate-100 flex-shrink-0 shadow-2xs"
                               />
                               <div className="min-w-0">
-                                <h4 className="text-xs font-bold text-white truncate">
+                                <h4 className="text-xs font-bold text-slate-900 truncate font-display">
                                   {c.name || c.display_name}
                                 </h4>
-                                <p className="text-[11px] text-slate-400 truncate font-mono">
+                                <p className="text-[11px] text-slate-500 truncate font-mono">
                                   @{c.handle?.replace(/^@/, "")} • {c.platform}
                                 </p>
                               </div>
@@ -7245,45 +7698,43 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                             {/* Classification Status Badge */}
                             {isApproved ? (
-                              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border bg-emerald-50 text-emerald-800 border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                 <span>Approved</span>
                               </span>
                             ) : isRejected ? (
-                              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border bg-rose-500/15 text-rose-300 border-rose-500/30">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border bg-rose-50 text-rose-800 border-rose-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                                 <span>Rejected</span>
                               </span>
                             ) : (
                               <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border ${
-                                  reply.classification === "interested"
-                                    ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5 flex-shrink-0 border ${reply.classification === "interested"
+                                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                                     : reply.classification === "question"
-                                      ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                                      ? "bg-amber-50 text-amber-800 border-amber-200"
                                       : reply.classification === "not_interested"
-                                        ? "bg-red-500/15 text-red-300 border-red-500/30"
+                                        ? "bg-rose-50 text-rose-800 border-rose-200"
                                         : reply.classification === "unsubscribe"
-                                          ? "bg-slate-500/15 text-slate-300 border-slate-500/30"
+                                          ? "bg-slate-100 text-slate-700 border-slate-200"
                                           : reply.classification === "no_email"
-                                            ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
-                                            : "bg-blue-500/15 text-blue-300 border-blue-500/30"
-                                }`}
+                                            ? "bg-amber-50 text-amber-800 border-amber-200"
+                                            : "bg-blue-50 text-blue-800 border-blue-200"
+                                  }`}
                               >
                                 <span
-                                  className={`w-1.5 h-1.5 rounded-full ${
-                                    reply.classification === "interested"
-                                      ? "bg-emerald-400"
+                                  className={`w-1.5 h-1.5 rounded-full ${reply.classification === "interested"
+                                      ? "bg-emerald-500"
                                       : reply.classification === "question"
-                                        ? "bg-amber-400"
+                                        ? "bg-amber-500"
                                         : reply.classification === "not_interested"
-                                          ? "bg-red-400"
+                                          ? "bg-rose-500"
                                           : reply.classification === "unsubscribe"
                                             ? "bg-slate-400"
                                             : reply.classification === "no_email"
-                                              ? "bg-amber-400"
-                                              : "bg-blue-400"
-                                  }`}
+                                              ? "bg-amber-500"
+                                              : "bg-blue-500"
+                                    }`}
                                 />
                                 <span className="capitalize">
                                   {reply.classification === "no_email"
@@ -7296,41 +7747,41 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                           {/* Message snippet bubble */}
                           {reply.hasRealReply ? (
-                            <div className="p-2 rounded-lg bg-black/40 border border-white/[0.04]">
-                              <p className="text-[11px] text-slate-200 line-clamp-2 italic leading-relaxed font-sans">
+                            <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/80">
+                              <p className="text-[11px] text-slate-700 line-clamp-2 italic leading-relaxed font-sans">
                                 "{reply.snippet || reply.text}"
                               </p>
                             </div>
                           ) : reply.classification === "no_email" ? (
-                            <div className="p-2 rounded-lg bg-amber-500/5 border border-amber-500/10">
-                              <p className="text-[11px] text-amber-300/80 italic font-sans">
+                            <div className="p-2 rounded-lg bg-amber-50/50 border border-amber-200/70">
+                              <p className="text-[11px] text-amber-800 italic font-sans">
                                 Outreach not sent. No public business email.
                               </p>
                             </div>
                           ) : (
-                            <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.03]">
-                              <p className="text-[11px] text-slate-400 italic font-sans">
+                            <div className="p-2 rounded-lg bg-slate-50/60 border border-slate-100">
+                              <p className="text-[11px] text-slate-500 italic font-sans">
                                 Outreach delivered. Awaiting creator response.
                               </p>
                             </div>
                           )}
 
                           {/* Footer: Timestamp & Approval Status */}
-                          <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1.5 border-t border-white/[0.05]">
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
                             <span className="flex items-center gap-1 font-mono">
-                              <Clock className="w-3 h-3 text-slate-500" />
+                              <Clock className="w-3 h-3 text-slate-400" />
                               <span>{reply.time || "Recently"}</span>
                             </span>
                             {isApproved ? (
-                              <span className="text-emerald-400 text-[10px] font-extrabold bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wider">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Approved
+                              <span className="text-emerald-700 text-[10px] font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wider">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Approved
                               </span>
                             ) : isRejected ? (
-                              <span className="text-rose-400 text-[10px] font-extrabold bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wider">
-                                <XCircle className="w-3 h-3 text-rose-400" /> Rejected
+                              <span className="text-rose-700 text-[10px] font-extrabold bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wider">
+                                <XCircle className="w-3 h-3 text-rose-600" /> Rejected
                               </span>
                             ) : reply.hasRealReply ? (
-                              <span className="text-purple-300 font-semibold flex items-center gap-1">
+                              <span className="text-emerald-700 font-semibold flex items-center gap-1">
                                 Ready for Review
                               </span>
                             ) : (
@@ -7346,9 +7797,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                   {/* Right: Full Conversation & Decision View */}
                   {activeReviewCreator && (
-                    <div className="lg:col-span-7 p-5 rounded-2xl bg-[#161a23] border border-white/[0.08] space-y-4">
+                    <div className="lg:col-span-7 p-5 rounded-2xl bg-white border border-slate-200/90 space-y-4 shadow-xs">
                       {/* Header */}
-                      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3.5">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
                         <div className="flex items-center gap-3 min-w-0">
                           <img
                             src={
@@ -7356,14 +7807,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               activeReviewCreator.avatar_url
                             }
                             alt=""
-                            className="w-12 h-12 rounded-full object-cover border border-purple-500/40"
+                            className="w-12 h-12 rounded-full object-cover border border-slate-200 bg-slate-100 shadow-2xs"
                           />
                           <div className="min-w-0">
-                            <h3 className="text-sm font-bold text-white truncate">
+                            <h3 className="text-sm font-bold text-slate-900 truncate font-display">
                               {activeReviewCreator.name ||
                                 activeReviewCreator.display_name}
                             </h3>
-                            <p className="text-xs text-slate-400 font-mono">
+                            <p className="text-xs text-slate-500 font-mono">
                               {activeReviewCreator.handle} •{" "}
                               {activeReviewCreator.platform} •{" "}
                               {activeReviewCreator.followerStr ||
@@ -7375,61 +7826,59 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                         <div className="flex items-center gap-3">
                           {(activeReviewCreator.status === "approved" || activeReviewCreator.isApproved) ? (
-                            <span className="text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                            <span className="text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border-emerald-200">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500" />
                               <span>Approved • Qualified</span>
                             </span>
                           ) : (activeReviewCreator.status === "rejected" || activeReviewCreator.isRejected) ? (
-                            <span className="text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 bg-rose-500/10 text-rose-400 border-rose-500/20">
-                              <span className="w-2 h-2 rounded-full bg-rose-400" />
+                            <span className="text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 bg-rose-50 text-rose-800 border-rose-200">
+                              <span className="w-2 h-2 rounded-full bg-rose-500" />
                               <span>Rejected • Archived</span>
                             </span>
                           ) : (
                             <span
-                              className={`text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 ${
-                                activeReviewCreator.replyInfo.classification ===
-                                "interested"
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              className={`text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 ${activeReviewCreator.replyInfo.classification ===
+                                  "interested"
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                                   : activeReviewCreator.replyInfo
-                                        .classification === "question"
-                                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                    .classification === "question"
+                                    ? "bg-amber-50 text-amber-800 border-amber-200"
                                     : activeReviewCreator.replyInfo
-                                          .classification === "not_interested"
-                                      ? "bg-red-500/10 text-red-400 border-red-500/20"
+                                      .classification === "not_interested"
+                                      ? "bg-rose-50 text-rose-800 border-rose-200"
                                       : activeReviewCreator.replyInfo
-                                            .classification === "unsubscribe"
-                                        ? "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                                        .classification === "unsubscribe"
+                                        ? "bg-slate-100 text-slate-700 border-slate-200"
                                         : activeReviewCreator.replyInfo
-                                              .classification === "no_email"
-                                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                                          : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                              }`}
+                                          .classification === "no_email"
+                                          ? "bg-amber-50 text-amber-800 border-amber-200"
+                                          : "bg-blue-50 text-blue-800 border-blue-200"
+                                }`}
                             >
                               <span
-                                className={`w-2 h-2 rounded-full ${
-                                  activeReviewCreator.replyInfo.classification ===
-                                  "interested"
-                                    ? "bg-emerald-400"
+                                className={`w-2 h-2 rounded-full ${activeReviewCreator.replyInfo.classification ===
+                                    "interested"
+                                    ? "bg-emerald-500"
                                     : activeReviewCreator.replyInfo
-                                          .classification === "question"
-                                      ? "bg-amber-400"
+                                      .classification === "question"
+                                      ? "bg-amber-500"
                                       : activeReviewCreator.replyInfo
-                                            .classification === "not_interested"
-                                        ? "bg-red-400"
+                                        .classification === "not_interested"
+                                        ? "bg-rose-500"
                                         : activeReviewCreator.replyInfo
-                                              .classification === "unsubscribe"
+                                          .classification === "unsubscribe"
                                           ? "bg-slate-400"
                                           : activeReviewCreator.replyInfo
-                                                .classification === "no_email"
-                                            ? "bg-amber-400"
-                                            : "bg-blue-400"
-                                }`}
+                                            .classification === "no_email"
+                                            ? "bg-amber-500"
+                                            : "bg-blue-500"
+                                  }`}
                               />
                               <span className="capitalize">
                                 {activeReviewCreator.replyInfo.hasRealReply
                                   ? `AI: ${activeReviewCreator.replyInfo.classification.replace("_", " ")}`
                                   : activeReviewCreator.replyInfo
-                                        .classification === "no_email"
+                                    .classification === "no_email"
                                     ? "No Email Set"
                                     : "Awaiting Reply"}
                               </span>
@@ -7439,57 +7888,57 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       </div>
 
                       {/* ── Creator Profile + Audience Stats Card ── */}
-                      <div className="p-4 rounded-xl bg-[#090b0e] border border-white/[0.06] space-y-3">
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display">
                             Creator Profile & Audience
                           </span>
-                          <span className="text-xs font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg">
+                          <span className="text-xs font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg">
                             Creator Score: {activeReviewCreator.creatorScore || 85}/100
                           </span>
                         </div>
 
                         {/* Stats Grid */}
                         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
-                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
-                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Followers</span>
-                            <span className="text-xs font-bold text-white">{activeReviewCreator.followerStr || activeReviewCreator.follower_count || "N/A"}</span>
+                          <div className="p-2 rounded-lg bg-white border border-slate-200 text-center shadow-2xs">
+                            <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Followers</span>
+                            <span className="text-xs font-bold text-slate-900">{activeReviewCreator.followerStr || activeReviewCreator.follower_count || "N/A"}</span>
                           </div>
-                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
-                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Engagement</span>
-                            <span className="text-xs font-bold text-emerald-400">{activeReviewCreator.engagement || "3.5"}%</span>
+                          <div className="p-2 rounded-lg bg-white border border-slate-200 text-center shadow-2xs">
+                            <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Engagement</span>
+                            <span className="text-xs font-bold text-emerald-700">{activeReviewCreator.engagement || "3.5"}%</span>
                           </div>
-                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
-                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Niche Fit</span>
-                            <span className="text-xs font-bold text-purple-300">{activeReviewCreator.nicheFit || activeReviewCreator.niche_fit || "95% Match"}</span>
+                          <div className="p-2 rounded-lg bg-white border border-slate-200 text-center shadow-2xs">
+                            <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Niche Fit</span>
+                            <span className="text-xs font-bold text-slate-800">{activeReviewCreator.nicheFit || activeReviewCreator.niche_fit || "95% Match"}</span>
                           </div>
-                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
-                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Consistency</span>
-                            <span className="text-xs font-bold text-cyan-300">{activeReviewCreator.postingConsistency || activeReviewCreator.posting_consistency || "Weekly"}</span>
+                          <div className="p-2 rounded-lg bg-white border border-slate-200 text-center shadow-2xs">
+                            <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Consistency</span>
+                            <span className="text-xs font-bold text-slate-800">{activeReviewCreator.postingConsistency || activeReviewCreator.posting_consistency || "Weekly"}</span>
                           </div>
-                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
-                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Authenticity</span>
-                            <span className="text-xs font-bold text-blue-300">{activeReviewCreator.audienceAuthenticity || activeReviewCreator.audience_authenticity || "92%"}</span>
+                          <div className="p-2 rounded-lg bg-white border border-slate-200 text-center shadow-2xs">
+                            <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Authenticity</span>
+                            <span className="text-xs font-bold text-slate-800">{activeReviewCreator.audienceAuthenticity || activeReviewCreator.audience_authenticity || "92%"}</span>
                           </div>
-                          <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.04] text-center">
-                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider">Commercial</span>
-                            <span className="text-xs font-bold text-amber-300">{activeReviewCreator.commercialPotential || activeReviewCreator.commercial_potential || "Strong"}</span>
+                          <div className="p-2 rounded-lg bg-white border border-slate-200 text-center shadow-2xs">
+                            <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Commercial</span>
+                            <span className="text-xs font-bold text-emerald-700">{activeReviewCreator.commercialPotential || activeReviewCreator.commercial_potential || "Strong"}</span>
                           </div>
                         </div>
 
                         {/* Bio / Relevant Content */}
                         {activeReviewCreator.bio && (
-                          <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                            <span className="text-[9px] text-slate-500 block uppercase tracking-wider mb-1">Relevant Content / Bio</span>
-                            <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-3">{activeReviewCreator.bio}</p>
+                          <div className="p-2.5 rounded-lg bg-white border border-slate-200/80">
+                            <span className="text-[9px] text-slate-400 block uppercase tracking-wider mb-1 font-semibold">Relevant Content / Bio</span>
+                            <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-3">{activeReviewCreator.bio}</p>
                           </div>
                         )}
 
                         {/* Outreach History Summary */}
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-slate-400 pt-1 border-t border-white/[0.04]">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-slate-500 pt-1 border-t border-slate-200">
                           <span className="flex items-center gap-1">
-                            <Mail className="w-3 h-3 text-blue-400" />
-                            <strong className="text-slate-200">Email:</strong>
+                            <Mail className="w-3 h-3 text-emerald-600" />
+                            <strong className="text-slate-700">Email:</strong>
                             {editingEmailCreatorId === activeReviewCreator.id ? (
                               <span className="inline-flex items-center gap-1" onClick={e => e.stopPropagation()}>
                                 <input
@@ -7502,113 +7951,111 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                     }
                                   }}
                                   onKeyDown={e => { if (e.key === 'Enter') saveEditEmail(activeReviewCreator.id, e); if (e.key === 'Escape') cancelEditEmail(e); }}
-                                  className="w-40 px-1.5 py-0.5 rounded bg-white/10 border border-purple-500/40 text-white text-[11px] font-mono focus:outline-none focus:border-purple-400"
+                                  className="w-40 px-1.5 py-0.5 rounded bg-white border border-slate-300 text-slate-900 text-[11px] font-mono focus:outline-none focus:border-slate-900"
                                   placeholder="creator@email.com"
                                   autoFocus
                                 />
                                 <button type="button" onClick={e => saveEditEmail(activeReviewCreator.id, e)} className="p-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white" title="Save">
                                   <Check className="w-3 h-3" />
                                 </button>
-                                <button type="button" onClick={e => cancelEditEmail(e)} className="p-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-300" title="Cancel">
+                                <button type="button" onClick={e => cancelEditEmail(e)} className="p-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600" title="Cancel">
                                   <X className="w-3 h-3" />
                                 </button>
                               </span>
                             ) : (activeReviewCreator.email || activeReviewCreator.email_public) ? (
-                              <span className="text-emerald-400 font-mono">{activeReviewCreator.email || activeReviewCreator.email_public}</span>
+                              <span className="text-emerald-700 font-mono font-medium">{activeReviewCreator.email || activeReviewCreator.email_public}</span>
                             ) : (
                               <button
                                 type="button"
                                 onClick={e => startEditEmail(activeReviewCreator.id, '', e)}
-                                className="text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-0.5 transition-colors cursor-pointer"
+                                className="text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-0.5 transition-colors cursor-pointer"
                               >
                                 <Plus className="w-3 h-3" />
                                 <span>Add Email</span>
                               </button>
                             )}
                           </span>
-                          <span className="text-slate-600">|</span>
+                          <span className="text-slate-300">|</span>
                           <span className="flex items-center gap-1">
-                            <Send className="w-3 h-3 text-cyan-400" />
-                            <strong className="text-slate-200">Outreach:</strong> {activeReviewCreator.outreach_sent ? "Sent" : "Pending"}
+                            <Send className="w-3 h-3 text-slate-500" />
+                            <strong className="text-slate-700">Outreach:</strong> {activeReviewCreator.outreach_sent ? "Sent" : "Pending"}
                           </span>
-                          <span className="text-slate-600">|</span>
+                          <span className="text-slate-300">|</span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-purple-400" />
-                            <strong className="text-slate-200">Platform:</strong> {activeReviewCreator.platform}
+                            <Clock className="w-3 h-3 text-slate-500" />
+                            <strong className="text-slate-700">Platform:</strong> {activeReviewCreator.platform}
                           </span>
                         </div>
                       </div>
 
                       {/* AI Classification Analysis Box */}
-                      <div className="p-3.5 rounded-xl bg-black/40 border border-white/[0.06] space-y-1.5 text-xs">
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-xs">
                         <div className="flex items-center justify-between text-[11px] font-mono">
-                          <span className="text-slate-400">
+                          <span className="text-slate-500">
                             Status:{" "}
                             <strong
                               className={
                                 activeReviewCreator.replyInfo.hasRealReply
-                                  ? "text-emerald-400"
+                                  ? "text-emerald-700"
                                   : activeReviewCreator.replyInfo
-                                        .classification === "no_email"
-                                    ? "text-amber-400"
-                                    : "text-blue-400"
+                                    .classification === "no_email"
+                                    ? "text-amber-700"
+                                    : "text-blue-700"
                               }
                             >
                               {activeReviewCreator.replyInfo.hasRealReply
                                 ? "Reply Received"
                                 : activeReviewCreator.replyInfo
-                                      .classification === "no_email"
+                                  .classification === "no_email"
                                   ? "Email Needed"
                                   : "Waiting for Response"}
                             </strong>
                           </span>
-                          <span className="text-slate-400">
+                          <span className="text-slate-500">
                             Sentiment:{" "}
-                            <strong className="text-purple-300">
+                            <strong className="text-slate-800">
                               {activeReviewCreator.replyInfo.sentiment}
                             </strong>
                           </span>
                         </div>
-                        <p className="text-slate-300 text-[11px] leading-relaxed">
-                          <strong className="text-slate-400">Analysis:</strong>{" "}
+                        <p className="text-slate-600 text-[11px] leading-relaxed">
+                          <strong className="text-slate-700">Analysis:</strong>{" "}
                           {activeReviewCreator.replyInfo.reasoning}
                         </p>
                       </div>
 
                       {/* Inbound Creator Response / Conversation Stream */}
                       <div className="space-y-3">
-
-                        {/* Inbound Creator Response / Conversation Bubble */}
                         {activeReviewCreator.replyInfo.hasRealReply ? (
-                          <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-950/20 via-[#0e1612] to-[#090b0e] border border-emerald-500/30 space-y-2 text-xs shadow-md">
-                            <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                          <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-2 text-xs shadow-2xs">
+                            <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
                               <div className="flex items-center gap-2">
                                 <img
                                   src={
                                     activeReviewCreator.avatar ||
                                     activeReviewCreator.avatar_url ||
-                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(activeReviewCreator.handle || "Creator")}&background=6366f1&color=fff`
+                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(activeReviewCreator.handle || "Creator")}&background=0f172a&color=fff`
                                   }
                                   alt=""
-                                  className="w-5 h-5 rounded-full object-cover border border-emerald-500/40"
+                                  className="w-5 h-5 rounded-full object-cover border border-emerald-300"
                                 />
-                                <span className="font-bold text-white text-xs">
+                                <span className="font-bold text-slate-900 text-xs font-display">
                                   {activeReviewCreator.name ||
                                     activeReviewCreator.display_name}
                                 </span>
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] text-emerald-300 font-mono flex items-center gap-1 font-bold">
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-mono flex items-center gap-1 font-bold">
                                   <span>✨ Inbound Response</span>
                                 </span>
                               </div>
-                              <span className="text-[10px] text-slate-400 font-mono">
+                              <span className="text-[10px] text-slate-500 font-mono">
                                 {activeReviewCreator.replyInfo.replyTime || "Recently"}
                               </span>
                             </div>
-                            <p className="text-slate-200 font-mono text-[11px]">
-                              <strong className="text-emerald-400">Subject:</strong>{" "}
+                            <p className="text-slate-700 font-mono text-[11px]">
+                              <strong className="text-emerald-700">Subject:</strong>{" "}
                               {activeReviewCreator.replyInfo.subject || "Re: Partnership Inquiry"}
                             </p>
-                            <div className="p-3.5 rounded-xl bg-black/50 border border-emerald-500/20 text-xs text-slate-100 shadow-inner">
+                            <div className="p-3.5 rounded-xl bg-white border border-emerald-200/80 text-xs text-slate-800 shadow-2xs">
                               <FormattedMarkdownBody
                                 text={
                                   activeReviewCreator.replyInfo.snippet ||
@@ -7619,9 +8066,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             </div>
                           </div>
                         ) : (
-                          <div className="p-4 rounded-xl bg-blue-950/10 border border-blue-500/20 text-center space-y-1.5 py-6">
-                            <Clock className="w-5 h-5 text-blue-400 mx-auto" />
-                            <p className="text-xs font-semibold text-slate-300">
+                          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1.5 py-6">
+                            <Clock className="w-5 h-5 text-slate-400 mx-auto" />
+                            <p className="text-xs font-semibold text-slate-700">
                               Awaiting Creator Response
                             </p>
                             <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
@@ -7632,19 +8079,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       </div>
 
                       {/* Review Actions */}
-                      <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-display">
                             Lead Decision
                           </span>
                           {activeReviewCreator.status === "approved" && (
-                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> Approved
+                            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Approved
                             </span>
                           )}
                           {activeReviewCreator.status === "rejected" && (
-                            <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
-                              <XCircle className="w-3 h-3" /> Rejected
+                            <span className="text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <XCircle className="w-3 h-3 text-rose-600" /> Rejected
                             </span>
                           )}
                         </div>
@@ -7653,15 +8100,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             type="button"
                             onClick={() => handleRejectCreator(activeReviewCreator.id)}
                             disabled={activeReviewCreator.status === "rejected"}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                              activeReviewCreator.status === "rejected"
-                                ? "bg-rose-500/10 text-rose-400/50 border-rose-500/20 cursor-not-allowed"
-                                : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border-rose-500/30 active:scale-95"
-                            }`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${activeReviewCreator.status === "rejected"
+                                ? "bg-rose-50 text-rose-400 border-rose-200 cursor-not-allowed"
+                                : "bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-800 border-slate-200 hover:border-rose-200 active:scale-95 shadow-2xs"
+                              }`}
                           >
                             {activeReviewCreator.status === "rejected" ? "Archived (Rejected)" : "Reject Lead"}
                           </button>
-                          {/* Accept & Advance to Step 5 Button (Strictly requires AI to flag as interested) */}
+                          {/* Accept & Advance to Step 5 Button */}
                           {activeReviewCreator.status !== "rejected" && (() => {
                             const rInfo = activeReviewCreator.replyInfo || getCreatorReply(activeReviewCreator);
                             const isAiInterested =
@@ -7673,8 +8119,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                             if (isDeclined) {
                               return (
-                                <span className="text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                                  <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
+                                <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                                   <span>Uninterested (Blocked from Step 5)</span>
                                 </span>
                               );
@@ -7694,13 +8140,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                   setActiveStep(5);
                                   handleSynthesizeStep5Ai(activeReviewCreator);
                                 }}
-                                className={`px-5 py-2 rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5 border ${
-                                  !canApproveOrAdvance
-                                    ? "bg-slate-800/80 text-slate-400 border-white/[0.08] cursor-not-allowed opacity-75"
-                                    : isApproved
-                                      ? "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500/50 cursor-pointer active:scale-95"
-                                      : "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/40 cursor-pointer active:scale-95"
-                                }`}
+                                className={`relative inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all ${!canApproveOrAdvance
+                                    ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                                    : "bg-[#0F172A] hover:bg-[#1E293B] text-white active:scale-[0.98] cursor-pointer"
+                                  }`}
                                 title={
                                   !canApproveOrAdvance
                                     ? "Locked: Creator cannot be approved until AI flags their inbound reply as interested"
@@ -7714,7 +8157,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                   </>
                                 ) : (
                                   <>
-                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                    </span>
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                                     <span>
                                       {isApproved
                                         ? "View Concepts in Step 5"
@@ -7737,38 +8184,38 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
       {/* STEP 5: AUDIENCE ANALYSIS & PRODUCT IDEAS */}
       {activeStep === 5 && (
-        <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-5 text-slate-900">
           {/* Positive Reply Auto-Advance Notification Banner */}
           {positiveAdvanceNotice && (
-            <div className="p-4 rounded-xl bg-[#101923] border border-emerald-500/40 flex items-start justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start justify-between gap-3 shadow-2xs animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-emerald-300">
+                    <span className="text-xs font-bold text-emerald-800 font-display">
                       Positive Creator Reply Detected
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-slate-500 font-mono">
                       • {positiveAdvanceNotice.time}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-200">
+                  <p className="text-xs text-slate-700">
                     <strong>{positiveAdvanceNotice.creatorName}</strong> (
                     {positiveAdvanceNotice.handle}) replied:{" "}
-                    <span className="italic text-emerald-200">
+                    <span className="italic text-emerald-800">
                       "{positiveAdvanceNotice.replyText}"
                     </span>
                   </p>
-                  <p className="text-[11px] text-emerald-400/90 font-medium">
+                  <p className="text-[11px] text-emerald-700 font-medium">
                     Approved — Product Concepts & Audience Intelligence Ready.
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setPositiveAdvanceNotice(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                 title="Dismiss"
               >
                 <X className="w-4 h-4" />
@@ -7777,9 +8224,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           )}
 
           {/* Creator Switcher Tabs (Only Interested / Qualified Creators) */}
-          <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] flex items-center justify-between gap-3 overflow-x-auto">
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 overflow-x-auto">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex-shrink-0">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex-shrink-0 font-display">
                 Interested Creators:
               </span>
               {interestedCreators.map((c) => {
@@ -7793,19 +8240,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       const savedConcept = creatorConceptSelectionMap[c.id] || c.selectedConceptId || c.productConcepts?.[0]?.id || null;
                       setSelectedConceptId(savedConcept);
                     }}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-purple-500/20 border-purple-500/60 text-white shadow-sm"
-                        : "bg-white/[0.03] border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/20"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${isSelected
+                        ? "bg-slate-900 border-slate-900 text-white shadow-2xs"
+                        : "bg-white border-slate-200 text-slate-700 hover:text-slate-950 hover:border-slate-300"
+                      }`}
                   >
                     <img
                       src={c.avatar}
                       alt=""
-                      className="w-5 h-5 rounded-full object-cover"
+                      className="w-5 h-5 rounded-full object-cover border border-slate-200"
                     />
                     <span>{c.name || c.display_name}</span>
-                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isSelected ? "text-emerald-300 bg-emerald-950/60 border-emerald-400/40" : "text-emerald-800 bg-emerald-50 border-emerald-200"
+                      }`}>
                       Positive
                     </span>
                   </button>
@@ -7813,7 +8260,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               })}
 
               {interestedCreators.length === 0 && (
-                <span className="text-xs text-amber-300 italic px-2">
+                <span className="text-xs text-amber-700 italic px-2">
                   No creators marked interested yet
                 </span>
               )}
@@ -7823,18 +8270,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               <button
                 type="button"
                 onClick={() => setShowInterestedModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
               >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Interested Modal ({interestedCreators.length})</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowAwaitingModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold transition-all cursor-pointer shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
               >
-                <Clock className="w-3.5 h-3.5 text-purple-400" />
+                <Clock className="w-3.5 h-3.5 text-slate-500" />
                 <span>Awaiting Modal ({awaitingCreators.length})</span>
               </button>
             </div>
@@ -7843,18 +8290,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           {/* Live Email Stream with Selected Creator in Step 5 (Latest Message at Top) */}
           {selectedCreator &&
             getCreatorThreadMessages(selectedCreator, realThreads).length >
-              0 && (
-              <div className="p-4 rounded-2xl bg-[#090b0e] border border-white/[0.08] space-y-2.5 animate-in fade-in">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-white">
-                    <Mail className="w-3.5 h-3.5 text-amber-400" />
+            0 && (
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 animate-in fade-in">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900 font-display">
+                    <Mail className="w-3.5 h-3.5 text-emerald-600" />
                     <span>
                       Live Email Stream with {selectedCreator?.name} (
                       {selectedCreator?.email || selectedCreator?.email_public})
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-emerald-400">
+                    <span className="text-[10px] font-mono text-emerald-700">
                       Latest Message at Top •{" "}
                       {
                         getCreatorThreadMessages(selectedCreator, realThreads)
@@ -7866,11 +8313,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       type="button"
                       onClick={() => syncImapReplies(true)}
                       disabled={pollingImap}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-[11px] font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50 shadow-2xs"
                       title="Sync Gmail replies for this thread"
                     >
                       <RefreshCw
-                        className={`w-3 h-3 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin" : ""}`}
+                        className={`w-3 h-3 flex-shrink-0 inline-block origin-center text-slate-500 ${pollingImap ? "animate-spin" : ""}`}
                       />
                       <span className="flex-shrink-0">Sync</span>
                     </button>
@@ -7884,19 +8331,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       return (
                         <div
                           key={msg.id || idx}
-                          className={`p-3 rounded-xl border transition-all text-xs space-y-1 ${
-                            isLatest
-                              ? "bg-amber-950/30 border-amber-500/50 shadow-md ring-1 ring-amber-500/30"
-                              : "bg-[#141720] border-white/[0.04]"
-                          }`}
+                          className={`p-3 rounded-xl border transition-all text-xs space-y-1 ${isLatest
+                              ? "bg-white border-emerald-300 shadow-2xs ring-1 ring-emerald-400/20"
+                              : "bg-white/80 border-slate-200"
+                            }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-white">
+                              <span className="font-bold text-slate-900 font-display">
                                 {msg.from_address}
                               </span>
                               {isLatest && (
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-black uppercase tracking-wider">
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9px] font-black uppercase tracking-wider font-mono">
                                   Latest Message
                                 </span>
                               )}
@@ -7904,13 +8350,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             <span className="text-[10px] text-slate-500 font-mono">
                               {msg.received_at
                                 ? new Date(msg.received_at).toLocaleTimeString(
-                                    [],
-                                    { hour: "2-digit", minute: "2-digit" },
-                                  )
+                                  [],
+                                  { hour: "2-digit", minute: "2-digit" },
+                                )
                                 : "Recently"}
                             </span>
                           </div>
-                          <div className="bg-black/40 p-2.5 rounded-lg border border-white/[0.04]">
+                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-800">
                             <FormattedMarkdownBody text={msg.body} />
                           </div>
                         </div>
@@ -7925,8 +8371,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           {(() => {
             const hasRealAi = Boolean(
               selectedCreator?.hasAiConcepts ||
-                (selectedCreator?.productConcepts?.length > 0 &&
-                  selectedCreator?.audienceIntelligence?.topContent),
+              (selectedCreator?.productConcepts?.length > 0 &&
+                selectedCreator?.audienceIntelligence?.topContent),
             );
             const showStep5Skeleton = Boolean(
               isSynthesizingStep5Ai || (!hasRealAi && !step5Error),
@@ -7940,22 +8386,22 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
             if (showStep5Skeleton) {
               return (
-                <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/40 via-[#141c26] to-indigo-950/30 border border-purple-500/30 flex items-center justify-between gap-3 shadow-md">
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 shadow-2xs">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-purple-500/20 border border-purple-500/30">
-                      <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-100 border border-emerald-200">
+                      <RefreshCw className="w-4 h-4 text-emerald-600 animate-spin" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+                        <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5 font-display">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
                           <span>AI Audience Intelligence & Co-Launch Synthesis in Progress</span>
                         </span>
-                        <span className="text-[10px] text-purple-400/80 bg-purple-500/10 px-2 py-0.5 rounded-full font-mono border border-purple-500/20">
+                        <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-mono border border-emerald-200 font-bold">
                           Live Engine
                         </span>
                       </div>
-                      <p className="text-xs text-slate-300">
+                      <p className="text-xs text-slate-500">
                         Analyzing {selectedCreator?.name || "the creator"}&apos;s YouTube channel metrics, cataloging recurring comments, and engineering 3 custom software product concepts...
                       </p>
                     </div>
@@ -7965,39 +8411,37 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             }
 
             return (
-              <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-950/40 via-[#141c26] to-purple-950/30 border border-amber-500/30 flex items-center justify-between gap-3 shadow-md">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isDispatched
-                        ? "bg-emerald-500/20 border border-emerald-500/30"
-                        : "bg-amber-500/20 border border-amber-500/30"
-                    }`}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDispatched
+                        ? "bg-emerald-100 border border-emerald-200"
+                        : "bg-slate-100 border border-slate-200"
+                      }`}
                   >
                     {isDispatched ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     ) : (
-                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <Sparkles className="w-4 h-4 text-slate-600" />
                     )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-xs font-bold ${
-                          isDispatched ? "text-emerald-300" : "text-amber-300"
-                        }`}
+                        className={`text-xs font-bold font-display ${isDispatched ? "text-emerald-800" : "text-slate-900"
+                          }`}
                       >
                         {isDispatched
                           ? "3-Concept Blueprint Dispatched — Awaiting Creator Reply"
                           : "Audience Analysis & Opportunities Ready"}
                       </span>
                       {sentInfo && (
-                        <span className="text-[10px] text-slate-400 font-mono">
+                        <span className="text-[10px] text-slate-500 font-mono">
                           • Sent at {sentInfo.time} ({sentInfo.recipient})
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-300">
+                    <p className="text-xs text-slate-600">
                       {isDispatched
                         ? "The 3 engineered concepts have been emailed to the creator. If the creator has not replied yet, use the follow-up re-send button below, or proceed to Step 6."
                         : "Review audience intelligence and select one of the top 3 engineered concepts below to dispatch directly to the creator."}
@@ -8008,22 +8452,22 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             );
           })()}
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 font-display">
                   Product Ideas
                 </span>
-                <span className="text-xs text-slate-500">•</span>
-                <span className="text-xs text-slate-300">
+                <span className="text-xs text-slate-300">•</span>
+                <span className="text-xs text-slate-500">
                   Audience Analysis & Product Ideas
                 </span>
               </div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
-                <Sparkles className="w-4 h-4 text-amber-400" />
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 mt-0.5 font-display">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
                 <span>Audience Analysis & Top 3 Product Concepts</span>
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Deep audience research, competitor analysis, and AI-scored
                 software co-launch concepts for{" "}
                 <strong>{selectedCreator?.name || "Creator"}</strong>.
@@ -8035,13 +8479,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 type="button"
                 onClick={() => handleSynthesizeStep5Ai(selectedCreator)}
                 disabled={isSynthesizingStep5Ai}
-                className="h-9 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 whitespace-nowrap shadow-sm"
+                className="h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 whitespace-nowrap shadow-2xs"
                 title="Use AI to re-engineer 3 concepts & audience intelligence"
               >
                 {isSynthesizingStep5Ai ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-500" />
                 ) : (
-                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-slate-500" />
                 )}
                 <span>
                   {isSynthesizingStep5Ai
@@ -8056,13 +8500,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     type="button"
                     onClick={() => handleSendOpportunityPitch(selectedCreator)}
                     disabled={isSendingPitch}
-                    className="h-9 px-3.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 text-purple-300 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 active:scale-95 whitespace-nowrap shadow-sm"
+                    className="h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 active:scale-95 whitespace-nowrap shadow-2xs"
                     title="Send follow-up concept email again to creator"
                   >
                     {isSendingPitch ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-500" />
                     ) : (
-                      <Send className="w-3.5 h-3.5 text-purple-400" />
+                      <Send className="w-3.5 h-3.5 text-slate-500" />
                     )}
                     <span>
                       {isSendingPitch ? "Re-sending..." : "Re-send Email"}
@@ -8072,8 +8516,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <button
                     type="button"
                     onClick={() => setActiveStep(6)}
-                    className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 whitespace-nowrap border border-emerald-500/40"
+                    className="relative inline-flex items-center justify-center gap-2 h-9 px-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
                   >
+                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
                     <span>Advance to Step 6 →</span>
                   </button>
                 </>
@@ -8093,13 +8541,17 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       ) &&
                       !step5Error)
                   }
-                  className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap border border-emerald-500/40"
+                  className="relative inline-flex items-center justify-center gap-2 h-9 px-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
                   title="Send the 3 product concepts directly to the creator's email and advance to Step 6"
                 >
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
                   {isSendingPitch ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <Send className="w-3.5 h-3.5" />
+                    <Send className="w-3.5 h-3.5 text-emerald-400" />
                   )}
                   <span>
                     {isSendingPitch
@@ -8149,343 +8601,343 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             <>
               {/* Deep Audience Research Intelligence Breakdown (7 Key Pillars) - 100% Dynamic Per Creator */}
               {(() => {
-            const audIntel = getCreatorAudienceIntelligence(selectedCreator);
-            if (!audIntel) return null;
-            return (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <Users className="w-4 h-4 text-purple-400" />
-                    <span>Audience Intelligence & Deep Research Signals</span>
-                  </h3>
-                  <span className="text-[11px] text-emerald-400 font-mono">
-                    Verified from {selectedCreator?.name}'s channel &{" "}
-                    {selectedCreator?.niche || "niche"} signals
-                  </span>
-                </div>
+                const audIntel = getCreatorAudienceIntelligence(selectedCreator);
+                if (!audIntel) return null;
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                        <Users className="w-4 h-4 text-purple-600" />
+                        <span>Audience Intelligence & Deep Research Signals</span>
+                      </h3>
+                      <span className="text-[11px] text-emerald-700 font-mono font-medium">
+                        Verified from {selectedCreator?.name}'s channel &{" "}
+                        {selectedCreator?.niche || "niche"} signals
+                      </span>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                  {/* 1. Content & Top Performing Posts */}
-                  <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-white flex items-center gap-1.5">
-                        <Play className="w-3.5 h-3.5 text-purple-400" /><span>Top-Performing Content</span>
-                      </span>
-                      <span className="text-[10px] text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded font-mono">
-                        {audIntel.topContent.badge}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      {audIntel.topContent.headline}
-                    </p>
-                    <div className="text-[10px] text-slate-400 font-mono pt-1 border-t border-white/[0.04]">
-                      {audIntel.topContent.metricLabel}
-                    </div>
-                  </div>
-
-                  {/* 2. Comments & Recurring Questions */}
-                  <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-white flex items-center gap-1.5">
-                        <MessageSquare className="w-3.5 h-3.5 text-cyan-400" /><span>Recurring Questions</span>
-                      </span>
-                      <span className="text-[10px] text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded font-mono">
-                        {audIntel.recurringQuestions.badge}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed italic">
-                      {audIntel.recurringQuestions.quote}
-                    </p>
-                    <div className="text-[10px] text-slate-400 font-mono pt-1 border-t border-white/[0.04]">
-                      {audIntel.recurringQuestions.metricLabel}
-                    </div>
-                  </div>
-
-                  {/* 3. Pain Points & Frustrations */}
-                  <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-white flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /><span>Core Pain Points</span>
-                      </span>
-                      <span className="text-[10px] text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded font-mono">
-                        {audIntel.painPoints.badge}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      {audIntel.painPoints.description}
-                    </p>
-                    <div className="text-[10px] text-slate-400 font-mono pt-1 border-t border-white/[0.04]">
-                      {audIntel.painPoints.communityLabel}
-                    </div>
-                  </div>
-
-                  {/* 4. Demographics & Audience Profile */}
-                  <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-white flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-indigo-400" /><span>Audience Demographics</span>
-                      </span>
-                      <span className="text-[10px] text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded font-mono">
-                        {audIntel.demographics.badge}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      {audIntel.demographics.description}
-                    </p>
-                    <div className="text-[10px] text-slate-400 font-mono pt-1 border-t border-white/[0.04]">
-                      {audIntel.demographics.purchasingPower}
-                    </div>
-                  </div>
-
-                  {/* 5. Existing Monetization */}
-                  <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-white flex items-center gap-1.5">
-                        <Award className="w-3.5 h-3.5 text-emerald-400" /><span>Current Monetization</span>
-                      </span>
-                      <span className="text-[10px] text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded font-mono">
-                        {audIntel.monetization.badge}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      {audIntel.monetization.description}
-                    </p>
-                    <div className="text-[10px] text-slate-400 font-mono pt-1 border-t border-white/[0.04]">
-                      {audIntel.monetization.recommendation}
-                    </div>
-                  </div>
-
-                  {/* 6. Competitors & Purchase Intent */}
-                  <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-white flex items-center gap-1.5">
-                        <Target className="w-3.5 h-3.5 text-pink-400" /><span>Competitors & Intent</span>
-                      </span>
-                      <span className="text-[10px] text-pink-300 bg-pink-500/10 px-2 py-0.5 rounded font-mono">
-                        {audIntel.competitors.badge}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      {audIntel.competitors.description}
-                    </p>
-                    <div className="text-[10px] text-slate-400 font-mono pt-1 border-t border-white/[0.04]">
-                      Moat: {audIntel.competitors.moat}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {!selectedCreator?.productConcepts?.length ? (
-            <div className="text-center py-12 text-slate-500 text-xs">
-              No product concepts generated yet for selected creator.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs border-b border-white/[0.06] pb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-white">
-                    Top 3 Product Opportunities for{" "}
-                    {selectedCreator.name || selectedCreator.display_name} (
-                    {selectedCreator.handle})
-                  </h3>
-                  <p className="text-slate-400 text-xs">
-                    Each concept includes problem, key features, audience
-                    evidence, pricing model, competition & revenue projections.
-                  </p>
-                </div>
-                <span className="text-[11px] text-emerald-300 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20 font-mono">
-                  All 3 Concepts Dispatched in Email
-                </span>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-5">
-                {selectedCreator.productConcepts.map((concept, index) => {
-                  return (
-                    <div
-                      key={concept.id || index}
-                      className="p-5 rounded-2xl border border-white/[0.08] bg-[#161a23] text-slate-300 space-y-4 flex flex-col justify-between hover:border-white/20 transition-all"
-                    >
-                      <div className="space-y-3.5">
-                        {/* Header Badge & Opportunity Score */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-300 bg-purple-500/20 px-2.5 py-0.5 rounded-full border border-purple-500/30">
-                            Concept #{index + 1}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                      {/* 1. Content & Top Performing Posts */}
+                      <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <Play className="w-3.5 h-3.5 text-purple-600" /><span>Top-Performing Content</span>
                           </span>
-                          <span className="text-xs font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                            <span>Score: {concept.opportunityScore}/100</span>
+                          <span className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded font-mono font-medium">
+                            {audIntel.topContent.badge}
                           </span>
                         </div>
-
-                        {/* Visual Mockup Window Preview with Real Concept Screenshot Image */}
-                        <div className="rounded-xl bg-gradient-to-br from-[#0a0c12] via-[#141824] to-[#1c2234] border border-white/10 p-3 relative overflow-hidden flex flex-col justify-between shadow-inner space-y-2.5">
-                          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-2 h-2 rounded-full bg-red-400/80" />
-                              <div className="w-2 h-2 rounded-full bg-amber-400/80" />
-                              <div className="w-2 h-2 rounded-full bg-emerald-400/80" />
-                              <span className="text-[9px] font-mono text-slate-400 ml-1 truncate max-w-[130px]">
-                                {concept.mockup?.appUrl ||
-                                  `${concept.name?.toLowerCase().replace(/\s+/g, "")}.app`}
-                              </span>
-                            </div>
-                            <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.2 rounded border border-emerald-500/30">
-                              MVP Ready
-                            </span>
-                          </div>
-
-                          {/* Real Concept Mockup Screenshot Image */}
-                          <div className="relative rounded-lg overflow-hidden border border-white/10 h-28 group bg-[#05070c]">
-                            <img
-                              src={getConceptImageUrl(concept, selectedCreator.niche)}
-                              alt={concept.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent flex items-end p-2 justify-between">
-                              <span className="text-[9px] font-mono text-white font-bold bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10">
-                                Product Preview
-                              </span>
-                              <span className="text-[9px] font-bold text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded border border-purple-500/40 backdrop-blur-sm">
-                                Attached in Proposal Email
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-1.5">
-                            <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-center">
-                              <span className="text-[8px] text-slate-500 block">
-                                MRR Projected
-                              </span>
-                              <span className="text-[10px] font-bold text-emerald-400 font-mono">
-                                {concept.mockup?.primaryMetric || "$16.8K"}
-                              </span>
-                            </div>
-                            <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-center">
-                              <span className="text-[8px] text-slate-500 block">
-                                Active Users
-                              </span>
-                              <span className="text-[10px] font-bold text-purple-300 font-mono">
-                                {concept.mockup?.activeMetric || "520"}
-                              </span>
-                            </div>
-                            <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-center">
-                              <span className="text-[8px] text-slate-500 block">
-                                Performance
-                              </span>
-                              <span className="text-[10px] font-bold text-cyan-300 font-mono">
-                                {concept.mockup?.efficiencyMetric || "94%"}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/[0.06] pt-1">
-                            <span className="truncate max-w-[120px]">
-                              {concept.customer || "Target Users"}
-                            </span>
-                            <span className="text-emerald-400 font-bold font-mono">
-                              {concept.pricing}
-                            </span>
-                          </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          {audIntel.topContent.headline}
+                        </p>
+                        <div className="text-[10px] text-slate-500 font-mono pt-1.5 border-t border-slate-100">
+                          {audIntel.topContent.metricLabel}
                         </div>
+                      </div>
 
-                        {/* Name & Tagline */}
-                        <div className="space-y-1">
-                          <h3 className="text-sm font-black text-white tracking-tight">
-                            {concept.name}
-                          </h3>
-                          <p className="text-xs text-purple-300 font-semibold">
-                            {concept.tagline}
-                          </p>
+                      {/* 2. Comments & Recurring Questions */}
+                      <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <MessageSquare className="w-3.5 h-3.5 text-cyan-600" /><span>Recurring Questions</span>
+                          </span>
+                          <span className="text-[10px] text-cyan-700 bg-cyan-50 border border-cyan-200/60 px-2 py-0.5 rounded font-mono font-medium">
+                            {audIntel.recurringQuestions.badge}
+                          </span>
                         </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed italic">
+                          {audIntel.recurringQuestions.quote}
+                        </p>
+                        <div className="text-[10px] text-slate-500 font-mono pt-1.5 border-t border-slate-100">
+                          {audIntel.recurringQuestions.metricLabel}
+                        </div>
+                      </div>
 
-                        {/* Problem & Customer */}
-                        <div className="space-y-2.5 text-[11px] p-3.5 rounded-xl bg-black/40 border border-white/[0.04]">
-                          <div>
-                            <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
-                              Customer & Problem
-                            </span>
-                            <p className="text-slate-200 font-medium leading-snug mt-0.5">
-                              <strong>For:</strong> {concept.customer}
-                            </p>
-                            <p className="text-slate-300 mt-1 leading-snug">
-                              {concept.problem}
-                            </p>
-                          </div>
+                      {/* 3. Pain Points & Frustrations */}
+                      <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /><span>Core Pain Points</span>
+                          </span>
+                          <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded font-mono font-medium">
+                            {audIntel.painPoints.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          {audIntel.painPoints.description}
+                        </p>
+                        <div className="text-[10px] text-slate-500 font-mono pt-1.5 border-t border-slate-100">
+                          {audIntel.painPoints.communityLabel}
+                        </div>
+                      </div>
 
-                          {/* Key Features List */}
-                          {concept.keyFeatures && (
-                            <div className="pt-2 border-t border-white/[0.04]">
-                              <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider mb-1">
-                                Key Features
-                              </span>
-                              <ul className="space-y-1">
-                                {concept.keyFeatures.map((feat, fi) => (
-                                  <li
-                                    key={fi}
-                                    className="flex items-start gap-1.5 text-slate-300"
-                                  >
-                                    <CheckCircle2 className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
-                                    <span>{feat}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                      {/* 4. Demographics & Audience Profile */}
+                      <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-indigo-600" /><span>Audience Demographics</span>
+                          </span>
+                          <span className="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200/60 px-2 py-0.5 rounded font-mono font-medium">
+                            {audIntel.demographics.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          {audIntel.demographics.description}
+                        </p>
+                        <div className="text-[10px] text-slate-500 font-mono pt-1.5 border-t border-slate-100">
+                          {audIntel.demographics.purchasingPower}
+                        </div>
+                      </div>
 
-                          {/* Audience Evidence */}
-                          <div className="pt-2 border-t border-white/[0.04]">
-                            <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
-                              Audience Evidence
-                            </span>
-                            <p className="text-cyan-200 text-[11px] italic mt-0.5">
-                              "{concept.audienceEvidence || concept.rationale}"
-                            </p>
-                          </div>
+                      {/* 5. Existing Monetization */}
+                      <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <Award className="w-3.5 h-3.5 text-emerald-600" /><span>Current Monetization</span>
+                          </span>
+                          <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded font-mono font-medium">
+                            {audIntel.monetization.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          {audIntel.monetization.description}
+                        </p>
+                        <div className="text-[10px] text-slate-500 font-mono pt-1.5 border-t border-slate-100">
+                          {audIntel.monetization.recommendation}
+                        </div>
+                      </div>
 
-                          {/* Pricing & Revenue Model */}
-                          <div className="pt-2 border-t border-white/[0.04] space-y-1">
-                            <div className="flex justify-between items-center">
-                              <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-                                Pricing
-                              </span>
-                              <span className="text-emerald-400 font-bold font-mono">
-                                {concept.pricing}
-                              </span>
-                            </div>
-                            <p className="text-[10px] text-slate-400 leading-tight">
-                              {concept.revenueModel}
-                            </p>
-                          </div>
-
-                          {/* Competition & Moat */}
-                          <div className="pt-2 border-t border-white/[0.04]">
-                            <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
-                              Competition & Moat
-                            </span>
-                            <p className="text-slate-300 text-[10px] leading-snug mt-0.5">
-                              {concept.competition}
-                            </p>
-                          </div>
-
-                          {/* MVP Difficulty */}
-                          <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between">
-                            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-                              MVP Timeline
-                            </span>
-                            <span className="text-purple-300 font-bold">
-                              {concept.mvpDifficulty}
-                            </span>
-                          </div>
+                      {/* 6. Competitors & Purchase Intent */}
+                      <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <Target className="w-3.5 h-3.5 text-pink-600" /><span>Competitors & Intent</span>
+                          </span>
+                          <span className="text-[10px] text-pink-700 bg-pink-50 border border-pink-200/60 px-2 py-0.5 rounded font-mono font-medium">
+                            {audIntel.competitors.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          {audIntel.competitors.description}
+                        </p>
+                        <div className="text-[10px] text-slate-500 font-mono pt-1.5 border-t border-slate-100">
+                          Moat: {audIntel.competitors.moat}
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                  </div>
+                );
+              })()}
+
+              {!selectedCreator?.productConcepts?.length ? (
+                <div className="text-center py-12 text-slate-500 text-xs">
+                  No product concepts generated yet for selected creator.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-xs border-b border-slate-200/80 pb-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        Top 3 Product Opportunities for{" "}
+                        {selectedCreator.name || selectedCreator.display_name} (
+                        {selectedCreator.handle})
+                      </h3>
+                      <p className="text-slate-500 text-xs">
+                        Each concept includes problem, key features, audience
+                        evidence, pricing model, competition & revenue projections.
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-emerald-800 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 font-mono font-medium">
+                      All 3 Concepts Dispatched in Email
+                    </span>
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-5">
+                    {selectedCreator.productConcepts.map((concept, index) => {
+                      return (
+                        <div
+                          key={concept.id || index}
+                          className="p-5 rounded-2xl border border-slate-200/90 bg-white text-slate-700 space-y-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all shadow-2xs"
+                        >
+                          <div className="space-y-3.5">
+                            {/* Header Badge & Opportunity Score */}
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200/60">
+                                Concept #{index + 1}
+                              </span>
+                              <span className="text-xs font-black text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                                <span>Score: {concept.opportunityScore}/100</span>
+                              </span>
+                            </div>
+
+                            {/* Visual Mockup Window Preview with Real Concept Screenshot Image */}
+                            <div className="rounded-xl bg-slate-950 border border-slate-800 p-3 relative overflow-hidden flex flex-col justify-between shadow-2xs space-y-2.5">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-2 h-2 rounded-full bg-rose-500/90" />
+                                  <div className="w-2 h-2 rounded-full bg-amber-400/90" />
+                                  <div className="w-2 h-2 rounded-full bg-emerald-400/90" />
+                                  <span className="text-[9px] font-mono text-slate-400 ml-1 truncate max-w-[130px]">
+                                    {concept.mockup?.appUrl ||
+                                      `${concept.name?.toLowerCase().replace(/\s+/g, "")}.app`}
+                                  </span>
+                                </div>
+                                <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                                  MVP Ready
+                                </span>
+                              </div>
+
+                              {/* Real Concept Mockup Screenshot Image */}
+                              <div className="relative rounded-lg overflow-hidden border border-slate-800 h-28 group bg-[#05070c]">
+                                <img
+                                  src={getConceptImageUrl(concept, selectedCreator.niche)}
+                                  alt={concept.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent flex items-end p-2 justify-between">
+                                  <span className="text-[9px] font-mono text-white font-bold bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10">
+                                    Product Preview
+                                  </span>
+                                  <span className="text-[9px] font-bold text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded border border-purple-500/40 backdrop-blur-sm">
+                                    Attached in Proposal Email
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-1.5">
+                                <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center">
+                                  <span className="text-[8px] text-slate-400 block">
+                                    MRR Projected
+                                  </span>
+                                  <span className="text-[10px] font-bold text-emerald-400 font-mono">
+                                    {concept.mockup?.primaryMetric || "$16.8K"}
+                                  </span>
+                                </div>
+                                <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center">
+                                  <span className="text-[8px] text-slate-400 block">
+                                    Active Users
+                                  </span>
+                                  <span className="text-[10px] font-bold text-purple-300 font-mono">
+                                    {concept.mockup?.activeMetric || "520"}
+                                  </span>
+                                </div>
+                                <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center">
+                                  <span className="text-[8px] text-slate-400 block">
+                                    Performance
+                                  </span>
+                                  <span className="text-[10px] font-bold text-cyan-300 font-mono">
+                                    {concept.mockup?.efficiencyMetric || "94%"}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-800 pt-1">
+                                <span className="truncate max-w-[120px]">
+                                  {concept.customer || "Target Users"}
+                                </span>
+                                <span className="text-emerald-400 font-bold font-mono">
+                                  {concept.pricing}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Name & Tagline */}
+                            <div className="space-y-1">
+                              <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                                {concept.name}
+                              </h3>
+                              <p className="text-xs text-purple-700 font-semibold">
+                                {concept.tagline}
+                              </p>
+                            </div>
+
+                            {/* Problem & Customer */}
+                            <div className="space-y-2.5 text-[11px] p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                              <div>
+                                <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
+                                  Customer & Problem
+                                </span>
+                                <p className="text-slate-800 font-medium leading-snug mt-0.5">
+                                  <strong>For:</strong> {concept.customer}
+                                </p>
+                                <p className="text-slate-600 mt-1 leading-snug">
+                                  {concept.problem}
+                                </p>
+                              </div>
+
+                              {/* Key Features List */}
+                              {concept.keyFeatures && (
+                                <div className="pt-2 border-t border-slate-200/80">
+                                  <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider mb-1">
+                                    Key Features
+                                  </span>
+                                  <ul className="space-y-1">
+                                    {concept.keyFeatures.map((feat, fi) => (
+                                      <li
+                                        key={fi}
+                                        className="flex items-start gap-1.5 text-slate-700"
+                                      >
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                        <span>{feat}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {/* Audience Evidence */}
+                              <div className="pt-2 border-t border-slate-200/80">
+                                <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
+                                  Audience Evidence
+                                </span>
+                                <p className="text-cyan-900 text-[11px] italic mt-0.5 bg-cyan-50/70 p-2 rounded-lg border border-cyan-100">
+                                  "{concept.audienceEvidence || concept.rationale}"
+                                </p>
+                              </div>
+
+                              {/* Pricing & Revenue Model */}
+                              <div className="pt-2 border-t border-slate-200/80 space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                                    Pricing
+                                  </span>
+                                  <span className="text-emerald-700 font-bold font-mono">
+                                    {concept.pricing}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 leading-tight">
+                                  {concept.revenueModel}
+                                </p>
+                              </div>
+
+                              {/* Competition & Moat */}
+                              <div className="pt-2 border-t border-slate-200/80">
+                                <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
+                                  Competition & Moat
+                                </span>
+                                <p className="text-slate-600 text-[10px] leading-snug mt-0.5">
+                                  {concept.competition}
+                                </p>
+                              </div>
+
+                              {/* MVP Difficulty */}
+                              <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between">
+                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                                  MVP Timeline
+                                </span>
+                                <span className="text-purple-700 font-bold">
+                                  {concept.mvpDifficulty}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -8493,18 +8945,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
       {/* STEP 6: PITCH & SELECT PRODUCT (SIMPLIFIED HUMAN-IN-THE-LOOP STUDIO) */}
       {activeStep === 6 && (
-        <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-6">
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-6">
           {/* Creator Switcher Tabs */}
           {/* Creator Switcher Tabs (Only Interested / Qualified Creators) */}
-          <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] flex items-center justify-between gap-3 overflow-x-auto">
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-3 overflow-x-auto shadow-2xs">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex-shrink-0">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex-shrink-0">
                 Creators in Step 6:
               </span>
               {interestedCreators.map((c) => {
                 const isSelected = selectedCreator?.id === c.id;
                 const msgs = getCreatorThreadMessages(c, realThreads);
-                
+
                 // Check if creator project is already launched in Project OS (Section 2)
                 const cCleanHandle = (c.handle || "").replace(/^@/, "").toLowerCase().trim();
                 const cCleanName = (c.name || c.display_name || "").toLowerCase().trim();
@@ -8539,7 +8991,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     if ((isStageMapSection2 || matchId || matchHandle || matchedDbProj) && (cHasVerifiedCommitment || (c.status || "").toLowerCase() === "launched" || (c.status || "").toLowerCase() === "partnered")) {
                       isLaunched = true;
                     }
-                  } catch (e) {}
+                  } catch (e) { }
                 }
 
                 const pitchSent = Boolean(
@@ -8557,11 +9009,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       const savedConcept = creatorConceptSelectionMap[c.id] || c.selectedConceptId || c.productConcepts?.[0]?.id || null;
                       setSelectedConceptId(savedConcept);
                     }}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-emerald-600 text-white border-emerald-500/50 shadow-sm"
-                        : "bg-white/[0.03] border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/20"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${isSelected
+                        ? "bg-[#0F172A] text-white border-slate-800 shadow-sm"
+                        : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-2xs"
+                      }`}
                   >
                     <img
                       src={c.avatar}
@@ -8571,31 +9022,28 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <span>{c.name || c.display_name}</span>
                     {isLaunched ? (
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${
-                          isSelected
-                            ? "text-white bg-slate-950/70 border border-black/30 shadow-sm"
-                            : "text-emerald-300 bg-emerald-500/15 border border-emerald-500/30"
-                        }`}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${isSelected
+                            ? "text-white bg-slate-800 border border-slate-700 shadow-2xs"
+                            : "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                          }`}
                       >
                         Launched
                       </span>
                     ) : pitchSent ? (
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${
-                          isSelected
-                            ? "text-white bg-slate-950/70 border border-black/30 shadow-sm"
-                            : "text-purple-300 bg-purple-500/15 border border-purple-500/30"
-                        }`}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${isSelected
+                            ? "text-white bg-slate-800 border border-slate-700 shadow-2xs"
+                            : "text-purple-700 bg-purple-50 border border-purple-200"
+                          }`}
                       >
                         {cChoice?.isStep6Reply ? "In Conversation" : "Proposal Sent"}
                       </span>
                     ) : (
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${
-                          isSelected
-                            ? "text-white bg-slate-950/70 border border-black/30 shadow-sm"
-                            : "text-amber-300 bg-amber-500/15 border border-amber-500/30"
-                        }`}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${isSelected
+                            ? "text-white bg-slate-800 border border-slate-700 shadow-2xs"
+                            : "text-amber-800 bg-amber-50 border border-amber-200"
+                          }`}
                       >
                         Draft Ready
                       </span>
@@ -8605,7 +9053,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               })}
 
               {interestedCreators.length === 0 && (
-                <span className="text-xs text-amber-300 italic px-2">
+                <span className="text-xs text-amber-700 italic px-2">
                   No creators ready to pitch yet
                 </span>
               )}
@@ -8616,11 +9064,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 type="button"
                 onClick={() => syncImapReplies(true)}
                 disabled={pollingImap}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
                 title="Check inbox for new replies"
               >
                 <RefreshCw
-                  className={`w-3.5 h-3.5 ${pollingImap ? "animate-spin text-purple-400" : "text-slate-400"}`}
+                  className={`w-3.5 h-3.5 ${pollingImap ? "animate-spin text-purple-600" : "text-slate-400"}`}
                 />
                 <span>Sync Inbox</span>
               </button>
@@ -8628,30 +9076,30 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           </div>
 
           {/* Section Header with Creator Profile & Actions */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3.5">
               <img
                 src={selectedCreator?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
                 alt=""
-                className="w-12 h-12 rounded-xl object-cover border border-white/10"
+                className="w-12 h-12 rounded-xl object-cover border border-slate-200"
               />
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-pink-400">
+                  <span className="text-xs font-bold uppercase tracking-wider text-pink-600">
                     Step 6: Co-Launch Pitch & Agreement
                   </span>
-                  <span className="text-xs text-slate-500">•</span>
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <span className="text-xs text-slate-300">•</span>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 font-medium">
                     50/50 Revenue Split
                   </span>
                 </div>
-                <h2 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 mt-0.5">
                   <span>{selectedCreator?.name || selectedCreator?.display_name || "Creator"}</span>
-                  <span className="text-xs font-normal text-slate-400 font-mono">
+                  <span className="text-xs font-normal text-slate-500 font-mono">
                     ({selectedCreator?.email || selectedCreator?.email_public || "No email"})
                   </span>
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Review the 3 engineered concepts, converse with the creator, and click <strong>Create Project</strong> when ready to launch.
                 </p>
               </div>
@@ -8662,9 +9110,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={() => openDecisionModal(selectedCreator, "reject")}
-                  className="h-9 px-3.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-sm"
+                  className="h-9 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-2xs"
                 >
-                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                  <XCircle className="w-3.5 h-3.5 text-rose-500" />
                   <span>Reject Lead</span>
                 </button>
               )}
@@ -8710,7 +9158,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     if (isStageMapSection2 || matchId || matchHandle || matchedDbProj) {
                       isSelectedCreatorLaunched = true;
                     }
-                  } catch (e) {}
+                  } catch (e) { }
                 }
 
                 if (isSelectedCreatorLaunched) {
@@ -8720,12 +9168,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         type="button"
                         disabled={isLaunchingProject}
                         onClick={() => handlePitchAndCreateProject()}
-                        className={`h-9 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-sm ${
-                          isLaunchingProject ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                        }`}
+                        className={`h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-2xs ${isLaunchingProject ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                          }`}
                         title="Re-sync project specs from selected concept"
                       >
-                        <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                        <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
                         <span>Re-Sync Project</span>
                       </button>
                       <button
@@ -8733,9 +9180,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         onClick={() => {
                           if (onGoToProjectOS) onGoToProjectOS(selectedCreator);
                         }}
-                        className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold border border-emerald-500/40 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+                        className="relative flex items-center gap-2 h-9 px-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-bold border border-slate-800 shadow-sm transition-all cursor-pointer active:scale-95 whitespace-nowrap"
                       >
-                        <Rocket className="w-3.5 h-3.5 text-emerald-200" />
+                        <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        <Rocket className="w-3.5 h-3.5 text-emerald-300" />
                         <span>Open Project OS</span>
                       </button>
                     </div>
@@ -8744,8 +9195,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                 return (
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium text-slate-400 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-1.5">
-                      <Clock className="w-3 h-3 text-amber-400" />
+                    <span className="text-[11px] font-medium text-slate-600 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-amber-500" />
                       <span>{detectedChoice?.isStep6Reply ? "Feedback In Review" : "Awaiting Creator Reply"}</span>
                     </span>
                   </div>
@@ -8769,25 +9220,23 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             );
 
             return (
-              <div className={`p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-md transition-all ${
-                hasFullCommitment
-                  ? "bg-gradient-to-r from-purple-950/40 via-[#161a24] to-emerald-950/30 border-emerald-500/40"
-                  : "bg-[#121620] border-white/[0.08]"
-              }`}>
+              <div className={`p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-2xs transition-all ${hasFullCommitment
+                  ? "bg-gradient-to-r from-purple-50 via-white to-emerald-50 border-emerald-300"
+                  : "bg-slate-50 border-slate-200"
+                }`}>
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                      hasFullCommitment
-                        ? "text-emerald-400 bg-emerald-500/15 border-emerald-500/30"
-                        : "text-amber-400 bg-amber-500/15 border-amber-500/30"
-                    }`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${hasFullCommitment
+                        ? "text-emerald-800 bg-emerald-100 border-emerald-300"
+                        : "text-amber-800 bg-amber-100 border-amber-300"
+                      }`}>
                       {hasFullCommitment ? "Commitment Confirmed" : "Commitment Gate Locked"}
                     </span>
-                    <span className="text-xs font-bold text-white">
+                    <span className="text-xs font-bold text-slate-900">
                       Step 6 Final Promotion Gate
                     </span>
                   </div>
-                  <p className="text-xs text-slate-300">
+                  <p className="text-xs text-slate-600">
                     {hasFullCommitment
                       ? "Full commitment confirmed by creator! Click below to dispatch the official kickoff email and initialize the project in Section 2 (ProjectOS)."
                       : "Review the decided concept, proposal deck, and creator feedback below. Promotion to ProjectOS remains locked until the creator provides full commitment."}
@@ -8810,7 +9259,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             conceptId: curChosen?.id,
                             reasoning: "Admin manually confirmed creator commitment. Gate unlocked for ProjectOS promotion.",
                             color: "emerald",
-                            badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+                            badgeClass: "bg-emerald-50 text-emerald-800 border-emerald-300",
                           },
                         }));
                         setCreators((prev) =>
@@ -8818,10 +9267,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         );
                         notify("success", "Commitment Unlocked", "Creator commitment verified! You can now promote to ProjectOS.", 3500);
                       }}
-                      className="h-9 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap shadow-sm"
+                      className="h-9 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap shadow-2xs"
                       title="Manually verify creator commitment and unlock promotion to ProjectOS"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
                       <span>Manually Confirm & Unlock</span>
                     </button>
                   )}
@@ -8829,20 +9278,25 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     type="button"
                     disabled={!hasFullCommitment || isLaunchingProject}
                     onClick={() => handlePitchAndCreateProject()}
-                    className={`h-9 px-4 rounded-xl text-xs font-bold border shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                      hasFullCommitment && !isLaunchingProject
-                        ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/40 cursor-pointer active:scale-95 shadow-emerald-500/20"
-                        : "bg-slate-800/80 text-slate-400 border-white/[0.08] cursor-not-allowed opacity-75"
-                    }`}
+                    className={`relative h-9 px-4 rounded-xl text-xs font-bold border shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap ${hasFullCommitment && !isLaunchingProject
+                        ? "bg-[#0F172A] hover:bg-[#1E293B] text-white border-slate-800 cursor-pointer active:scale-95"
+                        : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-75"
+                      }`}
                     title={
                       hasFullCommitment
                         ? "Creator has confirmed full commitment. Promote to ProjectOS."
                         : "Locked: Creator must confirm full commitment (explicit concept selection or co-launch agreement) before promotion to ProjectOS"
                     }
                   >
+                    {hasFullCommitment && (
+                      <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                      </span>
+                    )}
                     {hasFullCommitment ? (
                       <>
-                        <Rocket className="w-3.5 h-3.5 text-emerald-200" />
+                        <Rocket className="w-3.5 h-3.5 text-emerald-300" />
                         <span>Promote to Creator Dashboard & Send Kickoff Email 🚀</span>
                       </>
                     ) : (
@@ -8889,150 +9343,148 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     const hasStep6Feedback = Boolean(detectedChoice?.isStep6Reply && !isCommitted);
 
                     return (
-                      <div className={`p-5 rounded-2xl bg-[#161a24] border shadow-xl space-y-4 relative overflow-hidden transition-all ${
-                        isCommitted ? "border-emerald-500/50" : "border-purple-500/30"
-                      }`}>
+                      <div className={`p-5 rounded-2xl bg-white border shadow-2xs space-y-4 relative overflow-hidden transition-all ${isCommitted ? "border-emerald-300 ring-1 ring-emerald-200" : "border-slate-200/90"
+                        }`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {isCommitted ? (
                               <>
-                                <span className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-xs flex items-center justify-center">
+                                <span className="w-6 h-6 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-black text-xs flex items-center justify-center">
                                   ✓
                                 </span>
-                                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                                   Decided Project Concept
                                 </span>
                               </>
                             ) : (
                               <>
-                                <span className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-300 font-black text-xs flex items-center justify-center">
+                                <span className="w-6 h-6 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 font-black text-xs flex items-center justify-center">
                                   💡
                                 </span>
-                                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                                   Proposed Concept (Recommended #1)
                                 </span>
                               </>
                             )}
                           </div>
-                          <span className="text-xs font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          <span className="text-xs font-black text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                             <span>Score: {chosenConcept?.opportunityScore || 94}/100</span>
                           </span>
                         </div>
 
-                        <div className="space-y-2 border-b border-white/[0.06] pb-3">
+                        <div className="space-y-2 border-b border-slate-100 pb-3">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-white tracking-tight">
+                            <h3 className="text-lg font-bold text-slate-900 tracking-tight">
                               {chosenConcept?.name}
                             </h3>
-                            <span className="text-xs font-bold text-emerald-400 font-mono bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/25">
+                            <span className="text-xs font-bold text-emerald-700 font-mono bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
                               {chosenConcept?.pricing}
                             </span>
                           </div>
-                          <p className="text-xs text-purple-300 font-medium">
+                          <p className="text-xs text-purple-700 font-medium">
                             {chosenConcept?.tagline}
                           </p>
-                          <p className="text-xs text-slate-300 leading-relaxed">
-                            <strong className="text-slate-400">Solves:</strong> {chosenConcept?.problem}
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            <strong className="text-slate-700">Solves:</strong> {chosenConcept?.problem}
                           </p>
                         </div>
 
                         {/* Target Specs & Status */}
                         <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                          <div className="p-2 rounded-xl bg-black/40 border border-white/[0.05]">
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
                             <span className="text-[10px] text-slate-500 block uppercase font-bold">Target MVP</span>
-                            <span className="font-bold text-slate-200">{chosenConcept?.mvpDifficulty || "2 weeks"}</span>
+                            <span className="font-bold text-slate-800">{chosenConcept?.mvpDifficulty || "2 weeks"}</span>
                           </div>
-                          <div className="p-2 rounded-xl bg-black/40 border border-white/[0.05]">
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
                             <span className="text-[10px] text-slate-500 block uppercase font-bold">Selection Status</span>
                             {isCommitted ? (
-                              <span className="font-bold text-emerald-300 flex items-center justify-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span className="font-bold text-emerald-700 flex items-center justify-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                                 <span>Confirmed by Creator</span>
                               </span>
                             ) : hasStep6Feedback ? (
-                              <span className="font-bold text-blue-300 flex items-center justify-center gap-1">
-                                <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+                              <span className="font-bold text-blue-700 flex items-center justify-center gap-1">
+                                <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
                                 <span>Feedback In Review</span>
                               </span>
                             ) : (
-                              <span className="font-bold text-amber-300 flex items-center justify-center gap-1">
-                                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                              <span className="font-bold text-amber-800 flex items-center justify-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-amber-600" />
                                 <span>Awaiting Creator Reply</span>
                               </span>
                             )}
                           </div>
                         </div>
 
-                    {/* Concept Switcher Dropdown / Pills (in case admin wants to toggle) */}
-                    {concepts.length > 1 && (
-                      <div className="pt-2 border-t border-white/[0.05] space-y-1.5">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                          Change Selected Concept:
-                        </span>
-                        <div className="flex items-center gap-2">
-                          {concepts.map((c, i) => {
-                            const isCurrent = (chosenConcept?.id === c.id) || (!chosenConcept && i === 0);
-                            return (
-                              <button
-                                key={c.id || i}
-                                type="button"
-                                onClick={() => handleSelectConcept(c.id, selectedCreator.id)}
-                                className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer truncate ${
-                                  isCurrent
-                                    ? "bg-purple-600 text-white border-purple-500"
-                                    : "bg-white/[0.03] text-slate-400 border-white/10 hover:text-white"
-                                }`}
-                              >
-                                #{i + 1} {c.name.split(" ")[0]}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                        {/* Concept Switcher Dropdown / Pills (in case admin wants to toggle) */}
+                        {concepts.length > 1 && (
+                          <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                              Change Selected Concept:
+                            </span>
+                            <div className="flex items-center gap-2">
+                              {concepts.map((c, i) => {
+                                const isCurrent = (chosenConcept?.id === c.id) || (!chosenConcept && i === 0);
+                                return (
+                                  <button
+                                    key={c.id || i}
+                                    type="button"
+                                    onClick={() => handleSelectConcept(c.id, selectedCreator.id)}
+                                    className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer truncate ${isCurrent
+                                        ? "bg-[#0F172A] text-white border-slate-800 shadow-2xs"
+                                        : "bg-white text-slate-600 border-slate-200 hover:text-slate-900 hover:border-slate-300 shadow-2xs"
+                                      }`}
+                                  >
+                                    #{i + 1} {c.name.split(" ")[0]}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
 
                   {/* 2. 50/50 Co-Founder Terms Card */}
-                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200 space-y-2 shadow-sm">
-                    <div className="font-bold flex items-center gap-1.5 text-white">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <div className="p-4 rounded-xl bg-purple-50/70 border border-purple-200/80 text-xs text-purple-900 space-y-2 shadow-2xs">
+                    <div className="font-bold flex items-center gap-1.5 text-slate-900">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <span>50/50 Co-Founder Partnership Terms</span>
                     </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
                       Creator Forge builds, hosts, and supports 100% of the MVP. Creator provides distribution and feedback. Net subscription profits split 50/50 via automated Stripe payouts.
                     </p>
                   </div>
 
                   {/* 3. Creator Profile Quick Summary */}
-                  <div className="p-3.5 rounded-xl bg-[#121620] border border-white/[0.06] text-xs space-y-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs space-y-1.5 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                       Creator Profile
                     </span>
-                    <div className="flex items-center justify-between text-slate-300">
+                    <div className="flex items-center justify-between text-slate-600">
                       <span>Audience:</span>
-                      <strong className="text-white font-mono">{selectedCreator.followerStr || selectedCreator.follower_count || "100K+"}</strong>
+                      <strong className="text-slate-900 font-mono">{selectedCreator.followerStr || selectedCreator.follower_count || "100K+"}</strong>
                     </div>
-                    <div className="flex items-center justify-between text-slate-300">
+                    <div className="flex items-center justify-between text-slate-600">
                       <span>Niche:</span>
-                      <strong className="text-purple-300">{selectedCreator.niche || "Creator Economy"}</strong>
+                      <strong className="text-purple-700">{selectedCreator.niche || "Creator Economy"}</strong>
                     </div>
-                    <div className="flex items-center justify-between text-slate-300">
+                    <div className="flex items-center justify-between text-slate-600">
                       <span>Contact Email:</span>
-                      <strong className="text-emerald-400 font-mono text-[11px]">{selectedCreator.email || selectedCreator.email_public || "No email"}</strong>
+                      <strong className="text-emerald-700 font-mono text-[11px]">{selectedCreator.email || selectedCreator.email_public || "No email"}</strong>
                     </div>
 
                     {/* Hunter.io Intelligence Block in Drawer */}
-                    <div className="pt-2 border-t border-white/[0.06] space-y-2">
+                    <div className="pt-2 border-t border-slate-200/80 space-y-2">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-amber-300 flex items-center gap-1">
-                          <Target className="w-3 h-3 text-amber-400" />
+                        <span className="font-bold text-amber-800 flex items-center gap-1">
+                          <Target className="w-3 h-3 text-amber-600" />
                           <span>Hunter.io Intelligence</span>
                         </span>
                         {(hunterDataMap[selectedCreator.id]?.score || selectedCreator.hunter_score) ? (
-                          <span className="text-[10px] font-black text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                          <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                             {hunterDataMap[selectedCreator.id]?.score || selectedCreator.hunter_score}% Deliverable
                           </span>
                         ) : null}
@@ -9044,30 +9496,30 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             type="button"
                             onClick={(e) => handleHunterVerifyEmail(selectedCreator, e)}
                             disabled={hunterLoadingId === selectedCreator.id}
-                            className="w-full py-1.5 px-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:text-white flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50"
+                            className="w-full py-1.5 px-2.5 rounded-lg bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-700 hover:text-emerald-800 flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
                           >
                             {hunterLoadingId === selectedCreator.id && hunterActionType === 'verify' ? (
-                              <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
+                              <RefreshCw className="w-3 h-3 animate-spin text-emerald-600" />
                             ) : (
-                              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                              <ShieldCheck className="w-3 h-3 text-emerald-600" />
                             )}
                             <span>Verify Deliverability (Hunter.io)</span>
                           </button>
                           {hunterDataMap[selectedCreator.id] && (
-                            <div className="p-2 rounded-lg bg-black/40 border border-white/[0.05] text-[10px] space-y-1 text-slate-300">
+                            <div className="p-2 rounded-lg bg-white border border-slate-200 text-[10px] space-y-1 text-slate-600 shadow-2xs">
                               <div className="flex justify-between">
                                 <span>Status:</span>
-                                <strong className="text-emerald-400 uppercase">{hunterDataMap[selectedCreator.id].status}</strong>
+                                <strong className="text-emerald-700 uppercase font-mono">{hunterDataMap[selectedCreator.id].status}</strong>
                               </div>
                               <div className="flex justify-between">
                                 <span>SMTP Check:</span>
-                                <strong className={hunterDataMap[selectedCreator.id].smtp_check ? "text-emerald-400" : "text-amber-400"}>
+                                <strong className={hunterDataMap[selectedCreator.id].smtp_check ? "text-emerald-700" : "text-amber-700"}>
                                   {hunterDataMap[selectedCreator.id].smtp_check ? "Passed" : "Blocked/Failed"}
                                 </strong>
                               </div>
                               <div className="flex justify-between">
                                 <span>Public Sources:</span>
-                                <strong className="text-white">{hunterDataMap[selectedCreator.id].sources_count || (hunterDataMap[selectedCreator.id].sources || []).length} web sources</strong>
+                                <strong className="text-slate-800">{hunterDataMap[selectedCreator.id].sources_count || (hunterDataMap[selectedCreator.id].sources || []).length} web sources</strong>
                               </div>
                             </div>
                           )}
@@ -9077,12 +9529,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           type="button"
                           onClick={(e) => handleHunterFindEmail(selectedCreator, e)}
                           disabled={hunterLoadingId === selectedCreator.id}
-                          className="w-full py-1.5 px-2.5 rounded-lg bg-gradient-to-r from-amber-500/15 to-orange-500/15 hover:from-amber-500/25 hover:to-orange-500/25 border border-amber-500/35 text-amber-300 hover:text-white flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50"
+                          className="w-full py-1.5 px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
                         >
                           {hunterLoadingId === selectedCreator.id && hunterActionType === 'find' ? (
-                            <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
+                            <RefreshCw className="w-3 h-3 animate-spin text-amber-600" />
                           ) : (
-                            <Target className="w-3.5 h-3.5 text-amber-400" />
+                            <Target className="w-3.5 h-3.5 text-amber-600" />
                           )}
                           <span>Find Business Email (Hunter.io)</span>
                         </button>
@@ -9094,13 +9546,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 {/* Right Column (7 cols): Live Conversation Thread & Admin Reply Composer */}
                 <div className="lg:col-span-7 space-y-4 flex flex-col justify-between">
                   {/* 1. Live Conversation Thread */}
-                  <div className="rounded-xl bg-[#121620] border border-white/[0.08] overflow-hidden space-y-0 shadow-lg">
-                    <div className="p-3 bg-[#161a26] border-b border-white/[0.06] flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-white">
-                        <Mail className="w-3.5 h-3.5 text-purple-400" />
+                  <div className="rounded-2xl bg-white border border-slate-200/90 overflow-hidden space-y-0 shadow-2xs">
+                    <div className="p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                        <Mail className="w-3.5 h-3.5 text-purple-600" />
                         <span>Conversation Thread with {selectedCreator?.name || "Creator"}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-emerald-400">
+                      <span className="text-[10px] font-mono text-emerald-700 font-medium">
                         {msgs.length} Messages Logged
                       </span>
                     </div>
@@ -9112,34 +9564,33 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           return (
                             <div
                               key={msg.id || idx}
-                              className={`p-3.5 rounded-xl border text-xs space-y-1.5 shadow-sm ${
-                                isFromCreator
-                                  ? "bg-purple-950/20 border-purple-500/30 ml-4"
-                                  : "bg-white/[0.02] border-white/[0.06] mr-4"
-                              }`}
+                              className={`p-3.5 rounded-xl border text-xs space-y-1.5 shadow-2xs ${isFromCreator
+                                  ? "bg-purple-50/70 border-purple-200/80 ml-4"
+                                  : "bg-slate-50 border-slate-200 mr-4"
+                                }`}
                             >
                               <div className="flex items-center justify-between text-[11px]">
-                                <span className="font-bold text-white flex items-center gap-1.5">
+                                <span className="font-bold text-slate-900 flex items-center gap-1.5">
                                   <span>{isFromCreator ? (selectedCreator.name || msg.from_address) : "Creator Forge Studio"}</span>
                                   {isFromCreator && (
-                                    <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                                       Creator Reply
                                     </span>
                                   )}
                                 </span>
-                                <span className="text-slate-500 font-mono text-[10px]">
+                                <span className="text-slate-400 font-mono text-[10px]">
                                   {msg.received_at ? new Date(msg.received_at).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "Recently"}
                                 </span>
                               </div>
-                              <div className="text-xs text-slate-200 leading-relaxed font-sans">
+                              <div className="text-xs text-slate-700 leading-relaxed font-sans">
                                 <FormattedMarkdownBody text={msg.body} />
                               </div>
                             </div>
                           );
                         })
                       ) : (
-                        <div className="p-6 text-center text-xs text-slate-400 italic space-y-1">
-                          <Clock className="w-5 h-5 text-slate-600 mx-auto" />
+                        <div className="p-6 text-center text-xs text-slate-500 italic space-y-1">
+                          <Clock className="w-5 h-5 text-slate-400 mx-auto" />
                           <p>No messages received yet. Write a direct reply below or click Generate AI Draft.</p>
                         </div>
                       )}
@@ -9147,15 +9598,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </div>
 
                   {/* 2. Admin Direct Email Composer */}
-                  <div className="p-4 rounded-xl bg-[#121620] border border-white/[0.08] space-y-3 shadow-lg">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-3 shadow-2xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                        <MessageSquare className="w-4 h-4 text-purple-600 flex-shrink-0" />
                         <div>
-                          <span className="text-xs font-bold text-white block">
+                          <span className="text-xs font-bold text-slate-900 block">
                             Admin Direct Email Composer
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-slate-500">
                             You are chatting directly with {selectedCreator.name || "creator"}. Messages are sent manually by you.
                           </span>
                         </div>
@@ -9167,10 +9618,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           type="button"
                           onClick={handleRegenerateStep6Draft}
                           disabled={isGeneratingStep6Ai}
-                          className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 text-xs font-bold border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-purple-50 text-purple-700 text-xs font-bold border border-purple-200 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
                           title="Generate fresh AI draft tailored to creator's latest response"
                         >
-                          <Sparkles className={`w-3.5 h-3.5 text-purple-400 ${isGeneratingStep6Ai ? "animate-spin" : ""}`} />
+                          <Sparkles className={`w-3.5 h-3.5 text-purple-600 ${isGeneratingStep6Ai ? "animate-spin" : ""}`} />
                           <span>{isGeneratingStep6Ai ? "Generating..." : "Generate AI Draft"}</span>
                         </button>
 
@@ -9178,12 +9629,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           type="button"
                           onClick={() => handleSendOpportunityPitch()}
                           disabled={isSendingPitch}
-                          className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
+                          className="relative px-4 py-1.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
                         >
+                          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                          </span>
                           {isSendingPitch ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-300" />
                           ) : (
-                            <Send className="w-3.5 h-3.5" />
+                            <Send className="w-3.5 h-3.5 text-emerald-300" />
                           )}
                           <span>{isSendingPitch ? "Sending..." : "Send Email"}</span>
                         </button>
@@ -9192,7 +9647,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                     {/* Subject Line Input */}
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                         Subject Line
                       </label>
                       <input
@@ -9200,13 +9655,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         value={customPitchSubject}
                         onChange={(e) => setCustomPitchSubject(e.target.value)}
                         placeholder="Subject..."
-                        className="w-full bg-[#090b0e] border border-white/10 focus:border-purple-500/50 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none"
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:bg-white rounded-xl px-3.5 py-2 text-xs text-slate-900 font-mono focus:outline-none transition-colors"
                       />
                     </div>
 
                     {/* Message Body Textarea */}
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                         Message Body
                       </label>
                       <textarea
@@ -9214,7 +9669,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         value={customPitchBody}
                         onChange={(e) => setCustomPitchBody(e.target.value)}
                         placeholder={`Hi ${selectedCreator.name?.split(" ")[0] || "there"}, thanks for replying! We'd love to partner with you on building ${chosenConcept?.name}...`}
-                        className="w-full bg-[#090b0e] border border-white/10 focus:border-purple-500/50 rounded-xl p-3.5 text-xs text-slate-200 font-sans leading-relaxed focus:outline-none resize-none"
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:bg-white rounded-xl p-3.5 text-xs text-slate-800 font-sans leading-relaxed focus:outline-none resize-none transition-colors"
                       />
                     </div>
 
@@ -9236,7 +9691,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               prev ? `${prev}\n\n${suggestion}` : suggestion
                             );
                           }}
-                          className="text-[10px] bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-white/[0.06] transition-all cursor-pointer truncate max-w-[220px]"
+                          className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 transition-all cursor-pointer truncate max-w-[220px]"
                         >
                           {suggestion}
                         </button>
@@ -9244,21 +9699,25 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     </div>
 
                     {/* Bottom Info Bar */}
-                    <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
-                      <div className="text-[11px] text-slate-400">
-                        Recipient: <span className="text-emerald-300 font-mono font-medium">{selectedCreator.email || selectedCreator.email_public || "No email set"}</span>
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                      <div className="text-[11px] text-slate-500">
+                        Recipient: <span className="text-emerald-700 font-mono font-medium">{selectedCreator.email || selectedCreator.email_public || "No email set"}</span>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => handleSendOpportunityPitch()}
                         disabled={isSendingPitch}
-                        className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 sm:hidden"
+                        className="relative px-4 py-1.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 sm:hidden"
                       >
+                        <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
                         {isSendingPitch ? (
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-300" />
                         ) : (
-                          <Send className="w-3.5 h-3.5" />
+                          <Send className="w-3.5 h-3.5 text-emerald-300" />
                         )}
                         <span>{isSendingPitch ? "Sending..." : "Send Email"}</span>
                       </button>
@@ -9273,18 +9732,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
       {/* ── Interested & Qualified Creators Modal ───────────────────────────────── */}
       {showInterestedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-3xl rounded-2xl bg-[#0e1117] border border-emerald-500/30 shadow-2xl p-6 space-y-5 max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-3xl rounded-2xl bg-white border border-slate-200 shadow-2xl p-6 space-y-5 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-emerald-400" />
-                  <h3 className="text-base font-bold text-white">
+                  <Sparkles className="w-5 h-5 text-emerald-600" />
+                  <h3 className="text-base font-bold text-slate-900">
                     Interested & Qualified Creators ({interestedCreators.length}
                     )
                   </h3>
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   These creators replied with interest or have been approved.
                   Click any creator to jump straight to their distinct proposal & concepts!
                 </p>
@@ -9294,18 +9753,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   type="button"
                   onClick={() => syncImapReplies(true)}
                   disabled={pollingImap}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50 shadow-2xs"
                   title="Check inbox for replies"
                 >
                   <RefreshCw
-                    className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin" : ""}`}
+                    className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin text-purple-600" : "text-slate-400"}`}
                   />
                   <span className="flex-shrink-0">Sync Inbox</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowInterestedModal(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -9329,49 +9788,48 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   return (
                     <div
                       key={c.id}
-                      className={`p-4 rounded-xl bg-[#161a23] border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs ${
-                        isCurrentlySelected
-                          ? "border-emerald-500/60 shadow-sm ring-1 ring-emerald-500/30"
-                          : "border-white/[0.06] hover:border-white/20"
-                      }`}
+                      className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs ${isCurrentlySelected
+                          ? "bg-white border-emerald-300 ring-1 ring-emerald-300 shadow-xs"
+                          : "bg-slate-50 border-slate-200/90 hover:border-slate-300 shadow-2xs"
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <img
                           src={c.avatar}
                           alt=""
-                          className="w-11 h-11 rounded-full object-cover border border-white/10"
+                          className="w-11 h-11 rounded-full object-cover border border-slate-200"
                         />
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-white text-sm">
+                            <span className="font-bold text-slate-900 text-sm">
                               {c.name || c.display_name}
                             </span>
-                            <span className="text-slate-400 font-mono">
+                            <span className="text-slate-500 font-mono">
                               {c.handle}
                             </span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400 font-mono">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200/60 text-slate-700 font-mono">
                               {c.platform} • {c.followerStr || c.follower_count}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <span className="text-emerald-400 font-mono text-[11px]">
+                            <span className="text-emerald-700 font-mono text-[11px] font-medium">
                               {emailVal}
                             </span>
-                            <span className="text-slate-500">•</span>
+                            <span className="text-slate-300">•</span>
                             {pitchSent ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/30 flex items-center gap-1">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200 flex items-center gap-1">
                                 <span>Proposal Dispatched</span>
                               </span>
                             ) : (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-purple-500/15 text-purple-300 border-purple-500/30 flex items-center gap-1">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-purple-50 text-purple-800 border-purple-200 flex items-center gap-1">
                                 <span>Ready to Pitch</span>
                               </span>
                             )}
                             {choice?.conceptName && (
                               <>
-                                <span className="text-slate-500">•</span>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-teal-500/10 text-teal-300 border-teal-500/20">
+                                <span className="text-slate-300">•</span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-teal-50 text-teal-800 border-teal-200">
                                   Concept: {choice.conceptName}
                                 </span>
                               </>
@@ -9379,7 +9837,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           </div>
 
                           {replyInfo.hasRealReply && replyInfo.text && (
-                            <div className="mt-2 p-2.5 rounded-lg bg-black/40 border border-white/5 text-[11px] text-slate-300 italic max-w-lg">
+                            <div className="mt-2 p-2.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-700 italic max-w-lg shadow-2xs">
                               "
                               {replyInfo.text.length > 140
                                 ? replyInfo.text.slice(0, 140) + "..."
@@ -9400,12 +9858,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             setActiveStep(6);
                             setShowInterestedModal(false);
                           }}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                            isCurrentlySelected
-                              ? "bg-emerald-600 text-white shadow-lg"
-                              : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md"
-                          }`}
+                          className={`relative px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95 ${isCurrentlySelected
+                              ? "bg-[#0F172A] text-white border border-slate-800"
+                              : "bg-[#0F172A] hover:bg-[#1E293B] text-white border border-slate-800"
+                            }`}
                         >
+                          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                          </span>
                           <span>
                             {isCurrentlySelected
                               ? "Viewing in Pitch & Select"
@@ -9419,7 +9880,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t border-white/[0.08] pt-3 text-[11px] text-slate-400">
+            <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-500">
               <span>
                 Click any creator above to isolate and preview their exact
                 proposal & concepts.
@@ -9427,7 +9888,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               <button
                 type="button"
                 onClick={() => setShowInterestedModal(false)}
-                className="px-4 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition-all cursor-pointer"
+                className="px-4 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
               >
                 Close
               </button>
@@ -9438,17 +9899,17 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
       {/* ── Awaiting Creator Replies Modal ────────────────────────────────────── */}
       {showAwaitingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-3xl rounded-2xl bg-[#0e1117] border border-white/[0.12] shadow-2xl p-6 space-y-5 max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-3xl rounded-2xl bg-white border border-slate-200 shadow-2xl p-6 space-y-5 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-purple-400" />
-                  <h3 className="text-base font-bold text-white">
+                  <Clock className="w-4 h-4 text-purple-600" />
+                  <h3 className="text-base font-bold text-slate-900">
                     Awaiting Replies & Pending Leads
                   </h3>
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   These creators have not replied with interest yet. Once they
                   reply, they will automatically advance to Product Ideas & Proposal Pitch.
                 </p>
@@ -9458,18 +9919,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   type="button"
                   onClick={() => syncImapReplies(true)}
                   disabled={pollingImap}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50 shadow-2xs"
                   title="Check inbox for replies"
                 >
                   <RefreshCw
-                    className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin" : ""}`}
+                    className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin text-purple-600" : "text-purple-400"}`}
                   />
                   <span className="flex-shrink-0">Sync Inbox</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAwaitingModal(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -9489,57 +9950,56 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   return (
                     <div
                       key={c.id}
-                      className="p-4 rounded-xl bg-[#161a23] border border-white/[0.06] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
+                      className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs"
                     >
                       <div className="flex items-center gap-3">
                         <img
                           src={c.avatar}
                           alt=""
-                          className="w-10 h-10 rounded-full object-cover border border-white/10"
+                          className="w-10 h-10 rounded-full object-cover border border-slate-200"
                         />
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-white">
+                            <span className="font-bold text-slate-900">
                               {c.name || c.display_name}
                             </span>
                             <span className="text-slate-500">{c.handle}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400 font-mono">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200/60 text-slate-700 font-mono">
                               {c.platform} • {c.followerStr || c.follower_count}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             {hasEmail ? (
-                              <span className="text-emerald-400 font-mono text-[11px]">
+                              <span className="text-emerald-700 font-mono text-[11px] font-medium">
                                 {emailVal}
                               </span>
                             ) : (
-                              <span className="text-amber-400 text-[11px] italic">
+                              <span className="text-amber-800 text-[11px] italic">
                                 No Email Address
                               </span>
                             )}
-                            <span className="text-slate-500">•</span>
+                            <span className="text-slate-300">•</span>
                             {replyInfo.hasRealReply ? (
                               replyInfo.classification === "not_interested" ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-rose-500/10 text-rose-300 border-rose-500/30 flex items-center gap-1">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-rose-50 text-rose-700 border-rose-200 flex items-center gap-1">
                                   <span>Declined / Not Interested</span>
                                 </span>
                               ) : replyInfo.classification === "question" ||
                                 replyInfo.classification === "more_info" ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-blue-500/10 text-blue-300 border-blue-500/30 flex items-center gap-1">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
                                   <span>Question / Asking for Info</span>
                                 </span>
                               ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-300 border-emerald-500/30 flex items-center gap-1">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200 flex items-center gap-1">
                                   <span>Qualified / Interested</span>
                                 </span>
                               )
                             ) : (
                               <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                  hasEmail
-                                    ? "bg-purple-500/10 text-purple-300 border-purple-500/20"
-                                    : "bg-amber-500/10 text-amber-300 border-amber-500/20"
-                                }`}
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${hasEmail
+                                    ? "bg-purple-50 text-purple-700 border-purple-200"
+                                    : "bg-amber-50 text-amber-800 border-amber-200"
+                                  }`}
                               >
                                 {hasEmail
                                   ? "⏳ Awaiting Reply"
@@ -9548,7 +10008,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             )}
                           </div>
                           {replyInfo.hasRealReply && replyInfo.text && (
-                            <div className="mt-2 p-2.5 rounded-lg bg-black/40 border border-white/5 text-[11px] text-slate-300 italic max-w-lg">
+                            <div className="mt-2 p-2.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-700 italic max-w-lg shadow-2xs">
                               "
                               {replyInfo.text.length > 150
                                 ? replyInfo.text.slice(0, 150) + "..."
@@ -9568,7 +10028,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               setShowAwaitingModal(false);
                               setActiveStep(6);
                             }}
-                            className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                           >
                             <span>Answer Question</span>
                           </button>
@@ -9583,7 +10043,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             setActiveStep(6);
                             setShowAwaitingModal(false);
                           }}
-                          className="px-3.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                          className="px-3.5 py-1.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white border border-slate-800 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
                         >
                           <span>Mark as Interested & Pitch</span>
                         </button>
@@ -9594,15 +10054,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t border-white/[0.08] pt-3 text-[11px] text-slate-400">
+            <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-500">
               <span className="flex items-center gap-1.5">
-                <Lightbulb className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                <Lightbulb className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                 <span>When creators reply to your email, they will automatically advance to product review.</span>
               </span>
               <button
                 type="button"
                 onClick={() => setShowAwaitingModal(false)}
-                className="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-all cursor-pointer"
+                className="px-4 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
               >
                 Close
               </button>
@@ -9710,42 +10170,40 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
       {/* ── Step 4 Decision & Optional Email Notification Modal ─────────────── */}
       {decisionModal.isOpen && decisionModal.creator && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-2xl rounded-2xl bg-[#0e1117] border border-white/[0.12] shadow-2xl p-6 space-y-5 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-2xl rounded-2xl bg-white border border-slate-200 shadow-2xl p-6 space-y-5 max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-white/[0.08] pb-4">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
-                    decisionModal.decisionType === "approve"
-                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                      : "bg-rose-500/20 text-rose-300 border-rose-500/40"
-                  }`}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center border ${decisionModal.decisionType === "approve"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-rose-50 text-rose-700 border-rose-200"
+                    }`}
                 >
                   {decisionModal.decisionType === "approve" ? (
-                    <CheckCircle2 className="w-5 h-5" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                   ) : (
-                    <XCircle className="w-5 h-5" />
+                    <XCircle className="w-5 h-5 text-rose-600" />
                   )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                        decisionModal.decisionType === "approve"
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                          : "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                      }`}
+                      className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${decisionModal.decisionType === "approve"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-rose-50 text-rose-700 border-rose-200"
+                        }`}
                     >
                       {decisionModal.decisionType === "approve"
                         ? "Accept Creator"
                         : "Reject Lead"}
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-slate-500">
                       • Step 4 Decision Review
                     </span>
                   </div>
-                  <h3 className="text-base font-bold text-white mt-0.5">
+                  <h3 className="text-base font-bold text-slate-900 mt-0.5">
                     {decisionModal.decisionType === "approve"
                       ? `Accept Partnership with ${decisionModal.creator.name || decisionModal.creator.display_name}`
                       : `Decline & Archive ${decisionModal.creator.name || decisionModal.creator.display_name}`}
@@ -9758,14 +10216,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 onClick={() =>
                   setDecisionModal((prev) => ({ ...prev, isOpen: false }))
                 }
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Creator Profile Summary Card */}
-            <div className="p-3.5 rounded-xl bg-[#161a23] border border-white/[0.06] flex items-center justify-between gap-3 text-xs">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-3 min-w-0">
                 <img
                   src={
@@ -9774,14 +10232,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(decisionModal.creator.handle || "Creator")}&background=6366f1&color=fff`
                   }
                   alt=""
-                  className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0"
+                  className="w-10 h-10 rounded-full object-cover border border-slate-200 flex-shrink-0"
                 />
                 <div className="min-w-0">
-                  <h4 className="font-bold text-white truncate">
+                  <h4 className="font-bold text-slate-900 truncate">
                     {decisionModal.creator.name ||
                       decisionModal.creator.display_name}
                   </h4>
-                  <p className="text-[11px] text-slate-400 font-mono truncate">
+                  <p className="text-[11px] text-slate-500 font-mono truncate">
                     {decisionModal.creator.handle} •{" "}
                     {decisionModal.creator.platform} •{" "}
                     {decisionModal.creator.followerStr ||
@@ -9791,10 +10249,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">
                   Email Address
                 </span>
-                <span className="text-xs font-mono font-bold text-emerald-400">
+                <span className="text-xs font-mono font-bold text-emerald-700">
                   {decisionModal.creator.email ||
                     decisionModal.creator.email_public ||
                     "No email available"}
@@ -9804,9 +10262,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
             {/* Optional Email Notification Toggle & Composition */}
             <div className="space-y-4 overflow-y-auto flex-1 pr-1">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
                 <div className="space-y-0.5">
-                  <label className="text-xs font-bold text-white flex items-center gap-2 cursor-pointer">
+                  <label className="text-xs font-bold text-slate-900 flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={decisionModal.sendEmail}
@@ -9816,11 +10274,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           sendEmail: e.target.checked,
                         }))
                       }
-                      className="w-4 h-4 rounded text-emerald-500 focus:ring-0 cursor-pointer accent-emerald-500"
+                      className="w-4 h-4 rounded text-slate-900 focus:ring-0 cursor-pointer accent-[#0F172A]"
                     />
                     <span>Send decision notification email to creator</span>
                   </label>
-                  <p className="text-[11px] text-slate-400 pl-6">
+                  <p className="text-[11px] text-slate-500 pl-6">
                     Optional. Send an email notification to (
                     {decisionModal.creator.email ||
                       decisionModal.creator.email_public ||
@@ -9834,13 +10292,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     type="button"
                     onClick={handleGenerateDecisionAi}
                     disabled={decisionModal.isGeneratingAi}
-                    className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 flex-shrink-0"
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 flex-shrink-0 shadow-2xs"
                     title="Generate personalized email description with AI"
                   >
                     {decisionModal.isGeneratingAi ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-600" />
                     ) : (
-                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                      <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                     )}
                     <span>
                       {decisionModal.isGeneratingAi
@@ -9852,37 +10310,37 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
 
               {decisionModal.sendEmail && (
-                <div className="rounded-xl bg-[#0b0e14] border border-white/10 overflow-hidden space-y-0 shadow-lg animate-in fade-in">
+                <div className="rounded-xl bg-white border border-slate-200 overflow-hidden space-y-0 shadow-xs animate-in fade-in">
                   {/* Fake Mailbox Header */}
-                  <div className="bg-[#121620] px-4 py-2.5 border-b border-white/[0.08] flex items-center justify-between">
+                  <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-[#ff5f56]" />
                         <span className="w-2 h-2 rounded-full bg-[#ffbd2e]" />
                         <span className="w-2 h-2 rounded-full bg-[#27c93f]" />
                       </div>
-                      <span className="text-[11px] font-bold text-white tracking-wide ml-1">
+                      <span className="text-[11px] font-bold text-slate-800 tracking-wide ml-1">
                         {decisionModal.decisionType === "approve"
                           ? "Partnership Acceptance Notice"
                           : "Partnership Status Update"}
                       </span>
                     </div>
-                    <span className="text-[10px] text-emerald-400 font-mono font-semibold">
+                    <span className="text-[10px] text-emerald-700 font-mono font-semibold">
                       🔒 SMTP Dispatch Ready
                     </span>
                   </div>
 
                   {/* Metadata fields */}
-                  <div className="bg-[#0e121a] px-4 py-2.5 border-b border-white/[0.06] space-y-1.5 text-xs">
+                  <div className="bg-slate-50/60 px-4 py-2.5 border-b border-slate-100 space-y-1.5 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-400 font-bold w-14">From:</span>
-                      <span className="text-slate-200 font-mono text-[11px]">
+                      <span className="text-slate-500 font-bold w-14">From:</span>
+                      <span className="text-slate-800 font-mono text-[11px]">
                         Creator Forge Studio &lt;partnerships@creatorforge.com&gt;
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-400 font-bold w-14">To:</span>
-                      <span className="text-emerald-400 font-mono text-[11px] font-bold">
+                      <span className="text-slate-500 font-bold w-14">To:</span>
+                      <span className="text-emerald-700 font-mono text-[11px] font-bold">
                         {decisionModal.creator.name ||
                           decisionModal.creator.display_name}{" "}
                         &lt;
@@ -9892,7 +10350,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       </span>
                     </div>
                     <div className="flex items-center gap-2 pt-0.5">
-                      <span className="text-slate-400 font-bold w-14">
+                      <span className="text-slate-500 font-bold w-14">
                         Subject:
                       </span>
                       <input
@@ -9905,7 +10363,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           }))
                         }
                         placeholder="e.g. Partnership Accepted: Advancing to Product Discovery"
-                        className="flex-1 bg-[#141824] border border-white/10 rounded-lg px-3 py-1 text-xs text-white font-mono focus:outline-none focus:border-purple-500"
+                        className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1 text-xs text-slate-900 font-mono focus:outline-none focus:border-slate-400"
                       />
                     </div>
                   </div>
@@ -9913,10 +10371,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   {/* Body Editor */}
                   <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                         Email Message Description (Editable)
                       </label>
-                      <span className="text-[10px] text-purple-400 font-mono">
+                      <span className="text-[10px] text-purple-700 font-mono">
                         AI-Generated Template
                       </span>
                     </div>
@@ -9930,16 +10388,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         }))
                       }
                       placeholder="Enter optional description sent to the creator..."
-                      className="w-full bg-[#141824] border border-white/10 rounded-xl p-3.5 text-xs text-slate-200 font-mono leading-relaxed focus:outline-none focus:border-purple-500 transition-colors"
+                      className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-slate-400 rounded-xl p-3.5 text-xs text-slate-800 font-mono leading-relaxed focus:outline-none transition-colors"
                     />
 
                     {decisionModal.decisionType === "approve" && (
-                      <div className="p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-between text-[11px] text-purple-200">
+                      <div className="p-2.5 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-between text-[11px] text-purple-900">
                         <span className="flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           <span>50/50 Revenue Split • 0 Cost Guarantee</span>
                         </span>
-                        <span className="font-mono text-[10px] text-purple-300">
+                        <span className="font-mono text-[10px] text-purple-700">
                           Included in Offer
                         </span>
                       </div>
@@ -9950,14 +10408,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-between border-t border-white/[0.08] pt-4">
+            <div className="flex items-center justify-between border-t border-slate-100 pt-4">
               <button
                 type="button"
                 onClick={() =>
                   setDecisionModal((prev) => ({ ...prev, isOpen: false }))
                 }
                 disabled={decisionModal.isSending}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-white/[0.05] hover:bg-white/10 transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -9967,16 +10425,21 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   type="button"
                   onClick={handleConfirmDecisionModal}
                   disabled={decisionModal.isSending}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95 ${
-                    decisionModal.decisionType === "approve"
-                      ? "bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/50 shadow-emerald-600/20"
-                      : "bg-rose-600 hover:bg-rose-500 border border-rose-500/50 shadow-rose-600/20"
-                  }`}
+                  className={`relative px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95 ${decisionModal.decisionType === "approve"
+                      ? "bg-[#0F172A] hover:bg-[#1E293B] border border-slate-800"
+                      : "bg-rose-600 hover:bg-rose-500 border border-rose-500 shadow-rose-600/20"
+                    }`}
                 >
+                  {decisionModal.decisionType === "approve" && (
+                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                  )}
                   {decisionModal.isSending ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin text-emerald-300" />
                   ) : decisionModal.decisionType === "approve" ? (
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
                   ) : (
                     <XCircle className="w-4 h-4" />
                   )}
@@ -10000,7 +10463,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
       {/* ── Precision Workspace Provisioning Modal (Linear / Vercel Aesthetic) ── */}
       {isLaunchingProject && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150 overflow-hidden">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-150 overflow-hidden">
           {(() => {
             const concepts = selectedCreator?.productConcepts || (selectedCreator ? ensureCreatorConcepts(selectedCreator) : []);
             const concept = concepts?.find((p) => p.id === selectedConceptId) || concepts?.[0];
@@ -10008,7 +10471,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             const creatorDisplayName = selectedCreator?.name || selectedCreator?.display_name || `@${cleanHandle}`;
 
             return (
-              <div className="w-full max-w-md rounded-2xl bg-[#0c0e14] border border-white/[0.1] shadow-2xl p-6 text-left space-y-5 relative overflow-hidden">
+              <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200 shadow-2xl p-6 text-left space-y-5 relative overflow-hidden">
                 {/* Hairline subtle top glow */}
                 <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
 
@@ -10019,50 +10482,50 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       <img
                         src={selectedCreator.avatar}
                         alt=""
-                        className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                        className="w-10 h-10 rounded-xl object-cover border border-slate-200"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center font-bold text-slate-300 text-sm">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-800 text-sm">
                         {creatorDisplayName.charAt(0).toUpperCase()}
                       </div>
                     )}
-                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#0c0e14] flex items-center justify-center">
-                      <Rocket className="w-2 h-2 text-[#0c0e14]" />
+                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center">
+                      <Rocket className="w-2 h-2 text-white" />
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                         Initializing Workspace
                       </span>
                       <span className="text-[11px] font-mono text-slate-500">
                         {launchStepIndex} / 4
                       </span>
                     </div>
-                    <h3 className="text-sm font-bold text-white tracking-tight truncate mt-0.5">
+                    <h3 className="text-sm font-bold text-slate-900 tracking-tight truncate mt-0.5">
                       {creatorDisplayName}
                     </h3>
                   </div>
                 </div>
 
                 {/* Real Venture Specs */}
-                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] grid grid-cols-2 gap-2 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Concept</span>
-                    <p className="font-semibold text-slate-200 truncate mt-0.5">
+                    <p className="font-semibold text-slate-800 truncate mt-0.5">
                       {concept?.name || "Co-Launch Venture"}
                     </p>
                   </div>
                   <div>
                     <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Terms</span>
-                    <p className="font-semibold text-emerald-400 font-mono truncate mt-0.5">
+                    <p className="font-semibold text-emerald-700 font-mono truncate mt-0.5">
                       50 / 50 Net Split
                     </p>
                   </div>
-                  <div className="col-span-2 pt-2 border-t border-white/[0.04]">
+                  <div className="col-span-2 pt-2 border-t border-slate-200">
                     <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Co-Founder Portal Link</span>
-                    <p className="font-mono text-[11px] text-slate-400 truncate mt-0.5 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                    <p className="font-mono text-[11px] text-slate-600 truncate mt-0.5 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
                       <span>{selectedCreator?.email || selectedCreator?.email_public || "Direct Magic Link Generated"}</span>
                     </p>
                   </div>
@@ -10081,21 +10544,20 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     return (
                       <div
                         key={step.id}
-                        className={`flex items-center gap-2.5 text-xs transition-colors duration-200 ${
-                          isComplete
-                            ? "text-slate-300"
+                        className={`flex items-center gap-2.5 text-xs transition-colors duration-200 ${isComplete
+                            ? "text-slate-600"
                             : isCurrent
-                            ? "text-white font-medium"
-                            : "text-slate-600"
-                        }`}
+                              ? "text-slate-900 font-bold"
+                              : "text-slate-400"
+                          }`}
                       >
                         <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
                           {isComplete ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
                           ) : isCurrent ? (
-                            <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
+                            <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
                           ) : (
-                            <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                           )}
                         </div>
                         <span className="truncate">{step.text}</span>
@@ -10105,30 +10567,29 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
 
                 {/* Segmented Micro-Progress Indicator */}
-                <div className="space-y-2 pt-1 border-t border-white/[0.06]">
+                <div className="space-y-2 pt-1 border-t border-slate-100">
                   <div className="grid grid-cols-4 gap-1.5">
                     {[1, 2, 3, 4].map((idx) => (
                       <div
                         key={idx}
-                        className={`h-1 rounded-full transition-all duration-300 ${
-                          launchStepIndex >= idx
-                            ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]"
-                            : "bg-white/[0.06]"
-                        }`}
+                        className={`h-1 rounded-full transition-all duration-300 ${launchStepIndex >= idx
+                            ? "bg-emerald-500 shadow-2xs"
+                            : "bg-slate-200"
+                          }`}
                       />
                     ))}
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
                     <span className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       <span>
                         {launchStepIndex === 1
                           ? "Binding specifications..."
                           : launchStepIndex === 2
-                          ? "Deploying founder portal..."
-                          : launchStepIndex === 3
-                          ? "Setting up validation gates..."
-                          : "Opening workspace..."}
+                            ? "Deploying founder portal..."
+                            : launchStepIndex === 3
+                              ? "Setting up validation gates..."
+                              : "Opening workspace..."}
                       </span>
                     </span>
                     <span>{launchStepIndex * 25}%</span>
@@ -10137,6 +10598,195 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
             );
           })()}
+        </div>,
+        document.body
+      )}
+
+      {/* ── Co-Launch Venture Artifacts Modal (CF-5050 Agreement, Architecture, Signals) ── */}
+      {activeArtifactTab && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150 overflow-hidden">
+          <div className="w-full max-w-3xl rounded-2xl bg-white border border-slate-200/90 shadow-2xl text-left relative overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Top Hairline accent */}
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 z-10" />
+
+            {/* Header & Tabs */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col gap-3 shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                      Verified Co-Launch Artifact
+                    </span>
+                    <h3 className="text-base font-bold text-slate-900 mt-0.5 font-display">
+                      {VENTURE_ARTIFACTS[activeArtifactTab]?.title}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        const art = VENTURE_ARTIFACTS[activeArtifactTab];
+                        const textToCopy = `${art.title}\n${art.subtitle}\n\n${art.summary}\n\n` +
+                          (art.clauses ? art.clauses.map(c => `${c.title}\n${c.body}`).join('\n\n') : '') +
+                          (art.specs ? art.specs.map(s => `${s.tier}: ${s.tech}\n${s.details}`).join('\n\n') : '') +
+                          (art.metrics ? art.metrics.map(m => `${m.label} (${m.value}): ${m.desc}`).join('\n\n') : '');
+                        navigator.clipboard.writeText(textToCopy);
+                        setArtifactCopied(true);
+                        setTimeout(() => setArtifactCopied(false), 2500);
+                      } catch (e) { }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all cursor-pointer shadow-2xs"
+                  >
+                    {artifactCopied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-emerald-700 font-bold">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Copy Spec</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveArtifactTab(null)}
+                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Artifact Selector Tabs */}
+              <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-100 border border-slate-200 text-xs">
+                {Object.keys(VENTURE_ARTIFACTS).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setActiveArtifactTab(k)}
+                    className={`flex-1 py-1.5 px-3 rounded-lg font-bold text-center transition-all cursor-pointer ${activeArtifactTab === k
+                        ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80"
+                        : "text-slate-600 hover:text-slate-900"
+                      }`}
+                  >
+                    {VENTURE_ARTIFACTS[k].shortTitle}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs">
+              <p className="text-slate-600 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200 font-sans">
+                {VENTURE_ARTIFACTS[activeArtifactTab]?.summary}
+              </p>
+
+              {/* Stats Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {VENTURE_ARTIFACTS[activeArtifactTab]?.stats?.map((st, i) => (
+                  <div key={i} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
+                    <span className="text-[10px] text-slate-500 font-mono block uppercase tracking-wider">{st.label}</span>
+                    <span className="text-xs font-bold text-slate-900 font-mono mt-0.5 block">{st.val}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Detailed Content */}
+              {activeArtifactTab === 'agreement' && (
+                <div className="space-y-3 pt-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono block">
+                    Mutual Venture Operating Clauses
+                  </span>
+                  {VENTURE_ARTIFACTS.agreement.clauses.map((c, i) => (
+                    <div key={i} className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1.5 shadow-2xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-md bg-emerald-50 text-emerald-800 font-mono font-bold text-[10px] flex items-center justify-center shrink-0 border border-emerald-200">
+                          {c.num}
+                        </span>
+                        <h4 className="text-xs font-bold text-slate-900 font-display">
+                          {c.title}
+                        </h4>
+                      </div>
+                      <p className="text-slate-600 leading-relaxed pl-7 text-[11.5px]">
+                        {c.body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeArtifactTab === 'architecture' && (
+                <div className="space-y-3 pt-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono block">
+                    Full-Stack Cloud Infrastructure Spec
+                  </span>
+                  {VENTURE_ARTIFACTS.architecture.specs.map((s, i) => (
+                    <div key={i} className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1.5 shadow-2xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="text-xs font-bold text-slate-900 font-display">
+                          {s.tier}
+                        </h4>
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+                          {s.tech}
+                        </span>
+                      </div>
+                      <p className="text-slate-600 leading-relaxed text-[11.5px]">
+                        {s.details}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeArtifactTab === 'signals' && (
+                <div className="space-y-3 pt-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono block">
+                    Signal Extraction & WTP Logic
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {VENTURE_ARTIFACTS.signals.metrics.map((m, i) => (
+                      <div key={i} className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1.5 shadow-2xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-xs font-bold text-slate-900 font-display">
+                            {m.label}
+                          </h4>
+                          <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                            {m.value}
+                          </span>
+                        </div>
+                        <p className="text-slate-600 leading-relaxed text-[11px]">
+                          {m.desc}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 shrink-0">
+              <span className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Legally Binding Mutual Operating Spec · Creator Forge Studio</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveArtifactTab(null)}
+                className="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all cursor-pointer shadow-2xs"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>,
         document.body
       )}

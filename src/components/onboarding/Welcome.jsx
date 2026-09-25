@@ -36,7 +36,7 @@ import {
   ChevronUp
 } from 'lucide-react'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
-import FloatingPolygons from '../ui/FloatingPolygons'
+import FloatingPolygons, { HeroShallowPolygons } from '../ui/FloatingPolygons'
 import ShippedLiveCanvas from '../ui/ShippedLiveCanvas'
 
 // ── Top Creators Partner Roster (Real Verified Channels) ──────────────────────
@@ -442,8 +442,8 @@ export default function Welcome() {
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#0F172A] font-sans selection:bg-[#E2F952] selection:text-[#0F172A] overflow-x-hidden relative">
 
-      {/* ── Ambient Radial Lighting Glow (Soft Radiant Wash) ──────────────── */}
-      <div className="fixed inset-0 pointer-events-none z-0">
+      {/* ── Ambient Radial Lighting Glow ─────────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none" aria-hidden="true">
         <div 
           className="absolute -top-[15%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] rounded-full blur-[180px] opacity-[0.10]"
           style={{ background: 'radial-gradient(circle, rgba(163, 230, 53, 0.4) 0%, rgba(255, 255, 255, 0) 70%)' }}
@@ -662,6 +662,9 @@ export default function Welcome() {
             backgroundSize: '24px 24px'
           }}
         />
+
+        {/* Shallow Asymmetrical Polygons (Hero Right & Bottom Left near buttons) */}
+        <HeroShallowPolygons />
 
         {/* Floating Background Polygons (Image 5 Style) */}
         <FloatingPolygons variant="hero" />
