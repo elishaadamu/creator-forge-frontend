@@ -425,10 +425,10 @@ export default function AcquisitionEngine({
   const [step2EmailOnly, setStep2EmailOnly] = useState(false);
   const [step2SearchQuery, setStep2SearchQuery] = useState("");
   const [templateSubject, setTemplateSubject] = useState(
-    "Quick idea for {{display_name}}",
+    "Quick idea for {{display_name}} 💡 [#{{handle}}]",
   );
   const [templateBody, setTemplateBody] = useState(
-    `Hi {{first_name}},\n\nI’ve been following your {{niche}} content on {{platform}} and really enjoy what you're building with your community.\n\nI run Creator Forge — we partner 50/50 with creators to build custom software tools for their audience. Our team handles 100% of the engineering, hosting, payment setup, and customer support with zero upfront cost to you.\n\nWe analyzed your channel and outlined 3 software product concepts tailored specifically for your {{follower_count}} followers that could generate recurring monthly revenue.\n\nWould you be open to taking a look at a brief 3-concept breakdown?\n\nBest regards,\nCreator Forge Team\n\n---\nRef: [CF-STAGE:STEP3_INQUIRY | CF-CID:{{creator_id}} | Handle:@{{handle}}]`,
+    `Hi {{first_name}},\n\nI’ve been following your {{niche}} content on {{platform}} and love what you're building with your community! 👋\n\nCreator Forge ⚡ | 50/50 Venture Model\nWe partner 50/50 with creators to build custom software tools and monetization apps for their audience. Our team handles 100% of the engineering, hosting, payment setup, and customer support with zero upfront cost to you.\n\n• Full Delivery: 100% Engineering, UI/UX & QA\n• Zero Risk: $0 Upfront Cost & Co-ownership\n• Hands-Off Ops: Global Hosting, Billing & 24/7 Support\n\nWe analyzed your channel and engineered 3 tailored software product concepts for your {{follower_count}} followers that could drive recurring monthly revenue 🚀\n\nWould you be open to taking a look at a brief 3-concept breakdown this week?\n\nBest regards,\nAlex Rivera\nHead of Venture Partnerships · Creator Forge\n\n---\nRef: [CF-STAGE:STEP3_INQUIRY | CF-CID:{{creator_id}} | Handle:@{{handle}}]`,
   );
 
   // Discovered Creators State (Dynamic AI + Apify Pipeline)
@@ -1474,6 +1474,31 @@ export default function AcquisitionEngine({
 
   // Autonomous Engine Start & Discovery Trigger (AI + Apify)
   const handleStartEngine = async () => {
+    // 0. Strict Validation: At least one niche and one platform are mandatory
+    if (!niches || niches.length === 0) {
+      showToast(
+        "error",
+        "Target Niche Required",
+        "Please select or add at least one target niche in Step 1 before starting lead discovery."
+      );
+      if (activeStep !== 1) {
+        setActiveStep(1);
+      }
+      return;
+    }
+
+    if (!selectedPlatforms || selectedPlatforms.length === 0) {
+      showToast(
+        "error",
+        "Target Platform Required",
+        "Please select at least one platform (YouTube, Instagram, or TikTok) before starting discovery."
+      );
+      if (activeStep !== 1) {
+        setActiveStep(1);
+      }
+      return;
+    }
+
     // Abort any prior in-flight request
     if (discoveryAbortRef.current) {
       try { discoveryAbortRef.current.abort(); } catch (e) { }
@@ -1511,8 +1536,7 @@ export default function AcquisitionEngine({
     const targetCount = Math.max(1, Number(creatorsBatchCount) || 25);
     const parsedMinFollowers = Math.max(1000, Number(minFollowers) || 100000);
     const parsedMaxFollowers = Math.max(parsedMinFollowers, Number(maxFollowers) || 1000000);
-    const activeNiches =
-      niches.length > 0 ? niches : ["Tech", "Software", "SaaS"];
+    const activeNiches = niches;
     setDiscoveryLog(
       `[Audience Intelligence] Dynamically discovering ${targetCount} creators across [${activeNiches.join(", ")}] on ${selectedPlatforms.join(", ")}...`,
     );
@@ -4730,23 +4754,37 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           `[Outreach Queue] Dispatching (${i + 1}/${uncontactedList.length}) to ${cName} (${targetEmail})...`,
         );
 
-        const renderedSubject = templateSubject.replace(
-          /\{\{display_name\}\}/g,
-          c.name || c.display_name,
-        );
-        const renderedBody = templateBody
-          .replace(
-            /\{\{first_name\}\}/g,
-            (c.name || c.display_name || "there").split(" ")[0],
-          )
-          .replace(/\{\{display_name\}\}/g, c.name || c.display_name)
-          .replace(/\{\{handle\}\}/g, (c.handle || "").replace(/^@/, ""))
-          .replace(/\{\{platform\}\}/g, c.platform)
-          .replace(/\{\{niche\}\}/g, c.niche)
-          .replace(/\{\{follower_count\}\}/g, c.followerStr || "100k+")
-          .replace(/\{\{followers\}\}/g, c.followerStr || "100k+")
+        const creatorFirstName = (c.name || c.display_name || "there").split(" ")[0].trim() || "there";
+        const creatorDisplayName = c.name || c.display_name || creatorFirstName;
+        const creatorHandle = (c.handle || "").replace(/^@/, "").trim();
+        const creatorPlatform = (c.platform || "YouTube").toLowerCase() === "youtube" ? "YouTube" : (c.platform || "social media");
+        const rawNiche = c.niche && String(c.niche).trim() !== "undefined" && String(c.niche).trim() !== "null" ? String(c.niche).trim() : "";
+        const nicheReplacement = rawNiche ? (rawNiche.toLowerCase().endsWith("content") ? rawNiche : `${rawNiche} content`) : "content";
+        const followerStr = c.followerStr || (c.follower_count ? `${Math.round(c.follower_count / 1000)}k+` : "100k+");
+
+        let renderedSubject = templateSubject
+          .replace(/\{\{display_name\}\}/g, creatorDisplayName)
+          .replace(/\{\{first_name\}\}/g, creatorFirstName)
+          .replace(/\{\{handle\}\}/g, creatorHandle)
+          .replace(/\{\{platform\}\}/g, creatorPlatform)
+          .replace(/\{\{niche\}\}/g, rawNiche || "channel");
+        renderedSubject = renderedSubject.replace(/\bundefined\b/gi, creatorDisplayName);
+
+        let renderedBody = templateBody
+          .replace(/\{\{first_name\}\}/g, creatorFirstName)
+          .replace(/\{\{display_name\}\}/g, creatorDisplayName)
+          .replace(/\{\{handle\}\}/g, creatorHandle)
+          .replace(/\{\{platform\}\}/g, creatorPlatform)
+          .replace(/\{\{niche\}\}\s*content/gi, nicheReplacement)
+          .replace(/\{\{niche\}\}/g, rawNiche ? `${rawNiche} content` : "content")
+          .replace(/\{\{follower_count\}\}/g, followerStr)
+          .replace(/\{\{followers\}\}/g, followerStr)
           .replace(/\{\{creator_id\}\}/g, c.id)
-          .replace(/\{\{product_name\}\}/g, "a high-growth product");
+          .replace(/\{\{product_name\}\}/g, "a custom software product");
+
+        // Clean any stray "undefined" words
+        renderedBody = renderedBody.replace(/\bundefined\s+content\b/gi, "content");
+        renderedBody = renderedBody.replace(/\bundefined\b/gi, "channel");
 
         setOutreachLog(`[Connecting SMTP] Dispatching email to ${cName} (${targetEmail})...`);
         try {
@@ -5837,6 +5875,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      onClick={handleDeleteAllCreators}
+                      disabled={isDeletingAll}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition cursor-pointer disabled:opacity-50 shadow-2xs active:scale-95"
+                      title="Permanently wipe all discovered creators from database and reset pipeline"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                      <span>{isDeletingAll ? "Deleting..." : `Delete All Creators${creators.length > 0 ? ` (${creators.length})` : ""}`}</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={handleStartFresh}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
                       title="Clear cached creators and start completely fresh"
@@ -5852,8 +5900,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Target Niche(s)</span>
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-                        {niches.length} selected
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                        niches.length > 0
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+                          : "bg-rose-50 text-rose-700 border-rose-200 font-bold"
+                      }`}>
+                        {niches.length > 0 ? `${niches.length} selected` : "0 selected (Required)"}
                       </span>
                     </div>
                     {niches.length > 0 && (
@@ -5868,7 +5920,17 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </div>
 
                   {/* Active tags container + Add input */}
-                  <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 flex flex-wrap items-center gap-2 min-h-[50px]">
+                  <div className={`p-3 rounded-xl border flex flex-wrap items-center gap-2 min-h-[50px] transition-colors ${
+                    niches.length === 0
+                      ? "bg-rose-50/40 border-rose-200"
+                      : "bg-slate-50/80 border-slate-200/80"
+                  }`}>
+                    {niches.length === 0 && (
+                      <span className="text-xs text-rose-600 font-medium flex items-center gap-1.5 py-0.5 px-1">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                        <span>No niche selected. Choose from the available niches below or type a custom niche:</span>
+                      </span>
+                    )}
                     {niches.map((niche) => (
                       <div
                         key={niche}
@@ -6327,78 +6389,319 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </div>
                 </div>
               ) : (
-                /* Live Client Preview Mode ("Real Email Message") */
-                <div className="p-4 sm:p-6 space-y-4 animate-in fade-in min-w-0 w-full bg-slate-100/70">
-                  <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-8 space-y-6 shadow-sm max-w-2xl mx-auto min-w-0 w-full">
-                    {/* Subject Line */}
-                    <div className="min-w-0 pb-1">
-                      <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug tracking-tight font-sans">
-                        {templateSubject
-                          .replace("{{display_name}}", "Marcus Vance")
-                          .replace("{{first_name}}", "Marcus")}
-                      </h3>
-                    </div>
+                /* Live Client Preview Mode ("Real Email Message" - Responsive Superhuman/Apple Mail Client Frame) */
+                (() => {
+                  const previewTargetCreator = creators && creators.length > 0 ? creators[0] : null;
+                  const previewDisplayName = previewTargetCreator?.display_name || "Cal Newport";
+                  const previewFirstName = previewTargetCreator?.first_name || (previewDisplayName.split(" ")[0]) || "Cal";
+                  const previewHandle = (previewTargetCreator?.handle || "CalNewportMedia").replace(/^@/, "");
+                  const previewNiche = previewTargetCreator?.niche || "Deep Work & Productivity";
+                  const previewPlatform = previewTargetCreator?.platform
+                    ? (previewTargetCreator.platform.charAt(0).toUpperCase() + previewTargetCreator.platform.slice(1))
+                    : "YouTube";
+                  const previewFollowers = previewTargetCreator?.follower_count
+                    ? (Number(previewTargetCreator.follower_count) >= 1000
+                        ? `${Math.round(Number(previewTargetCreator.follower_count) / 1000)}K`
+                        : String(previewTargetCreator.follower_count))
+                    : "363K";
+                  const previewRecipientEmail = previewTargetCreator?.email || previewTargetCreator?.email_public || "cal@calnewport.com";
 
-                    {/* Real Email Metadata & Sender Header */}
-                    <div className="flex items-start justify-between gap-3 pt-1 pb-4 border-b border-slate-100 text-xs min-w-0">
-                      <div className="flex items-start gap-3 min-w-0">
-                        {/* Circular white-bg avatar with light CreatorForgeLogo */}
-                        <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-2xs shrink-0 mt-0.5">
-                          <CreatorForgeLogo size={20} showText={false} theme="light" />
-                        </div>
-                        <div className="space-y-0.5 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-slate-900 text-sm">Creator Forge Studio</span>
-                            <span className="text-slate-500 font-mono text-[11px] truncate">&lt;partnerships@creatorforge.com&gt;</span>
+                  const previewSubject = templateSubject
+                    .replace(/\{\{display_name\}\}/g, previewDisplayName)
+                    .replace(/\{\{first_name\}\}/g, previewFirstName)
+                    .replace(/\{\{handle\}\}/g, previewHandle)
+                    .replace(/\{\{niche\}\}/g, previewNiche)
+                    .replace(/\{\{platform\}\}/g, previewPlatform)
+                    .replace(/\{\{follower_count\}\}/g, previewFollowers);
+
+                  return (
+                    <div className="p-2.5 sm:p-4 md:p-6 bg-slate-100/70 min-w-0 w-full animate-in fade-in flex justify-center">
+                      {/* BEGIN: EmailClientContainer */}
+                      <div className="w-full max-w-5xl bg-white rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col my-auto transition-all" data-purpose="client-window">
+                        
+                        {/* BEGIN: ClientTopBar */}
+                        <header className="bg-slate-900 text-slate-300 px-3.5 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between border-b border-slate-800 select-none">
+                          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+                            <div className="flex space-x-1.5 mr-1 sm:mr-2 shrink-0">
+                              <span className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-rose-500 inline-block hover:opacity-80 transition cursor-pointer"></span>
+                              <span className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-amber-500 inline-block hover:opacity-80 transition cursor-pointer"></span>
+                              <span className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-emerald-500 inline-block hover:opacity-80 transition cursor-pointer"></span>
+                            </div>
+                            <div className="h-4 w-[1px] bg-slate-700 mx-1 shrink-0"></div>
+                            <div className="flex items-center text-xs tracking-wide text-slate-300 font-medium truncate">
+                              <svg className="w-4 h-4 mr-1.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
+                              </svg>
+                              <span className="truncate">Work / Partnerships</span>
+                            </div>
                           </div>
-                          <div className="text-xs text-slate-500 flex items-center gap-1.5 flex-wrap">
-                            <span>to</span>
-                            <span className="font-medium text-slate-800">Marcus Vance</span>
-                            <span className="text-slate-400 font-mono text-[11px]">&lt;marcus@channel.com&gt;</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono font-medium">320K YouTube</span>
+                          <div className="flex items-center space-x-1 sm:space-x-2 text-xs shrink-0">
+                            <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-mono text-[11px]">⌘K Command</span>
+                            <button className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-slate-100 transition cursor-pointer" title="Archive" type="button">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+                            </button>
+                            <button className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-slate-100 transition cursor-pointer" title="Mark as Read" type="button">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+                            </button>
+                            <button className="p-1.5 hover:bg-slate-800 rounded-md text-amber-400 hover:bg-slate-800 transition cursor-pointer" title="Star email" type="button">
+                              <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                            </button>
+                          </div>
+                        </header>
+
+                        {/* BEGIN: EmailHeaderInfo */}
+                        <div className="px-4 sm:px-6 md:px-10 pt-5 sm:pt-7 pb-5 sm:pb-6 border-b border-slate-100 bg-white" data-purpose="email-metadata-panel">
+                          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-5">
+                            <div className="flex items-center flex-wrap gap-2.5 min-w-0">
+                              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 tracking-tight break-words">
+                                {previewSubject}
+                              </h1>
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                                Inbox
+                              </span>
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                Partnership Pitch
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-400 font-mono flex items-center shrink-0">
+                              <span>8:43 PM (12 minutes ago)</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                            <div className="flex items-start sm:items-center space-x-3.5 min-w-0">
+                              <div className="w-10 sm:w-11 h-10 sm:h-11 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold text-sm sm:text-base shadow-sm ring-2 ring-blue-100 flex-shrink-0">
+                                AR
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center space-x-2 flex-wrap">
+                                  <span className="text-sm font-semibold text-slate-900">Creator Partnerships Team</span>
+                                  <span className="text-xs text-slate-500 hidden sm:inline">•</span>
+                                  <span className="text-xs text-slate-600">Alex Rivera</span>
+                                  <span className="text-xs text-slate-400 hidden md:inline">&lt;partnerships@creatorforge.com&gt;</span>
+                                </div>
+                                <div className="text-xs text-slate-500 mt-0.5 flex items-center flex-wrap gap-1">
+                                  <span>to</span>
+                                  <button className="inline-flex items-center font-medium text-slate-700 hover:text-slate-900 text-left cursor-pointer" type="button">
+                                    <span>{previewDisplayName} &lt;{previewRecipientEmail}&gt;</span>
+                                    <svg className="w-3 h-3 ml-0.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-2 self-start sm:self-center shrink-0">
+                              <button className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 transition flex items-center shadow-xs cursor-pointer" type="button">
+                                <svg className="w-3.5 h-3.5 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+                                Reply
+                              </button>
+                              <button className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 transition flex items-center shadow-xs cursor-pointer" type="button">
+                                <svg className="w-3.5 h-3.5 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+                                Forward
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="text-right shrink-0 text-[11px] text-slate-400 flex flex-col items-end gap-1">
-                        <span>Today, 10:42 AM</span>
-                        <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 font-medium">
-                          <Lock className="w-2.5 h-2.5 text-emerald-600" />
-                          <span>TLS Security</span>
-                        </span>
-                      </div>
-                    </div>
+                        {/* BEGIN: EmailBodyContent */}
+                        <main className="px-4 sm:px-6 md:px-12 py-6 sm:py-8 bg-slate-50/50 overflow-y-auto" data-purpose="email-body">
+                          <div className="max-w-2xl mx-auto space-y-5 text-slate-800 leading-relaxed text-[15px]">
+                            <p className="font-normal text-slate-800">
+                              Hi {previewFirstName},
+                            </p>
+                            <p>
+                              I’ve been following your {previewNiche} content on {previewPlatform} and love what you're building with your community! 👋
+                            </p>
 
-                    {/* Email Rendered Body (Real Message Style) */}
-                    <div className="font-sans text-[13.5px] sm:text-[14px] text-slate-800 whitespace-pre-wrap leading-relaxed space-y-3 break-words min-w-0">
-                      {templateBody
-                        .replace(/\{\{first_name\}\}/g, "Marcus")
-                        .replace(/\{\{display_name\}\}/g, "Marcus Vance")
-                        .replace(/\{\{niche\}\}/g, "AI Tools & Automation")
-                        .replace(/\{\{platform\}\}/g, "YouTube")
-                        .replace(/\{\{follower_count\}\}/g, "320,000")
-                        .replace(/\{\{product_name\}\}/g, "Marcus OS")}
-                    </div>
+                            {/* Value Proposition Hero Card */}
+                            <div className="bg-white rounded-xl border border-slate-200/90 p-4 sm:p-5 md:p-6 shadow-sm" data-purpose="value-proposition-card">
+                              <div className="flex items-center space-x-2 text-indigo-900 font-semibold text-base mb-2">
+                                <span className="font-bold">Creator Forge</span>
+                                <span className="text-amber-500">⚡</span>
+                                <span className="text-slate-400 font-normal">|</span>
+                                <span className="text-slate-700 text-sm font-medium">50/50 Venture Model</span>
+                              </div>
+                              <p className="text-slate-700 text-sm md:text-[15px] leading-relaxed mb-5">
+                                We partner <strong>50/50 with creators</strong> to build custom software tools and monetization apps for their audience. Our team handles 100% of the engineering, hosting, payment setup, and customer support with zero upfront cost to you.
+                              </p>
 
-                    {/* Real 1-on-1 Executive Email Signature */}
-                    <div className="pt-6 border-t border-slate-100 flex items-start gap-3.5 min-w-0">
-                      <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-2xs shrink-0">
-                        <CreatorForgeLogo size={20} showText={false} theme="light" />
+                              {/* 3-Column Capability Grid */}
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100">
+                                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                  <div className="text-indigo-600 font-semibold text-xs tracking-wider uppercase mb-1">Full Delivery</div>
+                                  <div className="text-slate-800 font-medium text-xs leading-snug">100% Engineering, UI/UX &amp; QA</div>
+                                </div>
+                                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                  <div className="text-emerald-600 font-semibold text-xs tracking-wider uppercase mb-1">Zero Risk</div>
+                                  <div className="text-slate-800 font-medium text-xs leading-snug">$0 Upfront Cost &amp; Co-ownership</div>
+                                </div>
+                                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                  <div className="text-blue-600 font-semibold text-xs tracking-wider uppercase mb-1">Hands-Off Ops</div>
+                                  <div className="text-slate-800 font-medium text-xs leading-snug">Global Hosting, Billing &amp; 24/7 Support</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <p>
+                              We analyzed your channel and engineered <span className="font-semibold text-slate-900">3 tailored software product concepts</span> for your <span className="inline-flex items-center font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 text-xs">{previewFollowers} followers</span> that could drive recurring monthly revenue 🚀
+                            </p>
+
+                            {/* Tailored Concepts Section */}
+                            <div className="space-y-3 pt-2" data-purpose="tailored-concepts-list">
+                              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                Tailored Concepts Engineered for @{previewHandle}
+                              </div>
+
+                              {/* Concept 1 */}
+                              <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-start space-x-3.5 hover:border-slate-300 transition">
+                                <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                                  01
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <h2 className="text-sm font-semibold text-slate-900 flex items-center flex-wrap gap-2">
+                                    <span>DeepFocus OS</span>
+                                    <span className="text-[11px] font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">SaaS App</span>
+                                  </h2>
+                                  <p className="text-xs text-slate-600 mt-1 leading-normal">
+                                    Digital minimalism &amp; multi-screen time-blocking workspace inspired by your Time-Block Planner methodology.
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Concept 2 */}
+                              <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-start space-x-3.5 hover:border-slate-300 transition">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                                  02
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <h2 className="text-sm font-semibold text-slate-900 flex items-center flex-wrap gap-2">
+                                    <span>MonkMode Sprint Timer</span>
+                                    <span className="text-[11px] font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">Desktop Utility</span>
+                                  </h2>
+                                  <p className="text-xs text-slate-600 mt-1 leading-normal">
+                                    Aggressive distraction blocker &amp; cognitive fatigue tracker designed for deep scholarly focus cycles.
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Concept 3 */}
+                              <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-start space-x-3.5 hover:border-slate-300 transition">
+                                <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                                  03
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <h2 className="text-sm font-semibold text-slate-900 flex items-center flex-wrap gap-2">
+                                    <span>ScholarArchive</span>
+                                    <span className="text-[11px] font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">Knowledge Engine</span>
+                                  </h2>
+                                  <p className="text-xs text-slate-600 mt-1 leading-normal">
+                                    Curated citation, source synthesis, and longform idea graph tool engineered specifically for knowledge workers.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Closing Question */}
+                            <p className="pt-2 font-medium text-slate-900">
+                              Would you be open to taking a look at a brief 3-concept breakdown this week?
+                            </p>
+
+                            {/* Call to Action Buttons */}
+                            <div className="pt-2 pb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3" data-purpose="call-to-action-panel">
+                              <a
+                                href="#deck-preview"
+                                onClick={(e) => e.preventDefault()}
+                                className="inline-flex justify-center items-center px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition hover:shadow cursor-pointer"
+                              >
+                                <svg className="w-4 h-4 mr-2 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+                                Review 3-Concept Deck (PDF)
+                              </a>
+                              <a
+                                href="#book-chat"
+                                onClick={(e) => e.preventDefault()}
+                                className="inline-flex justify-center items-center px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold shadow-xs transition cursor-pointer"
+                              >
+                                <svg className="w-4 h-4 mr-2 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+                                Book 15-Min Intro Chat
+                              </a>
+                            </div>
+
+                            {/* Quick Response Chips */}
+                            <div className="flex items-center flex-wrap gap-2 text-xs pt-1 pb-4">
+                              <span className="text-slate-400 font-medium">Quick Reply:</span>
+                              <button className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition cursor-pointer" type="button">
+                                "Sounds interesting, send it over"
+                              </button>
+                              <button className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition cursor-pointer" type="button">
+                                "Send deck first"
+                              </button>
+                              <button className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition cursor-pointer" type="button">
+                                "Not right now"
+                              </button>
+                            </div>
+
+                            {/* Sign-off text */}
+                            <div className="pt-2 text-slate-700 text-sm">
+                              <p>Best regards,</p>
+                              <p className="font-medium text-slate-900 mt-1">Alex Rivera</p>
+                              <p className="text-slate-500 text-xs">Head of Venture Partnerships · Creator Forge</p>
+                            </div>
+
+                            {/* BEGIN: ProfessionalSignature */}
+                            <div className="mt-8 pt-6 border-t border-slate-200/80" data-purpose="corporate-signature-block">
+                              <div className="flex items-start space-x-3.5">
+                                {/* 4-tile Creator Forge geometric logo */}
+                                <div aria-label="Creator Forge Logo" className="w-9 h-9 grid grid-cols-2 gap-1 p-1 bg-white rounded-lg border border-slate-200 shadow-xs flex-shrink-0">
+                                  <div className="bg-slate-800 rounded-sm"></div>
+                                  <div className="bg-indigo-600 rounded-sm"></div>
+                                  <div className="bg-emerald-500 rounded-sm"></div>
+                                  <div className="bg-slate-900 rounded-sm"></div>
+                                </div>
+                                {/* Representative Credentials */}
+                                <div className="text-xs min-w-0">
+                                  <div className="font-bold text-slate-900 text-sm tracking-tight">Alex Rivera</div>
+                                  <div className="text-slate-500 font-medium mt-0.5">Head of Venture Partnerships • Creator Forge</div>
+                                  <div className="mt-2 text-slate-600 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                                    <a className="font-medium text-slate-900 hover:text-indigo-600 underline decoration-slate-300" href="mailto:partnerships@creatorforge.com">
+                                      partnerships@creatorforge.com
+                                    </a>
+                                    <span className="text-slate-300">•</span>
+                                    <a className="hover:text-indigo-600" href="https://creatorforge.com" target="_blank" rel="noreferrer">creatorforge.com</a>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="text-slate-500">San Francisco, CA</span>
+                                  </div>
+                                  <div className="mt-4 pt-3 border-t border-slate-100 font-mono text-[11px] text-slate-400 flex flex-wrap items-center gap-1.5">
+                                    <span className="text-slate-500">Studio Reference:</span>
+                                    <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono text-[10px]">CF-CID:2efa13e9-d908-4b08-97c8-c21aa96a7561</span>
+                                    <span>|</span>
+                                    <span>Handle:@{previewHandle}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* END: ProfessionalSignature */}
+                          </div>
+                        </main>
+
+                        {/* BEGIN: ClientBottomToolbar */}
+                        <footer className="bg-white border-t border-slate-200 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-500 select-none gap-2">
+                          <div className="flex items-center space-x-2 sm:space-x-4 flex-wrap">
+                            <span className="flex items-center">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 shrink-0"></span>
+                              DKIM Verified • TLS Encrypted
+                            </span>
+                            <span className="hidden sm:inline text-slate-300">|</span>
+                            <span className="hidden sm:inline text-slate-400">Recipient verified: Georgetown University &amp; Cal Newport Media</span>
+                          </div>
+                          <div className="flex items-center space-x-3 font-mono text-[11px] text-slate-400 shrink-0">
+                            <span>Press <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-700">R</kbd> to reply</span>
+                          </div>
+                        </footer>
                       </div>
-                      <div className="space-y-1 text-xs min-w-0">
-                        <div className="font-bold text-slate-900 text-sm">Alex Rivera</div>
-                        <div className="text-slate-600 font-medium">Head of Venture Partnerships · Creator Forge</div>
-                        <div className="text-slate-500 text-[11px] flex items-center gap-2 flex-wrap pt-0.5">
-                          <a href="mailto:partnerships@creatorforge.com" className="hover:underline text-slate-700">partnerships@creatorforge.com</a>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-slate-600">creatorforge.com</span>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-slate-500">San Francisco, CA</span>
-                        </div>
-                      </div>
+                      {/* END: EmailClientContainer */}
                     </div>
-                  </div>
-                </div>
+                  );
+                })()
               )}
               </div>
             </div>
@@ -6477,8 +6780,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                 <div className="py-2.5 flex items-center justify-between text-xs">
                   <span className="text-slate-500">Estimated Match Pool</span>
-                  <span className="font-mono font-bold text-emerald-600">
-                    ~{((niches.length || 5) * 380 * 3).toLocaleString()} profiles
+                  <span className={`font-mono font-bold ${niches.length > 0 ? "text-emerald-600" : "text-amber-600"}`}>
+                    {niches.length > 0
+                      ? `~${(niches.length * 380 * 3).toLocaleString()} profiles`
+                      : "0 profiles (Select niche)"}
                   </span>
                 </div>
               </div>
@@ -6488,13 +6793,34 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={handleStartEngine}
-                  disabled={discovering}
-                  className="w-full group relative overflow-hidden flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-sm tracking-wide shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/25 transition-all transform active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                  disabled={discovering || niches.length === 0 || selectedPlatforms.length === 0}
+                  className={`w-full group relative overflow-hidden flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all transform ${
+                    discovering || niches.length === 0 || selectedPlatforms.length === 0
+                      ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none"
+                      : "bg-slate-900 hover:bg-black text-white shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/25 active:scale-[0.99] cursor-pointer"
+                  }`}
+                  title={
+                    niches.length === 0
+                      ? "Select at least 1 target niche above to begin discovery"
+                      : selectedPlatforms.length === 0
+                      ? "Select at least 1 platform to begin discovery"
+                      : "Start Lead Discovery"
+                  }
                 >
                   {discovering ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin text-white" />
                       <span>Discovering & Enriching Leads...</span>
+                    </>
+                  ) : niches.length === 0 ? (
+                    <>
+                      <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      <span>Select Target Niche to Discover</span>
+                    </>
+                  ) : selectedPlatforms.length === 0 ? (
+                    <>
+                      <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      <span>Select Platform to Discover</span>
                     </>
                   ) : (
                     <>
@@ -6505,9 +6831,34 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   )}
                 </button>
 
-                <p className="text-[11px] text-center text-slate-400 leading-relaxed px-2">
-                  Scouts and enriches qualifying creator candidate profiles for your review and approval in Step 2.
-                </p>
+                {creators.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteAllCreators}
+                    disabled={isDeletingAll}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50/80 hover:bg-rose-100 border border-rose-200/90 transition cursor-pointer shadow-2xs disabled:opacity-50"
+                    title="Permanently wipe all discovered creators from database and reset pipeline"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Delete All Creators ({creators.length})</span>
+                  </button>
+                )}
+
+                {niches.length === 0 ? (
+                  <p className="text-[11px] text-center text-rose-600 font-medium leading-relaxed px-2 flex items-center justify-center gap-1.5 bg-rose-50 border border-rose-200/80 py-2 rounded-xl animate-in fade-in">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                    <span>Select at least 1 target niche above to begin discovery</span>
+                  </p>
+                ) : selectedPlatforms.length === 0 ? (
+                  <p className="text-[11px] text-center text-rose-600 font-medium leading-relaxed px-2 flex items-center justify-center gap-1.5 bg-rose-50 border border-rose-200/80 py-2 rounded-xl animate-in fade-in">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                    <span>Select at least 1 platform (YouTube, Instagram, TikTok)</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-center text-slate-400 leading-relaxed px-2">
+                    Scouts and enriches qualifying creator candidate profiles for your review and approval in Step 2.
+                  </p>
+                )}
               </div>
 
               {/* Agreement Footer Spec */}
@@ -6615,8 +6966,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             </div>
           </div>
 
-          {/* Active Scouting State: Streamlined Cycling Icon Header + Shimmer Skeleton Grid */}
-          {discovering && (
+          {/* Active Scouting State (Initial, 0 creators): Header + Shimmer Skeleton Grid */}
+          {discovering && creators.length === 0 && (
             <div className="space-y-4 animate-in fade-in">
               <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
                 <div className="flex items-center gap-3.5 min-w-0">
@@ -6633,7 +6984,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 truncate">
-                      Scouting verified creators across {(niches.length > 0 ? niches : ["Tech", "Software", "SaaS"]).join(", ")}
+                      Scouting verified creators across {niches.join(", ")}
                     </p>
                   </div>
                 </div>
@@ -6650,7 +7001,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
               </div>
 
-              {/* Shimmer Skeleton Cards matching incoming creator cards */}
+              {/* Shimmer Skeleton Cards only while waiting for first creators */}
               <CreatorCardSkeleton count={Math.min(6, creatorsBatchCount || 25)} />
             </div>
           )}
@@ -6705,7 +7056,42 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
             return (
               <div className="space-y-4">
-                {/* 4 Pastel Lily-Anderson KPI Overview Cards */}
+                {/* Active Ingestion Banner if discovery is still streaming candidates in background */}
+                {discovering && (
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-in fade-in">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200 shadow-2xs">
+                        <RotateCw className="w-4 h-4 animate-spin text-emerald-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-wide font-display">
+                            Scouting Active: {validCreators.length} of {creatorsBatchCount || 25} Creators Gathered
+                          </h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono">
+                            Live Ingestion
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 truncate">
+                          Audience crawler is finding more profiles across {niches.join(", ")}. Received leads below are active.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleStopDiscovery}
+                        className="px-3 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Stop Scouting ({validCreators.length} Ready)</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4 Pastel Lily-Anderson KPI Overview Cards — ALWAYS AT TOP */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
                   {/* 1. Scouted Leads */}
                   <div className="p-3.5 sm:p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100/90 shadow-2xs space-y-1 relative overflow-hidden group">
@@ -7174,6 +7560,22 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         </div>
                       );
                     })}
+                    {/* Subtle trailing candidate card if background discovery is still pulling more profiles */}
+                    {discovering && validCreators.length < (creatorsBatchCount || 25) && (
+                      <div className="p-5 rounded-2xl border-2 border-dashed border-emerald-300/80 bg-emerald-50/20 flex flex-col items-center justify-center text-center space-y-2.5 min-h-[260px] animate-pulse">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-100/80 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                          <RotateCw className="w-5 h-5 animate-spin text-emerald-600" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold text-slate-800">
+                            Scouting Candidate #{validCreators.length + 1}...
+                          </div>
+                          <p className="text-[11px] text-slate-500 max-w-[200px]">
+                            Extracting engagement metrics and verified contact endpoints
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -1,271 +1,353 @@
 <!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="x-apple-disable-message-reformatting">
-  <title>ClipForge Studio Co-Founding Blueprint</title>
-  <!--[if mso]>
-  <noscript>
-    <xml>
-      <o:OfficeDocumentSettings>
-        <o:PixelsPerInch>96</o:PixelsPerInch>
-      </o:OfficeDocumentSettings>
-    </xml>
-  </noscript>
-  <![endif]-->
-  <style>
-    html, body {
-      margin: 0 !important;
-      padding: 0 !important;
-      height: 100% !important;
-      width: 100% !important;
-      background-color: #07090e;
-      -webkit-text-size-adjust: 100%;
-      -ms-text-size-adjust: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Quick idea for Cal Newport 💡 [#CalNewportMedia]</title>
+  <!-- Tailwind CSS v3 with Forms & Container Queries -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <!-- Tailwind Configuration -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#16a34a',
+              600: '#15803d',
+              slate: '#0f172a'
+            }
+          }
+        }
+      }
     }
-    table, td {
-      mso-table-lspace: 0pt !important;
-      mso-table-rspace: 0pt !important;
-    }
-    table {
-      border-spacing: 0 !important;
-      border-collapse: collapse !important;
-      table-layout: fixed !important;
-      margin: 0 auto !important;
-    }
-    img {
-      -ms-interpolation-mode: bicubic;
-      max-width: 100%;
-    }
-    a {
-      text-decoration: none;
-    }
-    /* Responsive Media Queries */
-    @media only screen and (max-width: 600px) {
-      .email-container {
-        width: 100% !important;
-        max-width: 100% !important;
-        border-radius: 0 !important;
-        border-left: none !important;
-        border-right: none !important;
-      }
-      .content-padding {
-        padding: 24px 16px !important;
-      }
-      .header-padding {
-        padding: 20px 16px !important;
-      }
-      .metric-col {
-        display: block !important;
-        width: 100% !important;
-        margin-bottom: 8px !important;
-      }
-      .mobile-btn {
-        display: block !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        text-align: center !important;
-        padding: 14px 20px !important;
-      }
-      .header-logo {
-        height: 28px !important;
-        max-height: 28px !important;
-      }
+  </script>
+  <!-- BEGIN: Custom Styles -->
+  <style data-purpose="base-styling">
+    body {
+      background-color: #f1f5f9;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
   </style>
+  <style data-purpose="scrollbar-and-interactions">
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f8fafc;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+  <!-- END: Custom Styles -->
 </head>
-<body style="margin:0;padding:0;background-color:#07090e;color:#f8fafc;">
-  <!-- Full Width Background Wrapper -->
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#07090e;padding:32px 12px;">
-    <tr>
-      <td align="center" style="vertical-align:top;">
-        <!-- Email Card Container (600px fluid) -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" class="email-container" style="max-width:620px;background:#0f172a;border-radius:18px;border:1px solid #1e293b;overflow:hidden;box-shadow:0 24px 48px rgba(0,0,0,0.6);">
-          
-          <!-- Top Accent Glow Line -->
-          <tr>
-            <td height="3" style="background:linear-gradient(90deg,#9333ea 0%,#6366f1 50%,#38bdf8 100%);font-size:1px;line-height:1px;">&nbsp;</td>
-          </tr>
-
-          <!-- Header -->
-          <tr>
-            <td class="header-padding" style="padding:26px 32px;background:linear-gradient(135deg,#13192b 0%,#0f172a 100%);border-bottom:1px solid #1e293b;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td align="left" style="vertical-align:middle;">
-                    <table border="0" cellspacing="0" cellpadding="0">
-                      <tr>
-                        <td style="vertical-align:middle;">
-                          
-        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=240&auto=format&fit=crop&q=80" alt="Creator Forge Logo" height="34" style="height:34px;max-height:34px;width:auto;display:inline-block;vertical-align:middle;margin-right:12px;border-radius:6px;" class="header-logo" />
-        
-                        </td>
-                        <td style="vertical-align:middle;">
-                          <div style="font-size:18px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;line-height:1.2;">
-                            <span style="color:#a855f7;">CREATOR</span> FORGE
-                          </div>
-                          <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-top:2px;">
-                            Venture Studio &amp; Co-Launch Incubation
-                          </div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                  <td align="right" style="vertical-align:middle;">
-                    <span style="background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.4);color:#d8b4fe;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.4px;white-space:nowrap;">
-                      50/50 Co-Founder
-                    </span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Body Content Area -->
-          <tr>
-            <td class="content-padding" style="padding:32px 32px 28px 32px;background-color:#0f172a;">
-              <h3 style="margin:18px 0 10px 0;font-size:16px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;line-height:1.4;">Venture Co-Founding Blueprint</h3>
-<p style="margin:0 0 16px 0;line-height:1.7;color:#cbd5e1;font-size:15px;">Hey Marques,</p>
-<p style="margin:0 0 16px 0;line-height:1.7;color:#cbd5e1;font-size:15px;">We have analyzed your technical workflow and engineered <strong style="color:#ffffff;font-weight:700;">ClipForge Studio</strong> — a custom desktop suite purpose-built for high-velocity creators.</p>
-<h3 style="margin:18px 0 10px 0;font-size:16px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;line-height:1.4;">Why This Partnership Works:</h3>
-<ul style="margin:14px 0 18px 0;padding-left:20px;color:#a855f7;line-height:1.65;">
-<li style="margin-bottom:8px;line-height:1.65;color:#cbd5e1;font-size:14px;"><span style="color:#cbd5e1;"><strong style="color:#ffffff;font-weight:700;">Zero Engineering Friction</strong>: Our studio builds, ships, and maintains the entire application stack.</span></li>
-<li style="margin-bottom:8px;line-height:1.65;color:#cbd5e1;font-size:14px;"><span style="color:#cbd5e1;"><strong style="color:#ffffff;font-weight:700;">50/50 Venture Revenue Split</strong>: Pure profit sharing, completely free of any hidden platform cuts or fees.</span></li>
-<li style="margin-bottom:8px;line-height:1.65;color:#cbd5e1;font-size:14px;"><span style="color:#cbd5e1;"><strong style="color:#ffffff;font-weight:700;">Instant Distribution</strong>: Turn your 18M+ community into recurring software subscribers on day one.</span></li>
-</ul>
-<p style="margin:0 0 16px 0;line-height:1.7;color:#cbd5e1;font-size:15px;">Review your interactive concept demo and MVP architecture below:<br />
-https://demo.creatorforge.com/mkbhd/clipforge</p>
-<p style="margin:0 0 16px 0;line-height:1.7;color:#cbd5e1;font-size:15px;">Looking forward to hearing your thoughts!</p>
-
-        <div style="margin:26px 0 16px 0;text-align:center;">
-          <a href="https://demo.creatorforge.com/mkbhd/clipforge" target="_blank" class="mobile-btn" style="display:inline-block;padding:15px 34px;background:linear-gradient(135deg,#9333ea 0%,#6366f1 100%);color:#ffffff;font-size:15px;font-weight:800;text-decoration:none;border-radius:12px;box-shadow:0 10px 25px rgba(147,51,234,0.35);border:1px solid rgba(255,255,255,0.2);letter-spacing:0.3px;">
-            Review Software Concepts →
-          </a>
-          <div style="margin-top:8px;font-size:11px;color:#94a3b8;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">
-            Direct Secure Link: <a href="https://demo.creatorforge.com/mkbhd/clipforge" style="color:#a855f7;text-decoration:underline;">https://demo.creatorforge.com/mkbhd/clipforge</a>
-          </div>
-        </div>
-        
-              
-    <!-- CONCEPT SHOWCASE CARD -->
-    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin:24px 0;background:linear-gradient(145deg,#131a29 0%,#0c101a 100%);border-radius:16px;border:1px solid #2d3748;box-shadow:0 14px 30px rgba(0,0,0,0.45);overflow:hidden;">
-      <!-- Window Chrome Header -->
-      <tr>
-        <td style="padding:12px 18px;background:#090d16;border-bottom:1px solid rgba(255,255,255,0.08);">
-          <table width="100%" border="0" cellspacing="0" cellpadding="0">
-            <tr>
-              <td align="left" style="vertical-align:middle;">
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:6px;"></span>
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:6px;"></span>
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10b981;margin-right:12px;"></span>
-                <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#94a3b8;background:rgba(255,255,255,0.05);padding:3px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);">
-                  https://clipforge.creatorforge.app
-                </span>
-              </td>
-              <td align="right" style="vertical-align:middle;">
-                <span style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.35);color:#6ee7b7;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;">
-                  MVP Ready To Launch
-                </span>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <!-- Card Main Body -->
-      <tr>
-        <td style="padding:20px 22px;">
-          <!-- Concept Title & Badge -->
-          <table width="100%" border="0" cellspacing="0" cellpadding="0">
-            <tr>
-              <td>
-                <div style="font-size:18px;font-weight:900;color:#ffffff;letter-spacing:-0.4px;">
-                  ClipForge Pro Studio
-                </div>
-                <div style="font-size:13px;color:#a855f7;font-weight:600;margin-top:2px;">
-                  AI B-Roll Matching &amp; Automated Timeline Sequencing for Video Creators
-                </div>
-              </td>
-              <td align="right" style="vertical-align:top;">
-                <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;font-weight:700;color:#38bdf8;background:rgba(56,189,248,0.1);padding:4px 10px;border-radius:8px;border:1px solid rgba(56,189,248,0.25);white-space:nowrap;">
-                  /mo Starter • /mo Pro
-                </span>
-              </td>
-            </tr>
-          </table>
-
-          
-        <div style="margin:14px 0 8px 0;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);background:#020617;box-shadow:0 12px 24px rgba(0,0,0,0.4);">
-          <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000&auto=format&fit=crop&q=80" alt="ClipForge Pro Studio Visual Mockup" width="556" style="width:100%;max-width:556px;height:auto;display:block;object-fit:cover;" class="responsive-img" />
-        </div>
-        
-
-          <!-- Metric Highlights Grid -->
-          <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top:14px;">
-            <tr>
-              <td width="32%" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px;text-align:center;" class="metric-col">
-                <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Est. Revenue</div>
-                <div style="font-size:14px;font-weight:800;color:#34d399;margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">.5K MRR (Proj.)</div>
-              </td>
-              <td width="2%">&nbsp;</td>
-              <td width="32%" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px;text-align:center;" class="metric-col">
-                <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Target Users</div>
-                <div style="font-size:14px;font-weight:800;color:#c084fc;margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">1,420 Beta Testers</div>
-              </td>
-              <td width="2%">&nbsp;</td>
-              <td width="32%" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px;text-align:center;" class="metric-col">
-                <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Build Speed</div>
-                <div style="font-size:14px;font-weight:800;color:#38bdf8;margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">14-Day MVP Ready</div>
-              </td>
-            </tr>
-          </table>
-
-          
-        <div style="background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:12px;color:#94a3b8;line-height:1.5;">
-          <strong style="color:#f8fafc;">Core Bottleneck Solved:</strong> Creators spend 12+ hours per video manually locating matching B-roll footage and syncing audio tags.
-        </div>
-        
-          
-        <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
-          <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">
-            Key Built-In Features:
-          </div>
-          <ul style="margin:0;padding:0;list-style:none;">
-            <li style="margin-bottom:6px;line-height:1.5;color:#cbd5e1;font-size:13px;"><span style="color:#a855f7;font-weight:bold;margin-right:6px;">✓</span>Instant 4K B-roll synchronization with timeline markers</li><li style="margin-bottom:6px;line-height:1.5;color:#cbd5e1;font-size:13px;"><span style="color:#a855f7;font-weight:bold;margin-right:6px;">✓</span>Automated YouTube chaptering and metadata optimizer</li><li style="margin-bottom:6px;line-height:1.5;color:#cbd5e1;font-size:13px;"><span style="color:#a855f7;font-weight:bold;margin-right:6px;">✓</span>Real-time collaborative review workflow for editing teams</li>
-          </ul>
-        </div>
-        
-        </td>
-      </tr>
-    </table>
+<body class="min-h-screen p-2.5 sm:p-4 md:p-6 lg:p-8 flex justify-center items-start">
+  <!-- BEGIN: EmailClientContainer -->
+  <!-- Outer window mock resembling modern desktop clients like Superhuman/Apple Mail -->
+  <div class="w-full max-w-5xl bg-white rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col my-auto transition-all" data-purpose="client-window">
     
-              
-        <div style="border-top:1px solid #1e293b;margin-top:28px;padding-top:14px;font-size:11px;color:#64748b;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">
-          Studio Reference: <span style="color:#94a3b8;">[CF-CID:c1234-mkbhd | Handle:@mkbhd]</span>
+    <!-- BEGIN: ClientTopBar -->
+    <!-- Window controls & client navigation header -->
+    <header class="bg-slate-900 text-slate-300 px-3.5 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between border-b border-slate-800 select-none">
+      <!-- Window management dots & active folder -->
+      <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+        <div class="flex space-x-1.5 mr-1 sm:mr-2 shrink-0">
+          <span class="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-rose-500 inline-block hover:opacity-80 transition cursor-pointer"></span>
+          <span class="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-amber-500 inline-block hover:opacity-80 transition cursor-pointer"></span>
+          <span class="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-emerald-500 inline-block hover:opacity-80 transition cursor-pointer"></span>
         </div>
-        
-            </td>
-          </tr>
+        <div class="h-4 w-[1px] bg-slate-700 mx-1 shrink-0"></div>
+        <div class="flex items-center text-xs tracking-wide text-slate-300 font-medium truncate">
+          <svg class="w-4 h-4 mr-1.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+          <span class="truncate">Work / Partnerships</span>
+        </div>
+      </div>
+      <!-- Quick Action Controls -->
+      <div class="flex items-center space-x-1 sm:space-x-2 text-xs shrink-0">
+        <span class="hidden sm:inline-block px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-mono text-[11px]">⌘K Command</span>
+        <button class="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-slate-100 transition" title="Archive" type="button">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        </button>
+        <button class="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-slate-100 transition" title="Mark as Read" type="button">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        </button>
+        <button class="p-1.5 hover:bg-slate-800 rounded-md text-amber-400 hover:bg-slate-800 transition" title="Star email" type="button">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+        </button>
+      </div>
+    </header>
+    <!-- END: ClientTopBar -->
 
-          <!-- Footer -->
-          <tr>
-            <td style="padding:22px 32px;background:#090d16;border-top:1px solid #1e293b;font-size:12px;color:#64748b;text-align:center;line-height:1.6;">
-              <div style="font-weight:700;color:#94a3b8;margin-bottom:4px;">
-                Creator Forge
+    <!-- BEGIN: EmailHeaderInfo -->
+    <!-- Detailed Subject and Sender/Recipient Metadata -->
+    <div class="px-4 sm:px-6 md:px-10 pt-5 sm:pt-7 pb-5 sm:pb-6 border-b border-slate-100 bg-white" data-purpose="email-metadata-panel">
+      <!-- Subject line with badges -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-5">
+        <div class="flex items-center flex-wrap gap-2.5">
+          <h1 class="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 tracking-tight break-words">
+            Quick idea for Cal Newport 💡 [#CalNewportMedia]
+          </h1>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+            Inbox
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Partnership Pitch
+          </span>
+        </div>
+        <div class="text-xs text-slate-400 font-mono flex items-center shrink-0">
+          <span>8:43 PM (12 minutes ago)</span>
+        </div>
+      </div>
+
+      <!-- Sender card & message controls -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+        <div class="flex items-start sm:items-center space-x-3.5 min-w-0">
+          <!-- Monogram Avatar -->
+          <div class="w-10 sm:w-11 h-10 sm:h-11 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold text-sm sm:text-base shadow-sm ring-2 ring-blue-100 flex-shrink-0">
+            AR
+          </div>
+          <!-- Contact names & addresses -->
+          <div class="min-w-0">
+            <div class="flex items-center space-x-2 flex-wrap">
+              <span class="text-sm font-semibold text-slate-900">Creator Partnerships Team</span>
+              <span class="text-xs text-slate-500 hidden sm:inline">•</span>
+              <span class="text-xs text-slate-600">Alex Rivera</span>
+              <span class="text-xs text-slate-400 hidden md:inline">&lt;partnerships@creatorforge.com&gt;</span>
+            </div>
+            <div class="text-xs text-slate-500 mt-0.5 flex items-center flex-wrap gap-1">
+              <span>to</span>
+              <button class="inline-flex items-center font-medium text-slate-700 hover:text-slate-900 text-left" type="button">
+                <span>Cal Newport &lt;cal@calnewport.com&gt;</span>
+                <svg class="w-3 h-3 ml-0.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Secondary Action Buttons -->
+        <div class="flex items-center space-x-2 self-start sm:self-center shrink-0">
+          <button class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 transition flex items-center shadow-xs" type="button">
+            <svg class="w-3.5 h-3.5 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Reply
+          </button>
+          <button class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 transition flex items-center shadow-xs" type="button">
+            <svg class="w-3.5 h-3.5 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Forward
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- END: EmailHeaderInfo -->
+
+    <!-- BEGIN: EmailBodyContent -->
+    <!-- Upgraded presentation of the outreach pitch -->
+    <main class="px-4 sm:px-6 md:px-12 py-6 sm:py-8 bg-slate-50/50 custom-scroll overflow-y-auto" data-purpose="email-body">
+      <!-- Greeting & Hook -->
+      <div class="max-w-2xl mx-auto space-y-5 text-slate-800 leading-relaxed text-[15px]">
+        <p class="font-normal text-slate-800">
+          Hi Cal,
+        </p>
+        <p>
+          I’ve been following your Deep Work &amp; Productivity content on YouTube and love what you're building with your community! 👋
+        </p>
+
+        <!-- Value Proposition Hero Card -->
+        <!-- Highlight partnership format and core infrastructure -->
+        <div class="bg-white rounded-xl border border-slate-200/90 p-4 sm:p-5 md:p-6 shadow-sm" data-purpose="value-proposition-card">
+          <div class="flex items-center space-x-2 text-indigo-900 font-semibold text-base mb-2">
+            <span class="font-bold">Creator Forge</span>
+            <span class="text-amber-500">⚡</span>
+            <span class="text-slate-400 font-normal">|</span>
+            <span class="text-slate-700 text-sm font-medium">50/50 Venture Model</span>
+          </div>
+          <p class="text-slate-700 text-sm md:text-[15px] leading-relaxed mb-5">
+            We partner <strong>50/50 with creators</strong> to build custom software tools and monetization apps for their audience. Our team handles 100% of the engineering, hosting, payment setup, and customer support with zero upfront cost to you.
+          </p>
+
+          <!-- 3-Column Capability Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100">
+            <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
+              <div class="text-indigo-600 font-semibold text-xs tracking-wider uppercase mb-1">Full Delivery</div>
+              <div class="text-slate-800 font-medium text-xs leading-snug">100% Engineering, UI/UX &amp; QA</div>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
+              <div class="text-emerald-600 font-semibold text-xs tracking-wider uppercase mb-1">Zero Risk</div>
+              <div class="text-slate-800 font-medium text-xs leading-snug">$0 Upfront Cost &amp; Co-ownership</div>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
+              <div class="text-blue-600 font-semibold text-xs tracking-wider uppercase mb-1">Hands-Off Ops</div>
+              <div class="text-slate-800 font-medium text-xs leading-snug">Global Hosting, Billing &amp; 24/7 Support</div>
+            </div>
+          </div>
+        </div>
+
+        <p>
+          We analyzed your channel and engineered <span class="font-semibold text-slate-900">3 tailored software product concepts</span> for your <span class="inline-flex items-center font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 text-xs">363K followers</span> that could drive recurring monthly revenue 🚀
+        </p>
+
+        <!-- Tailored Concepts Section -->
+        <div class="space-y-3 pt-2" data-purpose="tailored-concepts-list">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Tailored Concepts Engineered for @CalNewportMedia
+          </div>
+
+          <!-- Concept 1 -->
+          <div class="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-start space-x-3.5 hover:border-slate-300 transition">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+              01
+            </div>
+            <div class="min-w-0 flex-1">
+              <h2 class="text-sm font-semibold text-slate-900 flex items-center flex-wrap gap-2">
+                <span>DeepFocus OS</span>
+                <span class="text-[11px] font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">SaaS App</span>
+              </h2>
+              <p class="text-xs text-slate-600 mt-1 leading-normal">
+                Digital minimalism &amp; multi-screen time-blocking workspace inspired by your Time-Block Planner methodology.
+              </p>
+            </div>
+          </div>
+
+          <!-- Concept 2 -->
+          <div class="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-start space-x-3.5 hover:border-slate-300 transition">
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+              02
+            </div>
+            <div class="min-w-0 flex-1">
+              <h2 class="text-sm font-semibold text-slate-900 flex items-center flex-wrap gap-2">
+                <span>MonkMode Sprint Timer</span>
+                <span class="text-[11px] font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">Desktop Utility</span>
+              </h2>
+              <p class="text-xs text-slate-600 mt-1 leading-normal">
+                Aggressive distraction blocker &amp; cognitive fatigue tracker designed for deep scholarly focus cycles.
+              </p>
+            </div>
+          </div>
+
+          <!-- Concept 3 -->
+          <div class="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-start space-x-3.5 hover:border-slate-300 transition">
+            <div class="w-8 h-8 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+              03
+            </div>
+            <div class="min-w-0 flex-1">
+              <h2 class="text-sm font-semibold text-slate-900 flex items-center flex-wrap gap-2">
+                <span>ScholarArchive</span>
+                <span class="text-[11px] font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">Knowledge Engine</span>
+              </h2>
+              <p class="text-xs text-slate-600 mt-1 leading-normal">
+                Curated citation, source synthesis, and longform idea graph tool engineered specifically for knowledge workers.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Closing Question -->
+        <p class="pt-2 font-medium text-slate-900">
+          Would you be open to taking a look at a brief 3-concept breakdown this week?
+        </p>
+
+        <!-- Call to Action Buttons -->
+        <div class="pt-2 pb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3" data-purpose="call-to-action-panel">
+          <a class="inline-flex justify-center items-center px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition hover:shadow" href="#deck-preview">
+            <svg class="w-4 h-4 mr-2 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Review 3-Concept Deck (PDF)
+          </a>
+          <a class="inline-flex justify-center items-center px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold shadow-xs transition" href="#book-chat">
+            <svg class="w-4 h-4 mr-2 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Book 15-Min Intro Chat
+          </a>
+        </div>
+
+        <!-- Quick Response Chips -->
+        <div class="flex items-center flex-wrap gap-2 text-xs pt-1 pb-4">
+          <span class="text-slate-400 font-medium">Quick Reply:</span>
+          <button class="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition" type="button">
+            "Sounds interesting, send it over"
+          </button>
+          <button class="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition" type="button">
+            "Send deck first"
+          </button>
+          <button class="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition" type="button">
+            "Not right now"
+          </button>
+        </div>
+
+        <!-- Sign-off text -->
+        <div class="pt-2 text-slate-700 text-sm">
+          <p>Best regards,</p>
+          <p class="font-medium text-slate-900 mt-1">Alex Rivera</p>
+          <p class="text-slate-500 text-xs">Head of Venture Partnerships · Creator Forge</p>
+        </div>
+
+        <!-- BEGIN: ProfessionalSignature -->
+        <!-- Brand Card Signature replicating screenshot brand elements -->
+        <div class="mt-8 pt-6 border-t border-slate-200/80" data-purpose="corporate-signature-block">
+          <div class="flex items-start space-x-3.5">
+            <!-- 4-tile Creator Forge geometric logo -->
+            <div aria-label="Creator Forge Logo" class="w-9 h-9 grid grid-cols-2 gap-1 p-1 bg-white rounded-lg border border-slate-200 shadow-xs flex-shrink-0">
+              <div class="bg-slate-800 rounded-sm"></div>
+              <div class="bg-indigo-600 rounded-sm"></div>
+              <div class="bg-emerald-500 rounded-sm"></div>
+              <div class="bg-slate-900 rounded-sm"></div>
+            </div>
+            <!-- Representative Credentials -->
+            <div class="text-xs min-w-0">
+              <div class="font-bold text-slate-900 text-sm tracking-tight">Alex Rivera</div>
+              <div class="text-slate-500 font-medium mt-0.5">Head of Venture Partnerships • Creator Forge</div>
+              <!-- Contact details & links -->
+              <div class="mt-2 text-slate-600 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <a class="font-medium text-slate-900 hover:text-indigo-600 underline decoration-slate-300" href="mailto:partnerships@creatorforge.com">
+                  partnerships@creatorforge.com
+                </a>
+                <span class="text-slate-300">•</span>
+                <a class="hover:text-indigo-600" href="https://creatorforge.com">creatorforge.com</a>
+                <span class="text-slate-300">•</span>
+                <span class="text-slate-500">San Francisco, CA</span>
               </div>
-              <div style="color:#64748b;margin-bottom:8px;">
-                Co-launching high-margin software ventures with digital creators under a 50/50 model.
+              <!-- Security & Tracking Verification Footnote -->
+              <div class="mt-4 pt-3 border-t border-slate-100 font-mono text-[11px] text-slate-400 flex flex-wrap items-center gap-1.5">
+                <span class="text-slate-500">Studio Reference:</span>
+                <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono text-[10px]">CF-CID:2efa13e9-d908-4b08-97c8-c21aa96a7561</span>
+                <span>|</span>
+                <span>Handle:@CalNewportMedia</span>
               </div>
-              <div style="font-size:11px;color:#475569;">
-                100% Engineering Funded • Zero Financial Cost to Creator • Automated Direct Payouts
-              </div>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+            </div>
+          </div>
+        </div>
+        <!-- END: ProfessionalSignature -->
+      </div>
+    </main>
+    <!-- END: EmailBodyContent -->
+
+    <!-- BEGIN: ClientBottomToolbar -->
+    <!-- Minimalist bottom control strip -->
+    <footer class="bg-white border-t border-slate-200 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-500 select-none gap-2">
+      <div class="flex items-center space-x-2 sm:space-x-4 flex-wrap">
+        <span class="flex items-center">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 shrink-0"></span>
+          DKIM Verified • TLS Encrypted
+        </span>
+        <span class="hidden sm:inline text-slate-300">|</span>
+        <span class="hidden sm:inline text-slate-400">Recipient verified: Georgetown University &amp; Cal Newport Media</span>
+      </div>
+      <div class="flex items-center space-x-3 font-mono text-[11px] text-slate-400 shrink-0">
+        <span>Press <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-700">R</kbd> to reply</span>
+      </div>
+    </footer>
+    <!-- END: ClientBottomToolbar -->
+  </div>
+  <!-- END: EmailClientContainer -->
 </body>
 </html>
