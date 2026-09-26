@@ -259,7 +259,7 @@ export default function ProjectOSPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#06080d] text-slate-100 flex flex-col font-sans selection:bg-purple-500/30">
+    <div className="min-h-screen bg-[#06080d] text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl bg-[#0f1420] border border-white/10 text-white animate-in slide-in-from-bottom-2">
@@ -293,7 +293,7 @@ export default function ProjectOSPage() {
 
           {/* Studio Brand & Section Indicator */}
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-purple-500/20">
+            <div className="w-7 h-7 rounded-lg bg-[#101419] border border-white/10 flex items-center justify-center text-emerald-400 font-bold text-xs shadow-md">
               CF
             </div>
             <div>
@@ -323,7 +323,7 @@ export default function ProjectOSPage() {
                   className="w-5 h-5 rounded-full object-cover shrink-0 border border-white/20"
                 />
               ) : (
-                <div className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-[10px] shrink-0">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-[10px] shrink-0">
                   {(activeProject.creatorName || 'P')[0]}
                 </div>
               )}
@@ -350,7 +350,7 @@ export default function ProjectOSPage() {
                     <span>Co-Launch Projects ({projects.length})</span>
                     <a
                       href="/launch?step=1"
-                      className="text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium"
+                      className="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium"
                     >
                       <Plus className="w-3 h-3" /> New Lead
                     </a>
@@ -366,7 +366,7 @@ export default function ProjectOSPage() {
                           onClick={() => handleSelectProject(p)}
                           className={`w-full text-left px-3 py-2 rounded-xl flex items-center gap-3 transition-all ${
                             isCurrent
-                              ? 'bg-purple-500/15 border border-purple-500/30 text-white'
+                              ? 'bg-emerald-500/15 border border-emerald-500/30 text-white'
                               : 'hover:bg-white/[0.04] text-slate-300'
                           }`}
                         >
@@ -384,7 +384,7 @@ export default function ProjectOSPage() {
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold text-xs truncate flex items-center gap-1.5">
                               <span>{p.productName || 'Co-Launch Venture'}</span>
-                              {isCurrent && <Check className="w-3.5 h-3.5 text-purple-400 shrink-0" />}
+                              {isCurrent && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
                             </div>
                             <div className="text-[10px] text-slate-400 truncate">
                               {p.creatorName || p.creatorHandle || 'Partner'} • Phase {p.currentPhase || 1}
@@ -409,7 +409,7 @@ export default function ProjectOSPage() {
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 hover:text-white transition-all text-xs font-medium"
             title="Open Standalone Creator Follow-Up CRM"
           >
-            <Users className="w-3.5 h-3.5 text-purple-400" />
+            <Users className="w-3.5 h-3.5 text-emerald-400" />
             <span>CRM & Replies</span>
             <ExternalLink className="w-3 h-3 text-slate-400" />
           </a>
@@ -421,7 +421,7 @@ export default function ProjectOSPage() {
             className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 hover:text-white transition-all text-xs"
             title="Refresh Project Data"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-purple-400' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-400' : ''}`} />
           </button>
         </div>
       </header>
@@ -446,7 +446,7 @@ export default function ProjectOSPage() {
           /* Empty State: No Projects Created Yet */
           <div className="flex-1 flex items-center justify-center p-6">
             <div className="max-w-md w-full p-8 rounded-3xl bg-[#0c0f17] border border-white/[0.08] text-center space-y-5 shadow-2xl">
-              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center mx-auto text-purple-400 shadow-lg shadow-purple-500/10">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400 shadow-lg shadow-emerald-500/10">
                 <Rocket className="w-7 h-7" />
               </div>
               <div className="space-y-2">
@@ -459,7 +459,7 @@ export default function ProjectOSPage() {
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <a
                   href="/launch?step=1"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-500/25 transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-950/25 transition-all"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>Start Creator Acquisition</span>

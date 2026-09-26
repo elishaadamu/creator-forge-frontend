@@ -63,7 +63,15 @@ import {
   Palette,
   GraduationCap,
   Megaphone,
+  Wand2,
+  Sliders,
+  Presentation,
+  Monitor,
+  Layers,
 } from "lucide-react";
+import DynamicConceptMockup, { BRAND_COLORS, getBrandColorObj } from "./DynamicConceptMockup";
+import ConceptEditorModal from "./ConceptEditorModal";
+import CustomizedDeckModal from "./CustomizedDeckModal";
 import { deleteAllCreators } from "../../services/opsApi";
 import { buildSmartFallbackPlan } from "../../services/ai";
 import AdminPipelineLookup from "./AdminPipelineLookup";
@@ -97,9 +105,20 @@ export const CONCEPT_CATEGORY_IMAGES = {
 };
 
 export const getConceptImageUrl = (concept, fallbackNiche = "tech") => {
+  if (concept?.customImageUrl) return concept.customImageUrl;
   if (concept?.imageUrl) return concept.imageUrl;
   if (concept?.mockup?.imageUrl) return concept.mockup.imageUrl;
   if (concept?.mockup_image) return concept.mockup_image;
+  if (concept?.name || concept?.mockup?.appUrl) {
+    const name = encodeURIComponent(concept?.name || "Concept");
+    const appUrl = encodeURIComponent(concept?.mockup?.appUrl || `${(concept?.name || "app").toLowerCase().replace(/\s+/g, "")}.app`);
+    const mrr = encodeURIComponent(concept?.mockup?.primaryMetric || concept?.primaryMetric || "$22.4K MRR");
+    const users = encodeURIComponent(concept?.mockup?.activeMetric || concept?.activeMetric || "1,200");
+    const retention = encodeURIComponent(concept?.mockup?.efficiencyMetric || concept?.efficiencyMetric || "91%");
+    const cust = encodeURIComponent(concept?.customer || concept?.demographicAlignment || "Target Users");
+    const price = encodeURIComponent(concept?.pricing || "$49/mo");
+    return `/api/outreach/concept-card-image?name=${name}&app_url=${appUrl}&mrr=${mrr}&active_users=${users}&retention=${retention}&customer=${cust}&pricing=${price}`;
+  }
   const n = (Array.isArray(fallbackNiche) ? fallbackNiche.join(" ") : String(fallbackNiche || "")).toLowerCase();
   for (const [k, url] of Object.entries(CONCEPT_CATEGORY_IMAGES)) {
     if (n.includes(k) || (concept?.tagline && concept.tagline.toLowerCase().includes(k))) {
@@ -108,6 +127,15 @@ export const getConceptImageUrl = (concept, fallbackNiche = "tech") => {
   }
   return CONCEPT_CATEGORY_IMAGES.default;
 };
+
+// Quick 1-click AI concept steering presets for Step 5
+export const STEP5_PROMPT_PRESETS = [
+  { label: "⚡ Minimalist Mac/Web Tool", prompt: "Design a minimalist, highly focused utility or macOS menu bar tool with $29-$49/mo pricing and instant daily time-saving." },
+  { label: "🏢 B2B Team Workspace & SaaS", prompt: "Focus on a B2B collaboration workspace with team seats, client portal, asset management, and higher pricing at $49-$149/mo." },
+  { label: "🎓 Cohort & VIP Mastermind", prompt: "Design a hybrid software toolkit and high-ticket mastermind hub with exclusive member deals and strategy vaults." },
+  { label: "🤖 Fine-Tuned AI Copilot", prompt: "Build an autonomous AI copilot trained specifically on the creator's frameworks, with real-time prompt generation and export pipelines." },
+  { label: "📊 Analytics & Reporting OS", prompt: "Create a live analytics command center, client reporting dashboard, and automated performance tracking engine." },
+];
 
 // Safe helper to read deleted creator IDs from storage (handles arrays, expiringStorage envelopes, and self-heals)
 export function getDeletedCreatorIds() {
@@ -3554,6 +3582,54 @@ export default function AcquisitionEngine({
   const [autoLaunchCountdown, setAutoLaunchCountdown] = useState(null);
   const [hasAutoCreatedProject, setHasAutoCreatedProject] = useState(false);
 
+  // Step 5 concept customization, prompt steering, and pitch deck modal states
+  const [step5PromptInput, setStep5PromptInput] = useState("");
+  const [editingConcept, setEditingConcept] = useState(null);
+  const [editingConceptIndex, setEditingConceptIndex] = useState(0);
+  const [viewingDeckConcept, setViewingDeckConcept] = useState(null);
+  const [viewingDeckIndex, setViewingDeckIndex] = useState(0);
+  const [step5EmailViewMode, setStep5EmailViewMode] = useState("preview"); // "preview" | "edit"
+
+  // Dynamic Step 5 Proposal Email Resolver: always mirrors latest AI or admin-modified concepts
+  const getStep5EmailData = (creator = selectedCreator) => {
+    if (!creator) return { subject: "", body: "", defaultSubject: "", defaultBody: "", concepts: [] };
+    const rawConcepts = (creator.productConcepts && creator.productConcepts.length > 0)
+      ? creator.productConcepts
+      : ensureCreatorConcepts(creator);
+    const conceptsWithImages = rawConcepts.map((c) => {
+      const img = c.customImageUrl || c.imageUrl || c.image_url || getConceptImageUrl(c, creator.niche);
+      return {
+        ...c,
+        imageUrl: img,
+        image_url: img,
+        customImageUrl: c.customImageUrl || img,
+      };
+    });
+
+    const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
+    const firstName = (creator.name || creator.display_name || "there").split(" ")[0];
+    const cId = creator.id;
+
+    const defaultSubject = `Top 3 software concepts tailored for @${cleanHandle}`;
+    const defaultBody =
+      `Hi ${firstName},\n\n` +
+      `Following up as promised! Based on our analysis of your ${creator.niche || "channel"} audience on ${creator.platform || "social media"}, here are the top 3 software product concepts we designed for your community:\n\n` +
+      conceptsWithImages
+        .map(
+          (c, i) =>
+            `${i + 1}. ${c.name} (${c.pricing || "$29/mo"}) — ${c.tagline}\n   • Solves: ${c.problem || c.description} (Score: ${c.opportunityScore || 95}/100)${c.isModifiedByAdmin ? " [Customized Blueprint]" : ""}`,
+        )
+        .join("\n\n") +
+      `\n\nUnder our 50/50 partnership, our engineering team will build and deploy the complete MVP at zero cost to you.\n\n` +
+      `Take a look and let us know which concept you'd be most excited to build and launch with us!\n\n` +
+      `Best regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${cId} | Handle:@${cleanHandle}]`;
+
+    const subject = (creator.id === selectedCreator?.id && customPitchSubject) ? customPitchSubject : defaultSubject;
+    const body = (creator.id === selectedCreator?.id && customPitchBody) ? customPitchBody : defaultBody;
+
+    return { subject, body, defaultSubject, defaultBody, concepts: conceptsWithImages };
+  };
+
   // Concept Selection Handler: Persists choice across steps and attaches it to creator
   const handleSelectConcept = (conceptId, creatorId = selectedCreator?.id) => {
     if (!conceptId) return;
@@ -3797,17 +3873,34 @@ export default function AcquisitionEngine({
 
     setIsSendingPitch(true);
 
-    const concepts =
-      creator.productConcepts || ensureCreatorConcepts(creator);
+    const baseConcepts =
+      (creator.id === selectedCreator?.id && selectedCreator?.productConcepts?.length > 0)
+        ? selectedCreator.productConcepts
+        : (creator.productConcepts && creator.productConcepts.length > 0
+          ? creator.productConcepts
+          : ensureCreatorConcepts(creator));
+
+    // Ensure all 3 concepts have their exact AI or admin-modified images and properties
+    const conceptsToSend = baseConcepts.map((c, i) => {
+      const resolvedImg = c.customImageUrl || c.imageUrl || c.image_url || getConceptImageUrl(c, creator.niche);
+      return {
+        ...c,
+        imageUrl: resolvedImg,
+        image_url: resolvedImg,
+        customImageUrl: c.customImageUrl || resolvedImg,
+        isModifiedByAdmin: Boolean(c.isModifiedByAdmin || c.customImageUrl),
+      };
+    });
+
     const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
     const firstName = (creator.name || creator.display_name || "there").split(" ")[0];
     const pitchSubject = `Top 3 software concepts tailored for @${cleanHandle}`;
     const pitchBody =
       `Hi ${firstName},\n\nFollowing up as promised! Based on our analysis of your ${creator.niche || "channel"} audience on ${creator.platform || "social media"}, here are the top 3 software product concepts we designed for your community:\n\n` +
-      concepts
+      conceptsToSend
         .map(
           (c, i) =>
-            `${i + 1}. ${c.name} (${c.pricing}) — ${c.tagline}\n   • Solves: ${c.problem} (Score: ${c.opportunityScore}/100)`,
+            `${i + 1}. ${c.name} (${c.pricing || "$29/mo"}) — ${c.tagline}\n   • Solves: ${c.problem || c.description} (Score: ${c.opportunityScore || 95}/100)${c.isModifiedByAdmin ? " [Customized Blueprint]" : ""}`,
         )
         .join("\n\n") +
       `\n\nUnder our 50/50 partnership, our engineering team will build and deploy the complete MVP at zero cost to you.\n\nTake a look and let us know which concept you'd be most excited to build and launch with us!\n\nBest regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${cId} | Handle:@${cleanHandle}]`;
@@ -3824,11 +3917,10 @@ export default function AcquisitionEngine({
 
     try {
       const { sendDirectEmail, updateCreatorDetails, updateWorkflowState } = await import("../../services/opsApi");
-      const topConcept = concepts?.[0];
-      const conceptImg = getConceptImageUrl(topConcept, creator.niche);
+      const topConceptImg = conceptsToSend[0]?.imageUrl || getConceptImageUrl(conceptsToSend[0], creator.niche);
       await sendDirectEmail(targetEmail, subjectToSend, bodyToSend, cId, {
-        concepts,
-        concept_image_url: conceptImg,
+        concepts: conceptsToSend,
+        concept_image_url: topConceptImg,
       });
 
       const sentTimeIso = new Date().toISOString();
@@ -3855,9 +3947,9 @@ export default function AcquisitionEngine({
         );
       } catch { }
 
-      // Persist pitched status to PostgreSQL DB for instant cross-device correlation
+      // Persist pitched status & modified concepts to PostgreSQL DB for instant cross-device correlation
       try {
-        await updateCreatorDetails(cId, { status: "pitched" });
+        await updateCreatorDetails(cId, { status: "pitched", product_concepts: conceptsToSend });
         await updateWorkflowState({ pitch_sent_map: updatedMap });
       } catch (err) {
         console.warn("[AcquisitionEngine] DB pitch sync warning:", err);
@@ -3865,7 +3957,7 @@ export default function AcquisitionEngine({
 
       // Update local creators state
       setCreators((prev) =>
-        prev.map((c) => (c.id === cId ? { ...c, status: "pitched" } : c))
+        prev.map((c) => (c.id === cId ? { ...c, status: "pitched", productConcepts: conceptsToSend } : c))
       );
 
       notify(
@@ -3894,7 +3986,7 @@ export default function AcquisitionEngine({
   // ── Step 5: AI Audience Analysis & Automatic Advance to Step 6 ─────────────
   const [isSynthesizingStep5Ai, setIsSynthesizingStep5Ai] = useState(false);
 
-  const handleSynthesizeStep5Ai = async (creator = selectedCreator) => {
+  const handleSynthesizeStep5Ai = async (creator = selectedCreator, customPromptText = null) => {
     if (!creator) return;
     setIsSynthesizingStep5Ai(true);
     setStep5Error(null);
@@ -3908,6 +4000,8 @@ export default function AcquisitionEngine({
         )
       );
 
+      const effectivePrompt = (typeof customPromptText === "string" ? customPromptText : step5PromptInput || "").trim();
+
       const fetchPromise = generateAudienceAndConcepts({
         creator_id: creator.id,
         creator_name: creator.name || creator.display_name,
@@ -3916,6 +4010,8 @@ export default function AcquisitionEngine({
         platform: creator.platform,
         followers: creator.followerStr || `${creator.follower_count}`,
         bio: creator.bio,
+        custom_prompt: effectivePrompt || undefined,
+        allow_fallback: true,
       });
 
       const res = await Promise.race([fetchPromise, timeoutPromise]);
@@ -3940,9 +4036,11 @@ export default function AcquisitionEngine({
         setStep5Error(null);
         notify(
           "success",
-          "AI Concepts & Audience Synthesized",
-          `Engineered top 3 custom software product concepts and deep audience research for ${creator.name || creator.handle}.`,
-          3500,
+          effectivePrompt ? "AI Concepts Refined" : "AI Concepts Synthesized",
+          effectivePrompt
+            ? `Successfully re-engineered concepts using custom prompt: "${effectivePrompt.slice(0, 45)}..."`
+            : `Engineered top 3 custom software product concepts and deep audience research for ${creator.name || creator.handle}.`,
+          4000,
         );
       } else {
         throw new Error(res?.detail || res?.error || "AI engine failed to produce structured product concepts.");
@@ -3960,6 +4058,64 @@ export default function AcquisitionEngine({
     } finally {
       setIsSynthesizingStep5Ai(false);
     }
+  };
+
+  // Handler to persist user edits on any product concept and refresh proposal email
+  const handleSaveConcept = (updatedConcept) => {
+    if (!selectedCreator || !updatedConcept) return;
+    const curConcepts = selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
+
+    const enrichedConcept = {
+      ...updatedConcept,
+      imageUrl: updatedConcept.customImageUrl || updatedConcept.imageUrl || getConceptImageUrl(updatedConcept, selectedCreator.niche),
+      image_url: updatedConcept.customImageUrl || updatedConcept.imageUrl || getConceptImageUrl(updatedConcept, selectedCreator.niche),
+      customImageUrl: updatedConcept.customImageUrl || updatedConcept.imageUrl || getConceptImageUrl(updatedConcept, selectedCreator.niche),
+      isModifiedByAdmin: true,
+      lastModifiedAt: new Date().toISOString(),
+    };
+
+    const newConcepts = curConcepts.map((p, idx) =>
+      (p.id === enrichedConcept.id || idx === editingConceptIndex) ? enrichedConcept : p
+    );
+
+    setCreators((prev) =>
+      prev.map((c) =>
+        c.id === selectedCreator.id
+          ? {
+              ...c,
+              productConcepts: newConcepts,
+            }
+          : c,
+      ),
+    );
+
+    // Persist to backend database
+    import("../../services/opsApi").then(({ updateCreatorDetails }) => {
+      updateCreatorDetails(selectedCreator.id, {
+        product_concepts: newConcepts,
+      }).catch((err) => console.warn("Failed to persist concept edit:", err));
+    });
+
+    // Also synchronize custom proposal email body to reflect edited concept
+    const firstName = (selectedCreator.name || selectedCreator.display_name || "there").split(" ")[0];
+    const cleanHandle = (selectedCreator.handle || "").replace(/^@/, "").trim();
+    const cId = selectedCreator.id;
+    setCustomPitchSubject(`Top 3 software concepts tailored for @${cleanHandle}`);
+    setCustomPitchBody(
+      `Hi ${firstName},\n\n` +
+      `Following up as promised! Based on our analysis of your ${selectedCreator.niche || "channel"} audience on ${selectedCreator.platform || "social media"}, here are the top 3 software product concepts we designed for your community:\n\n` +
+      newConcepts
+        .map(
+          (c, i) =>
+            `${i + 1}. ${c.name} (${c.pricing || "$29/mo"}) — ${c.tagline}\n   • Solves: ${c.problem || c.description} (Score: ${c.opportunityScore || 95}/100)${c.isModifiedByAdmin ? " [Customized Blueprint]" : ""}`,
+        )
+        .join("\n\n") +
+      `\n\nUnder our 50/50 partnership, our engineering team will build and deploy the complete MVP at zero cost to you.\n\n` +
+      `Take a look and let us know which concept you'd be most excited to build and launch with us!\n\n` +
+      `Best regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${cId} | Handle:@${cleanHandle}]`
+    );
+
+    notify("success", "Concept Saved", `Updated "${enrichedConcept.name}" — email proposal & cards refreshed with modified concept.`);
   };
 
   // Autonomous Step 5 to Step 6 handler: Runs AI synthesis, dispatches 3-concept email, and advances to Step 6
@@ -5373,8 +5529,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       confidence: 50,
       conceptName: concepts[0]?.name || "Recommended Concept",
       reasoning: `Creator reply received ("${latestBody.slice(0, 50)}..."), but no clear concept choice or agreement detected. Awaiting concrete confirmation before executing Project OS.`,
-      color: "purple",
-      badgeClass: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+      color: "cyan",
+      badgeClass: "bg-cyan-50 text-cyan-800 border-cyan-200",
     };
   };
 
@@ -5681,8 +5837,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           // The system MUST wait for creator's feedback/reply in dialog before taking any action.
           let waitAction = "Awaiting Pitch Feedback";
           let waitReason = `Opportunity pitch presenting 3 concepts was dispatched to ${c.name || "creator"}. Monitoring inbox for their feedback, concept choice, or questions before taking action.`;
-          let waitColor = "purple";
-          let waitBadge = "bg-purple-500/20 text-purple-300 border-purple-500/40";
+          let waitColor = "cyan";
+          let waitBadge = "bg-cyan-50 text-cyan-800 border-cyan-200";
 
           if (aTime > pTime && aTime >= perTime) {
             waitAction = "Answers Sent — Awaiting Reply";
@@ -7136,21 +7292,21 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </div>
 
                   {/* 3. Verified Contacts */}
-                  <div className="p-3.5 sm:p-4 rounded-2xl bg-purple-50/70 border border-purple-100/90 shadow-2xs space-y-1 relative overflow-hidden group">
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-cyan-50/70 border border-cyan-100/90 shadow-2xs space-y-1 relative overflow-hidden group">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-purple-900 uppercase tracking-wider font-display">
+                      <span className="text-[10px] font-bold text-cyan-900 uppercase tracking-wider font-display">
                         Verified Contacts
                       </span>
-                      <div className="w-7 h-7 rounded-xl bg-purple-100/80 text-purple-700 flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-xl bg-cyan-100/80 text-cyan-700 flex items-center justify-center">
                         <Mail className="w-3.5 h-3.5" />
                       </div>
                     </div>
-                    <div className="text-xl sm:text-2xl font-black text-purple-950 font-display">
+                    <div className="text-xl sm:text-2xl font-black text-cyan-950 font-display">
                       {verifiedEmailCount}
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-purple-800/80 pt-0.5">
+                    <div className="flex items-center justify-between text-[11px] text-cyan-800/80 pt-0.5">
                       <span>Direct Inboxes</span>
-                      <span className="font-semibold text-purple-900 bg-purple-100/70 px-2 py-0.5 rounded-full text-[10px]">
+                      <span className="font-semibold text-cyan-900 bg-cyan-100/70 px-2 py-0.5 rounded-full text-[10px]">
                         {Math.round((verifiedEmailCount / (validCreators.length || 1)) * 100)}% Verified
                       </span>
                     </div>
@@ -7328,7 +7484,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-xs ${platformSlug === 'youtube'
                                     ? 'bg-red-600 text-white'
                                     : platformSlug === 'instagram'
-                                      ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white'
+                                      ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-pink-600 text-white'
                                       : 'bg-slate-950 text-cyan-400'
                                   }`}>
                                   {platformSlug === 'youtube' ? (
@@ -7374,9 +7530,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               <span className="text-[9px] uppercase font-bold text-emerald-700 block tracking-wider">Engage</span>
                               <span className="text-xs font-black text-emerald-950 font-mono truncate block">{c.engagement || 3.5}%</span>
                             </div>
-                            <div className="p-2 rounded-xl bg-purple-50/70 border border-purple-200/70">
-                              <span className="text-[9px] uppercase font-bold text-purple-700 block tracking-wider">Niche Fit</span>
-                              <span className="text-xs font-black text-purple-950 font-mono truncate block">{c.nicheFit || c.niche_fit || "95%"}</span>
+                            <div className="p-2 rounded-xl bg-cyan-50/70 border border-cyan-200/70">
+                              <span className="text-[9px] uppercase font-bold text-cyan-700 block tracking-wider">Niche Fit</span>
+                              <span className="text-xs font-black text-cyan-950 font-mono truncate block">{c.nicheFit || c.niche_fit || "95%"}</span>
                             </div>
                             <div className="p-2 rounded-xl bg-amber-50/70 border border-amber-200/70">
                               <span className="text-[9px] uppercase font-bold text-amber-700 block tracking-wider">Potential</span>
@@ -8978,10 +9134,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 <button
                   type="button"
                   onClick={() => handleSynthesizeStep5Ai(selectedCreator)}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                  className="px-4 py-2 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Retry AI Synthesis</span>
+                  <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Retry Synthesis</span>
                 </button>
               </div>
             </div>
@@ -9009,7 +9165,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                        <Users className="w-4 h-4 text-purple-600" />
+                        <Users className="w-4 h-4 text-emerald-600" />
                         <span>Audience Intelligence & Deep Research Signals</span>
                       </h3>
                       <span className="text-[11px] text-emerald-700 font-mono font-medium">
@@ -9023,9 +9179,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                            <Play className="w-3.5 h-3.5 text-purple-600" /><span>Top-Performing Content</span>
+                            <Play className="w-3.5 h-3.5 text-emerald-600" /><span>Top-Performing Content</span>
                           </span>
-                          <span className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded font-mono font-medium">
+                          <span className="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded font-mono font-medium">
                             {audIntel.topContent.badge}
                           </span>
                         </div>
@@ -9137,7 +9293,85 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between text-xs border-b border-slate-200/80 pb-3">
+                  {/* AI Prompt Steering & Refinement Panel */}
+                  <div className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200/90 shadow-2xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-[#0F172A] text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                          <Wand2 className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-900 font-display">
+                            Prompt AI to Steer or Regenerate Concepts
+                          </span>
+                          <span className="text-[11px] text-slate-500 block">
+                            Enter custom requirements, pricing targets, or specific software utilities to re-engineer concepts.
+                          </span>
+                        </div>
+                      </div>
+                      {step5PromptInput && (
+                        <button
+                          type="button"
+                          onClick={() => setStep5PromptInput("")}
+                          className="text-[11px] text-slate-400 hover:text-slate-600 underline cursor-pointer"
+                        >
+                          Clear prompt
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={step5PromptInput}
+                        onChange={(e) => setStep5PromptInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !isSynthesizingStep5Ai) {
+                            e.preventDefault();
+                            handleSynthesizeStep5Ai(selectedCreator, step5PromptInput);
+                          }
+                        }}
+                        placeholder="e.g. Focus on a minimalist macOS menu bar tool for deep focus at $49/mo, or a B2B agency dashboard..."
+                        className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 shadow-2xs placeholder:text-slate-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSynthesizeStep5Ai(selectedCreator, step5PromptInput)}
+                        disabled={isSynthesizingStep5Ai}
+                        className="px-4 py-2 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs flex-shrink-0 active:scale-95 border border-slate-800"
+                      >
+                        {isSynthesizingStep5Ai ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        )}
+                        <span>{isSynthesizingStep5Ai ? "Synthesizing..." : "Regenerate with Prompt"}</span>
+                      </button>
+                    </div>
+
+                    {/* Quick Preset Steering Chips */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">
+                        Quick Steering:
+                      </span>
+                      {STEP5_PROMPT_PRESETS.map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => {
+                            setStep5PromptInput(preset.prompt);
+                            handleSynthesizeStep5Ai(selectedCreator, preset.prompt);
+                          }}
+                          disabled={isSynthesizingStep5Ai}
+                          className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-semibold transition-all cursor-pointer shadow-2xs hover:border-slate-300 disabled:opacity-50"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-b border-slate-200/80 pb-3 pt-2">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
                         Top 3 Product Opportunities for{" "}
@@ -9145,125 +9379,151 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         {selectedCreator.handle})
                       </h3>
                       <p className="text-slate-500 text-xs">
-                        Each concept includes problem, key features, audience
-                        evidence, pricing model, competition & revenue projections.
+                        Customized decks based on audience research, buyer demographics, and brand colors. All fields editable.
                       </p>
                     </div>
-                    <span className="text-[11px] text-emerald-800 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 font-mono font-medium">
-                      All 3 Concepts Dispatched in Email
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const firstConcept = selectedCreator.productConcepts?.[0];
+                          if (firstConcept) {
+                            setViewingDeckConcept(firstConcept);
+                            setViewingDeckIndex(0);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+                        title="Open interactive pitch deck"
+                      >
+                        <Monitor className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>View Customized Pitch Deck</span>
+                      </button>
+                      <span className="text-[11px] text-emerald-800 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 font-mono font-medium whitespace-nowrap hidden sm:inline-block">
+                        All 3 in Email
+                      </span>
+                    </div>
                   </div>
 
                   <div className="grid md:grid-cols-3 gap-5">
                     {selectedCreator.productConcepts.map((concept, index) => {
+                      const brandColorObj = getBrandColorObj(concept.brandColor || (index === 0 ? "#10B981" : index === 1 ? "#0F172A" : "#0284C7"));
+                      const accentHex = brandColorObj.hex;
+
                       return (
                         <div
                           key={concept.id || index}
-                          className="p-5 rounded-2xl border border-slate-200/90 bg-white text-slate-700 space-y-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all shadow-2xs"
+                          className="p-5 rounded-2xl border border-slate-200/90 bg-white text-slate-700 space-y-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all shadow-2xs relative"
+                          style={{ borderTopColor: accentHex, borderTopWidth: "3px" }}
                         >
                           <div className="space-y-3.5">
-                            {/* Header Badge & Opportunity Score */}
+                            {/* Header Badge & Action Icons */}
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200/60">
-                                Concept #{index + 1}
-                              </span>
-                              <span className="text-xs font-black text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                                <span>Score: {concept.opportunityScore}/100</span>
-                              </span>
-                            </div>
-
-                            {/* Visual Mockup Window Preview with Real Concept Screenshot Image */}
-                            <div className="rounded-xl bg-slate-950 border border-slate-800 p-3 relative overflow-hidden flex flex-col justify-between shadow-2xs space-y-2.5">
-                              <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-2 h-2 rounded-full bg-rose-500/90" />
-                                  <div className="w-2 h-2 rounded-full bg-amber-400/90" />
-                                  <div className="w-2 h-2 rounded-full bg-emerald-400/90" />
-                                  <span className="text-[9px] font-mono text-slate-400 ml-1 truncate max-w-[130px]">
-                                    {concept.mockup?.appUrl ||
-                                      `${concept.name?.toLowerCase().replace(/\s+/g, "")}.app`}
-                                  </span>
-                                </div>
-                                <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.2 rounded border border-emerald-500/30">
-                                  MVP Ready
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border"
+                                  style={{
+                                    color: accentHex,
+                                    backgroundColor: `${accentHex}15`,
+                                    borderColor: `${accentHex}40`,
+                                  }}
+                                >
+                                  Concept #{index + 1}
                                 </span>
-                              </div>
-
-                              {/* Real Concept Mockup Screenshot Image */}
-                              <div className="relative rounded-lg overflow-hidden border border-slate-800 h-28 group bg-[#05070c]">
-                                <img
-                                  src={getConceptImageUrl(concept, selectedCreator.niche)}
-                                  alt={concept.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100"
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full"
+                                  style={{ backgroundColor: accentHex }}
+                                  title={`Brand Accent: ${brandColorObj.name}`}
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent flex items-end p-2 justify-between">
-                                  <span className="text-[9px] font-mono text-white font-bold bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10">
-                                    Product Preview
-                                  </span>
-                                  <span className="text-[9px] font-bold text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded border border-purple-500/40 backdrop-blur-sm">
-                                    Attached in Proposal Email
-                                  </span>
-                                </div>
                               </div>
 
-                              <div className="grid grid-cols-3 gap-1.5">
-                                <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center">
-                                  <span className="text-[8px] text-slate-400 block">
-                                    MRR Projected
-                                  </span>
-                                  <span className="text-[10px] font-bold text-emerald-400 font-mono">
-                                    {concept.mockup?.primaryMetric || "$16.8K"}
-                                  </span>
-                                </div>
-                                <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center">
-                                  <span className="text-[8px] text-slate-400 block">
-                                    Active Users
-                                  </span>
-                                  <span className="text-[10px] font-bold text-purple-300 font-mono">
-                                    {concept.mockup?.activeMetric || "520"}
-                                  </span>
-                                </div>
-                                <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center">
-                                  <span className="text-[8px] text-slate-400 block">
-                                    Performance
-                                  </span>
-                                  <span className="text-[10px] font-bold text-cyan-300 font-mono">
-                                    {concept.mockup?.efficiencyMetric || "94%"}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-800 pt-1">
-                                <span className="truncate max-w-[120px]">
-                                  {concept.customer || "Target Users"}
-                                </span>
-                                <span className="text-emerald-400 font-bold font-mono">
-                                  {concept.pricing}
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setViewingDeckConcept(concept);
+                                    setViewingDeckIndex(index);
+                                  }}
+                                  className="px-2 py-0.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                  title="View customized pitch deck"
+                                >
+                                  <Monitor className="w-3 h-3 text-slate-600" />
+                                  <span>Deck</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingConcept(concept);
+                                    setEditingConceptIndex(index);
+                                  }}
+                                  className="px-2 py-0.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                  title="Edit concept fields"
+                                >
+                                  <Pencil className="w-3 h-3 text-slate-600" />
+                                  <span>Edit</span>
+                                </button>
+                                <span className="text-xs font-black text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                                  <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                                  <span>{concept.opportunityScore || 95}/100</span>
                                 </span>
                               </div>
                             </div>
+
+                            {/* Dynamic Concept Mockup (Replaces static Unsplash photo with authentic UI canvas!) */}
+                            <DynamicConceptMockup
+                              concept={concept}
+                              creator={selectedCreator}
+                              conceptIndex={index}
+                              onOpenDeck={() => {
+                                setViewingDeckConcept(concept);
+                                setViewingDeckIndex(index);
+                              }}
+                              onEditConcept={() => {
+                                setEditingConcept(concept);
+                                setEditingConceptIndex(index);
+                              }}
+                            />
 
                             {/* Name & Tagline */}
                             <div className="space-y-1">
-                              <h3 className="text-sm font-black text-slate-900 tracking-tight">
-                                {concept.name}
-                              </h3>
-                              <p className="text-xs text-purple-700 font-semibold">
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                                  {concept.name}
+                                </h3>
+                                <span className="text-[10px] font-mono text-slate-400">
+                                  {concept.mvpDifficulty || "2 weeks"}
+                                </span>
+                              </div>
+                              <p className="text-xs font-semibold" style={{ color: accentHex }}>
                                 {concept.tagline}
                               </p>
                             </div>
 
-                            {/* Problem & Customer */}
-                            <div className="space-y-2.5 text-[11px] p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                            {/* Audience & Demographic Alignment Banner */}
+                            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-[11px]">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1">
+                                  <Target className="w-3 h-3 text-emerald-600" />
+                                  <span>Demographic & Audience Alignment</span>
+                                </span>
+                                <span className="text-[9px] font-mono font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                  Verified
+                                </span>
+                              </div>
+                              <p className="text-slate-700 font-medium">
+                                <strong>Target:</strong> {concept.demographicAlignment || concept.customer || "22-42 Yrs • High Digital Purchasing Power"}
+                              </p>
+                              <p className="text-slate-600 leading-snug italic text-[10px]">
+                                "{concept.audienceEvidence || concept.rationale || "Directly solves recurring community questions"}"
+                              </p>
+                            </div>
+
+                            {/* Problem & Customer Box */}
+                            <div className="space-y-2 text-[11px] p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                               <div>
                                 <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
-                                  Customer & Problem
+                                  Problem Solved
                                 </span>
-                                <p className="text-slate-800 font-medium leading-snug mt-0.5">
-                                  <strong>For:</strong> {concept.customer}
-                                </p>
-                                <p className="text-slate-600 mt-1 leading-snug">
+                                <p className="text-slate-600 mt-0.5 leading-snug">
                                   {concept.problem}
                                 </p>
                               </div>
@@ -9272,7 +9532,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               {concept.keyFeatures && (
                                 <div className="pt-2 border-t border-slate-200/80">
                                   <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider mb-1">
-                                    Key Features
+                                    Key MVP Features
                                   </span>
                                   <ul className="space-y-1">
                                     {concept.keyFeatures.map((feat, fi) => (
@@ -9280,7 +9540,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                         key={fi}
                                         className="flex items-start gap-1.5 text-slate-700"
                                       >
-                                        <CheckCircle2 className="w-3 h-3 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                        <CheckCircle2 className="w-3 h-3 mt-0.5 flex-shrink-0" style={{ color: accentHex }} />
                                         <span>{feat}</span>
                                       </li>
                                     ))}
@@ -9288,55 +9548,89 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 </div>
                               )}
 
-                              {/* Audience Evidence */}
-                              <div className="pt-2 border-t border-slate-200/80">
-                                <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
-                                  Audience Evidence
-                                </span>
-                                <p className="text-cyan-900 text-[11px] italic mt-0.5 bg-cyan-50/70 p-2 rounded-lg border border-cyan-100">
-                                  "{concept.audienceEvidence || concept.rationale}"
-                                </p>
-                              </div>
-
-                              {/* Pricing & Revenue Model */}
+                              {/* Pricing & Commercial Model */}
                               <div className="pt-2 border-t border-slate-200/80 space-y-1">
                                 <div className="flex justify-between items-center">
                                   <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-                                    Pricing
+                                    Pricing Tiers
                                   </span>
                                   <span className="text-emerald-700 font-bold font-mono">
                                     {concept.pricing}
                                   </span>
                                 </div>
                                 <p className="text-[10px] text-slate-500 leading-tight">
-                                  {concept.revenueModel}
+                                  {concept.revenueModel || "SaaS Subscription • 50/50 Revenue Share"}
                                 </p>
-                              </div>
-
-                              {/* Competition & Moat */}
-                              <div className="pt-2 border-t border-slate-200/80">
-                                <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
-                                  Competition & Moat
-                                </span>
-                                <p className="text-slate-600 text-[10px] leading-snug mt-0.5">
-                                  {concept.competition}
-                                </p>
-                              </div>
-
-                              {/* MVP Difficulty */}
-                              <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between">
-                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-                                  MVP Timeline
-                                </span>
-                                <span className="text-purple-700 font-bold">
-                                  {concept.mvpDifficulty}
-                                </span>
                               </div>
                             </div>
+                          </div>
+
+                          {/* Card Footer Actions */}
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setViewingDeckConcept(concept);
+                                setViewingDeckIndex(index);
+                              }}
+                              className="flex-1 py-1.5 px-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                            >
+                              <Monitor className="w-3.5 h-3.5" style={{ color: accentHex }} />
+                              <span>View Deck</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingConcept(concept);
+                                setEditingConceptIndex(index);
+                              }}
+                              className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Edit</span>
+                            </button>
                           </div>
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Step 5 Bottom Action Bar */}
+                  <div className="mt-8 pt-5 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setActiveStep(4)}
+                      className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium text-xs transition-all cursor-pointer"
+                    >
+                      ← Back to Step 4
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (pitchSentMap[selectedCreator?.id]) {
+                          setActiveStep(6);
+                        } else {
+                          handleSendBlueprintAndAdvanceToStep6(selectedCreator);
+                        }
+                      }}
+                      disabled={isSendingPitch}
+                      className="h-10 px-5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      {isSendingPitch ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                      ) : pitchSentMap[selectedCreator?.id] ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5 text-emerald-400" />
+                      )}
+                      <span>
+                        {isSendingPitch
+                          ? "Dispatching..."
+                          : pitchSentMap[selectedCreator?.id]
+                          ? "Advance to Step 6 →"
+                          : "Send 3 Concepts & Advance to Step 6 →"}
+                      </span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -9435,7 +9729,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors ${isSelected
                             ? "text-white bg-slate-800 border border-slate-700 shadow-2xs"
-                            : "text-purple-700 bg-purple-50 border border-purple-200"
+                            : "text-cyan-700 bg-cyan-50 border border-cyan-200"
                           }`}
                       >
                         {cChoice?.isStep6Reply ? "In Conversation" : "Proposal Sent"}
@@ -9470,7 +9764,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 title="Check inbox for new replies"
               >
                 <RefreshCw
-                  className={`w-3.5 h-3.5 ${pollingImap ? "animate-spin text-purple-600" : "text-slate-400"}`}
+                  className={`w-3.5 h-3.5 ${pollingImap ? "animate-spin text-emerald-600" : "text-slate-400"}`}
                 />
                 <span>Sync Inbox</span>
               </button>
@@ -9623,7 +9917,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
             return (
               <div className={`p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-2xs transition-all ${hasFullCommitment
-                  ? "bg-gradient-to-r from-purple-50 via-white to-emerald-50 border-emerald-300"
+                  ? "bg-gradient-to-r from-emerald-50/70 via-white to-slate-50 border-emerald-300"
                   : "bg-slate-50 border-slate-200"
                 }`}>
                 <div className="space-y-0.5">
@@ -9760,7 +10054,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               </>
                             ) : (
                               <>
-                                <span className="w-6 h-6 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 font-black text-xs flex items-center justify-center">
+                                <span className="w-6 h-6 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 font-black text-xs flex items-center justify-center">
                                   💡
                                 </span>
                                 <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -9784,7 +10078,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               {chosenConcept?.pricing}
                             </span>
                           </div>
-                          <p className="text-xs text-purple-700 font-medium">
+                          <p className="text-xs text-slate-800 font-semibold">
                             {chosenConcept?.tagline}
                           </p>
                           <p className="text-xs text-slate-600 leading-relaxed">
@@ -9850,7 +10144,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   })()}
 
                   {/* 2. 50/50 Co-Founder Terms Card */}
-                  <div className="p-4 rounded-xl bg-purple-50/70 border border-purple-200/80 text-xs text-purple-900 space-y-2 shadow-2xs">
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 space-y-2 shadow-2xs">
                     <div className="font-bold flex items-center gap-1.5 text-slate-900">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <span>50/50 Co-Founder Partnership Terms</span>
@@ -9871,7 +10165,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     </div>
                     <div className="flex items-center justify-between text-slate-600">
                       <span>Niche:</span>
-                      <strong className="text-purple-700">{selectedCreator.niche || "Creator Economy"}</strong>
+                      <strong className="text-slate-900">{selectedCreator.niche || "Creator Economy"}</strong>
                     </div>
                     <div className="flex items-center justify-between text-slate-600">
                       <span>Contact Email:</span>
@@ -9951,7 +10245,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <div className="rounded-2xl bg-white border border-slate-200/90 overflow-hidden space-y-0 shadow-2xs">
                     <div className="p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                       <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                        <Mail className="w-3.5 h-3.5 text-purple-600" />
+                        <Mail className="w-3.5 h-3.5 text-emerald-600" />
                         <span>Conversation Thread with {selectedCreator?.name || "Creator"}</span>
                       </div>
                       <span className="text-[10px] font-mono text-emerald-700 font-medium">
@@ -9967,7 +10261,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             <div
                               key={msg.id || idx}
                               className={`p-3.5 rounded-xl border text-xs space-y-1.5 shadow-2xs ${isFromCreator
-                                  ? "bg-purple-50/70 border-purple-200/80 ml-4"
+                                  ? "bg-cyan-50/70 border-cyan-200/80 ml-4"
                                   : "bg-slate-50 border-slate-200 mr-4"
                                 }`}
                             >
@@ -10003,7 +10297,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <div className="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-3 shadow-2xs">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                        <MessageSquare className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                         <div>
                           <span className="text-xs font-bold text-slate-900 block">
                             Admin Direct Email Composer
@@ -10020,10 +10314,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           type="button"
                           onClick={handleRegenerateStep6Draft}
                           disabled={isGeneratingStep6Ai}
-                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-purple-50 text-purple-700 text-xs font-bold border border-purple-200 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
                           title="Generate fresh AI draft tailored to creator's latest response"
                         >
-                          <Sparkles className={`w-3.5 h-3.5 text-purple-600 ${isGeneratingStep6Ai ? "animate-spin" : ""}`} />
+                          <Sparkles className={`w-3.5 h-3.5 text-emerald-600 ${isGeneratingStep6Ai ? "animate-spin" : ""}`} />
                           <span>{isGeneratingStep6Ai ? "Generating..." : "Generate AI Draft"}</span>
                         </button>
 
@@ -10159,7 +10453,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   title="Check inbox for replies"
                 >
                   <RefreshCw
-                    className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin text-purple-600" : "text-slate-400"}`}
+                    className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin text-emerald-600" : "text-slate-400"}`}
                   />
                   <span className="flex-shrink-0">Sync Inbox</span>
                 </button>
@@ -10224,7 +10518,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 <span>Proposal Dispatched</span>
                               </span>
                             ) : (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-purple-50 text-purple-800 border-purple-200 flex items-center gap-1">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-cyan-50 text-cyan-800 border-cyan-200 flex items-center gap-1">
                                 <span>Ready to Pitch</span>
                               </span>
                             )}
@@ -10306,7 +10600,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-purple-600" />
+                  <Clock className="w-4 h-4 text-cyan-600" />
                   <h3 className="text-base font-bold text-slate-900">
                     Awaiting Replies & Pending Leads
                   </h3>
@@ -10321,11 +10615,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   type="button"
                   onClick={() => syncImapReplies(true)}
                   disabled={pollingImap}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50 shadow-2xs"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs font-bold transition-all cursor-pointer flex-shrink-0 disabled:opacity-50 shadow-2xs"
                   title="Check inbox for replies"
                 >
                   <RefreshCw
-                    className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin text-purple-600" : "text-purple-400"}`}
+                    className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${pollingImap ? "animate-spin text-emerald-600" : "text-slate-400"}`}
                   />
                   <span className="flex-shrink-0">Sync Inbox</span>
                 </button>
@@ -10399,7 +10693,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             ) : (
                               <span
                                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${hasEmail
-                                    ? "bg-purple-50 text-purple-700 border-purple-200"
+                                    ? "bg-cyan-50 text-cyan-700 border-cyan-200"
                                     : "bg-amber-50 text-amber-800 border-amber-200"
                                   }`}
                               >
@@ -10694,13 +10988,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     type="button"
                     onClick={handleGenerateDecisionAi}
                     disabled={decisionModal.isGeneratingAi}
-                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 flex-shrink-0 shadow-2xs"
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 flex-shrink-0 shadow-2xs"
                     title="Generate personalized email description with AI"
                   >
                     {decisionModal.isGeneratingAi ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
                     ) : (
-                      <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                     )}
                     <span>
                       {decisionModal.isGeneratingAi
@@ -10776,7 +11070,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                         Email Message Description (Editable)
                       </label>
-                      <span className="text-[10px] text-purple-700 font-mono">
+                      <span className="text-[10px] text-slate-500 font-mono">
                         AI-Generated Template
                       </span>
                     </div>
@@ -10794,12 +11088,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     />
 
                     {decisionModal.decisionType === "approve" && (
-                      <div className="p-2.5 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-between text-[11px] text-purple-900">
+                      <div className="p-2.5 rounded-lg bg-emerald-50/80 border border-emerald-200 flex items-center justify-between text-[11px] text-emerald-950">
                         <span className="flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           <span>50/50 Revenue Split • 0 Cost Guarantee</span>
                         </span>
-                        <span className="font-mono text-[10px] text-purple-700">
+                        <span className="font-mono text-[10px] text-emerald-800 font-bold">
                           Included in Offer
                         </span>
                       </div>
@@ -11212,6 +11506,30 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           `${realThreads.length} Email Threads`,
           "All Opportunity Pitches & Decks",
         ]}
+      />
+
+      {/* Step 5 Full Concept Editor Modal */}
+      <ConceptEditorModal
+        isOpen={Boolean(editingConcept)}
+        concept={editingConcept}
+        conceptIndex={editingConceptIndex}
+        creator={selectedCreator}
+        onClose={() => setEditingConcept(null)}
+        onSave={handleSaveConcept}
+      />
+
+      {/* Step 5 Interactive Customized Pitch Deck Modal */}
+      <CustomizedDeckModal
+        isOpen={Boolean(viewingDeckConcept)}
+        concept={viewingDeckConcept}
+        conceptIndex={viewingDeckIndex}
+        creator={selectedCreator}
+        audienceIntelligence={selectedCreator?.audienceIntelligence || getCreatorAudienceIntelligence(selectedCreator)}
+        onClose={() => setViewingDeckConcept(null)}
+        onEditConcept={(c) => {
+          setEditingConcept(c);
+          setEditingConceptIndex(viewingDeckIndex);
+        }}
       />
     </div>
   );

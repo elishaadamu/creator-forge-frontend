@@ -309,7 +309,7 @@ export default function AdminPipelineLookup({
           creator: c,
           category: 'awaiting',
           statusLabel: 'Awaiting Reply',
-          badgeColor: 'purple',
+          badgeColor: 'cyan',
           statusType: 'awaiting',
           diagnostic: `Outreach sent (${pitchSent?.time || 'recently'}). Listening for response.`,
           lastOutbound: pitchSent ? 'Opportunity Pitch' : 'Initial Outreach',
@@ -433,7 +433,7 @@ export default function AdminPipelineLookup({
         {/* Sleek Command Center Header */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.08] bg-[#10131c]/90 backdrop-blur-md flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500/20 to-purple-500/20 border border-rose-500/30 text-rose-400 flex-shrink-0 shadow-inner">
+            <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500/20 to-amber-500/20 border border-rose-500/30 text-rose-400 flex-shrink-0 shadow-inner">
               <ShieldAlert className="w-4 h-4" />
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400" />
@@ -454,10 +454,10 @@ export default function AdminPipelineLookup({
               type="button"
               onClick={onSyncImap}
               disabled={isSyncing}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex-shrink-0"
               title="Check for incoming creator replies"
             >
-              <RefreshCw className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${isSyncing ? 'animate-spin text-purple-400' : 'text-slate-400'}`} />
+              <RefreshCw className={`w-3.5 h-3.5 flex-shrink-0 inline-block origin-center ${isSyncing ? 'animate-spin text-emerald-400' : 'text-slate-400'}`} />
               <span className="flex-shrink-0">Sync Replies</span>
             </button>
             {!isPage && onClose && (
@@ -492,13 +492,13 @@ export default function AdminPipelineLookup({
               onClick={() => setActiveTab('all')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border ${
                 activeTab === 'all'
-                  ? 'bg-purple-500/20 border-purple-500/50 text-white shadow-sm'
+                  ? 'bg-slate-800 border-slate-700 text-white shadow-sm'
                   : 'bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]'
               }`}
             >
               <span>All</span>
               <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
-                activeTab === 'all' ? 'bg-purple-500/40 text-purple-200' : 'bg-white/10 text-slate-400'
+                activeTab === 'all' ? 'bg-slate-700 text-slate-200' : 'bg-white/10 text-slate-400'
               }`}>
                 {counts.all}
               </span>
@@ -508,14 +508,14 @@ export default function AdminPipelineLookup({
               onClick={() => setActiveTab('awaiting')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border ${
                 activeTab === 'awaiting'
-                  ? 'bg-purple-500/20 border-purple-500/50 text-purple-200 shadow-sm'
+                  ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-200 shadow-sm'
                   : 'bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]'
               }`}
             >
-              <Clock className="w-3.5 h-3.5 text-purple-400" />
+              <Clock className="w-3.5 h-3.5 text-cyan-400" />
               <span>Awaiting</span>
               <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
-                activeTab === 'awaiting' ? 'bg-purple-500/40 text-purple-200' : 'bg-white/10 text-slate-400'
+                activeTab === 'awaiting' ? 'bg-cyan-500/40 text-cyan-200' : 'bg-white/10 text-slate-400'
               }`}>
                 {counts.awaiting}
               </span>
@@ -582,7 +582,7 @@ export default function AdminPipelineLookup({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/60 focus:bg-white/[0.05] transition-all"
+                className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:bg-white/[0.05] transition-all"
               />
               {searchQuery && (
                 <button
@@ -635,7 +635,7 @@ export default function AdminPipelineLookup({
                     key={creator.id}
                     className={`group relative p-4 rounded-2xl border transition-all shadow-md flex flex-col gap-3 ${
                       isSelected
-                        ? 'bg-[#151926] border-purple-500/60 shadow-sm'
+                        ? 'bg-[#151926] border-emerald-500/60 shadow-sm'
                         : 'bg-[#10131d]/90 hover:bg-[#131724] border-white/[0.08] hover:border-white/[0.16]'
                     }`}
                   >
@@ -672,7 +672,7 @@ export default function AdminPipelineLookup({
                                   className="group/email flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.06] transition-colors cursor-pointer"
                                   title="Click to copy email address"
                                 >
-                                  <Mail className="w-3 h-3 text-purple-400" />
+                                  <Mail className="w-3 h-3 text-slate-400" />
                                   <span>{creator.email || creator.email_public}</span>
                                   {copiedEmailId === creator.id ? (
                                     <Check className="w-3 h-3 text-emerald-400" />
@@ -740,13 +740,13 @@ export default function AdminPipelineLookup({
                                     ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                                     : badgeColor === 'blue'
                                       ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
-                                      : badgeColor === 'purple'
-                                        ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                                      : badgeColor === 'cyan'
+                                        ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
                                         : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                               }`}
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${
-                                badgeColor === 'rose' ? 'bg-rose-400' : badgeColor === 'amber' ? 'bg-amber-400' : badgeColor === 'blue' ? 'bg-blue-400' : badgeColor === 'purple' ? 'bg-purple-400' : 'bg-emerald-400'
+                                badgeColor === 'rose' ? 'bg-rose-400' : badgeColor === 'amber' ? 'bg-amber-400' : badgeColor === 'blue' ? 'bg-blue-400' : badgeColor === 'cyan' ? 'bg-cyan-400' : 'bg-emerald-400'
                               }`} />
                               <span>{statusLabel}</span>
                             </span>
@@ -833,7 +833,7 @@ export default function AdminPipelineLookup({
                           }}
                           className={`px-3 h-8 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap border ${
                             isSelected
-                              ? 'bg-purple-500/30 text-purple-200 border-purple-500/50 shadow-sm'
+                              ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50 shadow-sm'
                               : 'bg-white/[0.05] hover:bg-white/[0.1] text-white border-white/[0.08]'
                           }`}
                         >
@@ -845,8 +845,8 @@ export default function AdminPipelineLookup({
 
                     {/* Inline Email Fixer (if activated) */}
                     {isEditingThisEmail && (
-                      <div className="p-2.5 rounded-xl bg-[#090b10] border border-purple-500/30 flex items-center gap-2 animate-in fade-in">
-                        <Mail className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                      <div className="p-2.5 rounded-xl bg-[#090b10] border border-emerald-500/30 flex items-center gap-2 animate-in fade-in">
+                        <Mail className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                         <input
                           type="email"
                           autoFocus
@@ -857,7 +857,7 @@ export default function AdminPipelineLookup({
                         />
                         <button
                           onClick={() => handleSaveInlineEmail(creator.id)}
-                          className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold cursor-pointer transition-all"
+                          className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-all"
                         >
                           Save Email
                         </button>
@@ -872,24 +872,24 @@ export default function AdminPipelineLookup({
 
                     {/* Diagnostic Intelligence Callout */}
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.04] text-xs text-slate-300">
-                      <Zap className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+                      <Zap className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                       <span className="flex-1">{diagnostic}</span>
                     </div>
 
                     {/* Inbound Reply Message Bubble (if exists) */}
                     {latestReply && (
-                      <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-purple-950/20 border border-purple-500/30 text-xs">
-                        <MessageSquare className="w-3.5 h-3.5 text-purple-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-xs">
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2 mb-0.5">
-                            <span className="font-bold text-purple-300">
+                            <span className="font-bold text-emerald-300">
                               Creator Reply:
                             </span>
-                            <span className="text-[10px] text-purple-400/80 font-mono">
+                            <span className="text-[10px] text-emerald-400/80 font-mono">
                               {latestReply.received_at ? new Date(latestReply.received_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently'}
                             </span>
                           </div>
-                          <p className="text-purple-200/90 font-mono text-[11px] italic bg-black/20 p-2 rounded-lg border border-purple-500/15">
+                          <p className="text-emerald-200/90 font-mono text-[11px] italic bg-black/20 p-2 rounded-lg border border-emerald-500/15">
                             "{latestReply.body}"
                           </p>
                         </div>
@@ -906,7 +906,7 @@ export default function AdminPipelineLookup({
             <div className="w-full sm:w-96 border-l border-white/[0.08] bg-[#0d1017] p-5 flex flex-col gap-4 overflow-y-auto animate-in slide-in-from-right duration-200 flex-shrink-0 shadow-2xl">
               <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
                   <h3 className="text-sm font-bold text-white">Lead Detail Inspection</h3>
                 </div>
                 <button
@@ -930,7 +930,7 @@ export default function AdminPipelineLookup({
                       {inspectingCreator.creator.name || inspectingCreator.creator.display_name}
                     </h4>
                     <p className="text-xs text-slate-400 font-mono">{inspectingCreator.creator.handle}</p>
-                    <p className="text-xs text-purple-400 mt-0.5">{inspectingCreator.creator.niche || 'Software & Tech'}</p>
+                    <p className="text-xs text-emerald-400 mt-0.5">{inspectingCreator.creator.niche || 'Software & Tech'}</p>
                   </div>
                 </div>
 
@@ -964,8 +964,8 @@ export default function AdminPipelineLookup({
                     </div>
                   ) : (
                     getCreatorMessages(inspectingCreator.creator).map((msg, idx) => (
-                      <div key={idx} className="p-2.5 rounded-xl bg-purple-950/20 border border-purple-500/20 text-xs space-y-1">
-                        <div className="flex items-center justify-between text-[10px] text-purple-300 font-semibold">
+                      <div key={idx} className="p-2.5 rounded-xl bg-slate-900/50 border border-emerald-500/20 text-xs space-y-1">
+                        <div className="flex items-center justify-between text-[10px] text-emerald-300 font-semibold">
                           <span>{msg.sender || inspectingCreator.creator.handle}</span>
                           <span className="font-mono text-slate-400">
                             {msg.received_at ? new Date(msg.received_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently'}
@@ -987,7 +987,7 @@ export default function AdminPipelineLookup({
                     if (onSelectCreator) onSelectCreator(inspectingCreator.creator.id)
                     onClose()
                   }}
-                  className="w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                  className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
                 >
                   <span>Open Creator in Pipeline</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -1000,7 +1000,7 @@ export default function AdminPipelineLookup({
         {/* High-End Studio Footer */}
         <div className="px-6 py-2.5 border-t border-white/[0.08] bg-[#090b10] flex items-center justify-between text-xs text-slate-400 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Info className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+            <Info className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
             <span className="text-[11px] sm:text-xs">
               Autonomous sync active with live inbox listener & outreach dispatch.
             </span>
