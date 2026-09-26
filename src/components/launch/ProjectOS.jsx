@@ -11,6 +11,7 @@ import {
 import Phase1Validate from './Phase1Validate'
 import Phase2BuildMVP from './Phase2BuildMVP'
 import Phase3Launch from './Phase3Launch'
+import DynamicConceptMockup from './DynamicConceptMockup'
 import { getFrontendUrl, recordGateDecision } from '../../services/opsApi'
 import { ProjectOSSkeleton } from './Section2Skeletons'
 import CreatorWhatsAppChat from './CreatorWhatsAppChat'
@@ -118,6 +119,22 @@ export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisi
   const portalToken = project?.portalToken || 'cf_sec_live'
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
   const portalUrl = `${origin}/portal/${portalSlug}?token=${portalToken}`
+
+  const chosenConcept = project?.selectedConcept || (project?.product_concepts && project?.product_concepts[0]) || {
+    name: cleanProductName,
+    tagline: cleanTagline,
+    problem: project?.problem || project?.validationPlan?.problem,
+    customer: project?.targetAudience || project?.customer || project?.validationPlan?.customer,
+    keyFeatures: project?.keyFeatures || project?.features || [],
+    pricing: project?.pricing,
+    mockupType: 'saas_os',
+    brandColor: '#16A34A',
+  }
+  const archetypeLabel = chosenConcept?.mockupType === 'ai_copilot'
+    ? 'AI Copilot & Workflow'
+    : chosenConcept?.mockupType === 'knowledge_hub'
+    ? 'VIP Vault & Knowledge Hub'
+    : 'Enterprise SaaS OS'
 
   const [copiedKey, setCopiedKey] = useState(null)
   const [shareNotice, setShareNotice] = useState('')
@@ -787,6 +804,16 @@ partnerships@creatorforge.com`
                     )
                   })()}
 
+                  <div className="flex items-center gap-2 flex-wrap max-w-full">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 shadow-2xs">
+                      <Target className="w-3 h-3 text-emerald-400" />
+                      <span>Step 5 Chosen Concept: {chosenConcept?.name || cleanProductName}</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-white/[0.04] text-slate-400 border border-white/[0.08]">
+                      {archetypeLabel}
+                    </span>
+                  </div>
+
                   <p className="text-xs text-slate-300 line-clamp-2 max-w-2xl leading-relaxed">
                     {cleanTagline}
                   </p>
@@ -821,6 +848,112 @@ partnerships@creatorforge.com`
               {/* OVERVIEW TAB CONTENT */}
               {sidebarTab === 'overview' && (
                 <div className="space-y-5 animate-fade-in">
+                  {/* 🎯 STEP 5 CHOSEN CONCEPT BLUEPRINT MODULE */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-950 to-slate-900 border border-emerald-500/30 shadow-xl space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                          <Target className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                              Step 5 Chosen Concept Blueprint
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-white/[0.06] text-slate-300 border border-white/[0.1]">
+                              {archetypeLabel}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                              ✓ Creator Selected &amp; Promoted
+                            </span>
+                          </div>
+                          <h3 className="text-base font-extrabold text-white mt-0.5">
+                            {chosenConcept.name || cleanProductName}
+                          </h3>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 self-start sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => openPhaseStep('plan')}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span>Review Phase 1 Spec</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                      {/* Left: Problem, Audience, and Built-In Features */}
+                      <div className="lg:col-span-7 space-y-3 text-xs">
+                        <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                          {chosenConcept.tagline || cleanTagline}
+                        </p>
+
+                        {/* Problem & Audience Callouts */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-1">
+                            <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
+                              🎯 Problem Solved
+                            </span>
+                            <p className="text-[11px] text-slate-200 line-clamp-3">
+                              {chosenConcept.problem || project?.problem || "Manual fragmented workflows solved with unified automation."}
+                            </p>
+                          </div>
+                          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-1">
+                            <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
+                              👥 Target Audience
+                            </span>
+                            <p className="text-[11px] text-slate-200 line-clamp-3">
+                              {chosenConcept.customer || chosenConcept.demographicAlignment || project?.targetAudience || `${cleanCreatorName}'s community & active builders`}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Key Features List */}
+                        {Array.isArray(chosenConcept.keyFeatures || chosenConcept.features) && (chosenConcept.keyFeatures || chosenConcept.features).length > 0 && (
+                          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+                            <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
+                              ⚡ Core Software Features (Customized in Step 5):
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                              {(chosenConcept.keyFeatures || chosenConcept.features).slice(0, 4).map((feat, idx) => (
+                                <div key={idx} className="flex items-start gap-1.5 text-[11px] text-slate-300">
+                                  <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                                  <span className="truncate">{typeof feat === 'string' ? feat : (feat.title || feat.name || 'Core feature')}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Mockup Preview Mini-Card */}
+                      <div className="lg:col-span-5 rounded-xl overflow-hidden border border-white/[0.1] bg-[#0c0e14] shadow-lg">
+                        <div className="px-3 py-2 bg-white/[0.04] border-b border-white/[0.06] flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-slate-400">
+                            Live Simulated Architecture ({chosenConcept.mockupType || 'saas_os'})
+                          </span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        </div>
+                        <div className="p-2 sm:p-3">
+                          <DynamicConceptMockup
+                            concept={chosenConcept}
+                            creator={{
+                              name: cleanCreatorName,
+                              handle: cleanCreatorHandle,
+                              niche: project.niche
+                            }}
+                            conceptIndex={
+                              chosenConcept.mockupType === 'knowledge_hub' ? 2 : chosenConcept.mockupType === 'ai_copilot' ? 1 : 0
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Top 4 KPI Cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                     {/* 1. Presales / Live Revenue */}

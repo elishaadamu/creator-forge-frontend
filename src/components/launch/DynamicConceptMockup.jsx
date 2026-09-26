@@ -80,13 +80,38 @@ export default function DynamicConceptMockup({
 
   const appUrl =
     concept?.mockup?.appUrl ||
+    concept?.appUrl ||
     `${(concept?.name || firstName).toLowerCase().replace(/[^a-z0-9]/g, "")}.app`;
 
-  const mockupType =
-    concept?.mockupType ||
-    (conceptIndex === 0 ? "saas_os" : conceptIndex === 1 ? "ai_copilot" : "knowledge_hub");
+  // Guarantee that Deck 1, Deck 2, and Deck 3 NEVER share the same visual software design:
+  // Deck 1 (conceptIndex 0) -> saas_os (or ai_copilot if specified)
+  // Deck 2 (conceptIndex 1) -> ai_copilot (or saas_os)
+  // Deck 3 (conceptIndex 2) -> knowledge_hub (distinct VIP Vault / Engine module, never duplicate Deck 1 or 2)
+  const resolvedMockupType = (() => {
+    if (concept?.isModifiedByAdmin && concept?.mockupType) {
+      return concept.mockupType;
+    }
+    const raw = concept?.mockupType;
+    if (conceptIndex === 0) {
+      return raw === "ai_copilot" ? "ai_copilot" : "saas_os";
+    }
+    if (conceptIndex === 1) {
+      return raw === "saas_os" ? "saas_os" : "ai_copilot";
+    }
+    // conceptIndex >= 2 (Deck 3):
+    // Deck 3 MUST be visually distinct from Deck 1 and Deck 2 (always knowledge_hub)
+    return "knowledge_hub";
+  })();
 
-  const customImageUrl = concept?.customImageUrl || concept?.imageUrl || concept?.mockup?.imageUrl;
+  const mockupType = resolvedMockupType;
+
+  const rawCustomImg = (concept?.customImageUrl || concept?.imageUrl || concept?.mockup?.imageUrl || "").trim();
+  const hasRealCustomImg = Boolean(
+    rawCustomImg &&
+    !rawCustomImg.includes("/api/outreach/concept-card-image") &&
+    !rawCustomImg.includes("images.unsplash.com")
+  );
+  const customImageUrl = hasRealCustomImg ? rawCustomImg : null;
 
   return (
     <div
@@ -318,19 +343,19 @@ export default function DynamicConceptMockup({
         <div className="p-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-center">
           <span className="text-[8px] text-slate-400 block font-medium">MRR Projected</span>
           <span className="text-[10px] font-bold text-emerald-400 font-mono">
-            {concept?.mockup?.primaryMetric || "$22.5K"}
+            {concept?.mockup?.primaryMetric || concept?.primaryMetric || "$22.5K"}
           </span>
         </div>
         <div className="p-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-center">
           <span className="text-[8px] text-slate-400 block font-medium">Active Users</span>
           <span className="text-[10px] font-bold text-slate-200 font-mono">
-            {concept?.mockup?.activeMetric || "850"}
+            {concept?.mockup?.activeMetric || concept?.activeMetric || "850"}
           </span>
         </div>
         <div className="p-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-center">
           <span className="text-[8px] text-slate-400 block font-medium">Retention</span>
           <span className="text-[10px] font-bold text-cyan-300 font-mono">
-            {concept?.mockup?.efficiencyMetric || "94%"}
+            {concept?.mockup?.efficiencyMetric || concept?.efficiencyMetric || "94%"}
           </span>
         </div>
       </div>
@@ -338,7 +363,7 @@ export default function DynamicConceptMockup({
       {/* Target User & Pricing Footer */}
       <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-800 pt-1.5">
         <span className="truncate max-w-[130px] text-slate-300">
-          {concept?.customer || "Target Users"}
+          {concept?.customer || concept?.demographicAlignment || "Target Users"}
         </span>
         <span className="text-emerald-400 font-bold font-mono">
           {concept?.pricing || "$29/mo"}

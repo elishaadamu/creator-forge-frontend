@@ -3621,7 +3621,7 @@ export default function AcquisitionEngine({
         )
         .join("\n\n") +
       `\n\nUnder our 50/50 partnership, our engineering team will build and deploy the complete MVP at zero cost to you.\n\n` +
-      `Take a look and let us know which concept you'd be most excited to build and launch with us!\n\n` +
+      `Take a look and let us know which concept you'd be most excited to build and launch with us! To move forward, simply reply to this email with: "I will be interested in Concept 1" (or Concept 2, Concept 3).\n\n` +
       `Best regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${cId} | Handle:@${cleanHandle}]`;
 
     const subject = (creator.id === selectedCreator?.id && customPitchSubject) ? customPitchSubject : defaultSubject;
@@ -3903,7 +3903,7 @@ export default function AcquisitionEngine({
             `${i + 1}. ${c.name} (${c.pricing || "$29/mo"}) — ${c.tagline}\n   • Solves: ${c.problem || c.description} (Score: ${c.opportunityScore || 95}/100)${c.isModifiedByAdmin ? " [Customized Blueprint]" : ""}`,
         )
         .join("\n\n") +
-      `\n\nUnder our 50/50 partnership, our engineering team will build and deploy the complete MVP at zero cost to you.\n\nTake a look and let us know which concept you'd be most excited to build and launch with us!\n\nBest regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${cId} | Handle:@${cleanHandle}]`;
+      `\n\nUnder our 50/50 partnership, our engineering team will build and deploy the complete MVP at zero cost to you.\n\nTake a look and let us know which concept you'd be most excited to build and launch with us! To move forward, simply reply to this email with: "I will be interested in Concept 1" (or Concept 2, Concept 3).\n\nBest regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${cId} | Handle:@${cleanHandle}]`;
 
     // Use custom pitch only if this is the currently selected creator (user may have edited it)
     const subjectToSend =
@@ -4065,11 +4065,17 @@ export default function AcquisitionEngine({
     if (!selectedCreator || !updatedConcept) return;
     const curConcepts = selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
 
+    const explicitCustomImg = (updatedConcept.customImageUrl || "").trim();
+    const hasRealCustomImg = Boolean(
+      explicitCustomImg &&
+      !explicitCustomImg.includes("/api/outreach/concept-card-image") &&
+      !explicitCustomImg.includes("images.unsplash.com")
+    );
     const enrichedConcept = {
       ...updatedConcept,
-      imageUrl: updatedConcept.customImageUrl || updatedConcept.imageUrl || getConceptImageUrl(updatedConcept, selectedCreator.niche),
-      image_url: updatedConcept.customImageUrl || updatedConcept.imageUrl || getConceptImageUrl(updatedConcept, selectedCreator.niche),
-      customImageUrl: updatedConcept.customImageUrl || updatedConcept.imageUrl || getConceptImageUrl(updatedConcept, selectedCreator.niche),
+      imageUrl: hasRealCustomImg ? explicitCustomImg : null,
+      image_url: hasRealCustomImg ? explicitCustomImg : null,
+      customImageUrl: hasRealCustomImg ? explicitCustomImg : null,
       isModifiedByAdmin: true,
       lastModifiedAt: new Date().toISOString(),
     };
@@ -4111,7 +4117,7 @@ export default function AcquisitionEngine({
         )
         .join("\n\n") +
       `\n\nUnder our 50/50 partnership, our engineering team will build and deploy the complete MVP at zero cost to you.\n\n` +
-      `Take a look and let us know which concept you'd be most excited to build and launch with us!\n\n` +
+      `Take a look and let us know which concept you'd be most excited to build and launch with us! To move forward, simply reply to this email with: "I will be interested in Concept 1" (or Concept 2, Concept 3).\n\n` +
       `Best regards,\nThe Creator Forge Team\n\n---\nRef: [CF-STAGE:STEP6_PITCH | CF-CID:${cId} | Handle:@${cleanHandle}]`
     );
 
@@ -4665,6 +4671,10 @@ export default function AcquisitionEngine({
       concepts.find((p) => p.id === detectedChoice?.conceptId) ||
       concepts.find((p) => p.id === selectedCreator.selectedConceptId) ||
       concepts.find((p) => p.id === selectedCreator.selected_concept_id) ||
+      concepts.find((p) => p.name === selectedCreator.selected_concept?.name) ||
+      concepts.find((p) => p.name === selectedCreator.selectedConcept?.name) ||
+      selectedCreator.selected_concept ||
+      selectedCreator.selectedConcept ||
       concepts[0];
 
     setIsLaunchingProject(true);
@@ -5257,6 +5267,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       "concept 1",
       "concept 2",
       "concept 3",
+      "concept1",
+      "concept2",
+      "concept3",
       "option 1",
       "option 2",
       "option 3",
@@ -5284,6 +5297,37 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       "1st",
       "2nd",
       "3rd",
+      "interest in concept 1",
+      "interest in concept 2",
+      "interest in concept 3",
+      "interested in concept 1",
+      "interested in concept 2",
+      "interested in concept 3",
+      "i will be interest in concept 1",
+      "i will be interest in concept 2",
+      "i will be interest in concept 3",
+      "i will be interested in concept 1",
+      "i will be interested in concept 2",
+      "i will be interested in concept 3",
+      "i am interested in concept 1",
+      "i am interested in concept 2",
+      "i am interested in concept 3",
+      "i'm interested in concept 1",
+      "i'm interested in concept 2",
+      "i'm interested in concept 3",
+      "interested in concept",
+      "interest in concept",
+      "interested in option",
+      "interest in option",
+      "i will be interested",
+      "i will be interest",
+      "i am interested",
+      "i'm interested",
+      "im interested",
+      "definitely interested",
+      "very interested",
+      "would be interested",
+      "interested",
       "i choose",
       "i prefer",
       "let's go with",
@@ -5320,38 +5364,50 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     if (!matchedConcept) {
       if (
         text.includes("concept 2") ||
+        text.includes("concept2") ||
         text.includes("option 2") ||
         text.includes("second") ||
         text.includes("step 2") ||
+        text.includes("step2") ||
         text.includes("idea 2") ||
         text.includes("#2") ||
         text.includes("2nd") ||
         text.includes("number 2") ||
-        text.includes("no 2")
+        text.includes("no 2") ||
+        text.includes("interest in concept 2") ||
+        text.includes("interested in concept 2")
       ) {
         matchedConcept = concepts[1] || concepts[0];
       } else if (
         text.includes("concept 3") ||
+        text.includes("concept3") ||
         text.includes("option 3") ||
         text.includes("third") ||
         text.includes("step 3") ||
+        text.includes("step3") ||
         text.includes("idea 3") ||
         text.includes("#3") ||
         text.includes("3rd") ||
         text.includes("number 3") ||
-        text.includes("no 3")
+        text.includes("no 3") ||
+        text.includes("interest in concept 3") ||
+        text.includes("interested in concept 3")
       ) {
         matchedConcept = concepts[2] || concepts[0];
       } else if (
         text.includes("concept 1") ||
+        text.includes("concept1") ||
         text.includes("option 1") ||
         text.includes("first") ||
         text.includes("step 1") ||
+        text.includes("step1") ||
         text.includes("idea 1") ||
         text.includes("#1") ||
         text.includes("1st") ||
         text.includes("number 1") ||
         text.includes("no 1") ||
+        text.includes("interest in concept 1") ||
+        text.includes("interested in concept 1") ||
         hasExplicitSelection
       ) {
         matchedConcept = concepts[0];

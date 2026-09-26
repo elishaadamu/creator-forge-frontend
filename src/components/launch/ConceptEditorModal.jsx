@@ -97,14 +97,22 @@ export default function ConceptEditorModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const dynamicCardUrl = `/api/outreach/concept-card-image?name=${encodeURIComponent(formData.name || 'Concept')}&app_url=${encodeURIComponent(formData.mockup?.appUrl || '')}&mrr=${encodeURIComponent(formData.mockup?.primaryMetric || '$22.4K MRR')}&active_users=${encodeURIComponent(formData.mockup?.activeMetric || '1,200')}&retention=${encodeURIComponent(formData.mockup?.efficiencyMetric || '91%')}&customer=${encodeURIComponent(formData.customer || formData.demographicAlignment || '')}&pricing=${encodeURIComponent(formData.pricing || '')}`;
-    const finalImageUrl = (formData.customImageUrl || "").trim() || dynamicCardUrl;
+    const explicitCustomImg = (formData.customImageUrl || "").trim();
     const finalData = {
       ...formData,
-      imageUrl: finalImageUrl,
-      image_url: finalImageUrl,
-      customImageUrl: (formData.customImageUrl || "").trim() ? formData.customImageUrl : dynamicCardUrl,
-      dynamicCardUrl: dynamicCardUrl,
+      mockup: {
+        ...(formData.mockup || {}),
+        appUrl: formData.mockup?.appUrl || `${(formData.name || 'app').toLowerCase().replace(/[^a-z0-9]/g, '')}.app`,
+        primaryMetric: formData.mockup?.primaryMetric || formData.primaryMetric || '$22.0K MRR',
+        activeMetric: formData.mockup?.activeMetric || formData.activeMetric || '850',
+        efficiencyMetric: formData.mockup?.efficiencyMetric || formData.efficiencyMetric || '94%',
+      },
+      primaryMetric: formData.mockup?.primaryMetric || formData.primaryMetric || '$22.0K MRR',
+      activeMetric: formData.mockup?.activeMetric || formData.activeMetric || '850',
+      efficiencyMetric: formData.mockup?.efficiencyMetric || formData.efficiencyMetric || '94%',
+      customImageUrl: explicitCustomImg || null,
+      imageUrl: explicitCustomImg || null,
+      image_url: explicitCustomImg || null,
       isModifiedByAdmin: true,
       lastModifiedAt: new Date().toISOString(),
     };
