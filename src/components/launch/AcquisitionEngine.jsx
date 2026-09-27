@@ -2951,10 +2951,24 @@ export default function AcquisitionEngine({
       "hello@creatorforge.com",
     ];
 
+    // A creator who has never had outreach dispatched CANNOT have an outreach reply
+    const creatorHasOutreach = Boolean(
+      c.status === "contacted" ||
+      c.status === "pitched" ||
+      c.status === "approved" ||
+      c.status === "ready_for_launch" ||
+      c.status === "partnered" ||
+      pitchSentMap[cId]
+    );
+
     const matchingThreads = (threads || []).filter((t) => {
       // Direct Creator ID match (highest precision)
       if (t.creator_id && cId) {
         return t.creator_id === cId;
+      }
+      // If creator was NEVER contacted, do NOT match arbitrary unassigned threads by email or handle!
+      if (!creatorHasOutreach) {
+        return false;
       }
       // If thread has NO creator_id assigned, match by handle
       if (!t.creator_id && cHandle && t.creator_handle) {
@@ -3070,12 +3084,24 @@ export default function AcquisitionEngine({
         : null;
 
     if (latestReply && latestReply.body) {
-      // Clean quoted original message lines for pristine display and classification
-      const cleanReplyText = latestReply.body
+      // Clean quoted original message lines and URL-encoded artifacts for pristine display and classification
+      let cleanReplyText = latestReply.body
         .replace(/^>.*$/gm, "")
         .replace(/On\s+[\s\S]*wrote:[\s\S]*/i, "")
         .replace(/---\s*Ref:[\s\S]*/i, "")
         .trim();
+
+      if (cleanReplyText.includes("+")) {
+        try {
+          cleanReplyText = decodeURIComponent(cleanReplyText.replace(/\+/g, " "));
+        } catch {
+          cleanReplyText = cleanReplyText.replace(/\+/g, " ");
+        }
+      } else if (cleanReplyText.includes("%20") || cleanReplyText.includes("%28")) {
+        try {
+          cleanReplyText = decodeURIComponent(cleanReplyText);
+        } catch { }
+      }
 
       const bodyLower = (cleanReplyText || latestReply.body).toLowerCase().trim();
 
@@ -3721,7 +3747,9 @@ export default function AcquisitionEngine({
   // ── Step 5 & 6 Concept Selection & AI Trigger Initializer ─────────────────
   useEffect(() => {
     if (selectedCreator) {
+      const detectedChoice = aiDetectedChoiceMap[selectedCreator.id];
       const savedChoice =
+        detectedChoice?.conceptId ||
         creatorConceptSelectionMap[selectedCreator.id] ||
         selectedCreator.selectedConceptId;
       const concepts = selectedCreator.productConcepts;
@@ -5499,7 +5527,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
   // ── Autonomous AI Decision Analyzer ─────────────────────────────────────────
   const analyzeCreatorReplyAutonomous = (latestBody, concepts = []) => {
     if (!latestBody) return null;
-    const text = latestBody.toLowerCase().trim();
+    let decoded = latestBody;
+    if (decoded.includes("+")) {
+      try {
+        decoded = decodeURIComponent(decoded.replace(/\+/g, " "));
+      } catch {
+        decoded = decoded.replace(/\+/g, " ");
+      }
+    } else if (decoded.includes("%20") || decoded.includes("%28") || decoded.includes("%29")) {
+      try {
+        decoded = decodeURIComponent(decoded);
+      } catch { }
+    }
+    const text = decoded.toLowerCase().trim();
 
     // 1. Hard Opt-Out / Unsubscribe -> Cease outreach and respect decision
     const hardOptOutPatterns = [
@@ -6125,8 +6165,23 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           );
 
           if (analysis) {
-            if (analysis.conceptId && c.id === selectedCreatorId) {
-              setSelectedConceptId(analysis.conceptId);
+            if (analysis.conceptId) {
+              if (c.id === selectedCreatorId) {
+                setSelectedConceptId(analysis.conceptId);
+              }
+              const chosen = concepts.find((p) => p.id === analysis.conceptId);
+              if (chosen && (!c.selectedConceptId || c.selectedConceptId !== analysis.conceptId)) {
+                setCreatorConceptSelectionMap((prev) => ({
+                  ...prev,
+                  [c.id]: analysis.conceptId,
+                }));
+                import("../../services/opsApi").then(({ updateCreatorDetails }) => {
+                  updateCreatorDetails(c.id, {
+                    selected_concept_id: analysis.conceptId,
+                    selected_concept: chosen,
+                  }).catch(() => { });
+                });
+              }
             }
             setAiDetectedChoiceMap((prev) => ({
               ...prev,
@@ -11467,6 +11522,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         onDeleteCreator={async (creatorId) => {
           const targetCreator = (creators || []).find((c) => c.id === creatorId || c.handle === creatorId);
           const cleanHandle = (targetCreator?.handle || creatorId || "").replace(/^@/, "").toLowerCase();
+          const targetEmail = (targetCreator?.email || targetCreator?.email_public || "").toLowerCase().trim();
 
           setCreators((prev) =>
             (prev || []).filter(
@@ -11480,6 +11536,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             (prev || []).filter((t) => {
               if (t.creator_id === creatorId) return false;
               if (t.creator_handle && t.creator_handle.replace(/^@/, "").toLowerCase() === cleanHandle) return false;
+              if (targetEmail && (t.creator_email?.toLowerCase().trim() === targetEmail || t.recipient_email?.toLowerCase().trim() === targetEmail)) return false;
               return true;
             })
           );
@@ -11490,6 +11547,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             return next;
           });
           setAiDetectedChoiceMap((prev) => {
+            const next = { ...prev };
+            delete next[creatorId];
+            delete next[cleanHandle];
+            return next;
+          });
+          setCreatorConceptSelectionMap((prev) => {
             const next = { ...prev };
             delete next[creatorId];
             delete next[cleanHandle];

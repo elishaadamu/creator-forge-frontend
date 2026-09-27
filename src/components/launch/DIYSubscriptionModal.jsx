@@ -79,11 +79,11 @@ export default function DIYSubscriptionModal({
       const generatedUrl = `${origin}/portal/${creatorHandleClean}?view=projectos&token=cf_diy_paid&project=${project.id}`
       setDedicatedUrl(generatedUrl)
 
-      const licenseKey = `FORGE-DIY-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
+      const licenseKey = `FORGE-COBUILDER-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
       const newSub = {
         active: true,
         plan: 'diy_full_50',
-        planName: 'Full DIY Creator ProjectOS License ($50 USD)',
+        planName: 'Interactive Co-Builder ProjectOS Pass ($50 USD)',
         amount: 50,
         billingCycle: 'one_time',
         paymentMethod: isTestBypass ? 'Test Mode (Instant Unlock)' : paymentMethod === 'stripe' ? 'Stripe (Card •••• 4242)' : 'PayPal Express',
@@ -91,12 +91,11 @@ export default function DIYSubscriptionModal({
         unlockedAt: new Date().toISOString(),
         unlockedPhases: [1, 2, 3],
         status: 'active',
-        keepFullRevenue: true,
         licenseKey,
         dedicatedUrl: generatedUrl
       }
 
-      setProcessingStep('Unlocking Phase 1, Phase 2, & Phase 3 Command Control...')
+      setProcessingStep('Unlocking Phase 1, Phase 2, & Phase 3 Interactive Co-Builder Access...')
       const updatedProject = {
         ...project,
         diySubscription: newSub,
@@ -116,13 +115,13 @@ export default function DIYSubscriptionModal({
       if (targetEmail && targetEmail.includes('@')) {
         setProcessingStep(`Dispatching dedicated URL to ${targetEmail}...`)
         try {
-          const emailSubject = `🚀 Your DIY ProjectOS Command Center URL: ${productName}`
-          const emailBody = `Hi ${project?.creatorName || 'there'},\n\nThank you for your $50 payment! Your autonomous DIY ProjectOS Command Center for ${productName} has been officially unlocked with 100% revenue ownership.\n\nHere is your private URL to access your full DIY ProjectOS pipeline:\n${generatedUrl}\n\nYou now have full authority to drive every phase yourself:\n• Phase 1: Market Validation & Pre-order Campaign\n• Phase 2: AI MVP Sprints & Architecture\n• Phase 3: Launch & Commercial Scale\n• 100% Revenue Retention\n\nClick the link above to start building and launching immediately!\n\nBest regards,\nThe Creator Forge Studio Team`
+          const emailSubject = `🚀 Your Interactive Co-Builder ProjectOS URL: ${productName}`
+          const emailBody = `Hi ${project?.creatorName || 'there'},\n\nThank you for your $50 payment! Your Interactive Co-Builder ProjectOS Workspace for ${productName} has been officially unlocked.\n\nYou now have full authority to directly participate and build alongside the studio across all 3 phases:\n• Phase 1: Market Validation & Pre-order Campaign\n• Phase 2: AI MVP Sprints, Architecture & Database\n• Phase 3: Launch & Production Telemetry\n• 50/50 Co-Founder Equity Partnership\n\nClick the link below to access your interactive workspace:\n${generatedUrl}\n\nBest regards,\nThe Creator Forge Studio Team`
 
           await sendDirectEmail(targetEmail, emailSubject, emailBody, project?.creatorId || project?.id)
           setEmailNotice(`Dedicated URL dispatched to ${targetEmail}`)
         } catch (mailErr) {
-          console.warn('[DIYSubscriptionModal] Failed to dispatch DIY confirmation email:', mailErr)
+          console.warn('[DIYSubscriptionModal] Failed to dispatch confirmation email:', mailErr)
           setEmailNotice(`URL ready (email notification skipped: ${mailErr?.message || 'offline'})`)
         }
       }
@@ -157,16 +156,16 @@ export default function DIYSubscriptionModal({
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-amber-300" />
-                <span>Do-It-Yourself Subscription</span>
+                <span>Interactive Co-Builder Pass</span>
               </span>
               <span className="text-slate-500 text-xs">•</span>
-              <span className="text-[11px] font-bold text-emerald-400">100% Equity / Keep Revenue</span>
+              <span className="text-[11px] font-bold text-emerald-400">50/50 Co-Founder Partnership</span>
             </div>
             <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
-              <span>Autonomous Creator Command Control</span>
+              <span>Participate & Co-Build in ProjectOS</span>
             </h2>
             <p className="text-xs text-slate-300">
-              Run the full engineering, validation, and launch phases yourself for <strong>{productName}</strong>.
+              Directly execute, test, and co-build all phases alongside the studio for <strong>{productName}</strong>.
             </p>
           </div>
 
@@ -188,9 +187,9 @@ export default function DIYSubscriptionModal({
                 <Check className="w-8 h-8 stroke-[3]" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-xl font-black text-white">Full Autonomous Command Control Unlocked!</h3>
+                <h3 className="text-xl font-black text-white">Interactive Co-Builder Access Unlocked!</h3>
                 <p className="text-xs text-slate-300 max-w-md mx-auto">
-                  Your $50 payment has been confirmed. You now have full authority to validate, build the MVP with AI sprints, and launch to your audience with 100% revenue retention.
+                  Your $50 payment has been confirmed. You now have full interactive access to participate in validation, run AI MVP tasks, and launch alongside the studio under our 50/50 co-founder partnership.
                 </p>
               </div>
 
@@ -199,7 +198,7 @@ export default function DIYSubscriptionModal({
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-amber-300 flex items-center gap-1.5">
                     <Rocket className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Your Dedicated DIY ProjectOS URL:</span>
+                    <span>Your Dedicated Co-Builder ProjectOS URL:</span>
                   </span>
                   {emailNotice && (
                     <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
@@ -252,7 +251,7 @@ export default function DIYSubscriptionModal({
               {/* License Details Badge */}
               <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-left text-xs space-y-1.5 max-w-md mx-auto">
                 <div className="flex justify-between items-center text-slate-400">
-                  <span>License Key:</span>
+                  <span>Pass Key:</span>
                   <strong className="font-mono text-amber-300">{subscriptionRecord?.licenseKey}</strong>
                 </div>
                 <div className="flex justify-between items-center text-slate-400">
@@ -264,8 +263,8 @@ export default function DIYSubscriptionModal({
                   <strong className="text-emerald-400">{subscriptionRecord?.paymentMethod}</strong>
                 </div>
                 <div className="flex justify-between items-center text-slate-400">
-                  <span>Revenue Split:</span>
-                  <strong className="text-emerald-300 font-bold">100% Creator Retained (0% Studio Split)</strong>
+                  <span>Equity Partnership:</span>
+                  <strong className="text-emerald-300 font-bold">50/50 Co-Founder Split (Interactive Build Access)</strong>
                 </div>
               </div>
 
@@ -275,7 +274,7 @@ export default function DIYSubscriptionModal({
                   onClick={onClose}
                   className="w-full py-3 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-slate-950 font-black text-sm transition-all shadow-lg shadow-emerald-950/50 cursor-pointer active:scale-98 flex items-center justify-center gap-2"
                 >
-                  <span>Open Full ProjectOS Command Center</span>
+                  <span>Open Interactive ProjectOS Workspace</span>
                   <ArrowRight className="w-4 h-4 stroke-[3]" />
                 </button>
               </div>
@@ -291,25 +290,25 @@ export default function DIYSubscriptionModal({
                     <span>All 3 Phases</span>
                   </div>
                   <p className="text-[11px] text-slate-400 leading-snug">
-                    Full execution for Market Validation, MVP Sprint Roadmap, & Live Launch.
+                    Participate actively in Market Validation, MVP Sprints, & Live Launch.
                   </p>
                 </div>
                 <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-1">
                   <div className="flex items-center gap-1.5 text-purple-400 font-bold text-xs">
                     <Cpu className="w-3.5 h-3.5" />
-                    <span>AI Engineering</span>
+                    <span>AI Co-Builder</span>
                   </div>
                   <p className="text-[11px] text-slate-400 leading-snug">
-                    Generate tech specs, code architecture, and pre-order landing pages autonomously.
+                    Directly trigger AI tools, modify prompt blueprints, and customize features.
                   </p>
                 </div>
                 <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-1">
                   <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
                     <DollarSign className="w-3.5 h-3.5" />
-                    <span>100% Revenue</span>
+                    <span>50/50 Co-Founder</span>
                   </div>
                   <p className="text-[11px] text-slate-400 leading-snug">
-                    Keep 100% of member subscriptions directly via your own Stripe checkout.
+                    Equal 50/50 venture partnership with direct Stripe Connect deposits.
                   </p>
                 </div>
               </div>
@@ -319,17 +318,17 @@ export default function DIYSubscriptionModal({
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">
-                      Do-It-Yourself License
+                      Co-Builder Pass
                     </span>
-                    <h4 className="text-base font-black text-white">Full ProjectOS Pipeline Access</h4>
+                    <h4 className="text-base font-black text-white">Full Interactive ProjectOS Participation</h4>
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-black text-amber-300">$50<span className="text-xs text-slate-400 font-medium"> USD</span></div>
-                    <span className="text-[10px] text-slate-400">One-time access fee</span>
+                    <span className="text-[10px] text-slate-400">One-time pass fee</span>
                   </div>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Upon payment, your dedicated URL is instantly sent to your email, granting full command authority over all phases, AI build sprints, and 100% revenue retention.
+                  Unlocks direct interactive execution authority across all phases. Your dedicated URL is instantly emailed to you upon payment.
                 </p>
               </div>
 

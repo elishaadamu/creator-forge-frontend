@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Rocket, Target, Layers, ExternalLink, LogOut, User, X, ShieldAlert, Lock, Users, ChevronDown, Check, Plus, Loader2, Menu, Search, Send, MessageSquare, Sparkles, Award } from 'lucide-react'
+import { Rocket, Target, Layers, ExternalLink, LogOut, User, X, ShieldAlert, Lock, Users, ChevronDown, Check, Plus, Loader2, Menu, Search, Send, MessageSquare, Sparkles, Award, Zap } from 'lucide-react'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import AcquisitionEngine from './AcquisitionEngine'
 import ProjectOS from './ProjectOS'
@@ -979,6 +979,15 @@ export default function CreatorLaunchLayout({
               <span>Project OS</span>
               <ExternalLink className="w-3 h-3 text-slate-400" />
             </a>
+            <a
+              href="/participation-manager"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer text-slate-600 hover:text-slate-950 hover:bg-white/60 border border-transparent"
+              title="Dedicated Creator Participation & Co-Builder Console"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              <span>Co-Builders ($50)</span>
+              <ExternalLink className="w-3 h-3 text-slate-400" />
+            </a>
           </div>
 
           {/* Section 1 Dropdown Sidebar & Step Selector (When in Section 1, Tablet & Desktop) */}
@@ -1308,6 +1317,21 @@ export default function CreatorLaunchLayout({
             <div className="space-y-1.5 pt-2 border-t border-slate-100">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Studio Tools & Portals</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.open('/participation-manager', '_blank')
+                    setMobileDrawerOpen(false)
+                  }}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition-all"
+                >
+                  <span className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-600" />
+                    <span>Co-Builder Passes ($50)</span>
+                  </span>
+                  <ExternalLink className="w-3 h-3 text-amber-500" />
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {

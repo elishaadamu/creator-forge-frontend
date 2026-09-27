@@ -584,12 +584,12 @@ export default function CreatorPortal({ portalId }) {
                 </button>
               </div>
 
-              {/* Change mind / Upgrade to DIY option */}
+              {/* Change mind / Upgrade to Interactive Co-Builder Pass option */}
               <div className="p-4 rounded-2xl bg-amber-400/5 border border-amber-400/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-400 shrink-0" />
                   <span className="text-slate-300">
-                    Want to run the full process yourself and keep 100% of revenue instead?
+                    Want hands-on access to build, ideate, and run AI MVP tasks directly yourself?
                   </span>
                 </div>
                 <button
@@ -597,7 +597,7 @@ export default function CreatorPortal({ portalId }) {
                   onClick={() => setShowDiyModal(true)}
                   className="px-3.5 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-black text-xs hover:brightness-110 cursor-pointer whitespace-nowrap transition-all shadow-xs"
                 >
-                  Upgrade to DIY ($50 USD) ⚡
+                  Unlock Co-Builder Pass ($50) ⚡
                 </button>
               </div>
             </div>
@@ -611,52 +611,52 @@ export default function CreatorPortal({ portalId }) {
               <div className="text-center max-w-2xl mx-auto space-y-2">
                 <span className="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
                   <Sparkles className="w-3 h-3 text-amber-300" />
-                  <span>Choose Your Software Co-Launch Track</span>
+                  <span>Choose Your Co-Launch Participation Track</span>
                 </span>
                 <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  How would you like to build {productName}?
+                  How would you like to co-launch {productName}?
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  You can either do the whole process yourself using our full ProjectOS suite for a one-time $50 fee, or have our studio engineering team build and manage it for you under our 50/50 partnership track.
+                  Every venture is a <strong>50/50 Co-Founder Equity Partnership</strong>. Choose whether you want active hands-on access to build with our AI ProjectOS suite ($50 Pass), or prefer our studio engineering team to manage and complete the phases for you.
                 </p>
               </div>
 
               {/* 2-Option Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-                {/* Option A: DIY ProjectOS ($50 USD) */}
+                {/* Option A: Interactive Co-Builder Pass ($50 USD) */}
                 <div className="p-6 rounded-2xl bg-gradient-to-b from-amber-500/10 to-transparent border-2 border-amber-400/60 shadow-xl space-y-4 relative flex flex-col justify-between">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider">
-                        Independent Option
+                        Hands-On Participation
                       </span>
                       <div className="text-right">
                         <div className="text-2xl font-black text-amber-300">$50<span className="text-xs text-slate-400 font-medium"> USD</span></div>
-                        <span className="text-[10px] text-slate-400">One-time payment</span>
+                        <span className="text-[10px] text-slate-400">One-time toolset pass</span>
                       </div>
                     </div>
 
-                    <h3 className="text-lg font-black text-white">Option 1: Do-It-Yourself ProjectOS</h3>
+                    <h3 className="text-lg font-black text-white">Track 1: Interactive Co-Builder Pass</h3>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      You run the whole process yourself. Full authority over validation, AI MVP generation, execution modals, and gate approvals.
+                      Participate actively instead of just tracking. Get full hands-on access to ideate, trigger AI MVP generation, run validation test sprints, and execute phases yourself alongside the studio.
                     </p>
 
                     <div className="space-y-2 text-xs pt-1">
                       <div className="flex items-center gap-2 text-slate-200">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span><strong>100% Revenue Ownership</strong> (Zero studio rev-share)</span>
+                        <span><strong>50/50 Co-Founder Equity Split</strong></span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-200">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>Full Phase 1, Phase 2, & Phase 3 Command Control</span>
+                        <span>Full Interactive Phase 1, Phase 2, & Phase 3 Execution</span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-200">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>AI Code & MVP Sprints Builder</span>
+                        <span>Run AI MVP Sprints & Feature Ideation Directly</span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-200">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>Dedicated URL dispatched directly to your email</span>
+                        <span>Personalized Co-Builder Workspace URL dispatched to email</span>
                       </div>
                     </div>
                   </div>
@@ -668,7 +668,7 @@ export default function CreatorPortal({ portalId }) {
                       className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:brightness-110 text-slate-950 font-black text-xs transition-all shadow-lg shadow-amber-950/40 cursor-pointer active:scale-95 flex items-center justify-center gap-2"
                     >
                       <CreditCard className="w-4 h-4" />
-                      <span>Accept & Unlock DIY ProjectOS ($50 USD) 🚀</span>
+                      <span>Unlock Interactive Co-Builder Pass ($50 USD) 🚀</span>
                     </button>
                     <p className="text-[10px] text-center text-slate-400">
                       Instant Stripe/PayPal checkout or test unlock
@@ -681,35 +681,35 @@ export default function CreatorPortal({ portalId }) {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold text-[10px] uppercase tracking-wider">
-                        Co-Launch Partnership
+                        Studio Completed
                       </span>
                       <div className="text-right">
                         <div className="text-2xl font-black text-white">$0<span className="text-xs text-slate-400 font-medium"> Upfront</span></div>
-                        <span className="text-[10px] text-slate-400">50/50 Revenue Split</span>
+                        <span className="text-[10px] text-slate-400">50/50 Equity Split</span>
                       </div>
                     </div>
 
-                    <h3 className="text-lg font-black text-white">Option 2: Studio-Managed Track</h3>
+                    <h3 className="text-lg font-black text-white">Track 2: Studio-Managed Track</h3>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      Creator Forge covers 100% of engineering, hosting, payment setup, and customer operations while you track progress and execute your marketing launch kit.
+                      Studio engineers complete all technical build sprints, hosting, and architecture while you monitor progress in real-time and coordinate the launch with your audience.
                     </p>
 
                     <div className="space-y-2 text-xs pt-1">
                       <div className="flex items-center gap-2 text-slate-200">
                         <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                        <span><strong>Zero Upfront Financial Risk</strong></span>
+                        <span><strong>50/50 Co-Founder Equity Split</strong></span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-200">
                         <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                        <span>Studio engineering team builds the MVP for you</span>
+                        <span>Studio team completes all development phases for you</span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-200">
                         <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                        <span>Creator Tracking Portal to monitor live sprints</span>
+                        <span>Real-Time Milestone Tracking & Review Portal</span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-200">
                         <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                        <span>50% Net Revenue Split on all subscriptions</span>
+                        <span>No software setup required on your side</span>
                       </div>
                     </div>
                   </div>
@@ -720,10 +720,10 @@ export default function CreatorPortal({ portalId }) {
                       onClick={handleDeclineDiyOffer}
                       className="w-full py-3 px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.12] text-slate-200 hover:text-white font-bold text-xs transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
                     >
-                      <span>Decline DIY & Choose Managed Track (50/50) 🤝</span>
+                      <span>Choose Studio-Managed Track (50/50) 🤝</span>
                     </button>
                     <p className="text-[10px] text-center text-slate-400">
-                      Standard tracking portal will be provided immediately
+                      Standard tracking portal will be active immediately
                     </p>
                   </div>
                 </div>

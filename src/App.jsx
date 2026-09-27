@@ -20,6 +20,7 @@ import PublicSurveyPage from './components/launch/PublicSurveyPage'
 import FollowUpCRMPage from './components/launch/FollowUpCRMPage'
 import AdminErrorLogPage from './components/launch/AdminErrorLogPage'
 import ProjectOSPage from './components/launch/ProjectOSPage'
+import CreatorParticipationManager from './components/launch/CreatorParticipationManager'
 import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys } from './services/ai'
@@ -840,6 +841,16 @@ export default function App() {
     window.location.pathname === '/project'
   )) {
     return <ProjectOSPage />
+  }
+
+  // /participation-manager, /co-builders, /participation route — dedicated admin creator participation & $50 pass console
+  if (typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/participation-manager') ||
+    window.location.pathname.startsWith('/co-builders') ||
+    window.location.pathname.startsWith('/cobuilder-admin') ||
+    window.location.pathname === '/participation'
+  )) {
+    return <CreatorParticipationManager />
   }
 
   // /launch or /creator-launch route — standalone Creator Launch OS (Operator Master Command Center)

@@ -172,6 +172,24 @@ export default function AdminPipelineLookup({
     }
   }
 
+  // Cleanly decode form-encoded text (replaces '+' with spaces and removes URL encoding artifacts)
+  const decodeReplyText = (text) => {
+    if (!text) return ''
+    let clean = String(text)
+    if (clean.includes('+')) {
+      try {
+        clean = decodeURIComponent(clean.replace(/\+/g, ' '))
+      } catch {
+        clean = clean.replace(/\+/g, ' ')
+      }
+    } else if (clean.includes('%20') || clean.includes('%28')) {
+      try {
+        clean = decodeURIComponent(clean)
+      } catch { }
+    }
+    return clean
+  }
+
   // Helper to retrieve thread messages for a creator
   const getCreatorMessages = (c) => {
     if (!c) return []
@@ -179,10 +197,21 @@ export default function AdminPipelineLookup({
     const cEmail = (c.email || c.email_public || '').toLowerCase().trim()
     const cId = c.id
 
+    // Only creators who have been contacted or pitched can have outreach replies
+    const wasContacted = Boolean(
+      c.status === 'contacted' ||
+      c.status === 'pitched' ||
+      c.status === 'approved' ||
+      c.status === 'partnered' ||
+      c.status === 'ready_for_launch' ||
+      pitchSentMap[c.id]
+    )
+
     const matchingThreads = realThreads.filter((t) => {
       if (t.creator_id === cId) return true
       if (cHandle && t.creator_handle?.toLowerCase().replace(/^@/, '').trim() === cHandle) return true
-      if (cEmail && t.creator_email?.toLowerCase().trim() === cEmail) return true
+      // Match by email ONLY if creator was actually contacted and thread has outreach
+      if (wasContacted && cEmail && t.creator_email?.toLowerCase().trim() === cEmail) return true
       return false
     })
 
@@ -890,7 +919,7 @@ export default function AdminPipelineLookup({
                             </span>
                           </div>
                           <p className="text-emerald-200/90 font-mono text-[11px] italic bg-black/20 p-2 rounded-lg border border-emerald-500/15">
-                            "{latestReply.body}"
+                            "{decodeReplyText(latestReply.body)}"
                           </p>
                         </div>
                       </div>
@@ -972,7 +1001,7 @@ export default function AdminPipelineLookup({
                           </span>
                         </div>
                         <p className="text-slate-200 text-[11px] leading-relaxed">
-                          {msg.body}
+                          {decodeReplyText(msg.body)}
                         </p>
                       </div>
                     ))
