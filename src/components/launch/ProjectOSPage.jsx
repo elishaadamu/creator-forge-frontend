@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Layers, ArrowLeft, Users, ExternalLink, RefreshCw, ChevronDown,
-  Check, Sparkles, ShieldCheck, Rocket, AlertCircle, Plus, LayoutGrid
+  Check, Sparkles, ShieldCheck, Rocket, AlertCircle, Plus, LayoutGrid, Zap
 } from 'lucide-react'
 import ProjectOS from './ProjectOS'
 import { ProjectOSSkeleton } from './Section2Skeletons'
+import DIYSubscriptionModal from './DIYSubscriptionModal'
 import {
   getCoLaunchProjects,
   getCoLaunchProject,
@@ -27,6 +28,7 @@ export default function ProjectOSPage() {
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showProjectDropdown, setShowProjectDropdown] = useState(false)
+  const [showDiyModal, setShowDiyModal] = useState(false)
   const [toast, setToast] = useState(null)
 
   const showToast = (type, title, message) => {
@@ -258,6 +260,18 @@ export default function ProjectOSPage() {
     showToast('success', 'Project Reset', 'Project reset cleanly to Phase 1.')
   }
 
+  // Handle successful DIY Creator subscription unlock (Stripe/PayPal)
+  const handleDiySubscribeSuccess = (subDetails) => {
+    if (!activeProject) return
+    const updated = {
+      ...activeProject,
+      isDIY: true,
+      diySubscription: subDetails
+    }
+    handleUpdateActiveProject(updated)
+    showToast('success', 'DIY License Activated', 'Full autonomous ProjectOS pipeline unlocked with 100% revenue retention.')
+  }
+
   return (
     <div className="min-h-screen bg-[#06080d] text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30">
       {/* Toast Notification */}
@@ -402,6 +416,26 @@ export default function ProjectOSPage() {
 
         {/* Right: CRM Link & Refresh Button */}
         <div className="flex items-center gap-2">
+          {/* DIY License Status / Subscription Trigger */}
+          {activeProject && (
+            (activeProject.isDIY || activeProject.diySubscription?.active) ? (
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-bold shadow-xs">
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>DIY License Active</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowDiyModal(true)}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 text-amber-300 hover:text-amber-200 transition-all text-xs font-bold cursor-pointer active:scale-95"
+                title="Unlock DIY Creator Subscription ($99/mo) with 100% Revenue Ownership"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>Creator DIY License ($99/mo)</span>
+              </button>
+            )
+          )}
+
           <a
             href="/follow-up-crm"
             target="_blank"
@@ -441,6 +475,8 @@ export default function ProjectOSPage() {
               window.location.href = '/launch'
             }}
             onResetProject={handleResetProject}
+            userRole={activeProject.isDIY || activeProject.diySubscription?.active ? 'creator' : 'admin'}
+            isDIY={Boolean(activeProject.isDIY || activeProject.diySubscription?.active)}
           />
         ) : (
           /* Empty State: No Projects Created Yet */
@@ -476,6 +512,16 @@ export default function ProjectOSPage() {
           </div>
         )}
       </main>
+
+      {/* DIY Subscription Modal (Stripe / PayPal / Demo Unlock) */}
+      {showDiyModal && activeProject && (
+        <DIYSubscriptionModal
+          project={activeProject}
+          isOpen={showDiyModal}
+          onClose={() => setShowDiyModal(false)}
+          onSuccess={handleDiySubscribeSuccess}
+        />
+      )}
     </div>
   )
 }

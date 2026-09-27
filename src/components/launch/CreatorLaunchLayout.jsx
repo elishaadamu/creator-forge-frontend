@@ -1519,6 +1519,8 @@ export default function CreatorLaunchLayout({
             onUpdateProject={handleUpdateActiveProject}
             onGoToAcquisition={() => setActiveSection('section1')}
             onResetProject={handleResetProject}
+            userRole="admin"
+            isDIY={Boolean(activeProject?.isDIY || activeProject?.diySubscription?.active)}
           />
         ) : (
           <div className="p-10 rounded-2xl bg-white border border-slate-200/90 text-center space-y-5 max-w-lg mx-auto my-12 shadow-sm">

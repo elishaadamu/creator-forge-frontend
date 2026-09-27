@@ -21,7 +21,21 @@ import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards } from '.
 // Detect raw UUID strings (prevent displaying raw UUIDs as creator names/handles)
 const isUuid = (str) => typeof str === 'string' && (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim()) || /^[0-9a-f-]{24,}$/i.test(str.trim()))
 
-export default function ProjectOS({ project, api, onUpdateProject, onGoToAcquisition, onResetProject }) {
+export default function ProjectOS({
+  project,
+  api,
+  onUpdateProject,
+  onGoToAcquisition,
+  onResetProject,
+  userRole = 'admin',
+  isDIY = false
+}) {
+  const [rolePerspective, setRolePerspective] = useState(() => {
+    if (userRole === 'creator' || isDIY || project?.isDIY || project?.diySubscription?.active) {
+      return 'creator'
+    }
+    return 'admin'
+  })
   const [isLoadingProject, setIsLoadingProject] = useState(() => !project)
 
   // Initialize sidebarTab from URL search param or default 'overview'
@@ -630,6 +644,36 @@ partnerships@creatorforge.com`
 
         {/* Right CTA / Portal Quick Button */}
         <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Role Perspective Switcher: Studio Operator vs Creator Co-Founder */}
+          <div className="flex items-center gap-1 p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl text-xs">
+            <button
+              type="button"
+              onClick={() => setRolePerspective('admin')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                rolePerspective === 'admin'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Studio Operator Command View"
+            >
+              <span>👑</span>
+              <span className="hidden sm:inline">Studio Operator</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setRolePerspective('creator')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                rolePerspective === 'creator'
+                  ? 'bg-amber-400 text-slate-950 font-black shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Autonomous Creator Co-Founder View (Full Execution Authority)"
+            >
+              <Zap className="w-3 h-3" />
+              <span>Creator DIY Mode</span>
+            </button>
+          </div>
+
           <a
             href={portalUrl}
             target="_blank"
@@ -665,6 +709,41 @@ partnerships@creatorforge.com`
           )}
         </div>
       </div>
+
+      {/* Autonomous Creator DIY Mode Banner */}
+      {(rolePerspective === 'creator' || isDIY || project?.isDIY || project?.diySubscription?.active) && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-emerald-500/10 border border-amber-400/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-md">
+              <Zap className="w-5 h-5 text-slate-950 stroke-[2.5]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-black uppercase tracking-wider text-amber-300">
+                  Autonomous Creator Co-Founder Mode Active
+                </span>
+                <span className="text-xs text-slate-500">•</span>
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  Full Pipeline Execution Authority
+                </span>
+                {(project?.diySubscription?.active || isDIY) && (
+                  <span className="text-[10px] font-extrabold text-amber-200 bg-amber-400/20 px-2 py-0.5 rounded-full border border-amber-400/30">
+                    Paid DIY Subscription · Stripe/PayPal Verified
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                You have full authority to drive every phase yourself: customize the validation plan, run AI MVP sprints, execute gate decisions, and deploy live.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-black text-amber-300 bg-amber-400/10 border border-amber-400/30 px-3 py-1.5 rounded-xl">
+              100% Revenue Ownership
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* 2-COLUMN MAIN LAYOUT */}
       <div className="flex flex-col lg:flex-row gap-5 items-start w-full">
