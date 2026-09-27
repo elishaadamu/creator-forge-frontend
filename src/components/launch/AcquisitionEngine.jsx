@@ -794,11 +794,13 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_deleted_creator_ids");
       localStorage.removeItem("forge_last_deleted_timestamp");
       localStorage.removeItem("forge_launch_active_section");
+      localStorage.removeItem("forge_launch_all_projects");
       onResetAll?.();
 
       try {
         await deleteAllCreators();
-        const { resetWorkflowState } = await import("../../services/opsApi");
+        const { resetWorkflowState, deleteAllProjects } = await import("../../services/opsApi");
+        await deleteAllProjects().catch(() => { });
         await resetWorkflowState().catch(() => { });
         try {
           window.history.replaceState({}, "", "/launch");
@@ -847,6 +849,7 @@ export default function AcquisitionEngine({
     if (!targetId) return;
 
     const newEmail = (explicitValue !== null ? explicitValue : tempEmailValue).trim();
+    let wasContacted = false;
 
     // 1. Update local state immediately (both in React state and in localStorage)
     setCreators((prev) => {
@@ -856,11 +859,30 @@ export default function AcquisitionEngine({
         const cleanHandle = String(c.handle || "").toLowerCase().replace(/^@/, "");
         const matchHandle = cleanTarget && cleanHandle && cleanTarget === cleanHandle;
         if (matchId || matchHandle) {
+          const contacted = Boolean(
+            c.outreach_sent ||
+            c.status === "contacted" ||
+            c.status === "pitched" ||
+            c.status === "partnered" ||
+            (c.id && pitchSentMap[c.id])
+          );
+          if (contacted) wasContacted = true;
+
           return {
             ...c,
             email: newEmail,
             email_public: newEmail,
             email_verified: Boolean(newEmail && newEmail.includes("@")),
+            ...(contacted ? {} : {
+              replyClassification: null,
+              reply_classification: null,
+              replyText: null,
+              reply_text: null,
+              replySubject: null,
+              replyTime: null,
+              outreach_sent: false,
+              status: (c.status === "interested" || c.status === "replied") ? "discovered" : c.status,
+            })
           };
         }
         return c;
@@ -878,10 +900,16 @@ export default function AcquisitionEngine({
     if (newEmail) {
       try {
         const { updateCreatorDetails } = await import("../../services/opsApi");
-        await updateCreatorDetails(targetId, {
+        const patchPayload = {
           email_public: newEmail,
           email: newEmail,
-        });
+        };
+        if (!wasContacted) {
+          patchPayload.reply_classification = null;
+          patchPayload.reply_text = null;
+          patchPayload.status = "discovered";
+        }
+        await updateCreatorDetails(targetId, patchPayload);
         notify("success", "Email Updated", `Contact email updated to ${newEmail}.`, 3000);
       } catch (err) {
         console.warn("[AcquisitionEngine] Failed to save email to DB:", err);
@@ -2883,6 +2911,29 @@ export default function AcquisitionEngine({
     const cEmail = (c.email || c.email_public || "").toLowerCase().trim();
     const cHandle = (c.handle || "").toLowerCase().replace(/^@/, "").trim();
     const cId = c.id;
+    // 0. Strict Uncontacted Guard: A creator who has NEVER had outreach dispatched CANNOT have a reply!
+    const creatorHasOutreach = Boolean(
+      c.outreach_sent ||
+      c.status === "contacted" ||
+      c.status === "pitched" ||
+      c.status === "partnered" ||
+      (cId && pitchSentMap[cId])
+    );
+
+    if (!creatorHasOutreach) {
+      return {
+        hasRealReply: false,
+        hasEmail: Boolean(cEmail && cEmail.includes("@")),
+        classification: cEmail ? "awaiting_reply" : "no_email",
+        subject: null,
+        text: null,
+        time: "Pending Outreach",
+        sentiment: "neutral",
+        reasoning: "Outreach has not been dispatched to this creator yet.",
+        confidence: 0,
+        isRealImap: false,
+      };
+    }
 
     // 1. Explicit user/DB classification
     const explicitCls = c.replyClassification || c.reply_classification;
@@ -2950,16 +3001,6 @@ export default function AcquisitionEngine({
       "noreply@creatorforge.com",
       "hello@creatorforge.com",
     ];
-
-    // A creator who has never had outreach dispatched CANNOT have an outreach reply
-    const creatorHasOutreach = Boolean(
-      c.status === "contacted" ||
-      c.status === "pitched" ||
-      c.status === "approved" ||
-      c.status === "ready_for_launch" ||
-      c.status === "partnered" ||
-      pitchSentMap[cId]
-    );
 
     const matchingThreads = (threads || []).filter((t) => {
       // Direct Creator ID match (highest precision)
@@ -6741,7 +6782,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-4">
                     Audience Sizing & Filter Criteria
                   </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Target Range */}
                     <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
                       <div className="flex items-center justify-between mb-2">
@@ -6808,6 +6849,62 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         className="w-full accent-emerald-600 cursor-pointer"
                       />
                       <span className="text-[10px] text-slate-400 block mt-1 font-mono">Strict threshold applied</span>
+                    </div>
+
+                    {/* Target Creators to Discover Slider */}
+                    <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-medium text-slate-600">Creators Target</label>
+                          <span className="text-xs font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                            {creatorsBatchCount || 25} Creators
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="5"
+                          max="100"
+                          step="5"
+                          value={creatorsBatchCount || 25}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setCreatorsBatchCount(val);
+                            try {
+                              localStorage.setItem("forge_launch_creators_batch_count", String(val));
+                            } catch (err) {}
+                          }}
+                          className="w-full accent-emerald-600 cursor-pointer"
+                        />
+                        <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                          <span>5</span>
+                          <span>25</span>
+                          <span>50</span>
+                          <span>75</span>
+                          <span>100</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-1 mt-2.5 pt-2 border-t border-slate-200/60">
+                        <span className="text-[10px] text-slate-400 font-mono">Quick:</span>
+                        {[10, 25, 50, 75, 100].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                              setCreatorsBatchCount(preset);
+                              try {
+                                localStorage.setItem("forge_launch_creators_batch_count", String(preset));
+                              } catch (err) {}
+                            }}
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                              (creatorsBatchCount || 25) === preset
+                                ? "bg-emerald-600 text-white shadow-xs"
+                                : "bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200/70"
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -7273,15 +7370,23 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() => setCreatorsBatchCount(Math.max(4, creatorsBatchCount - 2))}
+                      onClick={() => {
+                        const val = Math.max(5, (creatorsBatchCount || 25) - 5);
+                        setCreatorsBatchCount(val);
+                        try { localStorage.setItem("forge_launch_creators_batch_count", String(val)); } catch (err) {}
+                      }}
                       className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 transition cursor-pointer"
                     >
                       -
                     </button>
-                    <span className="font-mono font-bold text-slate-900 px-1.5">{creatorsBatchCount}</span>
+                    <span className="font-mono font-bold text-slate-900 px-1.5">{creatorsBatchCount || 25}</span>
                     <button
                       type="button"
-                      onClick={() => setCreatorsBatchCount(Math.min(60, creatorsBatchCount + 2))}
+                      onClick={() => {
+                        const val = Math.min(100, (creatorsBatchCount || 25) + 5);
+                        setCreatorsBatchCount(val);
+                        try { localStorage.setItem("forge_launch_creators_batch_count", String(val)); } catch (err) {}
+                      }}
                       className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 transition cursor-pointer"
                     >
                       +

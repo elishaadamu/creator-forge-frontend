@@ -948,8 +948,8 @@ export default function CreatorLaunchLayout({
 
           <div className="h-4 w-px bg-slate-200 hidden md:block" />
 
-          {/* Section Switcher Tabs (Tablet & Desktop) */}
-          <div className="hidden md:flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200">
+          {/* Clean Suite Navigation Tabs (Tablet & Desktop) */}
+          <div className="hidden md:flex items-center p-1 rounded-xl bg-slate-100/90 border border-slate-200">
             <button
               onClick={() => {
                 setActiveSection('section1')
@@ -962,17 +962,18 @@ export default function CreatorLaunchLayout({
                   })
                 } catch { }
               }}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeSection === 'section1'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                activeSection === 'section1'
                   ? 'bg-white text-slate-950 border border-slate-200/80 shadow-xs'
                   : 'text-slate-600 hover:text-slate-950 border border-transparent'
-                }`}
+              }`}
             >
               <Target className={`w-3.5 h-3.5 ${activeSection === 'section1' ? 'text-emerald-600' : 'text-slate-400'}`} />
-              <span>Section 1: Acquisition</span>
+              <span>Acquisition OS</span>
             </button>
             <a
               href={activeProject?.id ? `/project-os?project=${activeProject.id}` : '/project-os'}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer text-slate-600 hover:text-slate-950 hover:bg-white/60 border border-transparent"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer text-slate-600 hover:text-slate-950 hover:bg-white/60 border border-transparent"
               title="Open Dedicated Co-Launch Operations Center"
             >
               <Layers className="w-3.5 h-3.5 text-emerald-600" />
@@ -981,7 +982,7 @@ export default function CreatorLaunchLayout({
             </a>
             <a
               href="/participation-manager"
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer text-slate-600 hover:text-slate-950 hover:bg-white/60 border border-transparent"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer text-slate-600 hover:text-slate-950 hover:bg-white/60 border border-transparent"
               title="Dedicated Creator Participation & Co-Builder Console"
             >
               <Zap className="w-3.5 h-3.5 text-amber-500" />
@@ -989,97 +990,6 @@ export default function CreatorLaunchLayout({
               <ExternalLink className="w-3 h-3 text-slate-400" />
             </a>
           </div>
-
-          {/* Section 1 Dropdown Sidebar & Step Selector (When in Section 1, Tablet & Desktop) */}
-          {activeSection === 'section1' && (
-            <div className="relative hidden sm:block">
-              <button
-                type="button"
-                onClick={() => setShowSection1Menu(!showSection1Menu)}
-                className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 transition-all cursor-pointer shadow-2xs"
-                title="Section 1 Pipeline Steps & Quick Sidebar"
-              >
-                <div className="w-5 h-5 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-900 shrink-0">
-                  <Target className="w-3.5 h-3.5 text-emerald-600" />
-                </div>
-                <div className="hidden lg:flex flex-col text-left leading-tight">
-                  <span className="text-[11px] font-bold text-slate-900 truncate max-w-[140px]">
-                    {SECTION1_STEPS.find(s => s.step === section1ActiveStep)?.label || '1. Campaign Setup'}
-                  </span>
-                  <span className="text-[9px] text-emerald-700 font-mono truncate max-w-[140px]">
-                    Step {section1ActiveStep} of 6 • Pipeline
-                  </span>
-                </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${showSection1Menu ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showSection1Menu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowSection1Menu(false)}
-                  />
-                  <div className="absolute left-0 mt-2 w-80 rounded-2xl bg-white border border-slate-200 shadow-xl p-2 z-50 space-y-1 animate-in fade-in">
-                    <div className="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between border-b border-slate-100">
-                      <span>Section 1 Acquisition Steps</span>
-                      <span className="text-emerald-700 font-mono font-bold">Step {section1ActiveStep} / 6</span>
-                    </div>
-
-                    <div className="max-h-72 overflow-y-auto space-y-1 py-1">
-                      {SECTION1_STEPS.map((s) => {
-                        const Icon = s.icon
-                        const isCur = section1ActiveStep === s.step
-                        return (
-                          <button
-                            key={s.step}
-                            type="button"
-                            onClick={() => {
-                              setSection1ActiveStep(s.step)
-                              setAcquisitionNavState({ step: s.step, nonce: Date.now() })
-                              setShowSection1Menu(false)
-                            }}
-                            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer ${isCur
-                                ? 'bg-slate-100 border border-slate-300 text-slate-950 shadow-2xs font-semibold'
-                                : 'hover:bg-slate-50 text-slate-700 hover:text-slate-950 border border-transparent'
-                              }`}
-                          >
-                            <div className={`w-7 h-7 rounded-lg ${isCur ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'} shrink-0 flex items-center justify-center`}>
-                              <Icon className="w-3.5 h-3.5" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-xs font-bold truncate text-slate-900">
-                                {s.label}
-                              </div>
-                              <div className="text-[10px] text-slate-500 truncate">
-                                {s.desc}
-                              </div>
-                            </div>
-                            {isCur && (
-                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 px-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowSection1Menu(false)
-                          setShowSection1Sidebar(true)
-                        }}
-                        className="w-full py-2 px-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
-                      >
-                        <Layers className="w-3.5 h-3.5 text-slate-600" />
-                        <span>Open Section 1 Sidebar Drawer</span>
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
 
           {/* Active Partner Switcher Dropdown (When in Section 2, Tablet & Desktop) */}
           {activeSection === 'section2' && (
@@ -1203,13 +1113,13 @@ export default function CreatorLaunchLayout({
           )}
         </div>
 
-        {/* Right: Actions & User Profile (Desktop - lg screens) */}
-        <div className="hidden lg:flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+        {/* Right: Actions & User Profile (Desktop & Tablet) */}
+        <div className="hidden md:flex items-center gap-2 flex-shrink-0">
           {/* Creator Follow-Up CRM Button */}
           <button
             type="button"
             onClick={() => window.open('/follow-up-crm', '_blank')}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-950 border border-slate-200 transition-all cursor-pointer shadow-2xs"
+            className="flex items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-950 border border-slate-200 transition-all cursor-pointer shadow-2xs"
             title="Open Creator Outreach & Follow-Up CRM in a new tab (/follow-up-crm)"
           >
             <Users className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
@@ -1221,7 +1131,7 @@ export default function CreatorLaunchLayout({
           <button
             type="button"
             onClick={() => window.open('/admin-error-log', '_blank')}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
+            className="flex items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
             title="Open Admin Pipeline Oversight & Error Log in a new tab (/admin-error-log)"
           >
             <ShieldAlert className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
@@ -1233,15 +1143,15 @@ export default function CreatorLaunchLayout({
           <button
             onClick={handleLogout}
             title={`Logout ${userDisplayName}`}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 px-3 h-8 rounded-xl bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 px-2.5 h-8 rounded-xl bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
           >
             <LogOut className="w-3.5 h-3.5 text-slate-400 hover:text-rose-500" />
-            <span className="hidden sm:inline">Logout</span>
+            <span>Logout</span>
           </button>
         </div>
 
-        {/* Mobile & Tablet Header Controls (< lg) */}
-        <div className="flex lg:hidden items-center gap-1.5 sm:gap-2">
+        {/* Mobile & Small Screen Header Controls (< md) */}
+        <div className="flex md:hidden items-center gap-1.5 sm:gap-2">
           {activeSection === 'section1' && (
             <button
               type="button"
@@ -1280,9 +1190,9 @@ export default function CreatorLaunchLayout({
         </div>
       </header>
 
-      {/* Mobile Drawer Slide-Down Menu (< lg) */}
+      {/* Mobile Drawer Slide-Down Menu (< md) */}
       {mobileDrawerOpen && (
-        <div className="lg:hidden fixed inset-x-0 top-14 bottom-0 z-40 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+        <div className="md:hidden fixed inset-x-0 top-14 bottom-0 z-40 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white border-b border-slate-200 p-4 space-y-4 max-h-[calc(100dvh-3.5rem)] overflow-y-auto shadow-2xl">
             {/* Mobile Section Switcher */}
             <div className="space-y-1.5">

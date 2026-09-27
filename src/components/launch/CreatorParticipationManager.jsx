@@ -27,11 +27,14 @@ import {
   Laptop,
   CheckCircle,
   ChevronRight,
-  Info
+  Info,
+  Trash2
 } from 'lucide-react'
 import {
   getCoLaunchProjects,
   updateCoLaunchProject,
+  deleteCoLaunchProject,
+  deleteAllProjects,
   sendDirectEmail,
   getCreators
 } from '../../services/opsApi'
@@ -297,6 +300,42 @@ export default function CreatorParticipationManager() {
     }
   }
 
+  // Delete Individual Venture
+  const handleDeleteProject = async (proj) => {
+    if (!proj) return
+    const name = proj.productName || 'this venture'
+    const creator = proj.creatorName || proj.creatorHandle || 'partner'
+    if (!window.confirm(`Are you sure you want to permanently delete "${name}" for ${creator}?\n\nThis will remove all associated validation records, Cloudinary assets, and tasks.`)) {
+      return
+    }
+
+    try {
+      await deleteCoLaunchProject(proj.id)
+      setProjects((prev) => prev.filter((p) => p.id !== proj.id))
+      showToast('success', 'Venture Deleted', `Successfully removed "${name}".`)
+    } catch (err) {
+      console.error('[CreatorParticipationManager] Delete project failed:', err)
+      showToast('error', 'Delete Failed', err.message || 'Failed to delete venture.')
+    }
+  }
+
+  // Delete All Section 2 Ventures
+  const handleDeleteAllVentures = async () => {
+    if (projects.length === 0) return
+    if (!window.confirm(`Are you sure you want to wipe ALL ${projects.length} co-launch ventures from Section 2?\n\nThis will permanently purge all projects, tasks, and telemetry data.`)) {
+      return
+    }
+
+    try {
+      await deleteAllProjects()
+      setProjects([])
+      showToast('success', 'All Ventures Deleted', 'Successfully wiped all Section 2 co-launch ventures.')
+    } catch (err) {
+      console.error('[CreatorParticipationManager] Delete all projects failed:', err)
+      showToast('error', 'Wipe Failed', err.message || 'Failed to wipe ventures.')
+    }
+  }
+
   // Filter & Search Logic
   const filteredProjects = projects.filter((p) => {
     const isCoBuilder = p.isDIY || p.diySubscription?.active
@@ -554,16 +593,29 @@ export default function CreatorParticipationManager() {
             </button>
           </div>
 
-          {/* Search Box */}
-          <div className="relative min-w-[240px]">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search creator, handle, email, app..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/50 transition-colors"
-            />
+          {/* Search Box & Actions */}
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-[220px]">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search creator, handle, email, app..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/50 transition-colors"
+              />
+            </div>
+            {totalProjects > 0 && (
+              <button
+                type="button"
+                onClick={handleDeleteAllVentures}
+                className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-bold text-red-400 hover:text-red-300 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+                title="Wipe all co-launch ventures from Section 2"
+              >
+                <Trash2 className="w-3 h-3 text-red-400" />
+                <span>Wipe All ({totalProjects})</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -788,6 +840,17 @@ export default function CreatorParticipationManager() {
                         <span>Preview Portal View</span>
                         <ExternalLink className="w-2.5 h-2.5" />
                       </a>
+
+                      {/* Delete Venture Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProject(proj)}
+                        className="flex-1 lg:flex-initial py-1.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-[11px] font-bold text-red-400 hover:text-red-300 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        title="Permanently Delete this Co-Launch Venture from Section 2"
+                      >
+                        <Trash2 className="w-3 h-3 text-red-400" />
+                        <span>Delete Venture</span>
+                      </button>
                     </div>
                   </div>
                 </div>
