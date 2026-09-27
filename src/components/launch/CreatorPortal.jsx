@@ -3,7 +3,8 @@ import {
   Rocket, CheckCircle2, DollarSign, Copy, Check, Video, MessageSquare,
   Users, ExternalLink, Globe, Sparkles, AlertCircle, ShieldCheck, ArrowRight,
   TrendingUp, Award, Calendar, CheckSquare, Eye, Smartphone, Send, FileText,
-  CheckCheck, Loader2, MessageCircle, Zap, Lock, Layers, Cpu, Laptop, CreditCard
+  CheckCheck, Loader2, MessageCircle, Zap, Lock, Layers, Cpu, Laptop, CreditCard,
+  Plus, RotateCcw, Share2, HelpCircle
 } from 'lucide-react'
 import { getFrontendUrl, updateCoLaunchProject, getCoLaunchProject, getThreads } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
@@ -15,7 +16,20 @@ import DIYSubscriptionModal from './DIYSubscriptionModal'
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
   const [project, setProject] = useState(null)
+  const [selectedTrack, setSelectedTrack] = useState('interactive') // 'interactive' | 'managed'
+  const [trackChoiceDismissed, setTrackChoiceDismissed] = useState(false)
+  const [toast, setToast] = useState('')
+  const [copiedKey, setCopiedKey] = useState(null)
+  const [showDiyModal, setShowDiyModal] = useState(false)
+  const [viewDraftTask, setViewDraftTask] = useState(null)
+  const [creatorReplyText, setCreatorReplyText] = useState('')
+  const [isSendingReply, setIsSendingReply] = useState(false)
+  const [section1Threads, setSection1Threads] = useState([])
+  const chatMessagesEndRef = useRef(null)
+
   const productName = project?.productName || project?.name || 'Software Co-Launch'
+  const creatorName = project?.creatorName || 'Creator Partner'
+  const ventureSlug = (productName || 'venture').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
   useEffect(() => {
     updatePageSEO({
@@ -43,11 +57,10 @@ export default function CreatorPortal({ portalId }) {
           }
         }
 
-        // If not found by specific ID, fetch the latest active project from DB
         if (!fetched) {
           try {
             const all = await getCoLaunchProjects()
-            if (all && Array.isArray(all) && all.length > 0) {
+            if (Array.isArray(all) && all.length > 0) {
               fetched = all[0]
             }
           } catch (e) {
@@ -94,12 +107,24 @@ export default function CreatorPortal({ portalId }) {
     }
     return 'launch_kit'
   })
-  const [showDiyModal, setShowDiyModal] = useState(false)
+
+  const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'scripts' | 'presales' | 'messages' | 'strategy'
+  const [activeScriptTab, setActiveScriptTab] = useState('post') // 'post' | 'video' | 'dm'
 
   const isDiyActive = Boolean(
     project?.isDIY ||
     project?.diySubscription?.active ||
     (typeof window !== 'undefined' && project?.id && window.localStorage.getItem(`forge_diy_${project.id}`) === 'true')
+  )
+
+  const isTrackChoiceUrl = typeof window !== 'undefined' && (
+    new URLSearchParams(window.location.search).get('offer') === 'track_choice' ||
+    new URLSearchParams(window.location.search).get('track') === 'choice'
+  )
+
+  const isTrackChoicePending = !trackChoiceDismissed && (
+    isTrackChoiceUrl ||
+    (!isDiyActive && project?.diyOfferStatus !== 'declined' && project?.diyOfferStatus !== 'accepted')
   )
 
   const handleUpdateProject = (updatedProj) => {
@@ -120,19 +145,25 @@ export default function CreatorPortal({ portalId }) {
       isDIY: false
     }
     handleUpdateProject(updated)
+    setTrackChoiceDismissed(true)
     setActiveMainView('launch_kit')
-    setToast('Standard Studio-Managed track active (50/50 Revenue Split).')
+    showToast('Standard Studio-Managed track active (50/50 Revenue Split).')
   }
 
-  const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'scripts' | 'presales' | 'messages' | 'strategy'
-  const [activeScriptTab, setActiveScriptTab] = useState('post') // 'post' | 'video' | 'dm'
-  const [viewDraftTask, setViewDraftTask] = useState(null)
-  const [copiedKey, setCopiedKey] = useState(null)
-  const [toast, setToast] = useState('')
-  const [creatorReplyText, setCreatorReplyText] = useState('')
-  const [isSendingReply, setIsSendingReply] = useState(false)
-  const [section1Threads, setSection1Threads] = useState([])
-  const chatMessagesEndRef = useRef(null)
+  const handleUnlockDiySuccess = (subRecord) => {
+    if (!project) return
+    const updated = {
+      ...project,
+      isDIY: true,
+      diyOfferStatus: 'accepted',
+      diySubscription: subRecord
+    }
+    handleUpdateProject(updated)
+    setTrackChoiceDismissed(true)
+    setShowDiyModal(false)
+    setActiveMainView('launch_kit')
+    showToast('Interactive Co-Builder Pass active ($50 USD)!')
+  }
 
   // Load Section 1 outreach and threads
   useEffect(() => {
@@ -236,7 +267,19 @@ export default function CreatorPortal({ portalId }) {
     }
   }, [portalDisplayMessages.length, activeTab])
 
-  // Handle Creator Sending a Message to Admin Studio
+  const showToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3500)
+  }
+
+  const copyToClipboard = (text, key) => {
+    if (!text) return
+    navigator.clipboard?.writeText(text)
+    setCopiedKey(key)
+    showToast('Copied to clipboard!')
+    setTimeout(() => setCopiedKey(null), 2000)
+  }
+
   const handleSendCreatorMessage = async (e) => {
     e?.preventDefault?.()
     const trimmed = creatorReplyText.trim()
@@ -268,19 +311,6 @@ export default function CreatorPortal({ portalId }) {
     showToast('Message sent to Studio!')
   }
 
-  const showToast = (msg) => {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3000)
-  }
-
-  const copyToClipboard = (text, key) => {
-    if (!text) return
-    navigator.clipboard?.writeText(text)
-    setCopiedKey(key)
-    showToast('Copied to clipboard!')
-    setTimeout(() => setCopiedKey(null), 2000)
-  }
-
   const toggleChecklist = (id) => {
     if (!project) return
     const schedule = (project.campaignKit?.postingSchedule && project.campaignKit.postingSchedule.length > 0)
@@ -307,14 +337,36 @@ export default function CreatorPortal({ portalId }) {
     showToast('Task status updated!')
   }
 
+  const handleSimulatePreorder = () => {
+    if (!project) return
+    const currentRes = project.reservations || []
+    const newReservation = {
+      id: `res-${Date.now()}`,
+      name: `Backer #${(currentRes.length + 1)}`,
+      email: `member${currentRes.length + 1}@audience.com`,
+      amount: 49,
+      tier: 'Early Bird Pass',
+      created_at: new Date().toISOString()
+    }
+    const updatedReservations = [newReservation, ...currentRes]
+    const updatedRevenue = Number(project.currentPresales || 0) + 49
+    const updated = {
+      ...project,
+      currentPresales: updatedRevenue,
+      reservations: updatedReservations
+    }
+    handleUpdateProject(updated)
+    showToast('Simulated backer pre-order recorded (+ $49 USD). Revenue share updated!')
+  }
+
   const getTaskDraftContent = (task) => {
     if (!task) return ''
     const ck = project?.campaignKit || {}
-    if (task.draftKey === 'storySequence') return ck.storySequence || 'STORY 1 — Poll\nSTORY 2 — Product Reveal\nSTORY 3 — Pre-Order Link CTA'
-    if (task.draftKey === 'videoScript') return ck.videoScript || '60s Short-Form Video Script'
-    if (task.draftKey === 'newsletterDraft') return ck.newsletterDraft || 'Email Newsletter Broadcast Draft'
-    if (task.draftKey === 'directMessageScript') return ck.directMessageScript || '1-on-1 DM Script'
-    return ck.announcementPost || 'Social Announcement Post Copy'
+    if (task.draftKey === 'storySequence') return ck.storySequence || 'STORY 1 — Pain Point Poll\nSTORY 2 — Product Solution Reveal\nSTORY 3 — Pre-Order Link & Founding Member Callout'
+    if (task.draftKey === 'videoScript') return ck.videoScript || '60s Short-Form Video Script with hook, demo, and CTA'
+    if (task.draftKey === 'newsletterDraft') return ck.newsletterDraft || 'Email Newsletter Broadcast Draft detailing the launch'
+    if (task.draftKey === 'directMessageScript') return ck.directMessageScript || '1-on-1 DM Script for VIP audience members'
+    return ck.announcementPost || 'Social Announcement Post Copy tailored for your community'
   }
 
   if (loading) {
@@ -323,17 +375,19 @@ export default function CreatorPortal({ portalId }) {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-[#090b0e] text-white flex items-center justify-center p-6">
-        <div className="max-w-md w-full p-8 rounded-2xl bg-[#0e1117] border border-white/[0.08] text-center space-y-4">
-          <Rocket className="w-10 h-10 text-purple-400 mx-auto" />
-          <h2 className="text-lg font-bold">No Active Creator Project Loaded</h2>
-          <p className="text-xs text-slate-400">
+      <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex items-center justify-center p-6">
+        <div className="max-w-md w-full p-8 rounded-2xl bg-white border border-slate-200 text-center space-y-4 shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center mx-auto">
+            <Rocket className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900">No Active Creator Project Loaded</h2>
+          <p className="text-xs text-slate-500">
             Please ask your co-founder operator to initialize your partnership project and share your link.
           </p>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer"
           >
             Retry Connection
           </button>
@@ -349,82 +403,115 @@ export default function CreatorPortal({ portalId }) {
     return match ? Number(match[1]) : 0
   }
   const derivedPlanTarget = parseThresholdAmount(project.validationPlan?.threshold)
-  const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project.presaleTarget || project.targetRevenue || 12500)
+  const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project.presaleTarget || project.targetRevenue || 7000)
   const creatorRevenueShare = Math.round(presalesRevenue * 0.5)
   const campaignKit = project.campaignKit || {}
   const schedule = (campaignKit.postingSchedule && campaignKit.postingSchedule.length > 0)
     ? campaignKit.postingSchedule
     : (project.checklist && project.checklist.length > 0 ? project.checklist : [
-        { id: 'day-1', day: 1, title: 'Problem Teaser & Discovery Poll', channel: 'Twitter / X', isToday: false, done: true, draftKey: 'announcementPost', description: 'Post teaser and survey link.' },
-        { id: 'day-2', day: 2, title: 'Post Instagram Story #2 — Pain Point Poll & Announcement', channel: 'Instagram Stories', isToday: true, done: false, draftKey: 'storySequence', description: 'Post 3-story sequence with interactive poll sticker.' },
-        { id: 'day-3', day: 3, title: 'Publish 60-Second Video Demo & Launch Hook', channel: 'TikTok / Reels / Shorts', isToday: false, done: false, draftKey: 'videoScript', description: 'Post 60s short-form demo.' },
-        { id: 'day-4', day: 4, title: 'Send Deep-Dive Email Newsletter Broadcast', channel: 'Email Newsletter', isToday: false, done: false, draftKey: 'newsletterDraft', description: 'Send dedicated email broadcast.' },
-        { id: 'day-5', day: 5, title: '1-on-1 VIP DM Outreach to 20 High-Intent Members', channel: 'Direct Messages', isToday: false, done: false, draftKey: 'directMessageScript', description: 'Reach out personally to 20 followers.' },
-        { id: 'day-6', day: 6, title: 'Share Live Pre-Order Milestones & Survey Insights', channel: 'Stories & Community', isToday: false, done: false, draftKey: 'storySequence', description: 'Share validation momentum.' },
-        { id: 'day-7', day: 7, title: 'Final 24-Hour Founding Tier Price Lock Push', channel: 'All Social Channels', isToday: false, done: false, draftKey: 'announcementPost', description: 'Final call before founding cohort closes.' }
+        { id: 'day-1', day: 1, title: 'Problem Teaser & Discovery Poll', channel: 'Twitter / X', isToday: false, done: true, draftKey: 'announcementPost', description: 'Post teaser and survey link to gather audience friction points.' },
+        { id: 'day-2', day: 2, title: 'Post Instagram Story #2 — Pain Point Poll & Announcement', channel: 'Instagram Stories', isToday: true, done: false, draftKey: 'storySequence', description: 'Post 3-story sequence with interactive poll sticker to drive warm audience to the pre-order page.' },
+        { id: 'day-3', day: 3, title: 'Publish 60-Second Video Demo & Launch Hook', channel: 'TikTok / Reels / Shorts', isToday: false, done: false, draftKey: 'videoScript', description: 'Post 60s short-form demo demonstrating the core solution in action.' },
+        { id: 'day-4', day: 4, title: 'Send Deep-Dive Email Newsletter Broadcast', channel: 'Email Newsletter', isToday: false, done: false, draftKey: 'newsletterDraft', description: 'Send dedicated email broadcast detailing feature architecture and founding member bonuses.' },
+        { id: 'day-5', day: 5, title: '1-on-1 VIP DM Outreach to 20 High-Intent Members', channel: 'Direct Messages', isToday: false, done: false, draftKey: 'directMessageScript', description: 'Reach out personally to 20 followers who engaged with earlier story polls.' },
+        { id: 'day-6', day: 6, title: 'Share Live Pre-Order Milestones & Survey Insights', channel: 'Stories & Community', isToday: false, done: false, draftKey: 'storySequence', description: 'Share validation momentum and backer counts to generate social proof and urgency.' },
+        { id: 'day-7', day: 7, title: 'Final 24-Hour Founding Tier Price Lock Push', channel: 'All Social Channels', isToday: false, done: false, draftKey: 'announcementPost', description: 'Final call before founding cohort closes and validation gate locks in.' }
       ])
   const completedTasksCount = schedule.filter(t => t.done || t.completed).length
   const totalTasksCount = schedule.length
   const reservations = project.reservations || []
   const preorderUrl = `${getFrontendUrl()}/preorder?ref=${project.creatorHandle?.replace('@','') || 'creator'}`
+  const targetPct = presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 0
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-slate-100 font-sans flex flex-col">
-      {/* Top Portal Header */}
-      <header className="h-16 border-b border-white/[0.08] bg-[#0d0f14] sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8">
+    <div
+      className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex flex-col relative antialiased selection:bg-emerald-100 selection:text-emerald-900"
+      style={{
+        backgroundImage: 'radial-gradient(#cbd5e1 1.25px, transparent 1.25px)',
+        backgroundSize: '20px 20px',
+      }}
+    >
+      {/* ── TOP NAV HEADER ──────────────────────────────────────────────────────── */}
+      <header className="h-16 border-b border-slate-200/90 bg-white/90 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-950/50">
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center shadow-xs text-white">
             <Rocket className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-white tracking-tight text-sm">{project.productName || 'Software Co-Launch'}</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="font-extrabold text-slate-900 tracking-tight text-sm">{productName}</span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
                 50/50 Co-Founder Portal
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">Welcome, {project.creatorName || 'Creator Partner'}</p>
+            <p className="text-[11px] text-slate-500 font-medium">Signed Partner: {creatorName}</p>
           </div>
         </div>
 
-        {/* Live Revenue Share Badge & DIY Status */}
+        {/* Live Revenue Share & Track Indicator */}
         <div className="flex items-center gap-3">
+          {/* Main View Switcher (When not in track choice) */}
+          {!isTrackChoicePending && (
+            <div className="hidden md:flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setActiveMainView('launch_kit')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeMainView === 'launch_kit'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Daily Launch Kit & Scripts
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveMainView('projectos')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeMainView === 'projectos'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Full ProjectOS Pipeline
+              </button>
+            </div>
+          )}
+
           {isDiyActive ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-bold shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden md:inline">DIY Autonomous License Active ($50 Paid)</span>
-              <span className="md:hidden">DIY Active ($50)</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-mono font-bold shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="hidden sm:inline">Track 1: Interactive Pass ($50 Paid)</span>
+              <span className="sm:hidden">Interactive ($50)</span>
             </div>
           ) : project?.diyOfferStatus === 'declined' ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-xs font-mono font-bold shadow-2xs">
               <span>🤝</span>
-              <span className="hidden md:inline">Studio Managed Track (50/50 Split)</span>
-              <span className="md:hidden">Managed Track</span>
+              <span className="hidden sm:inline">Track 2: Studio-Managed (50/50)</span>
+              <span className="sm:hidden">Managed Track</span>
             </div>
           ) : (
             <button
               type="button"
-              onClick={() => setShowDiyModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400/20 via-amber-500/20 to-purple-500/20 hover:from-amber-400/30 hover:to-purple-500/30 border border-amber-400/40 text-amber-200 text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
-              title="Choose your track: Unlock DIY ($50 USD) or proceed with Studio-Managed"
+              onClick={() => setTrackChoiceDismissed(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
             >
-              <Zap className="w-3.5 h-3.5 text-amber-300" />
+              <Zap className="w-3.5 h-3.5 text-amber-600" />
               <span className="hidden sm:inline">Choose Track: DIY ($50 USD) or Managed</span>
-              <span className="sm:hidden">DIY ($50) or Managed</span>
+              <span className="sm:hidden">Choose Track</span>
             </button>
           )}
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
             <div className="hidden sm:flex flex-col text-right">
-              <span className="text-[10px] font-bold uppercase text-slate-400">
-                {isDiyActive ? 'Your 100% Revenue Ownership' : 'Your 50% Revenue Share'}
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                {isDiyActive ? 'Your 100% Revenue Pool' : 'Your 50% Revenue Share'}
               </span>
-              <span className="text-xs font-extrabold text-emerald-400">
+              <span className="text-xs font-mono font-black text-emerald-700">
                 ${(isDiyActive ? presalesRevenue : creatorRevenueShare).toLocaleString()} Earned
               </span>
             </div>
-            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+            <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-700 shadow-2xs">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
@@ -433,904 +520,1114 @@ export default function CreatorPortal({ portalId }) {
 
       {/* Floating Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 p-3 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs shadow-2xl flex items-center gap-2 animate-bounce">
-          <CheckCircle2 className="w-4 h-4" />
+        <div className="fixed bottom-6 right-6 z-50 p-3.5 rounded-xl bg-slate-900 text-white font-bold text-xs shadow-2xl flex items-center gap-2.5 animate-bounce border border-slate-700">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toast}</span>
         </div>
       )}
 
-      {/* Primary Workspace View Switcher: Full ProjectOS vs Launch Kit & Tasks */}
-      <div className="bg-[#0b0d13] border-b border-white/[0.08] px-4 sm:px-8 py-2.5">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 p-1 bg-white/[0.03] border border-white/[0.06] rounded-2xl w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setActiveMainView('projectos')}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                activeMainView === 'projectos'
-                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md font-black'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Rocket className="w-3.5 h-3.5" />
-              <span>Full ProjectOS Pipeline (Phase 1, 2, 3)</span>
-              {isDiyActive && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-950/40 text-amber-200 font-extrabold">
-                  UNLOCKED
-                </span>
-              )}
-            </button>
+      {/* ── MAIN BODY CONTAINER ─────────────────────────────────────────────────── */}
+      <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
-            <button
-              type="button"
-              onClick={() => setActiveMainView('launch_kit')}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                activeMainView === 'launch_kit'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <CheckSquare className="w-3.5 h-3.5" />
-              <span>Daily Launch Kit & Scripts</span>
-            </button>
+        {/* ── STEP / PHASE PROGRESS BAR (Image 2 & Image 3) ────────────────────── */}
+        <div className="bg-white/95 rounded-2xl border border-slate-200 p-3 sm:px-6 shadow-2xs flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center flex-wrap gap-2 text-xs">
+            {isTrackChoicePending ? (
+              <>
+                {/* STEP 1 ACTIVE (Track Choice) */}
+                <div className="flex items-center gap-2 bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs">
+                  <span className="text-slate-400">01</span>
+                  <span>STEP 01 • ACTIVE</span>
+                  <span className="text-emerald-400 font-sans font-extrabold ml-0.5">Co-Launch Track Choice</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
+                </div>
+                <div className="w-4 h-[1px] bg-slate-200 hidden sm:block" />
+                <div className="hidden sm:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
+                  <span>02</span>
+                  <span className="font-sans">Venture Architecture</span>
+                </div>
+                <div className="w-4 h-[1px] bg-slate-200 hidden sm:block" />
+                <div className="hidden md:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
+                  <span>03</span>
+                  <span className="font-sans">Sprint 1 Execution</span>
+                </div>
+                <div className="w-4 h-[1px] bg-slate-200 hidden md:block" />
+                <div className="hidden lg:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
+                  <span>04</span>
+                  <span className="font-sans">Audience Validation</span>
+                </div>
+                <div className="w-4 h-[1px] bg-slate-200 hidden lg:block" />
+                <div className="hidden lg:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
+                  <span>05</span>
+                  <span className="font-sans">Commercial Launch</span>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* STEP 1 & 2 COMPLETED, STEP 3 ACTIVE SPRINT (Validation) */}
+                <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="font-sans font-bold">Step 01 • Track Selection</span>
+                </div>
+                <div className="w-4 h-[1px] bg-emerald-300 hidden sm:block" />
+                <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="font-sans font-bold">Step 02 • Architecture Spec</span>
+                </div>
+                <div className="w-4 h-[1px] bg-emerald-300 hidden sm:block" />
+                <div className="flex items-center gap-2 bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs">
+                  <span className="text-slate-400">03</span>
+                  <span>STEP 03 • ACTIVE SPRINT</span>
+                  <span className="text-emerald-400 font-sans font-extrabold ml-0.5">Validation & Pre-Orders</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
+                </div>
+                <div className="w-4 h-[1px] bg-slate-200 hidden lg:block" />
+                <div className="hidden lg:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
+                  <span>04</span>
+                  <span className="font-sans">MVP Feature Lock</span>
+                </div>
+                <div className="w-4 h-[1px] bg-slate-200 hidden lg:block" />
+                <div className="hidden lg:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
+                  <span>05</span>
+                  <span className="font-sans">Commercial Launch</span>
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>
-              {isDiyActive
-                ? "Autonomous DIY Creator Mode: You have full authority to execute every phase yourself."
-                : "Want to do the whole process yourself? Subscribe to DIY Mode to unlock full command control."}
-            </span>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-300 text-[11px] font-mono font-bold shrink-0">
+            <Check className="w-3.5 h-3.5 text-emerald-600" />
+            <span>CF-5050 Agreement (50/50 Split)</span>
           </div>
         </div>
-      </div>
 
-      {/* FULL PROJECTOS VIEW (Phase 1, Phase 2, Phase 3 Command Center) */}
-      {activeMainView === 'projectos' && (
-        isDiyActive ? (
-          <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-6 space-y-6">
-            <ProjectOS
-              project={project}
-              onUpdateProject={handleUpdateProject}
-              userRole="creator"
-              isDIY={true}
-            />
-          </main>
-        ) : project?.diyOfferStatus === 'declined' ? (
-          /* MANAGED TRACK PROGRESS VIEW (When creator declined $50 DIY) */
-          <main className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-8 space-y-6">
-            <div className="p-6 sm:p-8 rounded-3xl bg-[#0e111a] border border-white/[0.08] shadow-2xl space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
-                      <span>🤝 Studio-Managed Venture</span>
-                    </span>
-                    <span className="text-xs text-slate-500">•</span>
-                    <span className="text-xs font-bold text-emerald-400">50/50 Revenue Split Active</span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                    ProjectOS Progress Tracker: {productName}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-                    You chose the Studio-Managed Co-Launch track. The Creator Forge studio engineering team handles 100% of software development, architecture, and deployments for you. You can track all sprint progress, pre-orders, and telemetry below.
-                  </p>
+        {/* ── STATE 1: CO-LAUNCH PARTICIPATION TRACK CHOICE (Image 2) ───────────── */}
+        {isTrackChoicePending ? (
+          <div className="space-y-6">
+            {/* Header Hero Card */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono font-bold text-slate-700 uppercase">
+                  <span>VENTURE ID: {ventureSlug.toUpperCase()}</span>
+                  <span>•</span>
+                  <span>Signed Partner: {creatorName}</span>
                 </div>
-
-                <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center space-y-1.5 shrink-0">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Current Phase</span>
-                  <div className="text-xl font-black text-purple-300">
-                    Phase {project?.currentPhase || 1}: {project?.currentPhase === 3 ? 'Launch & Scale' : project?.currentPhase === 2 ? 'Build MVP' : 'Validate'}
-                  </div>
-                  <span className="text-[10px] text-emerald-400 font-bold block">
-                    Managed by Studio Operators
-                  </span>
-                </div>
-              </div>
-
-              {/* Progress Milestones */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">Phase 1: Validation</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
-                      {project?.currentPhase > 1 ? 'Completed' : 'In Progress'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400">
-                    Admin is managing pre-order telemetry and customer interest validation.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">Phase 2: Build MVP</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
-                      {project?.currentPhase === 2 ? 'Active Sprint' : project?.currentPhase > 2 ? 'Completed' : 'Upcoming'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400">
-                    Studio engineers configure the software stack, database, and beta app.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">Phase 3: Launch</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold">
-                      {project?.currentPhase === 3 ? 'Active Launch' : 'Upcoming'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400">
-                    Production deployment and recurring subscription checkout management.
-                  </p>
-                </div>
-              </div>
-
-              {/* CTAs */}
-              <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-white">Looking for your daily tasks & promotional scripts?</h4>
-                  <p className="text-[11px] text-slate-400">
-                    Head over to your Daily Launch Kit to copy promotional copy, Instagram stories, and video scripts.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveMainView('launch_kit')}
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-md cursor-pointer whitespace-nowrap"
-                >
-                  Open Daily Launch Kit & Scripts →
-                </button>
-              </div>
-
-              {/* Change mind / Upgrade to Interactive Co-Builder Pass option */}
-              <div className="p-4 rounded-2xl bg-amber-400/5 border border-amber-400/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="text-slate-300">
-                    Want hands-on access to build, ideate, and run AI MVP tasks directly yourself?
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowDiyModal(true)}
-                  className="px-3.5 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-black text-xs hover:brightness-110 cursor-pointer whitespace-nowrap transition-all shadow-xs"
-                >
-                  Unlock Co-Builder Pass ($50) ⚡
-                </button>
-              </div>
-            </div>
-          </main>
-        ) : (
-          /* TRACK SELECTION / $50 PAYMENT REQUEST (When Offer is Sent & Pending) */
-          <main className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-8 space-y-6">
-            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#141824] via-[#0f121a] to-[#0a0d14] border border-amber-500/40 shadow-2xl space-y-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="text-center max-w-2xl mx-auto space-y-2">
-                <span className="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-amber-300" />
-                  <span>Choose Your Co-Launch Participation Track</span>
-                </span>
-                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  How would you like to co-launch {productName}?
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  Every venture is a <strong>50/50 Co-Founder Equity Partnership</strong>. Choose whether you want active hands-on access to build with our AI ProjectOS suite ($50 Pass), or prefer our studio engineering team to manage and complete the phases for you.
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  Select Your Co-Launch Participation Track
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+                  Every venture is structured under our verified <strong>50/50 Co-Founder Equity Partnership</strong>. Choose whether you want active hands-on workbench access with the interactive toolset, or delegate sprint execution directly to our dedicated studio engineering group.
                 </p>
               </div>
 
-              {/* 2-Option Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-                {/* Option A: Interactive Co-Builder Pass ($50 USD) */}
-                <div className="p-6 rounded-2xl bg-gradient-to-b from-amber-500/10 to-transparent border-2 border-amber-400/60 shadow-xl space-y-4 relative flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider">
-                        Hands-On Participation
-                      </span>
-                      <div className="text-right">
-                        <div className="text-2xl font-black text-amber-300">$50<span className="text-xs text-slate-400 font-medium"> USD</span></div>
-                        <span className="text-[10px] text-slate-400">One-time toolset pass</span>
-                      </div>
-                    </div>
-
-                    <h3 className="text-lg font-black text-white">Track 1: Interactive Co-Builder Pass</h3>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Participate actively instead of just tracking. Get full hands-on access to ideate, trigger AI MVP generation, run validation test sprints, and execute phases yourself alongside the studio.
-                    </p>
-
-                    <div className="space-y-2 text-xs pt-1">
-                      <div className="flex items-center gap-2 text-slate-200">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span><strong>50/50 Co-Founder Equity Split</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-200">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>Full Interactive Phase 1, Phase 2, & Phase 3 Execution</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-200">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>Run AI MVP Sprints & Feature Ideation Directly</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-200">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>Personalized Co-Builder Workspace URL dispatched to email</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowDiyModal(true)}
-                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:brightness-110 text-slate-950 font-black text-xs transition-all shadow-lg shadow-amber-950/40 cursor-pointer active:scale-95 flex items-center justify-center gap-2"
-                    >
-                      <CreditCard className="w-4 h-4" />
-                      <span>Unlock Interactive Co-Builder Pass ($50 USD) 🚀</span>
-                    </button>
-                    <p className="text-[10px] text-center text-slate-400">
-                      Instant Stripe/PayPal checkout or test unlock
-                    </p>
-                  </div>
-                </div>
-
-                {/* Option B: Studio-Managed (50/50 Split) */}
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.1] shadow-xl space-y-4 relative flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold text-[10px] uppercase tracking-wider">
-                        Studio Completed
-                      </span>
-                      <div className="text-right">
-                        <div className="text-2xl font-black text-white">$0<span className="text-xs text-slate-400 font-medium"> Upfront</span></div>
-                        <span className="text-[10px] text-slate-400">50/50 Equity Split</span>
-                      </div>
-                    </div>
-
-                    <h3 className="text-lg font-black text-white">Track 2: Studio-Managed Track</h3>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Studio engineers complete all technical build sprints, hosting, and architecture while you monitor progress in real-time and coordinate the launch with your audience.
-                    </p>
-
-                    <div className="space-y-2 text-xs pt-1">
-                      <div className="flex items-center gap-2 text-slate-200">
-                        <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                        <span><strong>50/50 Co-Founder Equity Split</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-200">
-                        <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                        <span>Studio team completes all development phases for you</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-200">
-                        <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                        <span>Real-Time Milestone Tracking & Review Portal</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-200">
-                        <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                        <span>No software setup required on your side</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 space-y-2">
-                    <button
-                      type="button"
-                      onClick={handleDeclineDiyOffer}
-                      className="w-full py-3 px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.12] text-slate-200 hover:text-white font-bold text-xs transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
-                    >
-                      <span>Choose Studio-Managed Track (50/50) 🤝</span>
-                    </button>
-                    <p className="text-[10px] text-center text-slate-400">
-                      Standard tracking portal will be active immediately
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </main>
-        )
-      )}
-
-      {/* LAUNCH KIT & TASKS VIEW (Daily Campaign Schedule & Scripts) */}
-      {activeMainView === 'launch_kit' && (
-        <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-8 space-y-6">
-        {/* Milestone Progress Card */}
-        <div className="p-6 rounded-2xl bg-gradient-to-b from-[#141824] to-[#0e1117] border border-white/[0.08] shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400 block">
-                Validation Sprint Milestone
-              </span>
-              <h1 className="text-lg sm:text-xl font-extrabold text-white">
-                ${presalesRevenue.toLocaleString()} <span className="text-slate-400 font-normal text-sm">of ${presaleTarget.toLocaleString()} Presale Goal</span>
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                {presaleTarget > 0 ? Math.round((presalesRevenue / presaleTarget) * 100) : 0}% Target Reached
-              </span>
-            </div>
-          </div>
-
-          <div className="w-full bg-white/[0.06] rounded-full h-2.5 overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-purple-500 to-emerald-400 h-full rounded-full transition-all duration-500"
-              style={{ width: `${presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 0}%` }}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 text-xs pt-2">
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Your 50% Profit Share</span>
-              <span className="text-sm font-extrabold text-emerald-400 mt-0.5 block">${creatorRevenueShare.toLocaleString()}</span>
-            </div>
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Sprint Duration</span>
-              <span className="text-sm font-extrabold text-emerald-300 mt-0.5 block">{project.validationPlan?.period || project.daysLeft || '18 Days'}</span>
-            </div>
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Pre-Orders / Backers</span>
-              <span className="text-sm font-extrabold text-white mt-0.5 block">{reservations.length}</span>
-            </div>
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Sprint Tasks</span>
-              <span className="text-sm font-extrabold text-purple-300 mt-0.5 block">{completedTasksCount} / {totalTasksCount} done</span>
-            </div>
-            <div className="col-span-2 sm:col-span-1 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Conversion Funnel</span>
-              <span className="text-sm font-extrabold text-white mt-0.5 block">{Number(project.conversionRate || 0).toFixed(1)}%</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3 overflow-x-auto scrollbar-none">
-          {[
-            { id: 'tasks', label: 'Daily Launch Checklist', icon: CheckSquare, count: `${completedTasksCount}/${totalTasksCount}` },
-            { id: 'scripts', label: 'Copyable Launch Content', icon: Video },
-            { id: 'presales', label: 'Verified Pre-Orders', icon: Users, count: reservations.length },
-            { id: 'messages', label: 'Studio Chat & Messages', icon: MessageSquare, count: portalDisplayMessages.length },
-            { id: 'strategy', label: 'Validation Strategy & Plan', icon: FileText },
-          ].map(tab => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  isActive
-                    ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50'
-                    : 'text-slate-400 hover:text-white bg-[#0e1117] border border-white/[0.06]'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-                {tab.count !== undefined && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/20">
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* TAB 1: DAILY LAUNCH CHECKLIST */}
-        {activeTab === 'tasks' && (
-          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
-            {/* Today's Action Hero Banner */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/50 via-[#141824] to-[#0d0f17] border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-purple-950/30">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">
-                    🔥 Today's Action (Day 2)
-                  </span>
-                  <span className="text-xs font-bold text-slate-300">Instagram Stories · Pain Point Poll</span>
-                </div>
-                <h4 className="text-sm font-extrabold text-white">
-                  Today: Post Instagram Story #2 (Pain Point Poll & Pre-Order Link)
-                </h4>
-                <p className="text-[11px] text-slate-400">
-                  Post the 3-story sequence with interactive poll sticker to drive warm audience to the pre-order page.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => setViewDraftTask({
-                    id: 'day-2',
-                    day: 2,
-                    title: 'Post Instagram Story #2 — Pain Point Poll & Announcement',
-                    channel: 'Instagram Stories',
-                    draftKey: 'storySequence'
-                  })}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-950/50 active:scale-95"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>View Draft</span>
-                </button>
-
-                <button
-                  onClick={() => toggleChecklist('day-2')}
-                  className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors border ${
-                    schedule.find(t => t.id === 'day-2')?.done
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                      : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
-                  }`}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{schedule.find(t => t.id === 'day-2')?.done ? 'Completed' : 'Mark Done'}</span>
-                </button>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1 shrink-0 self-start md:self-auto">
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                  DEFAULT MODEL
+                </span>
+                <span className="text-sm font-extrabold text-slate-900 block font-sans">
+                  Equal 50/50 Revenue Split
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-              <div>
-                <h3 className="font-bold text-white text-sm">Creator Launch Action Checklist</h3>
-                <p className="text-xs text-slate-400">Complete tasks to drive pre-orders and hit the $5,000 validation gate.</p>
-              </div>
-              <span className="text-xs font-mono text-emerald-400">{completedTasksCount} of {totalTasksCount} Completed</span>
-            </div>
+            {/* 2-Column Split: Tracks on Left, Spec Preview Deck on Right */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Track Cards + Comparison Matrix (8 of 12 cols) */}
+              <div className="lg:col-span-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-            <div className="space-y-2.5">
-              {(() => {
-                const campaignStartDate = project?.validationCampaign?.createdAt || project?.created_at || project?.createdAt
-                const currentCampaignDay = campaignStartDate
-                  ? Math.max(1, Math.floor((Date.now() - new Date(campaignStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)
-                  : 1
-
-                return schedule.map(item => {
-                  const isDone = item.done || item.completed
-                  const isOverdue = !isDone && item.day && item.day < currentCampaignDay
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
-                        isOverdue
-                          ? 'bg-amber-950/20 border-amber-500/40 shadow-sm shadow-amber-950/30'
-                          : item.isToday
-                          ? 'bg-[#141824] border-purple-500/40 shadow-sm shadow-purple-950/40'
-                          : isDone
-                          ? 'bg-emerald-950/10 border-emerald-500/30 text-slate-400'
-                          : 'bg-[#141720] border-white/[0.06] hover:border-purple-500/40 text-white'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <button
-                          onClick={() => toggleChecklist(item.id)}
-                          className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
-                            isDone ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'border-slate-600 bg-transparent'
-                          }`}
-                        >
-                          {isDone && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                        </button>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {isOverdue ? (
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                                <AlertCircle className="w-3 h-3 text-amber-400" />
-                                <span>Missed · Ready to Post</span>
-                              </span>
-                            ) : (
-                              <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                                item.isToday
-                                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                                  : isDone
-                                  ? 'bg-emerald-500/10 text-emerald-400'
-                                  : 'bg-white/[0.06] text-slate-400'
-                              }`}>
-                                {item.day ? `Day ${item.day}` : 'Task'}
-                              </span>
-                            )}
-                            {item.channel && (
-                              <span className="text-[10px] font-bold text-slate-400 font-mono">
-                                {item.channel}
-                              </span>
-                            )}
-                          </div>
-                          <h5 className={`text-xs font-bold ${isDone ? 'line-through text-slate-400' : 'text-white'}`}>
-                            {item.title || item.text}
-                          </h5>
-                        {item.description && (
-                          <p className="text-[11px] text-slate-400 leading-relaxed">
-                            {item.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                      <button
-                        onClick={() => setViewDraftTask(item)}
-                        className="px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 text-xs font-bold border border-purple-500/30 flex items-center gap-1 transition-colors"
-                      >
-                        <Eye className="w-3 h-3" />
-                        <span>View Draft</span>
-                      </button>
-                    </div>
-                  </div>
-                )
-              })
-            })()}
-            </div>
-          </div>
-        )}
-
-        {/* View Draft Modal in Creator Portal */}
-        {viewDraftTask && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-lg rounded-3xl bg-[#0e1117] border border-white/[0.1] shadow-2xl p-6 space-y-4 animate-scale-in">
-              <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-400 block">
-                    {viewDraftTask.day ? `Day ${viewDraftTask.day} · ` : ''}{viewDraftTask.channel || 'Launch Content'}
-                  </span>
-                  <h3 className="text-base font-extrabold text-white">{viewDraftTask.title || viewDraftTask.text}</h3>
-                </div>
-                <button
-                  onClick={() => setViewDraftTask(null)}
-                  className="p-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-400 hover:text-white transition-colors"
-                >
-                  <Check className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] max-h-72 overflow-y-auto">
-                <pre className="text-xs text-slate-200 font-sans whitespace-pre-wrap leading-relaxed">
-                  {getTaskDraftContent(viewDraftTask)}
-                </pre>
-              </div>
-
-              <div className="flex items-center justify-between gap-3 pt-2">
-                <button
-                  onClick={() => copyToClipboard(getTaskDraftContent(viewDraftTask), 'creator-draft-modal')}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>{copiedKey === 'creator-draft-modal' ? 'Copied!' : 'Copy Draft'}</span>
-                </button>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      toggleChecklist(viewDraftTask.id)
-                      setViewDraftTask(null)
-                    }}
-                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 transition-colors"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Mark Done</span>
-                  </button>
-                  <button
-                    onClick={() => setViewDraftTask(null)}
-                    className="px-3.5 py-2 rounded-xl bg-white/[0.06] text-slate-300 text-xs font-bold border border-white/[0.08]"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: COPYABLE LAUNCH SCRIPTS */}
-        {activeTab === 'scripts' && (
-          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
-            <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-              <div>
-                <h3 className="font-bold text-white text-sm">Ready-To-Use Launch Content</h3>
-                <p className="text-xs text-slate-400">Pre-written copy tailored to your audience. Copy and post in 1 click.</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 border-b border-white/[0.06] pb-3">
-              {[
-                { id: 'post', label: 'Announcement Post', icon: MessageSquare },
-                { id: 'video', label: '60s Video Script', icon: Video },
-                { id: 'dm', label: '1-on-1 DM Script', icon: Users },
-              ].map(st => {
-                const Icon = st.icon
-                return (
-                  <button
-                    key={st.id}
-                    onClick={() => setActiveScriptTab(st.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                      activeScriptTab === st.id
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                        : 'text-slate-400 hover:text-white bg-white/[0.02]'
+                  {/* Track 1: Interactive Co-Builder Pass */}
+                  <div
+                    onClick={() => setSelectedTrack('interactive')}
+                    className={`rounded-2xl bg-white p-6 shadow-xs relative flex flex-col justify-between transition-all cursor-pointer ${
+                      selectedTrack === 'interactive'
+                        ? 'border-2 border-emerald-500 ring-2 ring-emerald-500/10 shadow-md'
+                        : 'border border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{st.label}</span>
+                    {/* Ribbon */}
+                    <div className="absolute -top-3 left-4 px-3 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs flex items-center gap-1">
+                      <Check className="w-3 h-3 text-white" />
+                      <span>RECOMMENDED • ACTIVE SELECTION</span>
+                    </div>
+
+                    <div className="space-y-4 pt-1">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono font-bold uppercase tracking-wider">
+                          HANDS-ON PARTICIPATION
+                        </span>
+                        <div className="text-right">
+                          <div className="text-2xl font-black text-slate-900 font-mono">
+                            $50 <span className="text-xs font-normal text-slate-500 font-sans">USD</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 block font-mono">One-time toolset pass</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900">Track 1: Interactive Co-Builder Pass</h3>
+                        <p className="text-xs text-slate-600 leading-relaxed mt-1">
+                          Participate actively instead of passive tracking. Get full command control access to ideate, execute MVP generation, trigger validation tests, and build alongside our core platform.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2.5 text-xs pt-1">
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span><strong>50/50 Co-Founder Equity Split</strong> locked in charter</span>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Interactive Phase 1, Phase 2, & Phase 3 direct execution</span>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Run rapid MVP architecture sprints & feature modules</span>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Dedicated Workspace Subdomain & GitHub integration pass</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-6 space-y-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedTrack('interactive')
+                          setShowDiyModal(true)
+                        }}
+                        className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                      >
+                        <span>Unlock Interactive Co-Builder Pass ($50 USD)</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                      <p className="text-[10px] text-center text-slate-400 font-mono">
+                        Stripe & PayPal verified • Instant workspace provision
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Track 2: Studio-Managed Track */}
+                  <div
+                    onClick={() => setSelectedTrack('managed')}
+                    className={`rounded-2xl bg-white p-6 shadow-xs relative flex flex-col justify-between transition-all cursor-pointer ${
+                      selectedTrack === 'managed'
+                        ? 'border-2 border-slate-900 ring-2 ring-slate-900/10 shadow-md'
+                        : 'border border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="space-y-4 pt-1">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-mono font-bold uppercase tracking-wider">
+                          STUDIO COMPLETED
+                        </span>
+                        <div className="text-right">
+                          <div className="text-2xl font-black text-slate-900 font-mono">
+                            $0 <span className="text-xs font-normal text-slate-500 font-sans">Upfront</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 block font-mono">50/50 Equity Split</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900">Track 2: Studio-Managed Track</h3>
+                        <p className="text-xs text-slate-600 leading-relaxed mt-1">
+                          Studio engineers complete all technical build sprints, backend architecture, and infrastructure while you monitor milestones in real-time and coordinate the launch with your audience.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2.5 text-xs pt-1">
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <CheckCircle2 className="w-4 h-4 text-slate-800 shrink-0" />
+                          <span><strong>50/50 Co-Founder Equity Split</strong> locked in charter</span>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <CheckCircle2 className="w-4 h-4 text-slate-800 shrink-0" />
+                          <span>Studio team conducts end-to-end development phases</span>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <CheckCircle2 className="w-4 h-4 text-slate-800 shrink-0" />
+                          <span>Real-Time Milestone Tracking & Review Portal</span>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-slate-700">
+                          <CheckCircle2 className="w-4 h-4 text-slate-800 shrink-0" />
+                          <span>Zero local software configuration required on your side</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-6 space-y-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedTrack('managed')
+                          handleDeclineDiyOffer()
+                        }}
+                        className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                      >
+                        <span>Select Studio-Managed Track (50/50)</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                      <p className="text-[10px] text-center text-slate-400 font-mono">
+                        Standard tracking portal activated immediately
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Comparative Technical Matrix (Protocol v2.4) */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="text-xs font-mono font-bold text-slate-900 uppercase tracking-wider">
+                        COMPARATIVE TECHNICAL MATRIX
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-400">Protocol v2.4</span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs font-sans">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                          <th className="py-2 pr-4 font-bold">CAPABILITY / DELIVERABLE</th>
+                          <th className="py-2 px-4 font-bold text-emerald-700">TRACK 1: INTERACTIVE PASS</th>
+                          <th className="py-2 pl-4 font-bold text-slate-700">TRACK 2: STUDIO MANAGED</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        <tr>
+                          <td className="py-3 pr-4 font-medium text-slate-700">Co-Founder Equity Division</td>
+                          <td className="py-3 px-4 font-mono font-bold text-emerald-700">50% / 50%</td>
+                          <td className="py-3 pl-4 font-mono font-bold text-slate-800">50% / 50%</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 pr-4 font-medium text-slate-700">Sprint & Code Execution</td>
+                          <td className="py-3 px-4 font-bold text-slate-900">Co-Pilot / Hands-On Access</td>
+                          <td className="py-3 pl-4 text-slate-600">Engineered by Studio Devs</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 pr-4 font-medium text-slate-700">Workspace Terminal & Repos</td>
+                          <td className="py-3 px-4 font-mono font-semibold text-emerald-600">Instant Direct Provisioning</td>
+                          <td className="py-3 pl-4 text-slate-500">Restricted to Studio Staff</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 pr-4 font-medium text-slate-700">Validation Test Pipeline</td>
+                          <td className="py-3 px-4 font-semibold text-slate-900">Full Real-Time Test Suite</td>
+                          <td className="py-3 pl-4 text-slate-600">Milestone Summary Reports</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 pr-4 font-medium text-slate-700">Upfront Capital Commitment</td>
+                          <td className="py-3 px-4 font-mono font-bold text-slate-900">$50 One-Time Pass</td>
+                          <td className="py-3 pl-4 font-mono font-bold text-emerald-700">$0.00 Upfront</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: PREVIEW DECK - VENTURE SUMMARY (4 of 12 cols) */}
+              <div className="lg:col-span-4 sticky top-24 space-y-4">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                        PREVIEW DECK
+                      </span>
+                      <h3 className="text-sm font-black text-slate-900 tracking-tight">VENTURE SUMMARY</h3>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300 text-[10px] font-mono font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span>Live Spec</span>
+                    </span>
+                  </div>
+
+                  {/* Spec Sheet Table */}
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Venture Title</span>
+                      <span className="font-extrabold text-slate-900">{productName}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Selected Path</span>
+                      <span className={`font-mono font-bold ${selectedTrack === 'interactive' ? 'text-emerald-700' : 'text-slate-900'}`}>
+                        {selectedTrack === 'interactive' ? 'Track 1: Interactive Pass' : 'Track 2: Studio-Managed'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Equity Ratio</span>
+                      <span className="font-mono font-bold text-slate-900">50 / 50 Irrevocable</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Access Tier</span>
+                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono text-[11px] font-bold">
+                        {selectedTrack === 'interactive' ? 'Full Interactive OS' : 'Studio-Managed'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Upfront Investment</span>
+                      <span className="font-mono font-extrabold text-slate-900">
+                        {selectedTrack === 'interactive' ? '$50.00 USD' : '$0.00 Upfront'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Response / Deployment</span>
+                      <span className="font-mono text-emerald-700 font-semibold">Immediate Provisioning</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-slate-500">Expected Build Cadence</span>
+                      <span className="font-bold text-slate-900">3 Structured Phases</span>
+                    </div>
+                  </div>
+
+                  {/* Better Action Buttons */}
+                  <div className="space-y-2 pt-2">
+                    {selectedTrack === 'interactive' ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowDiyModal(true)}
+                        className="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                      >
+                        <span>Continue with Interactive Pass ($50)</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleDeclineDiyOffer}
+                        className="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                      >
+                        <span>Continue with Studio-Managed Track</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTrack(prev => prev === 'interactive' ? 'managed' : 'interactive')}
+                      className="w-full py-2 px-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Reset Selection</span>
+                    </button>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+                    Authorizes co-builder credentials and generates the live operational environment according to your tier.
+                  </p>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-500">
+                    <span>Venture Spec:</span>
+                    <span className="text-emerald-700 font-bold flex items-center gap-1 cursor-pointer hover:underline">
+                      <FileText className="w-3 h-3" />
+                      <span>CF-5050 Agreement (50/50)</span>
+                    </span>
+                  </div>
+
+                  {/* Security Banner */}
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Legal 50/50 Partnership Bound</span>
+                    </div>
+                    <p className="text-slate-500 leading-relaxed text-[10.5px]">
+                      Both tracks guarantee the exact same commercial payout structure. The $50 pass covers compute infrastructure and tooling licenses for self-execution.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : activeMainView === 'projectos' ? (
+          /* ── PROJECTOS WORKSPACE VIEW ────────────────────────────────────────── */
+          <div className="space-y-6">
+            {isDiyActive ? (
+              <ProjectOS project={project} onUpdateProject={handleUpdateProject} />
+            ) : (
+              /* Studio Managed Status Dashboard */
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200 text-[10px] font-mono font-bold uppercase tracking-wider">
+                        🤝 Studio-Managed Venture
+                      </span>
+                      <span className="text-xs text-slate-300">•</span>
+                      <span className="text-xs font-bold text-emerald-700">50/50 Revenue Split Active</span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                      ProjectOS Progress Tracker: {productName}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl">
+                      You chose the Studio-Managed Co-Launch track. The Creator Forge studio engineering team handles 100% of software development, architecture, and deployments for you. You can track all sprint progress, pre-orders, and telemetry below.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1 shrink-0">
+                    <span className="text-[10px] text-slate-400 uppercase font-mono font-bold block">Current Phase</span>
+                    <div className="text-lg font-black text-slate-900 font-mono">
+                      Phase {project?.currentPhase || 1}: {project?.currentPhase === 3 ? 'Launch & Scale' : project?.currentPhase === 2 ? 'Build MVP' : 'Validate'}
+                    </div>
+                    <span className="text-[10px] text-emerald-700 font-bold block">Managed by Studio Operators</span>
+                  </div>
+                </div>
+
+                {/* Progress Milestones */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-900">Phase 1: Validation</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono font-bold">
+                        {project?.currentPhase > 1 ? 'Completed' : 'In Progress'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Studio operators are managing pre-order telemetry and customer interest validation.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-900">Phase 2: Build MVP</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-mono font-bold">
+                        {project?.currentPhase === 2 ? 'Active Sprint' : project?.currentPhase > 2 ? 'Completed' : 'Upcoming'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Engineers configure the full stack, database, and customer dashboard.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-900">Phase 3: Launch</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-purple-50 text-purple-800 font-mono font-bold">
+                        {project?.currentPhase === 3 ? 'Active Launch' : 'Upcoming'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Production deployment and recurring subscription checkout management.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Return to Launch Kit CTA */}
+                <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <h4 className="text-xs font-bold text-slate-900">Looking for your daily tasks & promotional scripts?</h4>
+                    <p className="text-[11px] text-slate-500">
+                      Head over to your Daily Launch Kit to copy promotional copy, Instagram stories, and video scripts.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveMainView('launch_kit')}
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                  >
+                    Open Daily Launch Kit & Scripts →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ── STATE 2: VALIDATION SPRINT & DAILY LAUNCH KIT (Image 3) ──────────── */
+          <div className="space-y-6">
+
+            {/* Validation Sprint Milestone Header Card */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                    VALIDATION SPRINT MILESTONE
+                  </span>
+                  <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-0.5">
+                    ${presalesRevenue.toLocaleString()}{' '}
+                    <span className="text-slate-400 font-normal text-base sm:text-lg">
+                      of ${presaleTarget.toLocaleString()} Presale Goal
+                    </span>
+                  </h1>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-slate-900" />
+                    <span>{targetPct}% Target Reached</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar with Milestones */}
+              <div className="space-y-2">
+                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5">
+                  <div
+                    className="bg-slate-900 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.max(2, targetPct)}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                  <span>$0 Baseline</span>
+                  <span className="font-semibold text-slate-700">${Math.round(presaleTarget * 0.7).toLocaleString()} Gate Threshold</span>
+                  <span className="font-semibold text-slate-900">${presaleTarget.toLocaleString()} Stretch Target</span>
+                </div>
+              </div>
+
+              {/* 5 KPI Metric Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">Your 50% Profit Share</span>
+                  <span className="text-base font-extrabold text-emerald-700 font-mono mt-0.5 block">
+                    ${creatorRevenueShare.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">Automated payout routing</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">Sprint Duration</span>
+                  <span className="text-base font-extrabold text-slate-900 font-mono mt-0.5 block">
+                    14 days
+                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">12 days remaining</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">Pre-Orders / Backers</span>
+                  <span className="text-base font-extrabold text-slate-900 font-mono mt-0.5 block">
+                    {reservations.length}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">Tier: $49 Founding Pass</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">Sprint Tasks</span>
+                  <span className="text-base font-extrabold text-slate-900 font-mono mt-0.5 block">
+                    {completedTasksCount} / {totalTasksCount} done
+                  </span>
+                  <span className="text-[10px] text-emerald-700 font-bold block mt-0.5">
+                    {totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0}% complete
+                  </span>
+                </div>
+                <div className="col-span-2 sm:col-span-1 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">Conversion Funnel</span>
+                  <span className="text-base font-extrabold text-slate-900 font-mono mt-0.5 block">
+                    {Number(project.conversionRate || 0.0).toFixed(1)}%
+                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">Traffic to checkout</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-navigation Tabs */}
+            <div className="flex items-center gap-1.5 p-1.5 bg-white rounded-xl border border-slate-200 shadow-2xs overflow-x-auto scrollbar-none">
+              {[
+                { id: 'tasks', label: 'Daily Launch Checklist', count: `${completedTasksCount}/${totalTasksCount}` },
+                { id: 'scripts', label: 'Copyable Launch Content', count: '7 items' },
+                { id: 'presales', label: 'Verified Pre-Orders', count: `${reservations.length}` },
+                { id: 'messages', label: 'Studio Chat & Messages', count: `${portalDisplayMessages.length}` },
+                { id: 'strategy', label: 'Validation Specs' },
+              ].map(tab => {
+                const isActive = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                      isActive
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    {tab.count && (
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                        {tab.count}
+                      </span>
+                    )}
                   </button>
                 )
               })}
             </div>
 
-            {/* Script Views */}
-            {activeScriptTab === 'post' && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-bold">Social Post Copy</span>
-                  <button
-                    onClick={() => copyToClipboard(campaignKit.announcementPost, 'post')}
-                    disabled={!campaignKit.announcementPost}
-                    className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-40"
-                  >
-                    {copiedKey === 'post' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedKey === 'post' ? 'Copied!' : 'Copy Post'}</span>
-                  </button>
-                </div>
-                <textarea
-                  readOnly
-                  rows={8}
-                  value={campaignKit.announcementPost || 'No announcement post drafted yet.'}
-                  className="w-full p-4 rounded-xl bg-[#141720] border border-white/[0.08] text-xs text-slate-200 outline-none font-sans leading-relaxed resize-none select-all"
-                />
-              </div>
-            )}
+            {/* 2-Column Sprint Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            {activeScriptTab === 'video' && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-bold">60-Second Video Script (TikTok / Reels)</span>
-                  <button
-                    onClick={() => copyToClipboard(campaignKit.videoScript, 'video')}
-                    disabled={!campaignKit.videoScript}
-                    className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-40"
-                  >
-                    {copiedKey === 'video' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedKey === 'video' ? 'Copied!' : 'Copy Script'}</span>
-                  </button>
-                </div>
-                <textarea
-                  readOnly
-                  rows={9}
-                  value={campaignKit.videoScript || 'No video script drafted yet.'}
-                  className="w-full p-4 rounded-xl bg-[#141720] border border-white/[0.08] text-xs text-purple-200 outline-none font-mono leading-relaxed resize-none select-all"
-                />
-              </div>
-            )}
+              {/* Left Column: Tab Content (8 of 12 cols) */}
+              <div className="lg:col-span-8 space-y-6">
 
-            {activeScriptTab === 'dm' && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-bold">1-on-1 Community DM Outreach</span>
-                  <button
-                    onClick={() => copyToClipboard(campaignKit.directMessageScript, 'dm')}
-                    disabled={!campaignKit.directMessageScript}
-                    className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-40"
-                  >
-                    {copiedKey === 'dm' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedKey === 'dm' ? 'Copied!' : 'Copy DM'}</span>
-                  </button>
-                </div>
-                <textarea
-                  readOnly
-                  rows={6}
-                  value={campaignKit.directMessageScript || 'No DM script drafted yet.'}
-                  className="w-full p-4 rounded-xl bg-[#141720] border border-white/[0.08] text-xs text-slate-200 outline-none font-sans leading-relaxed resize-none select-all"
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: VERIFIED PRE-ORDERS */}
-        {activeTab === 'presales' && (
-          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
-            <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-              <div>
-                <h3 className="font-bold text-white text-sm">Verified Backer Reservations ({reservations.length})</h3>
-                <p className="text-xs text-slate-400">Live feed of audience pre-orders directly tied to your revenue share.</p>
-              </div>
-              <span className="text-xs font-mono text-emerald-400">${presalesRevenue.toLocaleString()} Total</span>
-            </div>
-
-            {reservations.length === 0 ? (
-              <div className="py-8 text-center text-slate-500 text-xs border border-dashed border-white/[0.08] rounded-xl">
-                No customer pre-orders recorded yet. Pledges will populate here as backers join.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {reservations.map(res => (
-                  <div key={res.id} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] flex items-center justify-between text-xs">
-                    <div>
-                      <div className="font-bold text-white">{res.name}</div>
-                      <span className="text-[10px] text-slate-400 font-mono">{res.email}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-emerald-400">+${res.amount}</div>
-                      <span className="text-[10px] text-slate-400">{res.tier}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 4: DIRECT MESSAGES & STUDIO CHAT */}
-        {activeTab === 'messages' && (
-          <div className="rounded-2xl bg-[#0b141a] border border-white/[0.1] shadow-2xl overflow-hidden flex flex-col h-[620px] relative font-sans">
-            {/* Header */}
-            <div className="bg-[#1f2c34] px-4 py-3 border-b border-white/[0.08] flex items-center justify-between text-white z-10 shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-emerald-500 p-0.5 shadow-md shrink-0 flex items-center justify-center">
-                  <div className="w-full h-full rounded-full bg-[#0d1117] flex items-center justify-center font-bold text-xs text-purple-300">
-                    CF
-                  </div>
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-sm text-white truncate">Creator Forge Studio</h3>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shrink-0">
-                      <ShieldCheck className="w-2.5 h-2.5" />
-                      <span>Studio Co-Founder</span>
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
-                    <span className="text-emerald-400 font-medium">Online · Dedicated Tech Team</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Chat Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-[#0b141a] bg-[radial-gradient(#1f2c34_1px,transparent_1px)] [background-size:16px_16px]">
-              {portalDisplayMessages.length === 0 ? (
-                <div className="py-12 px-6 max-w-md mx-auto text-center space-y-3 rounded-2xl bg-[#111b21] border border-white/[0.06]">
-                  <MessageSquare className="w-8 h-8 text-slate-500 mx-auto" />
-                  <h4 className="font-bold text-white text-sm">Direct Channel with Studio</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Send real-time messages, feedback on features, or launch questions directly to your Creator Forge engineering team.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3 pt-2">
-                  {portalDisplayMessages.map((msg, idx) => {
-                    // For creator portal: msg.sender === 'creator' is outgoing (right), msg.sender === 'admin' is incoming (left)
-                    const isCreatorOutgoing = msg.sender === 'creator'
-                    return (
-                      <div
-                        key={msg.id || idx}
-                        className={`flex flex-col ${isCreatorOutgoing ? 'items-end' : 'items-start'}`}
-                      >
-                        <div
-                          className={`max-w-[85%] sm:max-w-[70%] rounded-2xl p-3.5 text-xs shadow-md space-y-1.5 relative ${
-                            isCreatorOutgoing
-                              ? 'bg-[#005c4b] text-slate-100 rounded-tr-xs border border-emerald-500/20'
-                              : 'bg-[#202c33] text-slate-200 rounded-tl-xs border border-white/[0.06]'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2 pb-0.5 text-[11px]">
-                            <span className={`font-extrabold ${isCreatorOutgoing ? 'text-emerald-300' : 'text-purple-300'}`}>
-                              {isCreatorOutgoing ? (project.creatorName || 'You') : 'Creator Forge Studio'}
+                {/* TAB 1: DAILY LAUNCH CHECKLIST */}
+                {activeTab === 'tasks' && (
+                  <div className="space-y-6">
+                    {/* Today's Action Card */}
+                    <div className="bg-white rounded-2xl border-2 border-emerald-500/80 p-5 shadow-xs space-y-3 relative overflow-hidden">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300">
+                              🔥 TODAY'S ACTION (DAY 2)
                             </span>
-                            {msg.isSection1 && (
-                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/20 text-slate-300 font-mono">
-                                Outreach
-                              </span>
-                            )}
+                            <span className="text-xs text-slate-500 font-medium">Instagram Stories • Pain Point Poll</span>
                           </div>
-
-                          {msg.subject && (
-                            <div className="font-bold text-white border-b border-white/[0.08] pb-1 text-[11px]">
-                              {msg.subject}
-                            </div>
-                          )}
-
-                          <p className="whitespace-pre-wrap leading-relaxed select-text font-sans text-xs">
-                            {msg.text}
+                          <h4 className="text-base font-extrabold text-slate-900">
+                            Today: Post Instagram Story #2 (Pain Point Poll & Pre-Order Link)
+                          </h4>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            Post the 3-story sequence with interactive poll sticker to drive warm audience to the pre-order page.
                           </p>
+                        </div>
 
-                          <div className={`flex items-center justify-end gap-1 text-[10px] ${
-                            isCreatorOutgoing ? 'text-emerald-200/70' : 'text-slate-400'
-                          }`}>
-                            <span>{msg.time}</span>
-                            {isCreatorOutgoing && (
-                              <span title="Delivered to Studio">
-                                <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />
-                              </span>
-                            )}
-                          </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setViewDraftTask(schedule.find(t => t.day === 2) || schedule[0])}
+                            className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
+                            <span>View Draft</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleChecklist(schedule.find(t => t.day === 2)?.id || 'day-2')}
+                            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Mark Done</span>
+                          </button>
                         </div>
                       </div>
-                    )
-                  })}
-                  <div ref={chatMessagesEndRef} />
+                    </div>
+
+                    {/* Creator Launch Action Checklist */}
+                    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <span className="text-xs font-mono font-bold text-slate-900 uppercase tracking-wider">
+                          CREATOR LAUNCH ACTION CHECKLIST
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300 font-mono text-[11px] font-bold">
+                          {completedTasksCount} of {totalTasksCount} Completed
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {schedule.map(task => {
+                          const isDone = Boolean(task.done || task.completed)
+                          return (
+                            <div
+                              key={task.id}
+                              className={`p-4 rounded-xl border transition-all flex items-start justify-between gap-3 ${
+                                isDone ? 'bg-slate-50/60 border-slate-200 opacity-80' : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleChecklist(task.id)}
+                                  className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer ${
+                                    isDone
+                                      ? 'bg-emerald-600 text-white'
+                                      : 'border border-slate-300 hover:border-slate-400 bg-white'
+                                  }`}
+                                >
+                                  {isDone && <Check className="w-3.5 h-3.5 text-white stroke-[3]" />}
+                                </button>
+                                <div className="space-y-0.5">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-[10px] font-mono font-bold uppercase text-slate-500">
+                                      DAY {task.day}
+                                    </span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
+                                      {task.channel}
+                                    </span>
+                                  </div>
+                                  <div className={`text-xs font-bold ${isDone ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                                    {task.title}
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 leading-normal">
+                                    {task.description}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setViewDraftTask(task)}
+                                className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold shrink-0 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-slate-400" />
+                                <span>View Draft</span>
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 2: COPYABLE LAUNCH CONTENT */}
+                {activeTab === 'scripts' && (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm">Copyable Promotional Assets</h3>
+                        <p className="text-xs text-slate-500">1-click copy pre-written stories, announcement posts, and scripts.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {[
+                        { id: 'post', label: 'Announcement Post' },
+                        { id: 'story', label: 'Instagram Stories (3-Part)' },
+                        { id: 'video', label: 'Video Demo Hook' },
+                        { id: 'email', label: 'Email Newsletter' },
+                        { id: 'dm', label: 'VIP DM Outreach' },
+                      ].map(st => (
+                        <button
+                          key={st.id}
+                          onClick={() => setActiveScriptTab(st.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            activeScriptTab === st.id
+                              ? 'bg-slate-900 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {st.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-500 font-mono">Draft Preview</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const map = {
+                              post: campaignKit.announcementPost || 'Social announcement post',
+                              story: campaignKit.storySequence || 'Story sequence',
+                              video: campaignKit.videoScript || 'Video script',
+                              email: campaignKit.newsletterDraft || 'Newsletter draft',
+                              dm: campaignKit.directMessageScript || 'DM script'
+                            }
+                            copyToClipboard(map[activeScriptTab], activeScriptTab)
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          {copiedKey === activeScriptTab ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedKey === activeScriptTab ? 'Copied!' : 'Copy Script'}</span>
+                        </button>
+                      </div>
+                      <textarea
+                        readOnly
+                        rows={8}
+                        value={
+                          activeScriptTab === 'story' ? (campaignKit.storySequence || 'STORY 1:\n"Quick question for everyone..."\n\nSTORY 2:\n"We have been secretly engineering..."\n\nSTORY 3:\n"Grab founding access here: ' + preorderUrl + '"') :
+                          activeScriptTab === 'video' ? (campaignKit.videoScript || 'HOOK (0-3s): "If you struggle with..."\nDEMO (3-30s): "Here is how our new software handles it automatically..."\nCTA (30-60s): "Link in bio for pre-order access."') :
+                          activeScriptTab === 'email' ? (campaignKit.newsletterDraft || 'Subject: Exciting news — building our custom software tool!\n\nHey everyone,\n\nWe are officially partnering with Creator Forge Studio...') :
+                          activeScriptTab === 'dm' ? (campaignKit.directMessageScript || 'Hey! Saw you were asking about this earlier — we just launched early founding access: ' + preorderUrl) :
+                          (campaignKit.announcementPost || 'Excited to announce our new software platform built specifically for our community! Reserve your early pass now: ' + preorderUrl)
+                        }
+                        className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 outline-none font-mono leading-relaxed resize-none select-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 3: VERIFIED PRE-ORDERS */}
+                {activeTab === 'presales' && (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm">Verified Backer Reservations ({reservations.length})</h3>
+                        <p className="text-xs text-slate-500">Live feed of audience pre-orders directly tied to your revenue share.</p>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
+                        ${presalesRevenue.toLocaleString()} Total Collected
+                      </span>
+                    </div>
+
+                    {reservations.length === 0 ? (
+                      <div className="py-12 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl space-y-2">
+                        <Users className="w-8 h-8 text-slate-300 mx-auto" />
+                        <p>No customer pre-orders recorded yet. Pledges will populate here as backers join.</p>
+                        <button
+                          type="button"
+                          onClick={handleSimulatePreorder}
+                          className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Simulate First Pre-Order (+$49)</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {reservations.map(res => (
+                          <div key={res.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                            <div>
+                              <div className="font-bold text-slate-900">{res.name}</div>
+                              <span className="text-[10px] text-slate-400 font-mono">{res.email}</span>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-mono font-bold text-emerald-700">+${res.amount}</div>
+                              <span className="text-[10px] text-slate-500 font-mono">{res.tier || 'Founding Pass'}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 4: STUDIO CHAT & MESSAGES */}
+                {activeTab === 'messages' && (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm">Studio Chat & Co-Founder Dispatch</h3>
+                        <p className="text-xs text-slate-500">Direct operational communication channel with Creator Forge Studio.</p>
+                      </div>
+                      <span className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                        ● Studio Online
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                      {portalDisplayMessages.length === 0 ? (
+                        <div className="text-center py-8 text-slate-400 text-xs">
+                          No messages yet. Send a note to Creator Forge Studio below.
+                        </div>
+                      ) : (
+                        portalDisplayMessages.map(msg => {
+                          const isStudio = msg.sender === 'admin'
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`p-4 rounded-xl text-xs space-y-1 ${
+                                isStudio
+                                  ? 'bg-slate-50 border border-slate-200 mr-8'
+                                  : 'bg-emerald-50/50 border border-emerald-200 ml-8'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-slate-900">{msg.senderName}</span>
+                                <span className="text-[10px] text-slate-400 font-mono">{msg.time}</span>
+                              </div>
+                              <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                            </div>
+                          )
+                        })
+                      )}
+                      <div ref={chatMessagesEndRef} />
+                    </div>
+
+                    <form onSubmit={handleSendCreatorMessage} className="pt-2 flex gap-2">
+                      <input
+                        type="text"
+                        value={creatorReplyText}
+                        onChange={(e) => setCreatorReplyText(e.target.value)}
+                        placeholder="Reply to Creator Forge Studio..."
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-none focus:border-slate-400 transition-all font-sans"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSendingReply || !creatorReplyText.trim()}
+                        className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Send</span>
+                      </button>
+                    </form>
+                  </div>
+                )}
+
+                {/* TAB 5: VALIDATION SPECS & STRATEGY */}
+                {activeTab === 'strategy' && (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+                    <div className="border-b border-slate-100 pb-3">
+                      <h3 className="font-bold text-slate-900 text-sm">Validation Strategy & Economic Model</h3>
+                      <p className="text-xs text-slate-500">Commercial parameters and minimum gate thresholds required to proceed to Phase 2 Build.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                        <span className="font-bold text-slate-900">Commercial Split</span>
+                        <p className="text-slate-600 leading-relaxed">
+                          Equal 50/50 profit share paid on all monthly recurring subscriptions and founding pre-orders.
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                        <span className="font-bold text-slate-900">Gate Threshold</span>
+                        <p className="text-slate-600 leading-relaxed">
+                          ${presaleTarget.toLocaleString()} in verified pre-orders unlocks production engineering and beta hosting.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Right Column: PREVIEW DECK - SPRINT SUMMARY (4 of 12 cols) */}
+              <div className="lg:col-span-4 sticky top-24 space-y-4">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                        PREVIEW DECK
+                      </span>
+                      <h3 className="text-sm font-black text-slate-900 tracking-tight">SPRINT SUMMARY</h3>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300 text-[10px] font-mono font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span>Live Spec</span>
+                    </span>
+                  </div>
+
+                  {/* Spec Sheet Table */}
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Venture Partner</span>
+                      <span className="font-extrabold text-slate-900">{creatorName}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Validation Gate</span>
+                      <span className="font-mono font-bold text-slate-900">${presaleTarget.toLocaleString()} Target</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Presale Price Point</span>
+                      <span className="font-mono font-bold text-slate-900">$49 Early Bird Pass</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Backers Needed for Gate</span>
+                      <span className="font-mono font-bold text-emerald-700">~{Math.max(1, Math.ceil(presaleTarget / 49))} Pre-Orders</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Co-Founder Split</span>
+                      <span className="font-mono font-bold text-slate-900">50% / 50% Irrevocable</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Launch Timeline</span>
+                      <span className="font-bold text-slate-900">7 Days of Structured Posts</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-slate-500">Your Current 50% Pool</span>
+                      <span className="font-mono font-black text-emerald-700">${creatorRevenueShare.toLocaleString()} USD</span>
+                    </div>
+                  </div>
+
+                  {/* Better Action Buttons */}
+                  <div className="space-y-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleSimulatePreorder}
+                      className="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                    >
+                      <Plus className="w-4 h-4 text-emerald-400" />
+                      <span>Simulate Backer Pre-Order (+$49)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setViewDraftTask(schedule.find(t => t.day === 2) || schedule[0])}
+                      className="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Eye className="w-4 h-4 text-slate-500" />
+                      <span>View Today's Story Assets</span>
+                    </button>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+                    Real-time telemetry connected to {creatorName} payment gateway webhook.
+                  </p>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-500">
+                    <span>Venture Spec:</span>
+                    <span className="text-emerald-700 font-bold flex items-center gap-1 cursor-pointer hover:underline">
+                      <FileText className="w-3 h-3" />
+                      <span>CF-5050 Agreement (50/50)</span>
+                    </span>
+                  </div>
+
+                  {/* Settlement Banner */}
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Automated 50/50 Settlement</span>
+                    </div>
+                    <p className="text-slate-500 leading-relaxed text-[10.5px]">
+                      Presale revenues automatically deposit 50% directly into your verified partner bank ledger via Stripe Connect.
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Composer */}
-            <form onSubmit={handleSendCreatorMessage} className="bg-[#1f2c34] p-3 border-t border-white/[0.08] flex items-center gap-2">
-              <input
-                type="text"
-                value={creatorReplyText}
-                onChange={e => setCreatorReplyText(e.target.value)}
-                placeholder="Type a message or question to Creator Forge Studio..."
-                className="flex-1 bg-[#2a3942] text-white text-xs rounded-xl px-4 py-2.5 border border-transparent focus:border-purple-500 focus:outline-none transition-all placeholder:text-slate-400"
-              />
-              <button
-                type="submit"
-                disabled={!creatorReplyText.trim() || isSendingReply}
-                className="p-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
-              >
-                {isSendingReply ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              </button>
-            </form>
+            </div>
           </div>
         )}
 
-        {/* TAB 5: VALIDATION STRATEGY & PLAN */}
-        {activeTab === 'strategy' && (
-          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
-            <div className="border-b border-white/[0.06] pb-3 flex items-center justify-between">
+      </div>
+
+      {/* ── VIEW DRAFT MODAL ────────────────────────────────────────────────────── */}
+      {viewDraftTask && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="max-w-lg w-full bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="font-bold text-white text-sm">Venture Validation Blueprint</h3>
-                <p className="text-xs text-slate-400">The core target customer, value proposition, and validation success gates agreed upon for this co-launch.</p>
+                <span className="text-[10px] font-mono font-bold uppercase text-slate-400">
+                  DAY {viewDraftTask.day} • {viewDraftTask.channel}
+                </span>
+                <h3 className="text-base font-extrabold text-slate-900">{viewDraftTask.title}</h3>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                50/50 Co-Founder Terms
-              </span>
+              <button
+                type="button"
+                onClick={() => setViewDraftTask(null)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5">
-                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Target Customer</span>
-                <p className="text-slate-200 leading-relaxed font-sans">
-                  {project.validationPlan?.customer || project.targetAudience || "Core high-intent audience segment from your community."}
-                </p>
-              </div>
+            <p className="text-xs text-slate-600">{viewDraftTask.description}</p>
 
-              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5">
-                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">Core Problem Solved</span>
-                <p className="text-slate-200 leading-relaxed font-sans">
-                  {project.validationPlan?.problem || project.problem || "Automating friction points and repetitive tasks for your followers."}
-                </p>
-              </div>
+            <div className="space-y-2">
+              <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">Copyable Copy</span>
+              <textarea
+                readOnly
+                rows={6}
+                value={getTaskDraftContent(viewDraftTask)}
+                className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-none font-mono leading-relaxed resize-none select-all"
+              />
+            </div>
 
-              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5">
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Founding Member Offer</span>
-                <p className="text-slate-200 leading-relaxed font-sans">
-                  {project.validationPlan?.offer || `Founding Access to ${project.productName || 'the product'}: Lifetime discount & direct alpha access.`}
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5">
-                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">Pricing & Reservation</span>
-                <p className="text-slate-200 leading-relaxed font-sans">
-                  {project.validationPlan?.pricing || project.pricing || "$89 founding annual pass with a refundable reservation deposit."}
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5 md:col-span-2">
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Success Threshold & Sprint Gate</span>
-                <p className="text-slate-200 leading-relaxed font-sans">
-                  {project.validationPlan?.threshold || `$${presaleTarget.toLocaleString()} in pre-sales or 50 paid founding member reservations within ${project.validationPlan?.period || '18 days'}.`}
-                </p>
-              </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => copyToClipboard(getTaskDraftContent(viewDraftTask), 'draft')}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                {copiedKey === 'draft' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedKey === 'draft' ? 'Copied!' : 'Copy to Clipboard'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewDraftTask(null)}
+                className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold cursor-pointer"
+              >
+                Close
+              </button>
             </div>
           </div>
-        )}
-      </main>
+        </div>
       )}
 
-      {/* Do-It-Yourself Stripe & PayPal Subscription Modal */}
+      {/* ── DIY SUBSCRIPTION MODAL ($50 USD PASS UNLOCK) ────────────────────────── */}
       <DIYSubscriptionModal
         isOpen={showDiyModal}
-        project={project}
         onClose={() => setShowDiyModal(false)}
-        onUnlockSuccess={(updated) => {
-          handleUpdateProject(updated)
-          setActiveMainView('projectos')
-        }}
+        project={project}
+        onUnlockSuccess={handleUnlockDiySuccess}
       />
     </div>
   )
