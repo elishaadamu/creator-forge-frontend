@@ -490,8 +490,9 @@ export default function AcquisitionEngine({
     "Quick idea for {{display_name}} 💡 [#{{handle}}]",
   );
   const [templateBody, setTemplateBody] = useState(
-    `Hi {{first_name}},\n\nI’ve been following your {{niche}} content on {{platform}} and love what you're building with your community! 👋\n\nCreator Forge ⚡ | 50/50 Venture Model\nWe partner 50/50 with creators to build custom software tools and monetization apps for their audience. Our team handles 100% of the engineering, hosting, payment setup, and customer support with zero upfront cost to you.\n\n• Full Delivery: 100% Engineering, UI/UX & QA\n• Zero Risk: $0 Upfront Cost & Co-ownership\n• Hands-Off Ops: Global Hosting, Billing & 24/7 Support\n\nWe analyzed your channel and engineered 3 tailored software product concepts for your {{follower_count}} followers that could drive recurring monthly revenue 🚀\n\nWould you be open to taking a look at a brief 3-concept breakdown this week?\n\nBest regards,\nAlex Rivera\nHead of Venture Partnerships · Creator Forge\n\n---\nRef: [CF-STAGE:STEP3_INQUIRY | CF-CID:{{creator_id}} | Handle:@{{handle}}]`,
+    `Hi {{first_name}},\n\nI’ve been following your {{niche}} content on {{platform}} and love what you're building with your community! 👋\n\nCreator Forge ⚡ | 50/50 Venture Model\nWe partner 50/50 with creators to build custom software tools and monetization apps for their audience. Our team handles 100% of the engineering, hosting, payment setup, and customer support with zero upfront cost to you.\n\n• Full Delivery: 100% Engineering, UI/UX & QA\n• Zero Risk: $0 Upfront Cost & Co-ownership\n• Hands-Off Ops: Global Hosting, Billing & 24/7 Support\n\nWe analyzed your channel and engineered 3 tailored software product concepts for your {{follower_count}} followers that could drive recurring monthly revenue 🚀\n\nWould you be open to taking a look at a brief 3-concept breakdown this week?\n\nTo reply, simply shoot back a quick response:\n• "I'm interested, let's go ahead with the process" — and I'll send over the 3 custom software concepts and revenue roadmap.\n• Or "I am not interested, sorry" — and I will immediately take you off our list with zero follow-ups.\n\nBest regards,\nAlex Rivera\nHead of Venture Partnerships · Creator Forge\n\n---\nRef: [CF-STAGE:STEP3_INQUIRY | CF-CID:{{creator_id}} | Handle:@{{handle}}]`,
   );
+  const [showStep3EmailPreview, setShowStep3EmailPreview] = useState(false);
 
   // Discovered Creators State (Dynamic AI + Apify Pipeline)
   const [isLaunchingProject, setIsLaunchingProject] = useState(false);
@@ -2952,13 +2953,26 @@ export default function AcquisitionEngine({
     const cEmail = (c.email || c.email_public || "").toLowerCase().trim();
     const cHandle = (c.handle || "").toLowerCase().replace(/^@/, "").trim();
     const cId = c.id;
-    // 0. Strict Uncontacted Guard: A creator who has NEVER had outreach dispatched CANNOT have a reply!
+    // 0. Strict Uncontacted Guard:
+    // A creator who has had outreach sent, or has a matching thread, has outreach.
+    const hasMatchingThread = (threads || []).some((t) => {
+      if (!t) return false;
+      if (t.creator_id && cId && t.creator_id === cId) return true;
+      const tSubj = (t.subject || t.original_subject || (t.replies && t.replies[0] && t.replies[0].subject) || "").toLowerCase();
+      if (cHandle && cHandle.length >= 2 && (tSubj.includes(`[#${cHandle}]`) || tSubj.includes(`for ${cHandle}`))) return true;
+      if (cHandle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === cHandle) return true;
+      return false;
+    });
+
     const creatorHasOutreach = Boolean(
       c.outreach_sent ||
+      c.outreachSent ||
       c.status === "contacted" ||
       c.status === "pitched" ||
       c.status === "partnered" ||
-      (cId && pitchSentMap[cId])
+      (cId && pitchSentMap[cId]) ||
+      hasMatchingThread ||
+      (activeStep >= 4 && cEmail && cEmail.includes("@"))
     );
 
     if (!creatorHasOutreach) {
@@ -3044,46 +3058,35 @@ export default function AcquisitionEngine({
     ];
 
     const matchingThreads = (threads || []).filter((t) => {
+      if (!t) return false;
       // Direct Creator ID match (highest precision)
-      if (t.creator_id && cId) {
-        return t.creator_id === cId;
+      if (t.creator_id && cId && t.creator_id === cId) {
+        return true;
       }
-      // If creator was NEVER contacted, do NOT match arbitrary unassigned threads by email or handle!
-      if (!creatorHasOutreach) {
-        return false;
-      }
-      // If thread has NO creator_id assigned, match by handle
-      if (!t.creator_id && cHandle && t.creator_handle) {
-        const cleanThreadHandle = t.creator_handle
-          .toLowerCase()
-          .replace(/^@/, "")
-          .trim();
-        if (cleanThreadHandle === cHandle) return true;
-      }
-      // If thread has NO creator_id assigned, check if subject mentions this creator specifically
-      if (!t.creator_id) {
-        const tSubject = (t.subject || "").toLowerCase();
-        if (cName && cName.length >= 3 && tSubject.includes(`for ${cName}`)) return true;
-        if (cHandle && cHandle.length >= 3 && tSubject.includes(`[#${cHandle}]`)) return true;
-      }
-      // If thread has NO creator_id assigned, match by email ONLY IF it doesn't belong to another creator
-      if (!t.creator_id && cEmail && cEmail.includes("@") && !adminEmails.includes(cEmail)) {
+
+      const tSubject = (t.subject || t.original_subject || (t.replies && t.replies[0] && t.replies[0].subject) || "").toLowerCase();
+
+      // Check handle token match: [#<handle>] or "for <handle>"
+      if (cHandle && cHandle.length >= 2 && (tSubject.includes(`[#${cHandle}]`) || tSubject.includes(`for ${cHandle}`))) return true;
+      if (cHandle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === cHandle) return true;
+      if (cName && cName.length >= 3 && tSubject.includes(`for ${cName}`)) return true;
+
+      // Match by email ONLY IF thread does not belong to another creator
+      if (cEmail && cEmail.includes("@") && !adminEmails.includes(cEmail)) {
         const isEmailMatch =
           (t.creator_email && t.creator_email.toLowerCase().trim() === cEmail) ||
           (t.recipient_email && t.recipient_email.toLowerCase().trim() === cEmail);
         if (isEmailMatch) {
-          const tSubj = (t.subject || "").toLowerCase();
           const otherCreators = (creators || []).filter((other) => other.id !== cId);
           const belongsToOther = otherCreators.some((other) => {
             const oName = (other.name || other.display_name || "").toLowerCase().trim();
             const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
             return (
-              (oName && oName.length >= 3 && tSubj.includes(`for ${oName}`)) ||
-              (oHandle && oHandle.length >= 3 && tSubj.includes(`[#${oHandle}]`))
+              (oName && oName.length >= 3 && tSubject.includes(`for ${oName}`)) ||
+              (oHandle && oHandle.length >= 2 && (tSubject.includes(`[#${oHandle}]`) || tSubject.includes(`for ${oHandle}`)))
             );
           });
-          if (belongsToOther) return false;
-          return true;
+          if (!belongsToOther) return true;
         }
       }
       return false;
@@ -3114,11 +3117,10 @@ export default function AcquisitionEngine({
         const subjLower = (r.subject || "").toLowerCase();
 
         // Check for embedded tracking token: if it explicitly belongs to another creator, isolate it
-        if (
-          bodyLower.includes("cf-cid:") &&
-          !bodyLower.includes(`cf-cid:${cId.toLowerCase()}`)
-        ) {
-          return false;
+        if (bodyLower.includes("cf-cid:")) {
+          const hasMyCid = bodyLower.includes(`cf-cid:${cId.toLowerCase()}`);
+          const hasMyHandle = cHandle && (bodyLower.includes(`handle:@${cHandle}`) || bodyLower.includes(`[#${cHandle}]`));
+          if (!hasMyCid && !hasMyHandle) return false;
         }
         if (
           subjLower.includes("[#") &&
@@ -3194,6 +3196,10 @@ export default function AcquisitionEngine({
         "i am not interested",
         "im not interested",
         "i'm not interested",
+        "not interest",
+        "am not interest",
+        "i am not interest",
+        "sorry",
         "no thanks",
         "no thank you",
         "uninterested",
@@ -3214,6 +3220,11 @@ export default function AcquisitionEngine({
         "i would be interested",
         "i'm interested",
         "im interested",
+        "go ahead",
+        "go ahead with the process",
+        "ahead with the process",
+        "let's go ahead",
+        "lets go ahead",
         "yes",
         "love to",
         "sounds great",
@@ -7359,8 +7370,24 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               Would you be open to taking a look at a brief 3-concept breakdown this week?
                             </p>
 
+                            {/* Reply Instructions Box */}
+                            <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl space-y-1.5 text-xs text-slate-700">
+                              <p className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span>To reply, simply shoot back a quick response:</span>
+                              </p>
+                              <div className="space-y-1.5 pl-3 border-l-2 border-emerald-500/40">
+                                <p>
+                                  • <strong className="text-slate-900 font-semibold">"I'm interested, let's go ahead with the process"</strong> — and I'll send over the 3 custom software concepts and revenue roadmap.
+                                </p>
+                                <p>
+                                  • Or <strong className="text-slate-900 font-semibold">"I am not interested, sorry"</strong> — and I will immediately close your file with zero follow-ups.
+                                </p>
+                              </div>
+                            </div>
+
                             {/* Call to Action Buttons */}
-                            <div className="pt-2 pb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3" data-purpose="call-to-action-panel">
+                            <div className="pt-1 pb-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3" data-purpose="call-to-action-panel">
                               <a
                                 href="#deck-preview"
                                 onClick={(e) => e.preventDefault()}
@@ -7382,14 +7409,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             {/* Quick Response Chips */}
                             <div className="flex items-center flex-wrap gap-2 text-xs pt-1 pb-4">
                               <span className="text-slate-400 font-medium">Quick Reply:</span>
-                              <button className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition cursor-pointer" type="button">
-                                "Sounds interesting, send it over"
+                              <button className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition cursor-pointer font-medium" type="button">
+                                "I'm interested, let's go ahead with the process"
                               </button>
-                              <button className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition cursor-pointer" type="button">
-                                "Send deck first"
-                              </button>
-                              <button className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition cursor-pointer" type="button">
-                                "Not right now"
+                              <button className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition cursor-pointer font-medium" type="button">
+                                "I am not interested, sorry"
                               </button>
                             </div>
 
@@ -8370,6 +8394,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
             <div className="flex items-center gap-2.5">
               <button
+                type="button"
+                onClick={() => setShowStep3EmailPreview((prev) => !prev)}
+                className={`px-3 py-2.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+                  showStep3EmailPreview
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white hover:bg-slate-50 text-slate-700 border-slate-200"
+                }`}
+                title="View the active email message and reply protocol"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>{showStep3EmailPreview ? "Hide Email Message" : "View Email Message"}</span>
+              </button>
+              <button
                 onClick={() => handleSendBulkOutreach({ autoAdvance: true })}
                 disabled={sendingBulk || creators.length === 0}
                 className="relative inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
@@ -8434,6 +8471,136 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 Replies tracked automatically
               </span>
             </div>
+          </div>
+
+          {/* Step 3 Active Message & Reply Instructions Preview Panel */}
+          <div className="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/70 pb-3">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-slate-800" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 font-display">
+                  Active Wave Outreach Message &amp; Reply Protocol
+                </h3>
+                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-mono">
+                  Low-Friction Reply Flow
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowStep3EmailPreview((prev) => !prev)}
+                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+              >
+                <Eye className="w-3.5 h-3.5 text-slate-500" />
+                <span>{showStep3EmailPreview ? "Collapse Message" : "View Full Message"}</span>
+              </button>
+            </div>
+
+            {/* Quick summary line when collapsed */}
+            {!showStep3EmailPreview ? (
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-slate-600 bg-white p-3.5 rounded-lg border border-slate-200/80">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500">
+                    <span className="font-semibold text-slate-700">Subject:</span>
+                    <span className="text-slate-900">{templateSubject}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                    <span className="text-slate-500">Recipient Reply Options:</span>
+                    <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded font-medium text-[11px]">
+                      "I'm interested, let's go ahead with the process"
+                    </span>
+                    <span className="text-slate-400">or</span>
+                    <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded font-medium text-[11px]">
+                      "I am not interested, sorry"
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowStep3EmailPreview(true)}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs transition cursor-pointer self-start md:self-auto shrink-0"
+                >
+                  Expand Full Preview
+                </button>
+              </div>
+            ) : (
+              /* Expanded preview showing rendered email message with actual sample creator */
+              (() => {
+                const sample = creators && creators.length > 0 ? creators[0] : null;
+                const sampleName = sample?.display_name || sample?.name || "Creator";
+                const sampleFirst = sampleName.split(" ")[0];
+                const sampleFollowers = sample?.followerStr || (sample?.follower_count ? `${Math.round(sample.follower_count / 1000)}k+` : "100k+");
+                const sampleNiche = sample?.niche ? (String(sample.niche).toLowerCase().endsWith("content") ? sample.niche : `${sample.niche} content`) : "content";
+                const samplePlatform = sample?.platform || "YouTube";
+                const sampleHandle = (sample?.handle || "creator").replace(/^@/, "");
+
+                return (
+                  <div className="space-y-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs text-xs animate-in fade-in">
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2 font-mono text-[11px]">
+                      <div>
+                        <span className="font-semibold text-slate-700">Subject: </span>
+                        <span className="text-slate-900 font-medium">
+                          {templateSubject.replace(/\{\{display_name\}\}/g, sampleName).replace(/\{\{handle\}\}/g, sampleHandle)}
+                        </span>
+                      </div>
+                      <span className="text-slate-400 text-[10px]">
+                        Previewing merge tags with @{sampleHandle} ({sampleFollowers})
+                      </span>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-slate-50/50 border border-slate-200/70 font-sans text-slate-800 space-y-3 text-[13px] leading-relaxed">
+                      <p>Hi {sampleFirst},</p>
+                      <p>
+                        I’ve been following your {sampleNiche} on {samplePlatform} and love what you're building with your community! 👋
+                      </p>
+                      <div className="bg-white p-3 rounded-lg border border-slate-200/80 space-y-1.5">
+                        <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                          <span>Creator Forge</span>
+                          <span className="text-amber-500">⚡</span>
+                          <span className="text-slate-400">|</span>
+                          <span className="text-slate-600 font-medium">50/50 Venture Model</span>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-normal">
+                          We partner 50/50 with creators to build custom software tools and monetization apps for their audience. Our team handles 100% of the engineering, hosting, payment setup, and customer support with zero upfront cost to you.
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                          <span className="bg-slate-50 p-1.5 rounded border border-slate-100 font-medium text-slate-700">• 100% Engineering &amp; QA</span>
+                          <span className="bg-slate-50 p-1.5 rounded border border-slate-100 font-medium text-slate-700">• $0 Upfront Cost (50/50)</span>
+                          <span className="bg-slate-50 p-1.5 rounded border border-slate-100 font-medium text-slate-700">• Hands-Off Global Ops</span>
+                        </div>
+                      </div>
+                      <p>
+                        We analyzed your channel and engineered <strong className="text-slate-900">3 tailored software product concepts</strong> for your <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium border border-indigo-100 text-xs">{sampleFollowers} followers</span> that could drive recurring monthly revenue 🚀
+                      </p>
+                      <p className="font-medium text-slate-900">
+                        Would you be open to taking a look at a brief 3-concept breakdown this week?
+                      </p>
+
+                      {/* Reply Instructions Box */}
+                      <div className="p-3.5 bg-white rounded-lg border-2 border-emerald-500/20 shadow-2xs space-y-1.5">
+                        <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          <span>To reply, simply shoot back a quick response:</span>
+                        </div>
+                        <div className="space-y-1.5 pl-3 border-l-2 border-emerald-500/50 text-xs">
+                          <p>
+                            • <strong className="text-slate-900 font-bold">"I'm interested, let's go ahead with the process"</strong> — and I'll send over the 3 custom software concepts and revenue roadmap.
+                          </p>
+                          <p>
+                            • Or <strong className="text-slate-900 font-bold">"I am not interested, sorry"</strong> — and I will immediately close your file with zero follow-ups.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 text-xs text-slate-600">
+                        <p>Best regards,</p>
+                        <p className="font-bold text-slate-900 mt-0.5">Alex Rivera</p>
+                        <p className="text-slate-500">Head of Venture Partnerships · Creator Forge</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
           </div>
 
           {/* Queue preview table */}

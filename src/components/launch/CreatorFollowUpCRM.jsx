@@ -198,26 +198,55 @@ export default function CreatorFollowUpCRM({
     const handle = (c.handle || "").toLowerCase().replace(/^@/, "").trim();
     const cName = (c.name || c.display_name || "").toLowerCase().trim();
 
+    // 0. Strict Uncontacted Guard:
+    // A creator who has NEVER had outreach dispatched CANNOT have a reply!
+    const isContacted = Boolean(
+      c.status === "contacted" ||
+      c.status === "pitched" ||
+      c.status === "partnered" ||
+      c.outreachSent ||
+      c.outreach_sent
+    );
+
+    if (!isContacted) {
+      return {
+        hasReply: false,
+        classification: email && email.includes("@") ? "awaiting_reply" : "no_email",
+        sentiment: "neutral",
+        reasoning: email && email.includes("@")
+          ? "Lead qualified and ready for Step 3 Autonomous Outreach broadcast."
+          : "No verified public email address found yet. Add manual email address to enable outreach.",
+        snippet: email && email.includes("@") ? "Ready for outreach dispatch." : "No verified email address found yet.",
+        subject: email && email.includes("@") ? "Ready for Outreach" : "Missing Contact",
+        time: "-",
+        totalInbound: 0,
+      };
+    }
+
     // Check database threads with strict creator isolation
     const matchedThreads = (realThreads || []).filter((t) => {
       if (!t) return false;
       if (t.creator_id && cId && t.creator_id === cId) return true;
-      if (!t.creator_id) {
-        if (handle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === handle) return true;
-        if (cName && cName.length >= 3 && (t.subject || "").toLowerCase().includes(cName)) return true;
-        if (email && t.creator_email && t.creator_email.toLowerCase().trim() === email) {
-          const tSubj = (t.subject || "").toLowerCase();
-          const otherCreators = (creators || []).filter((other) => other.id !== cId);
-          const belongsToOther = otherCreators.some((other) => {
-            const oName = (other.name || other.display_name || "").toLowerCase().trim();
-            const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
-            return (
-              (oName && oName.length >= 3 && tSubj.includes(oName)) ||
-              (oHandle && oHandle.length >= 3 && tSubj.includes(oHandle))
-            );
-          });
-          if (!belongsToOther) return true;
-        }
+
+      const tSubj = (t.subject || t.original_subject || (t.replies && t.replies[0] && t.replies[0].subject) || "").toLowerCase();
+
+      // Handle token match: [#<handle>] or "for <handle>"
+      if (handle && handle.length >= 2 && (tSubj.includes(`[#${handle}]`) || tSubj.includes(`for ${handle}`))) return true;
+      if (handle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === handle) return true;
+      if (cName && cName.length >= 3 && tSubj.includes(`for ${cName}`)) return true;
+
+      // Email match ONLY if thread does not belong to another creator
+      if (email && (t.creator_email?.toLowerCase().trim() === email || t.recipient_email?.toLowerCase().trim() === email)) {
+        const otherCreators = (creators || []).filter((other) => other.id !== cId);
+        const belongsToOther = otherCreators.some((other) => {
+          const oName = (other.name || other.display_name || "").toLowerCase().trim();
+          const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
+          return (
+            (oName && oName.length >= 3 && tSubj.includes(oName)) ||
+            (oHandle && oHandle.length >= 2 && (tSubj.includes(`[#${oHandle}]`) || tSubj.includes(`for ${oHandle}`)))
+          );
+        });
+        if (!belongsToOther) return true;
       }
       return false;
     });
@@ -238,7 +267,11 @@ export default function CreatorFollowUpCRM({
         const subjLower = (r.subject || "").toLowerCase();
 
         // Check if reply explicitly belongs to another creator
-        if (bodyLower.includes("cf-cid:") && !bodyLower.includes(`cf-cid:${cId.toLowerCase()}`)) return;
+        if (bodyLower.includes("cf-cid:")) {
+          const hasMyCid = bodyLower.includes(`cf-cid:${cId.toLowerCase()}`);
+          const hasMyHandle = handle && (bodyLower.includes(`handle:@${handle}`) || bodyLower.includes(`[#${handle}]`));
+          if (!hasMyCid && !hasMyHandle) return;
+        }
         if (subjLower.includes("[#") && handle && !subjLower.includes(`[#${handle}]`)) return;
 
         const otherCreators = (creators || []).filter((other) => other.id !== cId);
@@ -248,7 +281,7 @@ export default function CreatorFollowUpCRM({
           const oId = (other.id || "").toLowerCase();
           return (
             (oId && bodyLower.includes(`cf-cid:${oId}`)) ||
-            (oHandle && oHandle.length >= 3 && subjLower.includes(`[#${oHandle}]`)) ||
+            (oHandle && oHandle.length >= 2 && subjLower.includes(`[#${oHandle}]`)) ||
             (oName && oName.length >= 4 && subjLower.includes(`idea for ${oName}`)) ||
             (oName && oName.length >= 4 && subjLower.includes(`outreach to ${oName}`))
           );
@@ -346,7 +379,6 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    const isContacted = c.status === "contacted" || c.outreachSent;
     return {
       hasReply: false,
       classification: isContacted ? "awaiting_reply" : "ready_for_outreach",
