@@ -420,17 +420,7 @@ export default function ConceptEditorModal({
           </div>
 
           {/* Pricing & Commercial Projections */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700 block">App Domain / URL</label>
-              <input
-                type="text"
-                value={formData.mockup.appUrl}
-                onChange={(e) => handleMockupChange("appUrl", e.target.value)}
-                placeholder="actionloop.app"
-                className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-900"
-              />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div className="space-y-1">
               <label className="font-bold text-slate-700 block">Pricing Tiers</label>
               <input

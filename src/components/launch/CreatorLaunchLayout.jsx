@@ -1468,7 +1468,7 @@ export default function CreatorLaunchLayout({
         {/* Section 1 or Section 2 Container */}
         {activeSection === 'section1' ? (
           <AcquisitionEngine
-            initialCreators={initialCreators}
+            initialCreators={crmCreators && crmCreators.length > 0 ? crmCreators : initialCreators}
             allProjects={allProjects}
             api={api}
             onCreateProject={handleCreateProjectFromConcept}

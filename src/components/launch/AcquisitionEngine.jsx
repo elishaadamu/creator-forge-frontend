@@ -90,6 +90,8 @@ import {
 } from "./Section2Skeletons";
 import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from "../../utils/expiringStorage";
 
+export const PARTNERSHIP_EMAIL = import.meta.env.VITE_PARTNERSHIP_EMAIL || "creatorforgeweb@12019303.brevosend.com";
+
 // Category-tailored high-res visual mockup screenshots for creator proposals
 export const CONCEPT_CATEGORY_IMAGES = {
   productivity: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&auto=format&fit=crop&q=80",
@@ -141,6 +143,14 @@ export const STEP5_PROMPT_PRESETS = [
 export function getDeletedCreatorIds() {
   if (typeof window === "undefined" || !window.localStorage) return [];
   try {
+    // Stale deletion check: temporary optimistic deletions expire after 45 seconds so database creators are never permanently ghosted
+    const lastDeleted = Number(window.localStorage.getItem("forge_last_deleted_timestamp") || "0");
+    if (!lastDeleted || Date.now() - lastDeleted > 45000) {
+      window.localStorage.removeItem("forge_deleted_creator_ids");
+      window.localStorage.removeItem("forge_last_deleted_timestamp");
+      return [];
+    }
+
     const direct = window.localStorage.getItem("forge_deleted_creator_ids");
     if (!direct) return [];
     let parsed;
@@ -501,9 +511,9 @@ export default function AcquisitionEngine({
       });
     }
 
-    // Strictly enforce batch limit so old saved cohorts don't exceed chosen limit
-    if (list.length > batchLimit) {
-      list = list.slice(0, batchLimit);
+    // Preserve full database cohorts so existing leads are never clipped
+    if (batchLimit && list.length > batchLimit && (!initialCreators || initialCreators.length === 0)) {
+      list = list.slice(0, Math.max(batchLimit, list.length));
     }
 
     // Sanitize any corrupt synthetic reply texts or false positive interested classifications
@@ -528,6 +538,19 @@ export default function AcquisitionEngine({
 
     return list;
   });
+
+  // Sync incoming initialCreators from parent layout / database sync
+  useEffect(() => {
+    if (initialCreators && Array.isArray(initialCreators) && initialCreators.length > 0) {
+      setCreators((prev) => {
+        if (!prev || prev.length === 0) return initialCreators;
+        const seen = new Set(prev.map((c) => String(c.id || c.handle)));
+        const newItems = initialCreators.filter((c) => !seen.has(String(c.id)) && !seen.has(String(c.handle)));
+        if (newItems.length === 0) return prev;
+        return [...prev, ...newItems];
+      });
+    }
+  }, [initialCreators]);
   const [selectedCreatorId, setSelectedCreatorId] = useState(() => {
     try {
       if (initialSelectedCreatorId) return initialSelectedCreatorId;
@@ -1181,6 +1204,17 @@ export default function AcquisitionEngine({
               localStorage.removeItem("forge_launch_ai_choice_map");
             } catch (e) { }
           } else if (rawList.length > 0) {
+            // Clean up stale deleted IDs if database confirms active records exist
+            const lastDeleted = Number(window.localStorage?.getItem("forge_last_deleted_timestamp") || "0");
+            const isRecentDelete = lastDeleted && (Date.now() - lastDeleted < 30000);
+            if (!isRecentDelete && deletedSet.size > 0) {
+              deletedSet.clear();
+              try {
+                window.localStorage?.removeItem("forge_deleted_creator_ids");
+                window.localStorage?.removeItem("forge_last_deleted_timestamp");
+              } catch (e) { }
+            }
+
             setCreators((prev) => {
               const formattedDbCreators = rawList
                 .filter((dbItem) => {
@@ -1257,8 +1291,10 @@ export default function AcquisitionEngine({
                 }
               })();
 
+              const finalLimit = Math.max(currentBatchLimit, formattedDbCreators.length);
+
               if (!prev || prev.length === 0) {
-                return formattedDbCreators.slice(0, currentBatchLimit);
+                return formattedDbCreators.slice(0, finalLimit);
               }
 
               const merged = [];
@@ -1314,7 +1350,7 @@ export default function AcquisitionEngine({
                 }
               });
 
-              return merged.slice(0, currentBatchLimit);
+              return merged.slice(0, finalLimit);
             });
 
             setSelectedCreatorId((prevId) => {
@@ -1494,6 +1530,8 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_launch_active_step");
       localStorage.removeItem("forge_launch_acquisition_step");
       localStorage.removeItem("forge_launch_creators_batch_count");
+      localStorage.removeItem("forge_deleted_creator_ids");
+      localStorage.removeItem("forge_last_deleted_timestamp");
     } catch (e) { }
     setCreatorsBatchCount(25);
     setCountdownSeconds(30);
@@ -2906,6 +2944,7 @@ export default function AcquisitionEngine({
     const adminEmails = [
       "creatorforgeweb@gmail.com",
       "creatorforgestudio@gmail.com",
+      PARTNERSHIP_EMAIL,
       "partnerships@creatorforge.com",
       "noreply@creatorforge.com",
       "hello@creatorforge.com",
@@ -4733,7 +4772,7 @@ We are thrilled to partner with you on this venture. Feel free to reply directly
 
 Best regards,
 **The Creator Forge Studio Team**
-partnerships@creatorforge.com
+${PARTNERSHIP_EMAIL}
 
 ---
 Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handleClean}]`;
@@ -6690,7 +6729,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                   <span className="text-sm font-semibold text-slate-900">Creator Partnerships Team</span>
                                   <span className="text-xs text-slate-500 hidden sm:inline">•</span>
                                   <span className="text-xs text-slate-600">Alex Rivera</span>
-                                  <span className="text-xs text-slate-400 hidden md:inline">&lt;partnerships@creatorforge.com&gt;</span>
+                                  <span className="text-xs text-slate-400 hidden md:inline">&lt;{PARTNERSHIP_EMAIL}&gt;</span>
                                 </div>
                                 <div className="text-xs text-slate-500 mt-0.5 flex items-center flex-wrap gap-1">
                                   <span>to</span>
@@ -6874,8 +6913,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                   <div className="font-bold text-slate-900 text-sm tracking-tight">Alex Rivera</div>
                                   <div className="text-slate-500 font-medium mt-0.5">Head of Venture Partnerships • Creator Forge</div>
                                   <div className="mt-2 text-slate-600 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                                    <a className="font-medium text-slate-900 hover:text-indigo-600 underline decoration-slate-300" href="mailto:partnerships@creatorforge.com">
-                                      partnerships@creatorforge.com
+                                    <a className="font-medium text-slate-900 hover:text-indigo-600 underline decoration-slate-300" href={`mailto:${PARTNERSHIP_EMAIL}`}>
+                                      {PARTNERSHIP_EMAIL}
                                     </a>
                                     <span className="text-slate-300">•</span>
                                     <a className="hover:text-indigo-600" href="https://creatorforge.com" target="_blank" rel="noreferrer">creatorforge.com</a>
@@ -11087,7 +11126,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <div className="flex items-center gap-2">
                       <span className="text-slate-500 font-bold w-14">From:</span>
                       <span className="text-slate-800 font-mono text-[11px]">
-                        Creator Forge Studio &lt;partnerships@creatorforge.com&gt;
+                        Creator Forge Studio &lt;{PARTNERSHIP_EMAIL}&gt;
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

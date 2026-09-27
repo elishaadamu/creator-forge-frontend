@@ -127,8 +127,15 @@ export default function FollowUpCRMPage() {
     }
   };
 
-  const handleDeleteCreator = (creatorId) => {
+  const handleDeleteCreator = async (creatorId) => {
     setCreators((prev) => prev.filter((c) => c.id !== creatorId && c.handle !== creatorId));
+    try {
+      await deleteCreator(creatorId);
+      notify("info", "Lead Deleted", "Creator permanently deleted from pipeline database.");
+    } catch (err) {
+      console.warn("Delete creator backend error:", err);
+    }
+
     try {
       const raw = localStorage.getItem("forge_launch_discovered_creators");
       if (raw) {

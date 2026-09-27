@@ -275,8 +275,7 @@ export default function ProductMockupDisplay({ project, theme = 'lime' }) {
             <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
           </div>
           <div className="px-2.5 py-1 rounded-lg bg-[#0D1014] border border-[#252B32] text-[10px] font-mono text-[#C8FF3D] flex items-center gap-1.5 max-w-[200px] sm:max-w-xs truncate">
-            <Globe className="w-3 h-3 text-[#C8FF3D] shrink-0" />
-            <span className="truncate">https://{appUrl}</span>
+            <span className="truncate font-semibold">{productName || 'Software Architecture'}</span>
           </div>
         </div>
 

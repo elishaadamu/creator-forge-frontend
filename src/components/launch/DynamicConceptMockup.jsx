@@ -127,9 +127,9 @@ export default function DynamicConceptMockup({
           <div className="w-2.5 h-2.5 rounded-full bg-rose-500/90" />
           <div className="w-2.5 h-2.5 rounded-full bg-amber-400/90" />
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/90" />
-          <span className="text-[10px] font-mono text-slate-400 ml-1.5 truncate max-w-[130px] flex items-center gap-1">
-            <Lock className="w-2.5 h-2.5 text-emerald-400" />
-            <span>{appUrl}</span>
+          <span className="text-[10px] font-mono text-slate-300 font-semibold ml-1.5 truncate max-w-[150px] flex items-center gap-1">
+            <Layers className="w-2.5 h-2.5 text-emerald-400" />
+            <span>{concept?.name || "Architecture Spec"}</span>
           </span>
         </div>
         <div className="flex items-center gap-1.5">
