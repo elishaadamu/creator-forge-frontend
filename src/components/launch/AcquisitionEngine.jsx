@@ -498,70 +498,7 @@ export default function AcquisitionEngine({
   const [isLaunchingProject, setIsLaunchingProject] = useState(false);
   const [launchStepIndex, setLaunchStepIndex] = useState(1);
   const [creators, setCreators] = useState(() => {
-    const deletedIds = getDeletedCreatorIds();
-    const deletedSet = new Set(deletedIds.map(String));
-
-    const batchLimit = (() => {
-      try {
-        const saved = localStorage.getItem("forge_launch_creators_batch_count");
-        if (saved && Number(saved) !== 3) {
-          return Math.max(1, Number(saved));
-        }
-        return 25;
-      } catch {
-        return 25;
-      }
-    })();
-
-    let list = [];
-    if (initialCreators && initialCreators.length > 0) {
-      list = initialCreators;
-    } else {
-      try {
-        const saved = getExpiringItem("forge_launch_discovered_creators");
-        if (saved && Array.isArray(saved) && saved.length > 0) {
-          list = saved;
-        }
-      } catch { }
-    }
-
-    if (deletedSet.size > 0) {
-      list = list.filter((c) => {
-        const cleanHandle = (c.handle || "").toLowerCase().replace(/^@/, "");
-        return (
-          !deletedSet.has(String(c.id)) &&
-          !deletedSet.has(cleanHandle) &&
-          !deletedSet.has(String(c.handle))
-        );
-      });
-    }
-
-    // Preserve full database cohorts so existing leads are never clipped
-    if (batchLimit && list.length > batchLimit && (!initialCreators || initialCreators.length === 0)) {
-      list = list.slice(0, Math.max(batchLimit, list.length));
-    }
-
-    // Sanitize any corrupt synthetic reply texts or false positive interested classifications
-    list = list.map((c) => {
-      const isFakeText =
-        c.replyText &&
-        (c.replyText.startsWith("Creator responded") ||
-          c.replyText.includes("qualified for partnership pitch") ||
-          c.replyText === "Yes, I would be interested.");
-      if (isFakeText) {
-        return {
-          ...c,
-          hasReplied: false,
-          replyText: null,
-          reply_text: null,
-          replyClassification: (c.status === "approved" || c.isApproved) ? "qualified" : "awaiting_reply",
-          reply_classification: (c.status === "approved" || c.isApproved) ? "qualified" : "awaiting_reply",
-        };
-      }
-      return c;
-    });
-
-    return list;
+    return initialCreators || [];
   });
 
   // Sync incoming initialCreators from parent layout / database sync
@@ -569,10 +506,14 @@ export default function AcquisitionEngine({
     if (initialCreators && Array.isArray(initialCreators) && initialCreators.length > 0) {
       setCreators((prev) => {
         if (!prev || prev.length === 0) return initialCreators;
-        const seen = new Set(prev.map((c) => String(c.id || c.handle)));
-        const newItems = initialCreators.filter((c) => !seen.has(String(c.id)) && !seen.has(String(c.handle)));
-        if (newItems.length === 0) return prev;
-        return [...prev, ...newItems];
+        // Never append foreign creators into an active cohort. Only update matching creators.
+        return prev.map((p) => {
+          const matched = initialCreators.find(
+            (c) => (c.id && (String(c.id) === String(p.id) || String(c.id) === String(p._id))) ||
+                   (c.handle && p.handle && c.handle.replace(/^@/, '').toLowerCase() === p.handle.replace(/^@/, '').toLowerCase())
+          );
+          return matched ? { ...p, ...matched } : p;
+        });
       });
     }
   }, [initialCreators]);
@@ -600,14 +541,7 @@ export default function AcquisitionEngine({
       const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       const creatorParam = searchParams?.get('creator') || searchParams?.get('creatorId');
       if (creatorParam) return creatorParam;
-      const deletedIds = getDeletedCreatorIds();
-      const deletedSet = new Set(deletedIds.map(String));
-      const savedCreators = getExpiringItem("forge_launch_discovered_creators", []);
-      const safeSaved = Array.isArray(savedCreators) ? savedCreators : [];
-      const candidates = (initialCreators && initialCreators.length > 0 ? initialCreators : safeSaved).filter(
-        (c) => !deletedSet.has(String(c.id)) && !deletedSet.has((c.handle || "").replace(/^@/, "").toLowerCase())
-      );
-      return candidates?.[0]?.id || null;
+      return initialCreators?.[0]?.id || null;
     } catch {
       return null;
     }
@@ -682,37 +616,6 @@ export default function AcquisitionEngine({
     return () => window.removeEventListener('popstate', handleUrlSync);
   }, []);
 
-  // Keep discovered creators persisted to expiring storage (1 hour TTL) so they never vanish on refresh
-  useEffect(() => {
-    try {
-      const deletedIds = getDeletedCreatorIds();
-      const deletedSet = new Set(deletedIds.map(String));
-      const cleanList = (creators || []).filter((c) => {
-        const cleanHandle = (c.handle || "").toLowerCase().replace(/^@/, "");
-        return (
-          !deletedSet.has(String(c.id)) &&
-          !deletedSet.has(cleanHandle) &&
-          !deletedSet.has(String(c.handle))
-        );
-      });
-
-      if (cleanList.length > 0) {
-        setExpiringItem(
-          "forge_launch_discovered_creators",
-          cleanList,
-          ONE_HOUR_MS,
-        );
-      } else {
-        removeExpiringItem("forge_launch_discovered_creators");
-      }
-    } catch (err) {
-      console.warn(
-        "[AcquisitionEngine] Failed to save creators to storage:",
-        err,
-      );
-    }
-  }, [creators]);
-
   // Real-time synchronization for creator deletion from CRM or other tabs
   useEffect(() => {
     const handleCreatorDeleted = (e) => {
@@ -739,14 +642,6 @@ export default function AcquisitionEngine({
     };
 
     const handleStorageChange = (e) => {
-      if (e.key === "forge_launch_discovered_creators" && e.newValue) {
-        try {
-          const updated = JSON.parse(e.newValue);
-          if (Array.isArray(updated)) {
-            setCreators(updated);
-          }
-        } catch (err) { }
-      }
       if (e.key === "forge_last_deleted_timestamp") {
         try {
           const deletedIds = getDeletedCreatorIds();
@@ -929,9 +824,6 @@ export default function AcquisitionEngine({
         }
         return c;
       });
-      try {
-        setExpiringItem("forge_launch_discovered_creators", updated, ONE_HOUR_MS);
-      } catch (err) { }
       return updated;
     });
 
@@ -1365,63 +1257,49 @@ export default function AcquisitionEngine({
               const finalLimit = Math.max(currentBatchLimit, formattedDbCreators.length);
 
               if (!prev || prev.length === 0) {
-                return formattedDbCreators.slice(0, finalLimit);
+                return formattedDbCreators.slice(0, currentBatchLimit);
               }
 
-              const merged = [];
-              const seenKeys = new Set();
-
-              formattedDbCreators.forEach((dbC) => {
-                const cleanHandle = (dbC.handle || "").toLowerCase().replace(/^@/, "");
-                const cleanEmail = (dbC.email || dbC.email_public || "").toLowerCase().trim();
-                const existing = prev.find((p) => {
+              // When prev already has creators, PRESERVE THE ACTIVE COHORT!
+              // Only update statuses, replies, and verified contact info from DB for creators in this cohort.
+              // NEVER add foreign creators from the database to an active cohort,
+              // and NEVER match by email (only match by ID or unique handle).
+              const updatedList = prev
+                .filter((p) => {
+                  const cleanHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
+                  return !deletedSet.has(String(p.id)) && !deletedSet.has(cleanHandle) && !deletedSet.has(String(p.handle));
+                })
+                .map((p) => {
                   const pHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
-                  const pEmail = (p.email || p.email_public || "").toLowerCase().trim();
-                  return (
-                    p.id === dbC.id ||
-                    (pHandle && cleanHandle && pHandle === cleanHandle) ||
-                    (pEmail && cleanEmail && pEmail === cleanEmail)
-                  );
-                });
+                  const dbMatch = formattedDbCreators.find((dbC) => {
+                    const cleanHandle = (dbC.handle || "").toLowerCase().replace(/^@/, "");
+                    return (
+                      (dbC.id && (String(dbC.id) === String(p.id) || String(dbC.id) === String(p._id))) ||
+                      (cleanHandle && pHandle && cleanHandle === pHandle)
+                    );
+                  });
 
-                if (existing) {
-                  // User manual email edits take priority over un-refreshed DB polling values
-                  const userEmail = (existing.email || existing.email_public || "").trim();
-                  const dbEmail = (dbC.email || dbC.email_public || "").trim();
+                  if (!dbMatch) {
+                    return p;
+                  }
+
+                  // Preserve local user edits if available, else take updated DB values
+                  const userEmail = (p.email || p.email_public || "").trim();
+                  const dbEmail = (dbMatch.email || dbMatch.email_public || "").trim();
                   const resolvedEmail = userEmail || dbEmail;
-                  merged.push({
-                    ...existing,
-                    ...dbC,
+
+                  return {
+                    ...p,
+                    ...dbMatch,
                     email: resolvedEmail,
                     email_public: resolvedEmail,
                     email_verified: Boolean(resolvedEmail && resolvedEmail.includes("@")),
-                  });
-                } else {
-                  merged.push(dbC);
-                }
-                seenKeys.add(dbC.id);
-                if (cleanHandle) seenKeys.add(cleanHandle);
-                if (cleanEmail) seenKeys.add(cleanEmail);
-              });
+                    // Preserve any concepts generated for this creator
+                    productConcepts: (p.productConcepts && p.productConcepts.length > 0) ? p.productConcepts : dbMatch.productConcepts,
+                  };
+                });
 
-              prev.forEach((p) => {
-                const cleanHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
-                const cleanEmail = (p.email || p.email_public || "").toLowerCase().trim();
-                const isDeleted =
-                  deletedSet.has(String(p.id)) ||
-                  deletedSet.has(cleanHandle) ||
-                  deletedSet.has(String(p.handle)) ||
-                  (cleanEmail && deletedSet.has(cleanEmail));
-
-                if (!isDeleted && !seenKeys.has(p.id) && (!cleanHandle || !seenKeys.has(cleanHandle))) {
-                  const isDbUuid = p.id && /^[0-9a-f-]{36}$/i.test(p.id);
-                  if (!isDbUuid) {
-                    merged.push(p);
-                  }
-                }
-              });
-
-              return merged.slice(0, finalLimit);
+              return updatedList;
             });
 
             setSelectedCreatorId((prevId) => {
@@ -1655,6 +1533,12 @@ export default function AcquisitionEngine({
     setAiDetectedChoiceMap({});
     setAutoAdvancedIds(new Set());
     autoAdvancedIdsRef.current = new Set();
+    try {
+      const { deleteAllCreators } = await import("../../services/opsApi");
+      await deleteAllCreators();
+    } catch (e) {
+      console.warn("[Discovery] Notice on DB clear:", e);
+    }
     try {
       localStorage.removeItem("forge_launch_discovered_creators");
       localStorage.removeItem("forge_launch_real_threads");
@@ -3063,6 +2947,9 @@ export default function AcquisitionEngine({
       if (t.creator_id && cId && t.creator_id === cId) {
         return true;
       }
+      if (t.creator_id && cId && t.creator_id !== cId) {
+        return false;
+      }
 
       const tSubject = (t.subject || t.original_subject || (t.replies && t.replies[0] && t.replies[0].subject) || "").toLowerCase();
 
@@ -3071,8 +2958,8 @@ export default function AcquisitionEngine({
       if (cHandle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === cHandle) return true;
       if (cName && cName.length >= 3 && tSubject.includes(`for ${cName}`)) return true;
 
-      // Match by email ONLY IF thread does not belong to another creator
-      if (cEmail && cEmail.includes("@") && !adminEmails.includes(cEmail)) {
+      // Match by email ONLY IF thread has no explicit creator_id and does not belong to another creator
+      if (!t.creator_id && cEmail && cEmail.includes("@") && !adminEmails.includes(cEmail)) {
         const isEmailMatch =
           (t.creator_email && t.creator_email.toLowerCase().trim() === cEmail) ||
           (t.recipient_email && t.recipient_email.toLowerCase().trim() === cEmail);

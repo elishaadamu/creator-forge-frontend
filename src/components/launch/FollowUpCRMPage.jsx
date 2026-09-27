@@ -137,15 +137,6 @@ export default function FollowUpCRMPage() {
     }
 
     try {
-      const raw = localStorage.getItem("forge_launch_discovered_creators");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const saved = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.data) ? parsed.data : []);
-        if (saved.length > 0) {
-          const updated = saved.filter((c) => c.id !== creatorId && c.handle !== creatorId);
-          localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(updated));
-        }
-      }
 
       const rawDeleted = (() => {
         try {

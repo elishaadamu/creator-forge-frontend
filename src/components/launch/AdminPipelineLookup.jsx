@@ -90,19 +90,6 @@ export default function AdminPipelineLookup({
     try {
       const { updateCreatorDetails } = await import('../../services/opsApi')
       await updateCreatorDetails(creatorId, { email_public: trimmed })
-      
-      // Update local creators storage if possible
-      try {
-        const raw = localStorage.getItem('forge_launch_discovered_creators')
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          const stored = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.data) ? parsed.data : [])
-          if (stored.length > 0) {
-            const updated = stored.map((c) => (c.id === creatorId ? { ...c, email: trimmed, email_public: trimmed } : c))
-            localStorage.setItem('forge_launch_discovered_creators', JSON.stringify(updated))
-          }
-        }
-      } catch (err) {}
 
       // Update creator in-memory
       const target = creators.find((c) => c.id === creatorId)

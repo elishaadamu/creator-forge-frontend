@@ -204,6 +204,7 @@ export default function CreatorFollowUpCRM({
       c.status === "contacted" ||
       c.status === "pitched" ||
       c.status === "partnered" ||
+      c.status === "replied" ||
       c.outreachSent ||
       c.outreach_sent
     );
@@ -227,6 +228,7 @@ export default function CreatorFollowUpCRM({
     const matchedThreads = (realThreads || []).filter((t) => {
       if (!t) return false;
       if (t.creator_id && cId && t.creator_id === cId) return true;
+      if (t.creator_id && cId && t.creator_id !== cId) return false;
 
       const tSubj = (t.subject || t.original_subject || (t.replies && t.replies[0] && t.replies[0].subject) || "").toLowerCase();
 
@@ -235,8 +237,8 @@ export default function CreatorFollowUpCRM({
       if (handle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === handle) return true;
       if (cName && cName.length >= 3 && tSubj.includes(`for ${cName}`)) return true;
 
-      // Email match ONLY if thread does not belong to another creator
-      if (email && (t.creator_email?.toLowerCase().trim() === email || t.recipient_email?.toLowerCase().trim() === email)) {
+      // Email match ONLY if thread has no explicit creator_id and does not belong to another creator
+      if (!t.creator_id && email && (t.creator_email?.toLowerCase().trim() === email || t.recipient_email?.toLowerCase().trim() === email)) {
         const otherCreators = (creators || []).filter((other) => other.id !== cId);
         const belongsToOther = otherCreators.some((other) => {
           const oName = (other.name || other.display_name || "").toLowerCase().trim();
@@ -1061,18 +1063,6 @@ export default function CreatorFollowUpCRM({
       await updateCreatorEmail(creatorId, newEmail);
     } catch {}
 
-    try {
-      const raw = localStorage.getItem("forge_launch_discovered_creators");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const saved = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.data) ? parsed.data : []);
-        if (saved.length > 0) {
-          const updated = saved.map((c) => (c.id === creatorId ? { ...c, email: newEmail, email_public: newEmail } : c));
-          localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(updated));
-        }
-      }
-    } catch {}
-
     setEditingEmailId(null);
     if (onNotify) {
       onNotify("success", "Email Saved", `Contact email updated to ${newEmail}.`);
@@ -1134,24 +1124,7 @@ export default function CreatorFollowUpCRM({
 
       await deleteCreator(targetId);
 
-      // Clean up localStorage persistence
       try {
-        const raw = localStorage.getItem("forge_launch_discovered_creators");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          const saved = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.data) ? parsed.data : []);
-          if (saved.length > 0) {
-            const updated = saved.filter(
-              (c) =>
-                c.id !== targetId &&
-                c.id !== creator.id &&
-                (c.handle || "").replace(/^@/, "").toLowerCase() !== cleanHandle &&
-                (!cleanEmail || (c.email || c.email_public || "").toLowerCase().trim() !== cleanEmail)
-            );
-            localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(updated));
-          }
-        }
-
         // Track in deleted IDs
         const rawDeleted = (() => {
           try {

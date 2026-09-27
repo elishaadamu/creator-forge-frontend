@@ -851,20 +851,7 @@ export default function CreatorLaunchLayout({
   }
 
   const getSafeDiscoveredCreators = () => {
-    try {
-      const list = getExpiringItem('forge_launch_discovered_creators');
-      if (Array.isArray(list) && list.length > 0) return list;
-      const raw = localStorage.getItem('forge_launch_discovered_creators');
-      if (raw) {
-        const p = JSON.parse(raw);
-        if (Array.isArray(p)) return p;
-        if (p && Array.isArray(p.data)) return p.data;
-        if (p && Array.isArray(p.creators)) return p.creators;
-      }
-      return Array.isArray(crmCreators) ? crmCreators : [];
-    } catch {
-      return Array.isArray(crmCreators) ? crmCreators : [];
-    }
+    return Array.isArray(crmCreators) ? crmCreators : [];
   };
 
   const getSafeRealThreads = () => {
