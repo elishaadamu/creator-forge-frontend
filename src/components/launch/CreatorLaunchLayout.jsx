@@ -676,23 +676,10 @@ export default function CreatorLaunchLayout({
               return merged
             })
           } else {
-            // DB returned 0 projects from remote endpoint
-            // PRESERVE the active project if the user already has one in memory or local storage!
-            const localSaved = getExpiringItem('forge_launch_active_project')
-            const current = (localSaved && !isCorruptedPhantomProject(localSaved)) ? localSaved : null
-            if (current) {
-              setAllProjects([current])
-              setActiveProject(prev => prev || current)
-              // Self-heal: persist the active local project to the database in background
-              if (current.creatorId || current.productName) {
-                import('../../services/opsApi').then(({ createCoLaunchProject }) => {
-                  createCoLaunchProject(current).catch(() => { })
-                })
-              }
-            } else {
-              setAllProjects([])
-              setActiveProject(null)
-            }
+            // DB returned 0 projects: Clear local project state, NEVER resurrect deleted projects!
+            removeExpiringItem('forge_launch_active_project')
+            setAllProjects([])
+            setActiveProject(null)
           }
         }
       } catch (err) {

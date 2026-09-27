@@ -28,7 +28,9 @@ import {
   CheckCircle,
   ChevronRight,
   Info,
-  Trash2
+  Trash2,
+  Sun,
+  Moon
 } from 'lucide-react'
 import {
   getCoLaunchProjects,
@@ -39,6 +41,7 @@ import {
   getCreators
 } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
+import { getExpiringItem, removeExpiringItem } from '../../utils/expiringStorage'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import DIYSubscriptionModal from './DIYSubscriptionModal'
 
@@ -51,6 +54,25 @@ export default function CreatorParticipationManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const [toast, setToast] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
+
+  // Theme State: 'light' or 'dark' (defaults to light per user request)
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem('forge_participation_theme')
+      return saved === 'dark' ? 'dark' : 'light'
+    } catch {
+      return 'light'
+    }
+  })
+  const isLight = theme === 'light'
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    setTheme(next)
+    try {
+      localStorage.setItem('forge_participation_theme', next)
+    } catch (e) {}
+  }
 
   // Follow-up email modal state
   const [emailModalProject, setEmailModalProject] = useState(null)
@@ -311,6 +333,12 @@ export default function CreatorParticipationManager() {
 
     try {
       await deleteCoLaunchProject(proj.id)
+      try {
+        const activeLocal = getExpiringItem('forge_launch_active_project')
+        if (activeLocal?.id === proj.id) {
+          removeExpiringItem('forge_launch_active_project')
+        }
+      } catch (e) {}
       setProjects((prev) => prev.filter((p) => p.id !== proj.id))
       showToast('success', 'Venture Deleted', `Successfully removed "${name}".`)
     } catch (err) {
@@ -328,6 +356,11 @@ export default function CreatorParticipationManager() {
 
     try {
       await deleteAllProjects()
+      try {
+        removeExpiringItem('forge_launch_active_project')
+        localStorage.removeItem('forge_launch_all_projects')
+        localStorage.removeItem('forge_launch_active_section')
+      } catch (e) {}
       setProjects([])
       showToast('success', 'All Ventures Deleted', 'Successfully wiped all Section 2 co-launch ventures.')
     } catch (err) {
@@ -368,37 +401,37 @@ export default function CreatorParticipationManager() {
   const totalRevenue = coBuildersCount * 50
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-white flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
+    <div className={`min-h-screen ${isLight ? 'bg-[#f8fafc] text-slate-900 selection:bg-amber-500/20 selection:text-amber-900' : 'bg-[#07090e] text-white selection:bg-amber-500/30 selection:text-amber-200'} flex flex-col font-sans transition-colors duration-200`}>
       {/* Top Banner & Header */}
-      <header className="sticky top-0 z-40 bg-[#07090e]/90 backdrop-blur-xl border-b border-white/[0.08] shadow-2xl">
+      <header className={`sticky top-0 z-40 ${isLight ? 'bg-white/95 border-slate-200/90 shadow-2xs' : 'bg-[#07090e]/90 border-white/[0.08] shadow-2xl'} backdrop-blur-xl border-b`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <button
               onClick={() => {
                 if (typeof window !== 'undefined') window.location.href = '/launch'
               }}
-              className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+              className={`p-2 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700' : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'} border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold`}
               title="Return to Master Launch OS"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Launch OS</span>
             </button>
 
-            <div className="h-5 w-[1px] bg-white/[0.1] hidden sm:block" />
+            <div className={`h-5 w-[1px] ${isLight ? 'bg-slate-200' : 'bg-white/[0.1]'} hidden sm:block`} />
 
             <div className="flex items-center gap-2.5">
-              <CreatorForgeLogo size={24} />
+              <CreatorForgeLogo size={24} theme={isLight ? 'light' : 'dark'} />
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
+                  <h1 className={`text-sm sm:text-base font-extrabold ${isLight ? 'text-slate-900' : 'text-white'} tracking-tight`}>
                     Creator Participation & Co-Builder Console
                   </h1>
-                  <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase tracking-wider hidden md:inline-flex items-center gap-1">
+                  <span className={`px-2 py-0.5 rounded-full ${isLight ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-amber-400/20 text-amber-300 border-amber-400/30'} border text-[10px] font-black uppercase tracking-wider hidden md:inline-flex items-center gap-1`}>
                     <Sparkles className="w-2.5 h-2.5" />
                     Dedicated Admin Page
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 hidden sm:block">
+                <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'} hidden sm:block`}>
                   Real-time operational control for $50 Co-Builder passes, participation follow-ups, and 50/50 partnership governance.
                 </p>
               </div>
@@ -407,7 +440,7 @@ export default function CreatorParticipationManager() {
 
           <div className="flex items-center gap-2.5 ml-auto">
             {/* Real-time status indicator */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 font-medium">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${isLight ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'} border text-[11px] font-medium`}>
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -416,14 +449,24 @@ export default function CreatorParticipationManager() {
               <span className="md:hidden">Live</span>
             </div>
 
+            {/* Light / Dark Mode Toggle */}
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] border-white/[0.1] text-slate-200 hover:text-white'} border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold`}
+              title={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            >
+              {isLight ? <Moon className="w-3.5 h-3.5 text-indigo-600" /> : <Sun className="w-3.5 h-3.5 text-amber-400" />}
+              <span className="hidden sm:inline">{isLight ? 'Dark' : 'Light'}</span>
+            </button>
+
             {/* Quick Links */}
             <button
               onClick={() => {
                 if (typeof window !== 'undefined') window.location.href = '/crm'
               }}
-              className="px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs text-slate-300 hover:text-white transition-all cursor-pointer font-medium hidden sm:inline-flex items-center gap-1.5"
+              className={`px-3 py-1.5 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700' : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'} border text-xs transition-all cursor-pointer font-medium hidden sm:inline-flex items-center gap-1.5`}
             >
-              <Users className="w-3.5 h-3.5 text-purple-400" />
+              <Users className="w-3.5 h-3.5 text-purple-500" />
               <span>CRM</span>
             </button>
 
@@ -431,9 +474,9 @@ export default function CreatorParticipationManager() {
               onClick={() => {
                 if (typeof window !== 'undefined') window.location.href = '/project-os'
               }}
-              className="px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs text-slate-300 hover:text-white transition-all cursor-pointer font-medium hidden sm:inline-flex items-center gap-1.5"
+              className={`px-3 py-1.5 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700' : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'} border text-xs transition-all cursor-pointer font-medium hidden sm:inline-flex items-center gap-1.5`}
             >
-              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <Layers className="w-3.5 h-3.5 text-sky-500" />
               <span>ProjectOS</span>
             </button>
 
@@ -441,10 +484,10 @@ export default function CreatorParticipationManager() {
             <button
               onClick={() => loadData(false)}
               disabled={isRefreshing}
-              className="p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] text-slate-200 hover:text-white transition-all cursor-pointer disabled:opacity-50"
+              className={`p-2 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] border-white/[0.1] text-slate-200 hover:text-white'} border transition-all cursor-pointer disabled:opacity-50`}
               title="Refresh Real-Time Data"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-amber-400' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-amber-500' : ''}`} />
             </button>
           </div>
         </div>
@@ -453,30 +496,30 @@ export default function CreatorParticipationManager() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Equity Architecture Notice */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/30 via-slate-900/40 to-cyan-950/30 border border-emerald-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+        <div className={`p-4 rounded-2xl ${isLight ? 'bg-gradient-to-r from-emerald-50 via-teal-50/40 to-slate-50 border-emerald-200/90 text-slate-800 shadow-2xs' : 'bg-gradient-to-r from-emerald-950/30 via-slate-900/40 to-cyan-950/30 border-emerald-500/20 text-white shadow-lg'} border flex flex-col md:flex-row md:items-center justify-between gap-4`}>
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
+            <div className={`p-2 rounded-xl ${isLight ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'} border shrink-0`}>
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-xs sm:text-sm font-bold text-white">
+                <h3 className={`text-xs sm:text-sm font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
                   50/50 Co-Founder Equity Architecture
                 </h3>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase tracking-wider">
+                <span className={`px-2 py-0.5 rounded-full ${isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-500/20 text-emerald-300'} text-[9px] font-black uppercase tracking-wider`}>
                   Guaranteed
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+              <p className={`text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-300'} mt-0.5 leading-relaxed`}>
                 Creators always retain <strong>50% co-founder equity</strong> on both tracks. The $50 USD fee is strictly for the <strong>Interactive Co-Builder Pass</strong>, giving creators hands-on access to build, ideate, and run AI MVP tasks directly instead of the studio completing phases alone.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-right">
-              <span className="text-[9px] text-slate-400 uppercase tracking-wider block font-bold">Standard Equity Split</span>
-              <span className="text-xs font-black text-emerald-400">50% Creator / 50% Studio</span>
+            <div className={`px-3 py-1.5 rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-2xs' : 'bg-white/[0.04] border-white/[0.08]'} border text-right`}>
+              <span className={`text-[9px] ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider block font-bold`}>Standard Equity Split</span>
+              <span className={`text-xs font-black ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>50% Creator / 50% Studio</span>
             </div>
           </div>
         </div>
@@ -484,73 +527,73 @@ export default function CreatorParticipationManager() {
         {/* KPI Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
           {/* Card 1: Total Co-Launches */}
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] shadow-sm space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className={`p-4 rounded-2xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] shadow-sm'} border space-y-1`}>
+            <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider block`}>
               Total Ventures
             </span>
-            <div className="text-2xl font-black text-white">{totalProjects}</div>
-            <p className="text-[10px] text-slate-500">Active co-launch projects</p>
+            <div className={`text-2xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>{totalProjects}</div>
+            <p className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Active co-launch projects</p>
           </div>
 
           {/* Card 2: Co-Builders Active ($50 Paid) */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-amber-500/10 to-transparent border border-amber-500/30 shadow-sm space-y-1">
+          <div className={`p-4 rounded-2xl ${isLight ? 'bg-gradient-to-b from-amber-50/80 to-white border-amber-200 shadow-2xs' : 'bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/30 shadow-sm'} border space-y-1`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block">
+              <span className={`text-[10px] font-bold ${isLight ? 'text-amber-800' : 'text-amber-300'} uppercase tracking-wider block`}>
                 Co-Builders Active
               </span>
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <Zap className={`w-3.5 h-3.5 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
             </div>
-            <div className="text-2xl font-black text-amber-400">{coBuildersCount}</div>
-            <p className="text-[10px] text-amber-200/70">$50 Pass Paid · Interactive</p>
+            <div className={`text-2xl font-black ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>{coBuildersCount}</div>
+            <p className={`text-[10px] ${isLight ? 'text-amber-700/80' : 'text-amber-200/70'}`}>$50 Pass Paid · Interactive</p>
           </div>
 
           {/* Card 3: Studio Managed Track */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-purple-500/10 to-transparent border border-purple-500/30 shadow-sm space-y-1">
+          <div className={`p-4 rounded-2xl ${isLight ? 'bg-gradient-to-b from-purple-50/80 to-white border-purple-200 shadow-2xs' : 'bg-gradient-to-b from-purple-500/10 to-transparent border-purple-500/30 shadow-sm'} border space-y-1`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">
+              <span className={`text-[10px] font-bold ${isLight ? 'text-purple-800' : 'text-purple-300'} uppercase tracking-wider block`}>
                 Studio-Managed
               </span>
-              <Rocket className="w-3.5 h-3.5 text-purple-400" />
+              <Rocket className={`w-3.5 h-3.5 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
             </div>
-            <div className="text-2xl font-black text-purple-400">{managedCount}</div>
-            <p className="text-[10px] text-purple-200/70">Studio team executing builds</p>
+            <div className={`text-2xl font-black ${isLight ? 'text-purple-600' : 'text-purple-400'}`}>{managedCount}</div>
+            <p className={`text-[10px] ${isLight ? 'text-purple-700/80' : 'text-purple-200/70'}`}>Studio team executing builds</p>
           </div>
 
           {/* Card 4: Decision Pending */}
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] shadow-sm space-y-1">
+          <div className={`p-4 rounded-2xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] shadow-sm'} border space-y-1`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider block`}>
                 Pending Decision
               </span>
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <Clock className={`w-3.5 h-3.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
             </div>
-            <div className="text-2xl font-black text-slate-200">{pendingCount}</div>
-            <p className="text-[10px] text-slate-500">Follow-up needed</p>
+            <div className={`text-2xl font-black ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>{pendingCount}</div>
+            <p className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Follow-up needed</p>
           </div>
 
           {/* Card 5: Total Revenue */}
-          <div className="p-4 rounded-2xl bg-gradient-to-b from-emerald-500/10 to-transparent border border-emerald-500/30 shadow-sm space-y-1 col-span-2 sm:col-span-1">
+          <div className={`p-4 rounded-2xl ${isLight ? 'bg-gradient-to-b from-emerald-50/80 to-white border-emerald-200 shadow-2xs' : 'bg-gradient-to-b from-emerald-500/10 to-transparent border-emerald-500/30 shadow-sm'} border space-y-1 col-span-2 sm:col-span-1`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider block">
+              <span className={`text-[10px] font-bold ${isLight ? 'text-emerald-800' : 'text-emerald-300'} uppercase tracking-wider block`}>
                 Toolset Revenue
               </span>
-              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              <DollarSign className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
             </div>
-            <div className="text-2xl font-black text-emerald-400">${totalRevenue.toLocaleString()}</div>
-            <p className="text-[10px] text-emerald-200/70">from $50 Co-Builder passes</p>
+            <div className={`text-2xl font-black ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>${totalRevenue.toLocaleString()}</div>
+            <p className={`text-[10px] ${isLight ? 'text-emerald-700/80' : 'text-emerald-200/70'}`}>from $50 Co-Builder passes</p>
           </div>
         </div>
 
         {/* Filter and Search Ribbon */}
-        <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.08] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div className={`p-3 rounded-2xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08]'} border flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3`}>
           {/* Track Filter Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             <button
               onClick={() => setFilterTrack('all')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 filterTrack === 'all'
-                  ? 'bg-white text-slate-950 shadow-md'
-                  : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
+                  ? isLight ? 'bg-slate-900 text-white shadow-2xs' : 'bg-white text-slate-950 shadow-md'
+                  : isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70' : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
               }`}
             >
               All Ventures ({totalProjects})
@@ -560,8 +603,8 @@ export default function CreatorParticipationManager() {
               onClick={() => setFilterTrack('cobuilder')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                 filterTrack === 'cobuilder'
-                  ? 'bg-amber-400 text-slate-950 shadow-md'
-                  : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
+                  ? 'bg-amber-400 text-slate-950 font-black shadow-2xs'
+                  : isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70' : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
               }`}
             >
               <Zap className="w-3 h-3" />
@@ -572,8 +615,8 @@ export default function CreatorParticipationManager() {
               onClick={() => setFilterTrack('pending')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                 filterTrack === 'pending'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-md'
-                  : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
+                  ? isLight ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-md'
+                  : isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70' : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
               }`}
             >
               <Clock className="w-3 h-3" />
@@ -584,8 +627,8 @@ export default function CreatorParticipationManager() {
               onClick={() => setFilterTrack('managed')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                 filterTrack === 'managed'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-md'
-                  : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
+                  ? isLight ? 'bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs' : 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-md'
+                  : isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70' : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
               }`}
             >
               <Rocket className="w-3 h-3" />
@@ -596,20 +639,20 @@ export default function CreatorParticipationManager() {
           {/* Search Box & Actions */}
           <div className="flex items-center gap-2">
             <div className="relative min-w-[220px]">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-slate-400' : 'text-slate-400'}`} />
               <input
                 type="text"
                 placeholder="Search creator, handle, email, app..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/50 transition-colors"
+                className={`w-full pl-9 pr-3 py-1.5 rounded-xl ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500' : 'bg-white/[0.04] border-white/[0.08] text-white placeholder-slate-500 focus:border-amber-400/50'} border text-xs focus:outline-none transition-colors`}
               />
             </div>
             {totalProjects > 0 && (
               <button
                 type="button"
                 onClick={handleDeleteAllVentures}
-                className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-bold text-red-400 hover:text-red-300 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+                className={`px-3 py-1.5 rounded-xl ${isLight ? 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600' : 'bg-red-500/10 hover:bg-red-500/20 border-red-500/30 text-red-400 hover:text-red-300'} border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap`}
                 title="Wipe all co-launch ventures from Section 2"
               >
                 <Trash2 className="w-3 h-3 text-red-400" />
@@ -621,15 +664,15 @@ export default function CreatorParticipationManager() {
 
         {/* Projects List / Grid */}
         {loading ? (
-          <div className="p-12 text-center space-y-3 rounded-2xl border border-white/[0.05] bg-white/[0.01]">
-            <RefreshCw className="w-8 h-8 text-amber-400 animate-spin mx-auto" />
-            <p className="text-xs text-slate-400">Loading real-time participation records and payment links…</p>
+          <div className={`p-12 text-center space-y-3 rounded-2xl border ${isLight ? 'border-slate-200 bg-white shadow-2xs' : 'border-white/[0.05] bg-white/[0.01]'}`}>
+            <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto" />
+            <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Loading real-time participation records and payment links…</p>
           </div>
         ) : filteredProjects.length === 0 ? (
-          <div className="p-12 text-center space-y-3 rounded-2xl border border-white/[0.05] bg-white/[0.01]">
-            <Users className="w-8 h-8 text-slate-500 mx-auto" />
-            <h3 className="text-sm font-bold text-white">No co-launch ventures found</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <div className={`p-12 text-center space-y-3 rounded-2xl border ${isLight ? 'border-slate-200 bg-white shadow-2xs' : 'border-white/[0.05] bg-white/[0.01]'}`}>
+            <Users className={`w-8 h-8 ${isLight ? 'text-slate-400' : 'text-slate-500'} mx-auto`} />
+            <h3 className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>No co-launch ventures found</h3>
+            <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'} max-w-sm mx-auto`}>
               {searchQuery || filterTrack !== 'all'
                 ? 'Try adjusting your filters or search query.'
                 : 'Approved Step 6 co-launch creators will automatically appear here with their participation status.'}
@@ -647,12 +690,18 @@ export default function CreatorParticipationManager() {
               return (
                 <div
                   key={proj.id}
-                  className={`p-5 sm:p-6 rounded-2xl border transition-all duration-200 relative overflow-hidden shadow-xl ${
-                    isCoBuilder
-                      ? 'bg-gradient-to-r from-amber-950/20 via-[#0e121a] to-[#0d1017] border-amber-500/40 shadow-amber-950/20'
-                      : isDeclined
-                      ? 'bg-[#0e121a] border-purple-500/30'
-                      : 'bg-[#0d1017] border-white/[0.08] hover:border-white/[0.15]'
+                  className={`p-5 sm:p-6 rounded-2xl border transition-all duration-200 relative overflow-hidden ${
+                    isLight
+                      ? isCoBuilder
+                        ? 'bg-gradient-to-r from-amber-50/70 via-white to-white border-amber-300/90 shadow-2xs'
+                        : isDeclined
+                        ? 'bg-gradient-to-r from-purple-50/60 via-white to-white border-purple-300/90 shadow-2xs'
+                        : 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-sm'
+                      : isCoBuilder
+                        ? 'bg-gradient-to-r from-amber-950/20 via-[#0e121a] to-[#0d1017] border-amber-500/40 shadow-amber-950/20'
+                        : isDeclined
+                        ? 'bg-[#0e121a] border-purple-500/30'
+                        : 'bg-[#0d1017] border-white/[0.08] hover:border-white/[0.15]'
                   }`}
                 >
                   {/* Glowing ambient indicator for paid Co-Builders */}
@@ -669,11 +718,11 @@ export default function CreatorParticipationManager() {
                           <img
                             src={proj.creatorAvatar}
                             alt={proj.creatorName || ''}
-                            className="w-11 h-11 rounded-xl object-cover border border-white/[0.1] shrink-0"
+                            className={`w-11 h-11 rounded-xl object-cover border ${isLight ? 'border-slate-200' : 'border-white/[0.1]'} shrink-0`}
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-amber-500/20 to-purple-500/20 border border-white/[0.1] flex items-center justify-center text-sm font-bold text-white shrink-0">
+                          <div className={`w-11 h-11 rounded-xl ${isLight ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-gradient-to-tr from-amber-500/20 to-purple-500/20 border-white/[0.1] text-white'} border flex items-center justify-center text-sm font-bold shrink-0`}>
                             {(proj.creatorName || proj.creatorHandle || 'C').charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -681,19 +730,19 @@ export default function CreatorParticipationManager() {
                         {/* Names & Contact */}
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-sm sm:text-base font-extrabold text-white truncate">
+                            <h2 className={`text-sm sm:text-base font-extrabold ${isLight ? 'text-slate-900' : 'text-white'} truncate`}>
                               {proj.creatorName || 'Unnamed Creator'}
                             </h2>
-                            <span className="text-xs text-slate-400 font-mono">
+                            <span className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'} font-mono`}>
                               {proj.creatorHandle || '@creator'}
                             </span>
                             {/* Equity Badge */}
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                            <span className={`px-2 py-0.5 rounded-full ${isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'} border text-[10px] font-bold`}>
                               50/50 Equity
                             </span>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2.5 mt-0.5 text-[11px] text-slate-400">
+                          <div className={`flex flex-wrap items-center gap-2.5 mt-0.5 text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                             <span>📧 {proj.creatorEmail || 'No email saved'}</span>
                             {proj.niche && (
                               <>
@@ -706,19 +755,19 @@ export default function CreatorParticipationManager() {
                       </div>
 
                       {/* Product Venture Summary */}
-                      <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] space-y-1">
+                      <div className={`p-3 rounded-xl ${isLight ? 'bg-slate-50 border-slate-200/80' : 'bg-white/[0.02] border-white/[0.05]'} border space-y-1`}>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider`}>
                             Venture Software Product
                           </span>
-                          <span className="text-[10px] text-slate-400 font-mono">
+                          <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'} font-mono`}>
                             Phase {proj.currentPhase || 1} · {proj.status || 'validating'}
                           </span>
                         </div>
-                        <p className="text-xs font-bold text-white">
+                        <p className={`text-xs font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
                           {proj.productName || 'New Venture'}{' '}
                           {proj.productTagline && (
-                            <span className="text-slate-400 font-normal">
+                            <span className={`${isLight ? 'text-slate-500' : 'text-slate-400'} font-normal`}>
                               — {decodeText(proj.productTagline)}
                             </span>
                           )}
@@ -727,9 +776,9 @@ export default function CreatorParticipationManager() {
                     </div>
 
                     {/* Middle: Participation Status Card */}
-                    <div className="w-full lg:w-72 shrink-0 p-3.5 rounded-xl bg-black/40 border border-white/[0.08] space-y-2">
+                    <div className={`w-full lg:w-72 shrink-0 p-3.5 rounded-xl ${isLight ? 'bg-slate-50/90 border-slate-200/90' : 'bg-black/40 border-white/[0.08]'} border space-y-2`}>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider`}>
                           Participation Track
                         </span>
                         {isCoBuilder ? (
@@ -738,11 +787,11 @@ export default function CreatorParticipationManager() {
                             Co-Builder ($50 Paid)
                           </span>
                         ) : isDeclined ? (
-                          <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold text-[9px] uppercase tracking-wider">
+                          <span className={`px-2 py-0.5 rounded-full ${isLight ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-purple-500/20 text-purple-300 border-purple-500/30'} border font-bold text-[9px] uppercase tracking-wider`}>
                             Studio-Managed
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[9px] uppercase tracking-wider">
+                          <span className={`px-2 py-0.5 rounded-full ${isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'} border font-bold text-[9px] uppercase tracking-wider`}>
                             Choice Pending
                           </span>
                         )}
@@ -751,29 +800,29 @@ export default function CreatorParticipationManager() {
                       {/* Status Details */}
                       {isCoBuilder ? (
                         <div className="space-y-1 text-[11px]">
-                          <p className="text-amber-200/90 font-medium">
+                          <p className={`${isLight ? 'text-amber-800' : 'text-amber-200/90'} font-medium`}>
                             Phases 1-3 Interactive Execution Unlocked
                           </p>
-                          <div className="flex items-center justify-between text-slate-400 text-[10px]">
+                          <div className={`flex items-center justify-between ${isLight ? 'text-slate-500' : 'text-slate-400'} text-[10px]`}>
                             <span>License:</span>
-                            <span className="font-mono text-white/80">{sub.licenseKey || 'FORGE-ACTIVE'}</span>
+                            <span className={`font-mono ${isLight ? 'text-slate-900 font-bold' : 'text-white/80'}`}>{sub.licenseKey || 'FORGE-ACTIVE'}</span>
                           </div>
-                          <div className="flex items-center justify-between text-slate-400 text-[10px]">
+                          <div className={`flex items-center justify-between ${isLight ? 'text-slate-500' : 'text-slate-400'} text-[10px]`}>
                             <span>Payment:</span>
-                            <span className="text-emerald-400 font-bold">$50.00 USD</span>
+                            <span className={`${isLight ? 'text-emerald-700' : 'text-emerald-400'} font-bold`}>$50.00 USD</span>
                           </div>
                         </div>
                       ) : isDeclined ? (
-                        <div className="space-y-0.5 text-[11px] text-slate-300">
-                          <p className="font-medium text-purple-300">Managed Track</p>
-                          <p className="text-[10px] text-slate-400">
+                        <div className={`space-y-0.5 text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                          <p className={`font-medium ${isLight ? 'text-purple-800' : 'text-purple-300'}`}>Managed Track</p>
+                          <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                             Studio engineering builds MVP; Creator monitors milestone sprints.
                           </p>
                         </div>
                       ) : (
-                        <div className="space-y-1 text-[11px] text-slate-300">
-                          <p className="text-amber-300/80 font-medium">Awaiting Track Selection</p>
-                          <p className="text-[10px] text-slate-400">
+                        <div className={`space-y-1 text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                          <p className={`${isLight ? 'text-amber-800' : 'text-amber-300/80'} font-medium`}>Awaiting Track Selection</p>
+                          <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                             {proj.diyOfferSentAt
                               ? `Offer dispatched: ${new Date(proj.diyOfferSentAt).toLocaleDateString()}`
                               : 'Offer pending creator review'}
@@ -787,21 +836,21 @@ export default function CreatorParticipationManager() {
                       {/* Send / Resend Follow-up Email */}
                       <button
                         onClick={() => handleOpenEmailModal(proj, isCoBuilder ? 'portal_link' : 'followup')}
-                        className="flex-1 lg:flex-initial py-2 px-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-xs font-semibold text-slate-200 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        className={`flex-1 lg:flex-initial py-2 px-3 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-800' : 'bg-white/[0.06] hover:bg-white/[0.12] border-white/[0.1] text-slate-200 hover:text-white'} border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5`}
                       >
-                        <Mail className="w-3.5 h-3.5 text-amber-400" />
+                        <Mail className="w-3.5 h-3.5 text-amber-500" />
                         <span>{isCoBuilder ? 'Send Workspace Email' : 'Send Follow-Up'}</span>
                       </button>
 
                       {/* Copy Workspace URL */}
                       <button
                         onClick={() => handleCopyUrl(proj)}
-                        className="flex-1 lg:flex-initial py-2 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        className={`flex-1 lg:flex-initial py-2 px-3 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-800' : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'} border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5`}
                       >
                         {copiedId === proj.id ? (
                           <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="text-emerald-400">Copied!</span>
+                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            <span className="text-emerald-600 font-bold">Copied!</span>
                           </>
                         ) : (
                           <>
@@ -815,7 +864,7 @@ export default function CreatorParticipationManager() {
                       {!isCoBuilder ? (
                         <button
                           onClick={() => handleMarkAsPaidCoBuilder(proj)}
-                          className="flex-1 lg:flex-initial py-2 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/30"
+                          className="flex-1 lg:flex-initial py-2 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/20"
                         >
                           <CreditCard className="w-3.5 h-3.5" />
                           <span>Mark Paid DIY ($50)</span>
@@ -823,7 +872,7 @@ export default function CreatorParticipationManager() {
                       ) : (
                         <button
                           onClick={() => handleSwitchToStudioManaged(proj)}
-                          className="flex-1 lg:flex-initial py-1.5 px-3 rounded-xl bg-white/[0.03] hover:bg-red-500/10 border border-white/[0.06] hover:border-red-500/20 text-[11px] font-semibold text-slate-400 hover:text-red-300 transition-all cursor-pointer flex items-center justify-center gap-1"
+                          className={`flex-1 lg:flex-initial py-1.5 px-3 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-red-50 border-slate-200 hover:border-red-200 text-slate-600 hover:text-red-600' : 'bg-white/[0.03] hover:bg-red-500/10 border-white/[0.06] hover:border-red-500/20 text-slate-400 hover:text-red-300'} border text-[11px] font-semibold transition-all cursor-pointer flex items-center justify-center gap-1`}
                         >
                           <span>Revert to Managed</span>
                         </button>
@@ -834,7 +883,7 @@ export default function CreatorParticipationManager() {
                         href={workspaceUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex-1 lg:flex-initial py-1.5 px-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] text-[11px] text-slate-400 hover:text-slate-200 transition-all text-center flex items-center justify-center gap-1"
+                        className={`flex-1 lg:flex-initial py-1.5 px-3 rounded-xl ${isLight ? 'bg-slate-100/70 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200' : 'bg-white/[0.02] hover:bg-white/[0.06] text-slate-400 hover:text-slate-200'} text-[11px] transition-all text-center flex items-center justify-center gap-1`}
                       >
                         <Eye className="w-3 h-3" />
                         <span>Preview Portal View</span>
@@ -845,7 +894,7 @@ export default function CreatorParticipationManager() {
                       <button
                         type="button"
                         onClick={() => handleDeleteProject(proj)}
-                        className="flex-1 lg:flex-initial py-1.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-[11px] font-bold text-red-400 hover:text-red-300 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        className={`flex-1 lg:flex-initial py-1.5 px-3 rounded-xl ${isLight ? 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600' : 'bg-red-500/10 hover:bg-red-500/20 border-red-500/30 hover:border-red-500/50 text-red-400 hover:text-red-300'} border text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5`}
                         title="Permanently Delete this Co-Launch Venture from Section 2"
                       >
                         <Trash2 className="w-3 h-3 text-red-400" />
@@ -862,49 +911,49 @@ export default function CreatorParticipationManager() {
 
       {/* Real-Time Direct Email Dispatch Modal */}
       {emailModalProject && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl rounded-3xl bg-[#0f131c] border border-white/[0.12] p-6 sm:p-8 space-y-5 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className={`w-full max-w-2xl rounded-3xl ${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#0f131c] border-white/[0.12] text-white shadow-2xl'} border p-6 sm:p-8 space-y-5 relative`}>
             <button
               onClick={() => setEmailModalProject(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className={`absolute top-5 right-5 p-2 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'} transition-colors cursor-pointer`}
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="space-y-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1">
+              <span className={`px-2.5 py-0.5 rounded-full ${isLight ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-amber-400/20 text-amber-300 border-amber-400/30'} border text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1`}>
                 <Send className="w-3 h-3" />
                 Real-Time Direct Email Dispatch
               </span>
-              <h2 className="text-lg font-black text-white">
+              <h2 className={`text-lg font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 Send Follow-up to {emailModalProject.creatorName || emailModalProject.creatorHandle}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                 Dispatches immediately from the studio SMTP server to <strong>{emailModalProject.creatorEmail || 'creator email'}</strong>.
               </p>
             </div>
 
             {/* Quick Templates */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Templates:</span>
+              <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'} font-bold uppercase tracking-wider`}>Templates:</span>
               <button
                 type="button"
                 onClick={() => handleOpenEmailModal(emailModalProject, 'followup')}
-                className="px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-[11px] text-slate-300 font-medium transition-colors cursor-pointer"
+                className={`px-2.5 py-1 rounded-lg ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300'} text-[11px] font-medium transition-colors cursor-pointer`}
               >
                 Track Choice Reminder
               </button>
               <button
                 type="button"
                 onClick={() => handleOpenEmailModal(emailModalProject, 'invoice')}
-                className="px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-[11px] text-slate-300 font-medium transition-colors cursor-pointer"
+                className={`px-2.5 py-1 rounded-lg ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300'} text-[11px] font-medium transition-colors cursor-pointer`}
               >
                 $50 Pass Invoice
               </button>
               <button
                 type="button"
                 onClick={() => handleOpenEmailModal(emailModalProject, 'portal_link')}
-                className="px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-[11px] text-slate-300 font-medium transition-colors cursor-pointer"
+                className={`px-2.5 py-1 rounded-lg ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300'} text-[11px] font-medium transition-colors cursor-pointer`}
               >
                 Workspace URL Dispatch
               </button>
@@ -912,27 +961,27 @@ export default function CreatorParticipationManager() {
 
             {/* Subject Input */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              <label className={`text-[11px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-400'} uppercase tracking-wider block`}>
                 Email Subject
               </label>
               <input
                 type="text"
                 value={emailSubject}
                 onChange={(e) => setEmailSubject(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/50"
+                className={`w-full px-3.5 py-2.5 rounded-xl ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-amber-500' : 'bg-white/[0.04] border-white/[0.1] text-white placeholder-slate-500 focus:border-amber-400/50'} border text-xs focus:outline-none`}
               />
             </div>
 
             {/* Body Textarea */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              <label className={`text-[11px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-400'} uppercase tracking-wider block`}>
                 Email Message Body
               </label>
               <textarea
                 rows={9}
                 value={emailBody}
                 onChange={(e) => setEmailBody(e.target.value)}
-                className="w-full p-3.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400/50 leading-relaxed"
+                className={`w-full p-3.5 rounded-xl ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-amber-500 font-sans' : 'bg-white/[0.04] border-white/[0.1] text-slate-200 placeholder-slate-500 focus:border-amber-400/50 font-mono'} border text-xs focus:outline-none leading-relaxed`}
               />
             </div>
 
@@ -941,7 +990,7 @@ export default function CreatorParticipationManager() {
               <button
                 type="button"
                 onClick={() => setEmailModalProject(null)}
-                className="px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
+                className={`px-4 py-2.5 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300'} text-xs font-semibold transition-colors cursor-pointer`}
               >
                 Cancel
               </button>
@@ -949,7 +998,7 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={handleSendEmail}
                 disabled={isSendingEmail || !emailSubject.trim() || !emailBody.trim()}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 shadow-lg shadow-amber-950/40"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 shadow-lg shadow-amber-950/20"
               >
                 {isSendingEmail ? (
                   <>
@@ -970,15 +1019,15 @@ export default function CreatorParticipationManager() {
 
       {/* Global Toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#0f131c] border border-white/[0.12] shadow-2xl">
+        <div className={`fixed bottom-6 right-6 z-50 pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-[#0f131c] border-white/[0.12] shadow-2xl'} border`}>
           {toast.type === 'success' ? (
-            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
           )}
           <div className="min-w-0 pr-2">
-            <p className="text-xs font-bold text-white">{toast.title}</p>
-            <p className="text-[11px] text-slate-400">{toast.message}</p>
+            <p className={`text-xs font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{toast.title}</p>
+            <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{toast.message}</p>
           </div>
         </div>
       )}

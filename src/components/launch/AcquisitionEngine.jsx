@@ -437,8 +437,30 @@ export default function AcquisitionEngine({
   const [customNicheInput, setCustomNicheInput] = useState("");
   const [activeNicheCategory, setActiveNicheCategory] = useState("all");
   const [nicheSearchQuery, setNicheSearchQuery] = useState("");
-  const [minFollowers, setMinFollowers] = useState(100000);
-  const [maxFollowers, setMaxFollowers] = useState(1000000);
+  const [minFollowers, setMinFollowers] = useState(() => {
+    try {
+      const saved = localStorage.getItem("forge_launch_min_followers");
+      if (saved) {
+        const val = Number(saved);
+        if (!isNaN(val) && val >= 1000) return val;
+      }
+      return 100000;
+    } catch {
+      return 100000;
+    }
+  });
+  const [maxFollowers, setMaxFollowers] = useState(() => {
+    try {
+      const saved = localStorage.getItem("forge_launch_max_followers");
+      if (saved) {
+        const val = Number(saved);
+        if (!isNaN(val) && val >= 10000) return val;
+      }
+      return 1000000;
+    } catch {
+      return 1000000;
+    }
+  });
   const [minEngagement, setMinEngagement] = useState(2.0);
   const [selectedGeography, setSelectedGeography] = useState("GLOBAL");
   const [weeklyOutreachVolume, setWeeklyOutreachVolume] = useState(50);
@@ -447,8 +469,9 @@ export default function AcquisitionEngine({
   const [creatorsBatchCount, setCreatorsBatchCount] = useState(() => {
     try {
       const saved = localStorage.getItem("forge_launch_creators_batch_count");
-      if (saved && Number(saved) !== 3) {
-        return Math.max(1, Number(saved));
+      if (saved) {
+        const num = Number(saved);
+        if (!isNaN(num) && num >= 5 && num <= 50) return num;
       }
       return 25;
     } catch {
@@ -6779,113 +6802,217 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                 {/* SECTION: Audience Sizing & Filter Criteria */}
                 <div className="pt-6 border-t border-slate-100">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-4">
-                    Audience Sizing & Filter Criteria
-                  </span>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                        Audience Sizing & Filter Criteria
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                      Dynamic multi-factor creator filtering engine
+                    </span>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Target Range */}
-                    <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-slate-600">Target Range</span>
-                        <span className="text-xs font-mono font-bold text-emerald-600">
-                          {minFollowers >= 1000000 ? `${(minFollowers / 1000000).toFixed(1).replace(/\.0$/, "")}M` : `${Math.round(minFollowers / 1000)}K`} – {maxFollowers >= 1000000 ? `${(maxFollowers / 1000000).toFixed(1).replace(/\.0$/, "")}M` : `${Math.round(maxFollowers / 1000)}K`}
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="4"
-                        value={
-                          minFollowers < 100000 ? 1 :
-                          maxFollowers <= 1000000 ? 2 :
-                          maxFollowers <= 5000000 ? 3 : 4
-                        }
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          if (val === 1) { setMinFollowers(10000); setMaxFollowers(100000); }
-                          else if (val === 2) { setMinFollowers(100000); setMaxFollowers(1000000); }
-                          else if (val === 3) { setMinFollowers(1000000); setMaxFollowers(5000000); }
-                          else { setMinFollowers(5000000); setMaxFollowers(20000000); }
-                        }}
-                        className="w-full accent-emerald-600 cursor-pointer"
-                      />
-                      <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
-                        <span>10K-100K</span>
-                        <span>100K-1M</span>
-                        <span>1M-5M</span>
-                        <span>5M+</span>
-                      </div>
-                    </div>
-
-                    {/* Geography Selector */}
-                    <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
-                      <label className="text-xs font-medium text-slate-600 block mb-2">Geography</label>
-                      <select
-                        value={selectedGeography}
-                        onChange={(e) => setSelectedGeography(e.target.value)}
-                        className="w-full text-xs font-medium bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-800"
-                      >
-                        <option value="GLOBAL">🌍 Global (Worldwide)</option>
-                        <option value="US">🇺🇸 United States & Canada</option>
-                        <option value="EU">🇪🇺 UK & Western Europe</option>
-                        <option value="APAC">🌏 Asia-Pacific</option>
-                        <option value="LATAM">🌎 Latin America</option>
-                      </select>
-                      <span className="text-[10px] text-slate-400 block mt-1">Multi-region targeting active</span>
-                    </div>
-
-                    {/* Min Engagement */}
-                    <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-medium text-slate-600">Min Engagement</label>
-                        <span className="text-xs font-mono font-bold text-emerald-600">≥ {minEngagement.toFixed(1)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="10"
-                        max="80"
-                        value={Math.round(minEngagement * 10)}
-                        onChange={(e) => setMinEngagement(Number(e.target.value) / 10)}
-                        className="w-full accent-emerald-600 cursor-pointer"
-                      />
-                      <span className="text-[10px] text-slate-400 block mt-1 font-mono">Strict threshold applied</span>
-                    </div>
-
-                    {/* Target Creators to Discover Slider */}
-                    <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70 flex flex-col justify-between">
+                    {/* Card 1: Target Follower Range */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between">
                       <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-xs font-medium text-slate-600">Creators Target</label>
-                          <span className="text-xs font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-xs font-bold text-slate-800">Target Range</span>
+                          </div>
+                          <span className="text-xs font-mono font-black text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-lg shadow-2xs">
+                            {minFollowers >= 1000000 ? `${(minFollowers / 1000000).toFixed(1).replace(/\.0$/, "")}M` : `${Math.round(minFollowers / 1000)}K`} – {maxFollowers >= 1000000 ? `${(maxFollowers / 1000000).toFixed(1).replace(/\.0$/, "")}M` : `${Math.round(maxFollowers / 1000)}K`}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="4"
+                          value={
+                            minFollowers < 100000 ? 1 :
+                            maxFollowers <= 1000000 ? 2 :
+                            maxFollowers <= 5000000 ? 3 : 4
+                          }
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            let min = 100000, max = 1000000;
+                            if (val === 1) { min = 10000; max = 100000; }
+                            else if (val === 2) { min = 100000; max = 1000000; }
+                            else if (val === 3) { min = 1000000; max = 5000000; }
+                            else { min = 5000000; max = 20000000; }
+                            setMinFollowers(min);
+                            setMaxFollowers(max);
+                            try {
+                              localStorage.setItem("forge_launch_min_followers", String(min));
+                              localStorage.setItem("forge_launch_max_followers", String(max));
+                            } catch (err) {}
+                          }}
+                          className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 gap-1 mt-3 pt-2.5 border-t border-slate-100">
+                        {[
+                          { id: 1, label: "10K-100K", min: 10000, max: 100000 },
+                          { id: 2, label: "100K-1M", min: 100000, max: 1000000 },
+                          { id: 3, label: "1M-5M", min: 1000000, max: 5000000 },
+                          { id: 4, label: "5M+", min: 5000000, max: 20000000 },
+                        ].map((tier) => {
+                          const isCurrent =
+                            (tier.id === 1 && minFollowers < 100000) ||
+                            (tier.id === 2 && minFollowers >= 100000 && maxFollowers <= 1000000) ||
+                            (tier.id === 3 && minFollowers >= 1000000 && maxFollowers <= 5000000) ||
+                            (tier.id === 4 && minFollowers >= 5000000);
+                          return (
+                            <button
+                              key={tier.id}
+                              type="button"
+                              onClick={() => {
+                                setMinFollowers(tier.min);
+                                setMaxFollowers(tier.max);
+                                try {
+                                  localStorage.setItem("forge_launch_min_followers", String(tier.min));
+                                  localStorage.setItem("forge_launch_max_followers", String(tier.max));
+                                } catch (err) {}
+                              }}
+                              className={`py-1 rounded-md text-[9.5px] font-mono font-bold transition-all text-center cursor-pointer ${
+                                isCurrent
+                                  ? "bg-emerald-600 text-white shadow-2xs"
+                                  : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800 border border-slate-200/60"
+                              }`}
+                            >
+                              {tier.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Card 2: Geography Selector */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-1.5">
+                            <Globe className="w-3.5 h-3.5 text-sky-600" />
+                            <label className="text-xs font-bold text-slate-800">Geography</label>
+                          </div>
+                          <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200/80 px-2 py-0.5 rounded-lg">
+                            Active Filter
+                          </span>
+                        </div>
+                        <select
+                          value={selectedGeography}
+                          onChange={(e) => {
+                            setSelectedGeography(e.target.value);
+                            try {
+                              localStorage.setItem("forge_launch_selected_geography", e.target.value);
+                            } catch (err) {}
+                          }}
+                          className="w-full text-xs font-medium bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 transition-all cursor-pointer"
+                        >
+                          <option value="GLOBAL">🌍 Global (Worldwide)</option>
+                          <option value="US">🇺🇸 United States & Canada</option>
+                          <option value="EU">🇪🇺 UK & Western Europe</option>
+                          <option value="APAC">🌏 Asia-Pacific</option>
+                          <option value="LATAM">🌎 Latin America</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100 font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                        <span className="truncate">Multi-region targeting active</span>
+                      </div>
+                    </div>
+
+                    {/* Card 3: Min Engagement */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-1.5">
+                            <Flame className="w-3.5 h-3.5 text-amber-500" />
+                            <label className="text-xs font-bold text-slate-800">Min Engagement</label>
+                          </div>
+                          <span className="text-xs font-mono font-black text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-lg shadow-2xs">
+                            ≥ {minEngagement.toFixed(1)}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="80"
+                          value={Math.round(minEngagement * 10)}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) / 10;
+                            setMinEngagement(val);
+                            try {
+                              localStorage.setItem("forge_launch_min_engagement", String(val));
+                            } catch (err) {}
+                          }}
+                          className="w-full accent-amber-500 cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 gap-1 mt-3 pt-2.5 border-t border-slate-100">
+                        {[1.5, 2.0, 3.0, 5.0].map((rate) => (
+                          <button
+                            key={rate}
+                            type="button"
+                            onClick={() => {
+                              setMinEngagement(rate);
+                              try {
+                                localStorage.setItem("forge_launch_min_engagement", String(rate));
+                              } catch (err) {}
+                            }}
+                            className={`py-1 rounded-md text-[9.5px] font-mono font-bold transition-all text-center cursor-pointer ${
+                              Math.abs(minEngagement - rate) < 0.05
+                                ? "bg-amber-500 text-white shadow-2xs"
+                                : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800 border border-slate-200/60"
+                            }`}
+                          >
+                            ≥{rate}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Card 4: Target Creators to Discover (Max 50) */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-1.5">
+                            <Target className="w-3.5 h-3.5 text-purple-600" />
+                            <label className="text-xs font-bold text-slate-800">Creators Target</label>
+                          </div>
+                          <span className="text-xs font-mono font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-lg shadow-2xs">
                             {creatorsBatchCount || 25} Creators
                           </span>
                         </div>
                         <input
                           type="range"
                           min="5"
-                          max="100"
+                          max="50"
                           step="5"
-                          value={creatorsBatchCount || 25}
+                          value={Math.min(50, Math.max(5, creatorsBatchCount || 25))}
                           onChange={(e) => {
-                            const val = Number(e.target.value);
+                            const val = Math.min(50, Math.max(5, Number(e.target.value)));
                             setCreatorsBatchCount(val);
                             try {
                               localStorage.setItem("forge_launch_creators_batch_count", String(val));
                             } catch (err) {}
                           }}
-                          className="w-full accent-emerald-600 cursor-pointer"
+                          className="w-full accent-purple-600 cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none"
                         />
-                        <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                        <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono font-medium">
                           <span>5</span>
+                          <span>15</span>
                           <span>25</span>
-                          <span>50</span>
-                          <span>75</span>
-                          <span>100</span>
+                          <span>35</span>
+                          <span>50 max</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between gap-1 mt-2.5 pt-2 border-t border-slate-200/60">
-                        <span className="text-[10px] text-slate-400 font-mono">Quick:</span>
-                        {[10, 25, 50, 75, 100].map((preset) => (
+                      <div className="flex items-center justify-between gap-1 mt-3 pt-2.5 border-t border-slate-100">
+                        <span className="text-[10px] text-slate-400 font-mono font-bold">Quick:</span>
+                        {[5, 10, 25, 40, 50].map((preset) => (
                           <button
                             key={preset}
                             type="button"
@@ -6895,10 +7022,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 localStorage.setItem("forge_launch_creators_batch_count", String(preset));
                               } catch (err) {}
                             }}
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                            className={`px-2 py-1 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
                               (creatorsBatchCount || 25) === preset
-                                ? "bg-emerald-600 text-white shadow-xs"
-                                : "bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200/70"
+                                ? "bg-purple-600 text-white shadow-2xs"
+                                : "bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
                             }`}
                           >
                             {preset}
