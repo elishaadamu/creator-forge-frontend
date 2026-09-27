@@ -111,6 +111,18 @@ export default function CreatorPortal({ portalId }) {
     }
   }
 
+  const handleDeclineDiyOffer = async () => {
+    if (!project) return
+    const updated = {
+      ...project,
+      diyOfferStatus: 'declined',
+      isDIY: false
+    }
+    handleUpdateProject(updated)
+    setActiveMainView('launch_kit')
+    setToast('Standard Studio-Managed track active (50/50 Revenue Split).')
+  }
+
   const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'scripts' | 'presales' | 'messages' | 'strategy'
   const [activeScriptTab, setActiveScriptTab] = useState('post') // 'post' | 'video' | 'dm'
   const [viewDraftTask, setViewDraftTask] = useState(null)
@@ -379,20 +391,26 @@ export default function CreatorPortal({ portalId }) {
           {isDiyActive ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-bold shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden md:inline">DIY Autonomous License Active</span>
-              <span className="md:hidden">DIY Active</span>
+              <span className="hidden md:inline">DIY Autonomous License Active ($50 Paid)</span>
+              <span className="md:hidden">DIY Active ($50)</span>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            </div>
+          ) : project?.diyOfferStatus === 'declined' ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold shadow-sm">
+              <span>🤝</span>
+              <span className="hidden md:inline">Studio Managed Track (50/50 Split)</span>
+              <span className="md:hidden">Managed Track</span>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setShowDiyModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400/20 via-amber-500/20 to-purple-500/20 hover:from-amber-400/30 hover:to-purple-500/30 border border-amber-400/40 text-amber-200 text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
-              title="Unlock full execution authority to validate, build, and launch yourself"
+              title="Choose your track: Unlock DIY ($50 USD) or proceed with Studio-Managed"
             >
               <Zap className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden sm:inline">Do-It-Yourself License ($99/mo)</span>
-              <span className="sm:hidden">DIY License</span>
+              <span className="hidden sm:inline">Choose Track: DIY ($50 USD) or Managed</span>
+              <span className="sm:hidden">DIY ($50) or Managed</span>
             </button>
           )}
 
@@ -478,140 +496,236 @@ export default function CreatorPortal({ portalId }) {
               isDIY={true}
             />
           </main>
-        ) : (
+        ) : project?.diyOfferStatus === 'declined' ? (
+          /* MANAGED TRACK PROGRESS VIEW (When creator declined $50 DIY) */
           <main className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-8 space-y-6">
-            {/* Paywall & Feature Preview Hero */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#141824] via-[#0f121a] to-[#0a0d14] border border-amber-500/40 shadow-2xl space-y-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-
+            <div className="p-6 sm:p-8 rounded-3xl bg-[#0e111a] border border-white/[0.08] shadow-2xl space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
-                <div className="space-y-1.5 max-w-xl">
-                  <span className="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-amber-300" />
-                    <span>Do-It-Yourself Creator Operating System</span>
-                  </span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
+                      <span>🤝 Studio-Managed Venture</span>
+                    </span>
+                    <span className="text-xs text-slate-500">•</span>
+                    <span className="text-xs font-bold text-emerald-400">50/50 Revenue Split Active</span>
+                  </div>
                   <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                    Take 100% Control of Your Software Venture
+                    ProjectOS Progress Tracker: {productName}
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                    Instead of relying solely on the studio or waiting for operator turns, you can do the entire process yourself! Validate your market, build your custom MVP with AI sprints, and launch with direct command control.
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                    You chose the Studio-Managed Co-Launch track. The Creator Forge studio engineering team handles 100% of software development, architecture, and deployments for you. You can track all sprint progress, pre-orders, and telemetry below.
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center space-y-2 shrink-0">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">DIY Creator Access</span>
-                  <div className="text-2xl font-black text-amber-300">$99<span className="text-xs text-slate-400 font-normal"> / mo</span></div>
-                  <button
-                    type="button"
-                    onClick={() => setShowDiyModal(true)}
-                    className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition-all shadow-md cursor-pointer active:scale-95"
-                  >
-                    Subscribe & Unlock 🚀
-                  </button>
+                <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center space-y-1.5 shrink-0">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Current Phase</span>
+                  <div className="text-xl font-black text-purple-300">
+                    Phase {project?.currentPhase || 1}: {project?.currentPhase === 3 ? 'Launch & Scale' : project?.currentPhase === 2 ? 'Build MVP' : 'Validate'}
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-bold block">
+                    Managed by Studio Operators
+                  </span>
                 </div>
               </div>
 
-              {/* 3 Phases Unlocked */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.08] space-y-3 relative group hover:border-amber-400/40 transition-colors">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                    P1
+              {/* Progress Milestones */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">Phase 1: Validation</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                      {project?.currentPhase > 1 ? 'Completed' : 'In Progress'}
+                    </span>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold text-white">Phase 1: Market Validation</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Formulate your value proposition, auto-generate pre-order landing pages, test survey responses, and run the Phase 1 Gate Decision (Go / Pivot / Kill).
-                    </p>
-                  </div>
-                  <div className="pt-2 text-[11px] text-emerald-400 font-mono font-medium flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Pre-Order Funnel & Live Stripe Checkout</span>
-                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Admin is managing pre-order telemetry and customer interest validation.
+                  </p>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.08] space-y-3 relative group hover:border-amber-400/40 transition-colors">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs">
-                    P2
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">Phase 2: Build MVP</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
+                      {project?.currentPhase === 2 ? 'Active Sprint' : project?.currentPhase > 2 ? 'Completed' : 'Upcoming'}
+                    </span>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold text-white">Phase 2: Build MVP & Sprints</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Configure tech architecture, trigger AI engineering sprints, test private beta feedback, and authorize the Phase 2 Greenlight Launch gate decision.
-                    </p>
-                  </div>
-                  <div className="pt-2 text-[11px] text-blue-400 font-mono font-medium flex items-center gap-1">
-                    <Cpu className="w-3.5 h-3.5" />
-                    <span>Autonomous AI Code Generator</span>
-                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Studio engineers configure the software stack, database, and beta app.
+                  </p>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.08] space-y-3 relative group hover:border-amber-400/40 transition-colors">
-                  <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs">
-                    P3
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">Phase 3: Launch</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold">
+                      {project?.currentPhase === 3 ? 'Active Launch' : 'Upcoming'}
+                    </span>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold text-white">Phase 3: Launch & Scale</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Orchestrate live deployment, hit the big Go-Live launch button, monitor real-time MRR telemetry, and manage recurring subscription revenue.
-                    </p>
-                  </div>
-                  <div className="pt-2 text-[11px] text-purple-400 font-mono font-medium flex items-center gap-1">
-                    <Rocket className="w-3.5 h-3.5" />
-                    <span>Live Production Deployment Control</span>
-                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Production deployment and recurring subscription checkout management.
+                  </p>
                 </div>
               </div>
 
-              {/* Bottom Upgrade CTA & Instant Test Unlock */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-amber-400/10 border border-amber-400/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-amber-400 text-slate-950 font-black">
-                    <Lock className="w-5 h-5 text-slate-950 stroke-[2.5]" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white">Pay via Stripe or PayPal to Unlock Full Control</h4>
-                    <p className="text-[11px] text-slate-300">
-                      Cancel anytime. You keep 100% of member revenue on your own Stripe account.
-                    </p>
-                  </div>
+              {/* CTAs */}
+              <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-white">Looking for your daily tasks & promotional scripts?</h4>
+                  <p className="text-[11px] text-slate-400">
+                    Head over to your Daily Launch Kit to copy promotional copy, Instagram stories, and video scripts.
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveMainView('launch_kit')}
+                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-md cursor-pointer whitespace-nowrap"
+                >
+                  Open Daily Launch Kit & Scripts →
+                </button>
+              </div>
 
+              {/* Change mind / Upgrade to DIY option */}
+              <div className="p-4 rounded-2xl bg-amber-400/5 border border-amber-400/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowDiyModal(true)}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition-all shadow-md cursor-pointer active:scale-95 flex items-center gap-2 whitespace-nowrap"
-                  >
-                    <CreditCard className="w-3.5 h-3.5" />
-                    <span>Unlock via Stripe / PayPal ($99/mo)</span>
-                  </button>
+                  <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-slate-300">
+                    Want to run the full process yourself and keep 100% of revenue instead?
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDiyModal(true)}
+                  className="px-3.5 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-black text-xs hover:brightness-110 cursor-pointer whitespace-nowrap transition-all shadow-xs"
+                >
+                  Upgrade to DIY ($50 USD) ⚡
+                </button>
+              </div>
+            </div>
+          </main>
+        ) : (
+          /* TRACK SELECTION / $50 PAYMENT REQUEST (When Offer is Sent & Pending) */
+          <main className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-8 space-y-6">
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#141824] via-[#0f121a] to-[#0a0d14] border border-amber-500/40 shadow-2xl space-y-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const testSub = {
-                        active: true,
-                        plan: 'diy_creator_test',
-                        planName: 'DIY Test Mode (Unlocked)',
-                        amount: 99,
-                        billingCycle: 'monthly',
-                        paymentMethod: 'Test Mode',
-                        transactionId: `test_${Date.now()}`,
-                        unlockedAt: new Date().toISOString(),
-                        status: 'active',
-                        unlockedPhases: [1, 2, 3],
-                        licenseKey: 'FORGE-DIY-TEST'
-                      }
-                      if (typeof window !== 'undefined' && project?.id) {
-                        window.localStorage.setItem(`forge_diy_${project.id}`, 'true')
-                      }
-                      handleUpdateProject({ ...project, diySubscription: testSub, isDIY: true })
-                    }}
-                    className="px-3 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-amber-300 border border-amber-400/30 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
-                    title="Unlock instantly in test mode to preview full ProjectOS"
-                  >
-                    ⚡ Instant Demo Unlock
-                  </button>
+              <div className="text-center max-w-2xl mx-auto space-y-2">
+                <span className="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-amber-300" />
+                  <span>Choose Your Software Co-Launch Track</span>
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  How would you like to build {productName}?
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  You can either do the whole process yourself using our full ProjectOS suite for a one-time $50 fee, or have our studio engineering team build and manage it for you under our 50/50 partnership track.
+                </p>
+              </div>
+
+              {/* 2-Option Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                {/* Option A: DIY ProjectOS ($50 USD) */}
+                <div className="p-6 rounded-2xl bg-gradient-to-b from-amber-500/10 to-transparent border-2 border-amber-400/60 shadow-xl space-y-4 relative flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider">
+                        Independent Option
+                      </span>
+                      <div className="text-right">
+                        <div className="text-2xl font-black text-amber-300">$50<span className="text-xs text-slate-400 font-medium"> USD</span></div>
+                        <span className="text-[10px] text-slate-400">One-time payment</span>
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-black text-white">Option 1: Do-It-Yourself ProjectOS</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      You run the whole process yourself. Full authority over validation, AI MVP generation, execution modals, and gate approvals.
+                    </p>
+
+                    <div className="space-y-2 text-xs pt-1">
+                      <div className="flex items-center gap-2 text-slate-200">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span><strong>100% Revenue Ownership</strong> (Zero studio rev-share)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-200">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Full Phase 1, Phase 2, & Phase 3 Command Control</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-200">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>AI Code & MVP Sprints Builder</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-200">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Dedicated URL dispatched directly to your email</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowDiyModal(true)}
+                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:brightness-110 text-slate-950 font-black text-xs transition-all shadow-lg shadow-amber-950/40 cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      <span>Accept & Unlock DIY ProjectOS ($50 USD) 🚀</span>
+                    </button>
+                    <p className="text-[10px] text-center text-slate-400">
+                      Instant Stripe/PayPal checkout or test unlock
+                    </p>
+                  </div>
+                </div>
+
+                {/* Option B: Studio-Managed (50/50 Split) */}
+                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.1] shadow-xl space-y-4 relative flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold text-[10px] uppercase tracking-wider">
+                        Co-Launch Partnership
+                      </span>
+                      <div className="text-right">
+                        <div className="text-2xl font-black text-white">$0<span className="text-xs text-slate-400 font-medium"> Upfront</span></div>
+                        <span className="text-[10px] text-slate-400">50/50 Revenue Split</span>
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-black text-white">Option 2: Studio-Managed Track</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Creator Forge covers 100% of engineering, hosting, payment setup, and customer operations while you track progress and execute your marketing launch kit.
+                    </p>
+
+                    <div className="space-y-2 text-xs pt-1">
+                      <div className="flex items-center gap-2 text-slate-200">
+                        <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+                        <span><strong>Zero Upfront Financial Risk</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-200">
+                        <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+                        <span>Studio engineering team builds the MVP for you</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-200">
+                        <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+                        <span>Creator Tracking Portal to monitor live sprints</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-200">
+                        <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+                        <span>50% Net Revenue Split on all subscriptions</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleDeclineDiyOffer}
+                      className="w-full py-3 px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.12] text-slate-200 hover:text-white font-bold text-xs transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <span>Decline DIY & Choose Managed Track (50/50) 🤝</span>
+                    </button>
+                    <p className="text-[10px] text-center text-slate-400">
+                      Standard tracking portal will be provided immediately
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

@@ -16,9 +16,11 @@ import {
   Layers,
   Cpu,
   BarChart2,
-  Laptop
+  Laptop,
+  Copy,
+  Mail
 } from 'lucide-react'
-import { updateCoLaunchProject } from '../../services/opsApi'
+import { updateCoLaunchProject, sendDirectEmail } from '../../services/opsApi'
 
 export default function DIYSubscriptionModal({
   isOpen,
@@ -26,7 +28,6 @@ export default function DIYSubscriptionModal({
   project,
   onUnlockSuccess
 }) {
-  const [billingCycle, setBillingCycle] = useState('monthly') // 'monthly' | 'annual'
   const [paymentMethod, setPaymentMethod] = useState('stripe') // 'stripe' | 'paypal'
 
   // Stripe card form state
@@ -41,12 +42,13 @@ export default function DIYSubscriptionModal({
   const [processingStep, setProcessingStep] = useState('')
   const [paymentSuccess, setPaymentSuccess] = useState(false)
   const [subscriptionRecord, setSubscriptionRecord] = useState(null)
+  const [dedicatedUrl, setDedicatedUrl] = useState('')
+  const [copiedUrl, setCopiedUrl] = useState(false)
+  const [emailNotice, setEmailNotice] = useState('')
 
   if (!isOpen) return null
 
-  const monthlyPrice = 99
-  const annualPrice = 79 * 12 // $948/yr
-  const amountToCharge = billingCycle === 'monthly' ? monthlyPrice : annualPrice
+  const amountToCharge = 50 // $50 USD flat fee as requested
   const productName = project?.productName || 'Your Custom SaaS App'
 
   const handleProcessPayment = async (isTestBypass = false) => {
@@ -55,13 +57,13 @@ export default function DIYSubscriptionModal({
 
     try {
       if (isTestBypass) {
-        setProcessingStep('Instant test unlock verified...')
+        setProcessingStep('Instant test unlock verified ($50 USD bypass)...')
         await new Promise((r) => setTimeout(r, 600))
       } else {
         setProcessingStep(
           paymentMethod === 'stripe'
-            ? 'Contacting Stripe Checkout & verifying card token...'
-            : 'Authorizing PayPal subscription agreement...'
+            ? 'Contacting Stripe Checkout & verifying $50 charge...'
+            : 'Authorizing PayPal $50.00 payment...'
         )
         await new Promise((r) => setTimeout(r, 1100))
 
@@ -69,33 +71,61 @@ export default function DIYSubscriptionModal({
         await new Promise((r) => setTimeout(r, 800))
       }
 
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
+      const creatorHandleClean = (project?.creatorHandle || project?.creatorName || 'creator')
+        .replace(/^@/, '')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toLowerCase()
+      const generatedUrl = `${origin}/portal/${creatorHandleClean}?view=projectos&token=cf_diy_paid&project=${project.id}`
+      setDedicatedUrl(generatedUrl)
+
+      const licenseKey = `FORGE-DIY-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
       const newSub = {
         active: true,
-        plan: billingCycle === 'monthly' ? 'diy_creator_monthly' : 'diy_creator_annual',
-        planName: billingCycle === 'monthly' ? 'DIY Autonomous Monthly' : 'DIY Autonomous Annual (Founding Pass)',
-        amount: amountToCharge,
-        billingCycle,
+        plan: 'diy_full_50',
+        planName: 'Full DIY Creator ProjectOS License ($50 USD)',
+        amount: 50,
+        billingCycle: 'one_time',
         paymentMethod: isTestBypass ? 'Test Mode (Instant Unlock)' : paymentMethod === 'stripe' ? 'Stripe (Card •••• 4242)' : 'PayPal Express',
-        transactionId: `sub_${paymentMethod}_${Date.now()}`,
+        transactionId: `tx_${paymentMethod}_${Date.now()}`,
         unlockedAt: new Date().toISOString(),
         unlockedPhases: [1, 2, 3],
         status: 'active',
         keepFullRevenue: true,
-        licenseKey: `FORGE-DIY-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
+        licenseKey,
+        dedicatedUrl: generatedUrl
       }
 
       setProcessingStep('Unlocking Phase 1, Phase 2, & Phase 3 Command Control...')
       const updatedProject = {
         ...project,
         diySubscription: newSub,
-        isDIY: true
+        isDIY: true,
+        diyOfferStatus: 'accepted'
       }
 
       // Persist to backend PostgreSQL
       await updateCoLaunchProject(project.id, {
         diySubscription: newSub,
-        isDIY: true
+        isDIY: true,
+        diyOfferStatus: 'accepted'
       }).catch((e) => console.warn('[DIYSubscriptionModal] DB save warning:', e))
+
+      // Dispatch dedicated URL to creator email immediately
+      const targetEmail = (project?.creatorEmail || project?.email_public || '').trim()
+      if (targetEmail && targetEmail.includes('@')) {
+        setProcessingStep(`Dispatching dedicated URL to ${targetEmail}...`)
+        try {
+          const emailSubject = `🚀 Your DIY ProjectOS Command Center URL: ${productName}`
+          const emailBody = `Hi ${project?.creatorName || 'there'},\n\nThank you for your $50 payment! Your autonomous DIY ProjectOS Command Center for ${productName} has been officially unlocked with 100% revenue ownership.\n\nHere is your private URL to access your full DIY ProjectOS pipeline:\n${generatedUrl}\n\nYou now have full authority to drive every phase yourself:\n• Phase 1: Market Validation & Pre-order Campaign\n• Phase 2: AI MVP Sprints & Architecture\n• Phase 3: Launch & Commercial Scale\n• 100% Revenue Retention\n\nClick the link above to start building and launching immediately!\n\nBest regards,\nThe Creator Forge Studio Team`
+
+          await sendDirectEmail(targetEmail, emailSubject, emailBody, project?.creatorId || project?.id)
+          setEmailNotice(`Dedicated URL dispatched to ${targetEmail}`)
+        } catch (mailErr) {
+          console.warn('[DIYSubscriptionModal] Failed to dispatch DIY confirmation email:', mailErr)
+          setEmailNotice(`URL ready (email notification skipped: ${mailErr?.message || 'offline'})`)
+        }
+      }
 
       // Broadcast event so portal & ProjectOS immediately sync
       if (typeof window !== 'undefined') {
@@ -160,27 +190,82 @@ export default function DIYSubscriptionModal({
               <div className="space-y-1">
                 <h3 className="text-xl font-black text-white">Full Autonomous Command Control Unlocked!</h3>
                 <p className="text-xs text-slate-300 max-w-md mx-auto">
-                  Your Do-It-Yourself subscription is now active. You have 100% authority to validate, build the MVP with AI sprints, and launch to your audience.
+                  Your $50 payment has been confirmed. You now have full authority to validate, build the MVP with AI sprints, and launch to your audience with 100% revenue retention.
                 </p>
               </div>
 
+              {/* Dedicated ProjectOS URL Box with Copy */}
+              <div className="p-4 rounded-2xl bg-[#10141f] border border-amber-400/40 text-left space-y-2 max-w-md mx-auto shadow-lg">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                    <Rocket className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Your Dedicated DIY ProjectOS URL:</span>
+                  </span>
+                  {emailNotice && (
+                    <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                      <Mail className="w-3 h-3" />
+                      <span>Sent to Email</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 p-2 rounded-xl bg-black/40 border border-white/10">
+                  <input
+                    type="text"
+                    readOnly
+                    value={dedicatedUrl}
+                    className="w-full bg-transparent text-xs text-slate-200 font-mono outline-none truncate"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(dedicatedUrl)
+                        setCopiedUrl(true)
+                        setTimeout(() => setCopiedUrl(false), 2500)
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold flex items-center gap-1 shrink-0 transition-all cursor-pointer"
+                  >
+                    {copiedUrl ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {project?.creatorEmail && (
+                  <p className="text-[11px] text-slate-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>We also emailed this direct access link to <strong>{project.creatorEmail}</strong>.</span>
+                  </p>
+                )}
+              </div>
+
               {/* License Details Badge */}
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-left text-xs space-y-2 max-w-md mx-auto">
+              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-left text-xs space-y-1.5 max-w-md mx-auto">
                 <div className="flex justify-between items-center text-slate-400">
                   <span>License Key:</span>
                   <strong className="font-mono text-amber-300">{subscriptionRecord?.licenseKey}</strong>
                 </div>
                 <div className="flex justify-between items-center text-slate-400">
-                  <span>Plan & Billing:</span>
-                  <strong className="text-white">{subscriptionRecord?.planName} (${subscriptionRecord?.amount})</strong>
+                  <span>Payment Amount:</span>
+                  <strong className="text-white">$50.00 USD (One-Time Access)</strong>
                 </div>
                 <div className="flex justify-between items-center text-slate-400">
                   <span>Payment Gateway:</span>
                   <strong className="text-emerald-400">{subscriptionRecord?.paymentMethod}</strong>
                 </div>
                 <div className="flex justify-between items-center text-slate-400">
-                  <span>Unlocked Capabilities:</span>
-                  <strong className="text-purple-300">Phase 1, Phase 2, Phase 3 + AI Sprints</strong>
+                  <span>Revenue Split:</span>
+                  <strong className="text-emerald-300 font-bold">100% Creator Retained (0% Studio Split)</strong>
                 </div>
               </div>
 
@@ -229,67 +314,23 @@ export default function DIYSubscriptionModal({
                 </div>
               </div>
 
-              {/* Billing Cycle Switcher */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-300 uppercase text-[10px] tracking-wider">
-                    Select Billing Cycle
-                  </span>
-                  <span className="text-amber-400 text-[11px] font-bold">Cancel anytime with 1-click</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setBillingCycle('monthly')}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative ${
-                      billingCycle === 'monthly'
-                        ? 'bg-amber-500/10 border-amber-400/80 shadow-md ring-1 ring-amber-400/30'
-                        : 'bg-white/[0.02] border-white/[0.08] hover:border-white/20'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white">Monthly Plan</span>
-                      {billingCycle === 'monthly' && (
-                        <div className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[10px] font-black">
-                          ✓
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-1 flex items-baseline gap-1">
-                      <span className="text-lg font-black text-white">$99</span>
-                      <span className="text-slate-400 text-xs font-normal">/ month</span>
-                    </div>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Flexible month-to-month access</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setBillingCycle('annual')}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative ${
-                      billingCycle === 'annual'
-                        ? 'bg-amber-500/10 border-amber-400/80 shadow-md ring-1 ring-amber-400/30'
-                        : 'bg-white/[0.02] border-white/[0.08] hover:border-white/20'
-                    }`}
-                  >
-                    <span className="absolute -top-2 right-2 px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] uppercase tracking-wider">
-                      Save 20%
+              {/* Price Tier Card ($50 USD Flat Access) */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-emerald-500/10 border border-amber-400/50 shadow-md space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">
+                      Do-It-Yourself License
                     </span>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white">Annual Pass</span>
-                      {billingCycle === 'annual' && (
-                        <div className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[10px] font-black">
-                          ✓
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-1 flex items-baseline gap-1">
-                      <span className="text-lg font-black text-white">$79</span>
-                      <span className="text-slate-400 text-xs font-normal">/ month</span>
-                    </div>
-                    <span className="text-[10px] text-emerald-400 block mt-0.5 font-medium">$948 billed annually</span>
-                  </button>
+                    <h4 className="text-base font-black text-white">Full ProjectOS Pipeline Access</h4>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-amber-300">$50<span className="text-xs text-slate-400 font-medium"> USD</span></div>
+                    <span className="text-[10px] text-slate-400">One-time access fee</span>
+                  </div>
                 </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Upon payment, your dedicated URL is instantly sent to your email, granting full command authority over all phases, AI build sprints, and 100% revenue retention.
+                </p>
               </div>
 
               {/* Payment Gateway Tabs (Stripe vs PayPal) */}
@@ -395,10 +436,10 @@ export default function DIYSubscriptionModal({
                   <div className="p-4 rounded-2xl bg-amber-400/5 border border-amber-400/20 text-center space-y-2">
                     <div className="text-xl font-black italic text-amber-300">PayPal</div>
                     <p className="text-xs text-slate-300">
-                      You will be authenticated through PayPal to confirm your recurring DIY autonomous subscription of <strong>${amountToCharge}</strong>.
+                      You will be authenticated through PayPal to confirm your one-time payment of <strong>$50.00 USD</strong> for the DIY ProjectOS License.
                     </p>
                     <div className="text-[11px] text-slate-400">
-                      Immediate redirect & instantaneous license activation upon confirmation.
+                      Immediate redirect, dedicated URL sent to email & instantaneous license activation.
                     </div>
                   </div>
                 )}

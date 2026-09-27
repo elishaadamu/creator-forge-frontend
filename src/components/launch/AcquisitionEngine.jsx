@@ -4859,37 +4859,33 @@ export default function AcquisitionEngine({
       const tagline = concept?.tagline || "Tailored software venture";
       const problem = concept?.problem || "Monetizing and streamlining workflows for your community";
 
-      const kickoffSubject = `🚀 Co-Founder Portal Live: Developing ${prodName} with Creator Forge`;
+      const kickoffSubject = `🚀 Action Required: Choose Your Co-Launch Track for ${prodName} (Full DIY $50 USD vs Studio-Managed)`;
       const kickoffBody = `Hi ${firstName},
 
-Exciting milestone! Our venture studio engineering team has officially initiated the active development and co-launch sprint for **${prodName}** under our 50/50 venture co-launch agreement.
+Exciting milestone! We have officially finalized the architecture for **${prodName}** and initialized your venture workspace.
 
-Your private, passwordless **Co-Founder Portal** is now live. Through your portal, you have real-time transparency into our sprint progress, shared presales revenue, launch strategy, and daily collaboration milestones.
-
----
-
-### 📦 Venture Overview & Architecture
-• **Product Name:** ${prodName}
-• **Value Proposition:** ${tagline}
-• **Pricing Tier:** ${pricing} (50/50 Net Revenue Split)
-• **Target Solution:** ${problem}
-• **Financial Risk:** Zero upfront capital — Creator Forge covers 100% of engineering, hosting, payment setup, and customer operations.
+Before kickoff, please select which co-launch path best fits your goals:
 
 ---
 
-### 🔑 Access Your Co-Founder Portal
-Click the link below to access your private co-founder dashboard (no password required):
+### 🚀 Track 1: Do-It-Yourself ProjectOS ($50 USD Flat Access Fee)
+• **You run the whole process yourself**: Full execution authority over Phase 1 (Validation), Phase 2 (AI MVP Build Sprints), and Phase 3 (Launch & Scale).
+• **100% Revenue Ownership**: You keep 100% of all software revenue (0% studio revenue split).
+• Upon paying the one-time $50 USD access fee via Stripe or PayPal, your dedicated DIY ProjectOS Command Center URL will be dispatched to your email immediately.
 
-${magicPortalUrl}
+### 🤝 Track 2: Studio-Managed Co-Launch Track (50/50 Revenue Split — Free Upfront)
+• **Zero upfront capital**: Creator Forge studio engineering handles 100% of technical development, cloud hosting, and payment infrastructure.
+• **50/50 Net Revenue Split**: We split net revenues equally.
+• You receive our Creator Tracking Portal to monitor the build, review pre-orders, and follow your daily marketing launch kit & scripts.
 
 ---
 
-### 🛠️ Current Engineering Sprint:
-1. **MVP Architecture & Staging Environment:** Fully functional core web app ready for your private review.
-2. **Audience Pre-Order & Validation Funnel:** High-converting landing page, checkout, and email sequence.
-3. **Co-Founder Analytics Dashboard:** Live tracking of daily visitors, conversion rate, and revenue payouts.
+### 🔑 Click Below to Accept DIY ($50) or Choose Managed Track:
+Click your secure, passwordless link below to confirm your track:
 
-We are thrilled to partner with you on this venture. Feel free to reply directly to this email at any time.
+${magicPortalUrl}&offer=track_choice
+
+If you have any questions or want to discuss the best path for your audience, reply directly to this email at any time.
 
 Best regards,
 **The Creator Forge Studio Team**
@@ -4901,9 +4897,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       try {
         const { sendDirectEmail } = await import("../../services/opsApi");
         await sendDirectEmail(targetEmail, kickoffSubject, kickoffBody, selectedCreator.id);
-        console.log(`[AcquisitionEngine] Project kick-off email dispatched to ${targetEmail}`);
+        console.log(`[AcquisitionEngine] Co-launch track choice & $50 DIY offer email dispatched to ${targetEmail}`);
       } catch (mailErr) {
-        console.warn("[AcquisitionEngine] Failed to dispatch kick-off email:", mailErr);
+        console.warn("[AcquisitionEngine] Failed to dispatch track choice email:", mailErr);
       }
     }
 
@@ -4956,6 +4952,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       validationPlan: smartInitialPlan,
       portalLinkSent: true,
       skipCreatorEmail: true,
+      diyOfferStatus: 'offer_sent',
+      diyOfferSentAt: new Date().toISOString(),
+      diyFee: 50,
+      isDIY: false,
     });
 
     try {
@@ -4992,9 +4992,111 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     notify(
       "success",
       "Section 2 Project Initialized",
-      `Launched Co-Launch Project OS for ${selectedCreator.name || selectedCreator.handle} (${concept?.name || "Venture"}). Kick-off email dispatched to ${targetEmail || "creator"}!`,
+      `Launched Co-Launch Project OS for ${selectedCreator.name || selectedCreator.handle} (${concept?.name || "Venture"}). Track offer email dispatched to ${targetEmail || "creator"}!`,
       6000
     );
+  };
+
+  // Follow-up handler for creator DIY offer ($50 USD)
+  const handleSendDiyFollowUpEmail = async (creator) => {
+    if (!creator) return;
+    const targetEmail = (creator.email || creator.email_public || "").trim();
+    if (!targetEmail || !targetEmail.includes("@")) {
+      notify("warning", "Missing Email", "Cannot send follow-up: No valid email address for creator.", 3500);
+      return;
+    }
+
+    const concepts = creator.productConcepts || ensureCreatorConcepts(creator);
+    const concept = concepts[0];
+    const prodName = concept?.name || "software venture";
+    const firstName = (creator.name || creator.display_name || "there").split(" ")[0];
+    const portalSlug = (creator.handle || creator.name || "creator").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+    const portalToken = "cf_sec_live";
+    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3001";
+    const magicPortalUrl = `${origin}/portal/${portalSlug}?token=${portalToken}&offer=track_choice`;
+
+    const followUpSubject = `⏰ Reminder: Choose Your Co-Launch Track for ${prodName} ($50 DIY or Studio-Managed)`;
+    const followUpBody = `Hi ${firstName},\n\nJust following up on the co-launch offer for **${prodName}**!\n\nPlease let us know if you would like to proceed with:\n1. 🚀 Track 1: Do-It-Yourself ProjectOS ($50 USD one-time fee) with 100% revenue retention & full command control\n2. 🤝 Track 2: Studio-Managed Track (50/50 Revenue Split — Free Upfront)\n\nClick the link below to select your track or complete the $50 payment:\n${magicPortalUrl}\n\nFeel free to reply directly to this email with any questions!\n\nBest regards,\nCreator Forge Studio Team`;
+
+    try {
+      const { sendDirectEmail } = await import("../../services/opsApi");
+      await sendDirectEmail(targetEmail, followUpSubject, followUpBody, creator.id);
+      notify("success", "Follow-Up Sent", `Track choice reminder email dispatched to ${targetEmail}.`, 4000);
+    } catch (err) {
+      console.warn("Failed to dispatch DIY follow-up:", err);
+      notify("error", "Dispatch Failed", "Could not send follow-up email.", 4000);
+    }
+  };
+
+  // Admin manually declines DIY on creator's behalf (locks into Managed 50/50 track)
+  const handleAdminDeclineDiy = async (creator) => {
+    if (!creator) return;
+    try {
+      const { getCoLaunchProjects, updateCoLaunchProject } = await import("../../services/opsApi");
+      const all = await getCoLaunchProjects();
+      const list = Array.isArray(all) ? all : all?.projects || [];
+      const proj = list.find(p => p.creatorId === creator.id || p.creatorHandle === creator.handle);
+      if (proj) {
+        await updateCoLaunchProject(proj.id, {
+          diyOfferStatus: 'declined',
+          isDIY: false
+        });
+      }
+      setCreators(prev => prev.map(c => c.id === creator.id ? { ...c, diyOfferStatus: 'declined', isDIY: false } : c));
+      notify("success", "Track Updated", "DIY offer declined by admin. Project set to Studio-Managed Track (50/50 split).", 4000);
+    } catch (e) {
+      console.warn("Error updating project track:", e);
+      notify("error", "Update Failed", "Could not update track.", 4000);
+    }
+  };
+
+  // Admin manually confirms $50 DIY paid
+  const handleAdminMarkPaidDiy = async (creator) => {
+    if (!creator) return;
+    try {
+      const { getCoLaunchProjects, updateCoLaunchProject, sendDirectEmail } = await import("../../services/opsApi");
+      const all = await getCoLaunchProjects();
+      const list = Array.isArray(all) ? all : all?.projects || [];
+      const proj = list.find(p => p.creatorId === creator.id || p.creatorHandle === creator.handle);
+      const sub = {
+        active: true,
+        plan: 'diy_full_50',
+        planName: 'Full DIY Creator ProjectOS License ($50 USD)',
+        amount: 50,
+        billingCycle: 'one_time',
+        paymentMethod: 'Admin Override (Paid)',
+        unlockedAt: new Date().toISOString(),
+        status: 'active',
+        licenseKey: `FORGE-ADMIN-${Date.now().toString(36).toUpperCase()}`
+      };
+      if (proj) {
+        await updateCoLaunchProject(proj.id, {
+          diyOfferStatus: 'accepted',
+          isDIY: true,
+          diySubscription: sub
+        });
+      }
+      setCreators(prev => prev.map(c => c.id === creator.id ? { ...c, diyOfferStatus: 'accepted', isDIY: true, diySubscription: sub } : c));
+
+      // Dispatch confirmation email
+      const targetEmail = (creator.email || creator.email_public || "").trim();
+      if (targetEmail && targetEmail.includes("@")) {
+        const portalSlug = (creator.handle || creator.name || "creator").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+        const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3001";
+        const dedicatedUrl = `${origin}/portal/${portalSlug}?view=projectos&token=cf_diy_paid`;
+        await sendDirectEmail(
+          targetEmail,
+          `🚀 Your Full DIY ProjectOS Command Center URL`,
+          `Hi ${creator.name || 'there'},\n\nYour DIY ProjectOS Command Center has been activated by the studio with 100% revenue ownership.\n\nAccess your full DIY ProjectOS pipeline here:\n${dedicatedUrl}\n\nBest,\nCreator Forge Studio Team`,
+          creator.id
+        ).catch(() => {});
+      }
+
+      notify("success", "DIY Activated", "Full DIY ProjectOS activated for creator with 100% revenue ownership!", 4500);
+    } catch (e) {
+      console.warn("Error marking DIY paid:", e);
+      notify("error", "Update Failed", "Could not activate DIY.", 4000);
+    }
   };
 
   // Helper to check if a creator has already received initial outreach
@@ -10216,38 +10318,98 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       <span>Manually Confirm & Unlock</span>
                     </button>
                   )}
-                  <button
-                    type="button"
-                    disabled={!hasFullCommitment || isLaunchingProject}
-                    onClick={() => handlePitchAndCreateProject()}
-                    className={`relative h-9 px-4 rounded-xl text-xs font-bold border shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap ${hasFullCommitment && !isLaunchingProject
-                        ? "bg-[#0F172A] hover:bg-[#1E293B] text-white border-slate-800 cursor-pointer active:scale-95"
-                        : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-75"
-                      }`}
-                    title={
-                      hasFullCommitment
-                        ? "Creator has confirmed full commitment. Promote to ProjectOS."
-                        : "Locked: Creator must confirm full commitment (explicit concept selection or co-launch agreement) before promotion to ProjectOS"
-                    }
-                  >
-                    {hasFullCommitment && (
-                      <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                      </span>
-                    )}
-                    {hasFullCommitment ? (
-                      <>
+                  )}
+                  {isAlreadyLaunched ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {selectedCreator.diyOfferStatus === 'accepted' || selectedCreator.isDIY ? (
+                        <span className="h-9 px-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>💎 Paid DIY ProjectOS ($50 USD) Active</span>
+                        </span>
+                      ) : selectedCreator.diyOfferStatus === 'declined' ? (
+                        <span className="h-9 px-3 rounded-xl bg-purple-50 border border-purple-300 text-purple-800 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                          <span>🤝 Studio-Managed Track (50/50 Split)</span>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="h-9 px-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                            <Lock className="w-3.5 h-3.5 text-amber-600" />
+                            <span>⏳ $50 DIY Offer Pending Reply</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleSendDiyFollowUpEmail(selectedCreator)}
+                            className="h-9 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-semibold shadow-2xs cursor-pointer flex items-center gap-1.5 transition-all active:scale-95"
+                            title="Send follow-up reminder email asking creator to accept $50 DIY or decline"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Send Follow-Up Email</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAdminDeclineDiy(selectedCreator)}
+                            className="h-9 px-3 rounded-xl bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 text-xs font-semibold shadow-2xs cursor-pointer flex items-center gap-1.5 transition-all active:scale-95"
+                            title="Admin decline DIY on creator's behalf and set to standard 50/50 managed track"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>Decline DIY (Set to Managed)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAdminMarkPaidDiy(selectedCreator)}
+                            className="h-9 px-3 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold shadow-2xs cursor-pointer flex items-center gap-1.5 transition-all active:scale-95"
+                            title="Confirm $50 payment and unlock full DIY ProjectOS"
+                          >
+                            <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Mark Paid DIY ($50)</span>
+                          </button>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onGoToProjectOS) onGoToProjectOS(selectedCreator);
+                        }}
+                        className="h-9 px-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                      >
                         <Rocket className="w-3.5 h-3.5 text-emerald-300" />
-                        <span>Promote to Creator Dashboard & Send Kickoff Email 🚀</span>
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Awaiting Full Creator Commitment 🔒</span>
-                      </>
-                    )}
-                  </button>
+                        <span>Open ProjectOS →</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={!hasFullCommitment || isLaunchingProject}
+                      onClick={() => handlePitchAndCreateProject()}
+                      className={`relative h-9 px-4 rounded-xl text-xs font-bold border shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap ${hasFullCommitment && !isLaunchingProject
+                          ? "bg-[#0F172A] hover:bg-[#1E293B] text-white border-slate-800 cursor-pointer active:scale-95"
+                          : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-75"
+                        }`}
+                      title={
+                        hasFullCommitment
+                          ? "Creator has confirmed full commitment. Promote to ProjectOS and dispatch $50 DIY / track offer email."
+                          : "Locked: Creator must confirm full commitment (explicit concept selection or co-launch agreement) before promotion to ProjectOS"
+                      }
+                    >
+                      {hasFullCommitment && (
+                        <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                      )}
+                      {hasFullCommitment ? (
+                        <>
+                          <Rocket className="w-3.5 h-3.5 text-emerald-300" />
+                          <span>Promote to ProjectOS & Send $50 DIY / Track Offer Email 🚀</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Awaiting Full Creator Commitment 🔒</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             );

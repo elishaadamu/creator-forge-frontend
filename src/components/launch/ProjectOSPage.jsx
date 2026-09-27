@@ -418,20 +418,24 @@ export default function ProjectOSPage() {
         <div className="flex items-center gap-2">
           {/* DIY License Status / Subscription Trigger */}
           {activeProject && (
-            (activeProject.isDIY || activeProject.diySubscription?.active) ? (
+            (activeProject.isDIY || activeProject.diySubscription?.active || activeProject.diyOfferStatus === 'accepted') ? (
               <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-bold shadow-xs">
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>DIY License Active</span>
+                <span>DIY Autonomous License ($50 Paid)</span>
+              </div>
+            ) : activeProject.diyOfferStatus === 'declined' ? (
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-400/10 border border-sky-400/30 text-sky-300 text-xs font-medium shadow-xs">
+                <span>🤝 Studio-Managed Track (50/50)</span>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={() => setShowDiyModal(true)}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 text-amber-300 hover:text-amber-200 transition-all text-xs font-bold cursor-pointer active:scale-95"
-                title="Unlock DIY Creator Subscription ($99/mo) with 100% Revenue Ownership"
+                title="Unlock DIY Creator License ($50 USD) with 100% Revenue Ownership"
               >
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>Creator DIY License ($99/mo)</span>
+                <span>Creator DIY License ($50 USD)</span>
               </button>
             )
           )}
