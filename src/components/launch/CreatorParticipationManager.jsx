@@ -401,10 +401,10 @@ export default function CreatorParticipationManager() {
   const totalRevenue = coBuildersCount * 50
 
   return (
-    <div className={`min-h-screen ${isLight ? 'bg-[#f8fafc] text-slate-900 selection:bg-amber-500/20 selection:text-amber-900' : 'bg-[#07090e] text-white selection:bg-amber-500/30 selection:text-amber-200'} flex flex-col font-sans transition-colors duration-200`}>
+    <div className={`min-h-screen ${isLight ? 'bg-[#f0f2f5] text-slate-900 selection:bg-amber-500/20 selection:text-amber-900' : 'bg-[#07090e] text-white selection:bg-amber-500/30 selection:text-amber-200'} flex flex-col font-sans transition-colors duration-200`}>
       {/* Top Banner & Header */}
       <header className={`sticky top-0 z-40 ${isLight ? 'bg-white/95 border-slate-200/90 shadow-2xs' : 'bg-[#07090e]/90 border-white/[0.08] shadow-2xl'} backdrop-blur-xl border-b`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3.5">
             <button
               onClick={() => {
@@ -494,11 +494,11 @@ export default function CreatorParticipationManager() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 space-y-3.5">
         {/* Equity Architecture Notice */}
-        <div className={`p-4 rounded-2xl ${isLight ? 'bg-gradient-to-r from-emerald-50 via-teal-50/40 to-slate-50 border-emerald-200/90 text-slate-800 shadow-2xs' : 'bg-gradient-to-r from-emerald-950/30 via-slate-900/40 to-cyan-950/30 border-emerald-500/20 text-white shadow-lg'} border flex flex-col md:flex-row md:items-center justify-between gap-4`}>
+        <div className={`px-4 py-3 rounded-xl ${isLight ? 'bg-gradient-to-r from-emerald-50 via-teal-50/40 to-slate-50 border-emerald-200/90 text-slate-800 shadow-2xs' : 'bg-gradient-to-r from-emerald-950/30 via-slate-900/40 to-cyan-950/30 border-emerald-500/20 text-white shadow-lg'} border flex flex-col md:flex-row md:items-center justify-between gap-3`}>
           <div className="flex items-start gap-3">
-            <div className={`p-2 rounded-xl ${isLight ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'} border shrink-0`}>
+            <div className={`p-1.5 rounded-lg ${isLight ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'} border shrink-0`}>
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
@@ -517,7 +517,7 @@ export default function CreatorParticipationManager() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <div className={`px-3 py-1.5 rounded-xl ${isLight ? 'bg-white border-slate-200 shadow-2xs' : 'bg-white/[0.04] border-white/[0.08]'} border text-right`}>
+            <div className={`px-2.5 py-1 rounded-lg ${isLight ? 'bg-white border-slate-200 shadow-2xs' : 'bg-white/[0.04] border-white/[0.08]'} border text-right`}>
               <span className={`text-[9px] ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider block font-bold`}>Standard Equity Split</span>
               <span className={`text-xs font-black ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>50% Creator / 50% Studio</span>
             </div>
@@ -525,67 +525,67 @@ export default function CreatorParticipationManager() {
         </div>
 
         {/* KPI Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {/* Card 1: Total Co-Launches */}
-          <div className={`p-4 rounded-2xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] shadow-sm'} border space-y-1`}>
+          <div className={`p-3 rounded-xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] shadow-sm'} border space-y-0.5`}>
             <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider block`}>
               Total Ventures
             </span>
-            <div className={`text-2xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>{totalProjects}</div>
+            <div className={`text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>{totalProjects}</div>
             <p className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Active co-launch projects</p>
           </div>
 
           {/* Card 2: Co-Builders Active ($50 Paid) */}
-          <div className={`p-4 rounded-2xl ${isLight ? 'bg-gradient-to-b from-amber-50/80 to-white border-amber-200 shadow-2xs' : 'bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/30 shadow-sm'} border space-y-1`}>
+          <div className={`p-3 rounded-xl ${isLight ? 'bg-gradient-to-b from-amber-50/80 to-white border-amber-200 shadow-2xs' : 'bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/30 shadow-sm'} border space-y-0.5`}>
             <div className="flex items-center justify-between">
               <span className={`text-[10px] font-bold ${isLight ? 'text-amber-800' : 'text-amber-300'} uppercase tracking-wider block`}>
                 Co-Builders Active
               </span>
               <Zap className={`w-3.5 h-3.5 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
             </div>
-            <div className={`text-2xl font-black ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>{coBuildersCount}</div>
+            <div className={`text-xl font-black ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>{coBuildersCount}</div>
             <p className={`text-[10px] ${isLight ? 'text-amber-700/80' : 'text-amber-200/70'}`}>$50 Pass Paid · Interactive</p>
           </div>
 
           {/* Card 3: Studio Managed Track */}
-          <div className={`p-4 rounded-2xl ${isLight ? 'bg-gradient-to-b from-purple-50/80 to-white border-purple-200 shadow-2xs' : 'bg-gradient-to-b from-purple-500/10 to-transparent border-purple-500/30 shadow-sm'} border space-y-1`}>
+          <div className={`p-3 rounded-xl ${isLight ? 'bg-gradient-to-b from-purple-50/80 to-white border-purple-200 shadow-2xs' : 'bg-gradient-to-b from-purple-500/10 to-transparent border-purple-500/30 shadow-sm'} border space-y-0.5`}>
             <div className="flex items-center justify-between">
               <span className={`text-[10px] font-bold ${isLight ? 'text-purple-800' : 'text-purple-300'} uppercase tracking-wider block`}>
                 Studio-Managed
               </span>
               <Rocket className={`w-3.5 h-3.5 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
             </div>
-            <div className={`text-2xl font-black ${isLight ? 'text-purple-600' : 'text-purple-400'}`}>{managedCount}</div>
+            <div className={`text-xl font-black ${isLight ? 'text-purple-600' : 'text-purple-400'}`}>{managedCount}</div>
             <p className={`text-[10px] ${isLight ? 'text-purple-700/80' : 'text-purple-200/70'}`}>Studio team executing builds</p>
           </div>
 
           {/* Card 4: Decision Pending */}
-          <div className={`p-4 rounded-2xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] shadow-sm'} border space-y-1`}>
+          <div className={`p-3 rounded-xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] shadow-sm'} border space-y-0.5`}>
             <div className="flex items-center justify-between">
               <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider block`}>
                 Pending Decision
               </span>
               <Clock className={`w-3.5 h-3.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
             </div>
-            <div className={`text-2xl font-black ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>{pendingCount}</div>
+            <div className={`text-xl font-black ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>{pendingCount}</div>
             <p className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Follow-up needed</p>
           </div>
 
           {/* Card 5: Total Revenue */}
-          <div className={`p-4 rounded-2xl ${isLight ? 'bg-gradient-to-b from-emerald-50/80 to-white border-emerald-200 shadow-2xs' : 'bg-gradient-to-b from-emerald-500/10 to-transparent border-emerald-500/30 shadow-sm'} border space-y-1 col-span-2 sm:col-span-1`}>
+          <div className={`p-3 rounded-xl ${isLight ? 'bg-gradient-to-b from-emerald-50/80 to-white border-emerald-200 shadow-2xs' : 'bg-gradient-to-b from-emerald-500/10 to-transparent border-emerald-500/30 shadow-sm'} border space-y-0.5 col-span-2 sm:col-span-1`}>
             <div className="flex items-center justify-between">
               <span className={`text-[10px] font-bold ${isLight ? 'text-emerald-800' : 'text-emerald-300'} uppercase tracking-wider block`}>
                 Toolset Revenue
               </span>
               <DollarSign className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
             </div>
-            <div className={`text-2xl font-black ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>${totalRevenue.toLocaleString()}</div>
+            <div className={`text-xl font-black ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>${totalRevenue.toLocaleString()}</div>
             <p className={`text-[10px] ${isLight ? 'text-emerald-700/80' : 'text-emerald-200/70'}`}>from $50 Co-Builder passes</p>
           </div>
         </div>
 
         {/* Filter and Search Ribbon */}
-        <div className={`p-3 rounded-2xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08]'} border flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3`}>
+        <div className={`px-3 py-2 rounded-xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08]'} border flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2`}>
           {/* Track Filter Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             <button
@@ -664,22 +664,22 @@ export default function CreatorParticipationManager() {
 
         {/* Projects List / Grid */}
         {loading ? (
-          <div className={`p-12 text-center space-y-3 rounded-2xl border ${isLight ? 'border-slate-200 bg-white shadow-2xs' : 'border-white/[0.05] bg-white/[0.01]'}`}>
-            <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto" />
+          <div className={`p-8 text-center space-y-2.5 rounded-xl border ${isLight ? 'border-slate-200 bg-white shadow-2xs' : 'border-white/[0.05] bg-white/[0.01]'}`}>
+            <RefreshCw className="w-6 h-6 text-amber-500 animate-spin mx-auto" />
             <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Loading real-time participation records and payment links…</p>
           </div>
         ) : filteredProjects.length === 0 ? (
-          <div className={`p-12 text-center space-y-3 rounded-2xl border ${isLight ? 'border-slate-200 bg-white shadow-2xs' : 'border-white/[0.05] bg-white/[0.01]'}`}>
-            <Users className={`w-8 h-8 ${isLight ? 'text-slate-400' : 'text-slate-500'} mx-auto`} />
+          <div className={`py-10 px-6 text-center space-y-2 rounded-xl border ${isLight ? 'border-slate-200 bg-white shadow-2xs' : 'border-white/[0.05] bg-white/[0.01]'}`}>
+            <Users className={`w-7 h-7 ${isLight ? 'text-slate-300' : 'text-slate-500'} mx-auto`} />
             <h3 className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>No co-launch ventures found</h3>
-            <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'} max-w-sm mx-auto`}>
+            <p className={`text-[11px] ${isLight ? 'text-slate-400' : 'text-slate-400'} max-w-xs mx-auto leading-relaxed`}>
               {searchQuery || filterTrack !== 'all'
                 ? 'Try adjusting your filters or search query.'
                 : 'Approved Step 6 co-launch creators will automatically appear here with their participation status.'}
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredProjects.map((proj) => {
               const isCoBuilder = proj.isDIY || proj.diySubscription?.active
               const isDeclined = proj.diyOfferStatus === 'declined'
@@ -690,7 +690,7 @@ export default function CreatorParticipationManager() {
               return (
                 <div
                   key={proj.id}
-                  className={`p-5 sm:p-6 rounded-2xl border transition-all duration-200 relative overflow-hidden ${
+                  className={`p-4 sm:p-5 rounded-xl border transition-all duration-200 relative overflow-hidden ${
                     isLight
                       ? isCoBuilder
                         ? 'bg-gradient-to-r from-amber-50/70 via-white to-white border-amber-300/90 shadow-2xs'
@@ -709,9 +709,9 @@ export default function CreatorParticipationManager() {
                     <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
                   )}
 
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 relative z-10">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
                     {/* Left: Creator & Venture Profile */}
-                    <div className="space-y-3 flex-1 min-w-0">
+                    <div className="space-y-2.5 flex-1 min-w-0">
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
                         {proj.creatorAvatar ? (
@@ -755,7 +755,7 @@ export default function CreatorParticipationManager() {
                       </div>
 
                       {/* Product Venture Summary */}
-                      <div className={`p-3 rounded-xl ${isLight ? 'bg-slate-50 border-slate-200/80' : 'bg-white/[0.02] border-white/[0.05]'} border space-y-1`}>
+                      <div className={`px-3 py-2 rounded-lg ${isLight ? 'bg-slate-50 border-slate-200/80' : 'bg-white/[0.02] border-white/[0.05]'} border space-y-0.5`}>
                         <div className="flex items-center justify-between gap-2">
                           <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider`}>
                             Venture Software Product
@@ -776,7 +776,7 @@ export default function CreatorParticipationManager() {
                     </div>
 
                     {/* Middle: Participation Status Card */}
-                    <div className={`w-full lg:w-72 shrink-0 p-3.5 rounded-xl ${isLight ? 'bg-slate-50/90 border-slate-200/90' : 'bg-black/40 border-white/[0.08]'} border space-y-2`}>
+                    <div className={`w-full lg:w-64 shrink-0 p-3 rounded-lg ${isLight ? 'bg-slate-50/90 border-slate-200/90' : 'bg-black/40 border-white/[0.08]'} border space-y-1.5`}>
                       <div className="flex items-center justify-between">
                         <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider`}>
                           Participation Track
@@ -832,7 +832,7 @@ export default function CreatorParticipationManager() {
                     </div>
 
                     {/* Right: Real-Time Action Controls */}
-                    <div className="flex flex-wrap lg:flex-col items-stretch gap-2 w-full lg:w-48 shrink-0">
+                    <div className="flex flex-wrap lg:flex-col items-stretch gap-1.5 w-full lg:w-44 shrink-0">
                       {/* Send / Resend Follow-up Email */}
                       <button
                         onClick={() => handleOpenEmailModal(proj, isCoBuilder ? 'portal_link' : 'followup')}

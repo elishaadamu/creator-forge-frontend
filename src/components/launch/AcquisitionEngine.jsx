@@ -442,7 +442,7 @@ export default function AcquisitionEngine({
       const saved = localStorage.getItem("forge_launch_min_followers");
       if (saved) {
         const val = Number(saved);
-        if (!isNaN(val) && val >= 1000) return val;
+        if (!isNaN(val) && val >= 100000 && val <= 1000000) return val;
       }
       return 100000;
     } catch {
@@ -454,7 +454,7 @@ export default function AcquisitionEngine({
       const saved = localStorage.getItem("forge_launch_max_followers");
       if (saved) {
         const val = Number(saved);
-        if (!isNaN(val) && val >= 10000) return val;
+        if (!isNaN(val) && val >= 100000 && val <= 1000000) return val;
       }
       return 1000000;
     } catch {
@@ -575,6 +575,24 @@ export default function AcquisitionEngine({
       });
     }
   }, [initialCreators]);
+
+  // Enforce platform requirement: strictly 100k-1M followers, max 50 creators
+  useEffect(() => {
+    if (minFollowers < 100000 || maxFollowers > 1000000 || minFollowers > maxFollowers) {
+      setMinFollowers(100000);
+      setMaxFollowers(1000000);
+      try {
+        localStorage.setItem("forge_launch_min_followers", "100000");
+        localStorage.setItem("forge_launch_max_followers", "1000000");
+      } catch (e) {}
+    }
+    if ((creatorsBatchCount || 25) > 50) {
+      setCreatorsBatchCount(50);
+      try {
+        localStorage.setItem("forge_launch_creators_batch_count", "50");
+      } catch (e) {}
+    }
+  }, []);
   const [selectedCreatorId, setSelectedCreatorId] = useState(() => {
     try {
       if (initialSelectedCreatorId) return initialSelectedCreatorId;
@@ -1651,9 +1669,9 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_step2_timer_target");
     } catch (e) { }
     setCountdownSeconds(30);
-    const targetCount = Math.max(1, Number(creatorsBatchCount) || 25);
-    const parsedMinFollowers = Math.max(1000, Number(minFollowers) || 100000);
-    const parsedMaxFollowers = Math.max(parsedMinFollowers, Number(maxFollowers) || 1000000);
+    const targetCount = Math.min(50, Math.max(1, Number(creatorsBatchCount) || 25));
+    const parsedMinFollowers = Math.max(100000, Number(minFollowers) || 100000);
+    const parsedMaxFollowers = Math.min(1000000, Math.max(parsedMinFollowers, Number(maxFollowers) || 1000000));
     const activeNiches = niches;
     setDiscoveryLog(
       `[Audience Intelligence] Dynamically discovering ${targetCount} creators across [${activeNiches.join(", ")}] on ${selectedPlatforms.join(", ")}...`,
@@ -6814,16 +6832,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Card 1: Target Follower Range */}
-                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Card 1: Target Follower Range (Strictly 100K-1M) */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between h-full overflow-hidden">
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <Users className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="text-xs font-bold text-slate-800">Target Range</span>
+                        <div className="flex items-center justify-between mb-3 gap-1">
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Users className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span className="text-xs font-bold text-slate-800 whitespace-nowrap">Target Range</span>
                           </div>
-                          <span className="text-xs font-mono font-black text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-lg shadow-2xs">
+                          <span className="text-xs font-mono font-black text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-lg shadow-2xs whitespace-nowrap shrink-0">
                             {minFollowers >= 1000000 ? `${(minFollowers / 1000000).toFixed(1).replace(/\.0$/, "")}M` : `${Math.round(minFollowers / 1000)}K`} – {maxFollowers >= 1000000 ? `${(maxFollowers / 1000000).toFixed(1).replace(/\.0$/, "")}M` : `${Math.round(maxFollowers / 1000)}K`}
                           </span>
                         </div>
@@ -6832,17 +6850,17 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           min="1"
                           max="4"
                           value={
-                            minFollowers < 100000 ? 1 :
-                            maxFollowers <= 1000000 ? 2 :
-                            maxFollowers <= 5000000 ? 3 : 4
+                            minFollowers === 100000 && maxFollowers === 250000 ? 1 :
+                            minFollowers === 250000 && maxFollowers === 500000 ? 2 :
+                            minFollowers === 500000 && maxFollowers === 1000000 ? 3 : 4
                           }
                           onChange={(e) => {
                             const val = Number(e.target.value);
                             let min = 100000, max = 1000000;
-                            if (val === 1) { min = 10000; max = 100000; }
-                            else if (val === 2) { min = 100000; max = 1000000; }
-                            else if (val === 3) { min = 1000000; max = 5000000; }
-                            else { min = 5000000; max = 20000000; }
+                            if (val === 1) { min = 100000; max = 250000; }
+                            else if (val === 2) { min = 250000; max = 500000; }
+                            else if (val === 3) { min = 500000; max = 1000000; }
+                            else { min = 100000; max = 1000000; }
                             setMinFollowers(min);
                             setMaxFollowers(max);
                             try {
@@ -6852,19 +6870,28 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           }}
                           className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none"
                         />
+                        <div className="flex justify-between text-[10px] text-slate-400 mt-1.5 font-mono font-medium px-0.5">
+                          <span>100K</span>
+                          <span>250K</span>
+                          <span>500K</span>
+                          <span className="font-bold text-emerald-700">1M (All)</span>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-4 gap-1 mt-3 pt-2.5 border-t border-slate-100">
+                      <div className="grid grid-cols-4 gap-1.5 mt-3 pt-2.5 border-t border-slate-100">
                         {[
-                          { id: 1, label: "10K-100K", min: 10000, max: 100000 },
-                          { id: 2, label: "100K-1M", min: 100000, max: 1000000 },
-                          { id: 3, label: "1M-5M", min: 1000000, max: 5000000 },
-                          { id: 4, label: "5M+", min: 5000000, max: 20000000 },
+                          { id: 1, label: "100-250K", min: 100000, max: 250000 },
+                          { id: 2, label: "250-500K", min: 250000, max: 500000 },
+                          { id: 3, label: "500K-1M", min: 500000, max: 1000000 },
+                          { id: 4, label: "100K-1M", min: 100000, max: 1000000 },
                         ].map((tier) => {
                           const isCurrent =
-                            (tier.id === 1 && minFollowers < 100000) ||
-                            (tier.id === 2 && minFollowers >= 100000 && maxFollowers <= 1000000) ||
-                            (tier.id === 3 && minFollowers >= 1000000 && maxFollowers <= 5000000) ||
-                            (tier.id === 4 && minFollowers >= 5000000);
+                            (tier.id === 1 && minFollowers === 100000 && maxFollowers === 250000) ||
+                            (tier.id === 2 && minFollowers === 250000 && maxFollowers === 500000) ||
+                            (tier.id === 3 && minFollowers === 500000 && maxFollowers === 1000000) ||
+                            (tier.id === 4 && (
+                              (minFollowers === 100000 && maxFollowers === 1000000) ||
+                              (![250000, 500000].includes(minFollowers) && ![250000, 500000].includes(maxFollowers))
+                            ));
                           return (
                             <button
                               key={tier.id}
@@ -6877,7 +6904,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                   localStorage.setItem("forge_launch_max_followers", String(tier.max));
                                 } catch (err) {}
                               }}
-                              className={`py-1 rounded-md text-[9.5px] font-mono font-bold transition-all text-center cursor-pointer ${
+                              className={`py-1 px-1 rounded-md text-[10px] font-mono font-bold transition-all text-center cursor-pointer whitespace-nowrap ${
                                 isCurrent
                                   ? "bg-emerald-600 text-white shadow-2xs"
                                   : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800 border border-slate-200/60"
@@ -6890,50 +6917,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       </div>
                     </div>
 
-                    {/* Card 2: Geography Selector */}
-                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between">
+                    {/* Card 2: Min Engagement */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between h-full overflow-hidden">
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <Globe className="w-3.5 h-3.5 text-sky-600" />
-                            <label className="text-xs font-bold text-slate-800">Geography</label>
+                        <div className="flex items-center justify-between mb-3 gap-1">
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Flame className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <label className="text-xs font-bold text-slate-800 whitespace-nowrap">Min Engagement</label>
                           </div>
-                          <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200/80 px-2 py-0.5 rounded-lg">
-                            Active Filter
-                          </span>
-                        </div>
-                        <select
-                          value={selectedGeography}
-                          onChange={(e) => {
-                            setSelectedGeography(e.target.value);
-                            try {
-                              localStorage.setItem("forge_launch_selected_geography", e.target.value);
-                            } catch (err) {}
-                          }}
-                          className="w-full text-xs font-medium bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 transition-all cursor-pointer"
-                        >
-                          <option value="GLOBAL">🌍 Global (Worldwide)</option>
-                          <option value="US">🇺🇸 United States & Canada</option>
-                          <option value="EU">🇪🇺 UK & Western Europe</option>
-                          <option value="APAC">🌏 Asia-Pacific</option>
-                          <option value="LATAM">🌎 Latin America</option>
-                        </select>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100 font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                        <span className="truncate">Multi-region targeting active</span>
-                      </div>
-                    </div>
-
-                    {/* Card 3: Min Engagement */}
-                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <Flame className="w-3.5 h-3.5 text-amber-500" />
-                            <label className="text-xs font-bold text-slate-800">Min Engagement</label>
-                          </div>
-                          <span className="text-xs font-mono font-black text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-lg shadow-2xs">
+                          <span className="text-xs font-mono font-black text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-lg shadow-2xs whitespace-nowrap shrink-0">
                             ≥ {minEngagement.toFixed(1)}%
                           </span>
                         </div>
@@ -6951,8 +6943,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           }}
                           className="w-full accent-amber-500 cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none"
                         />
+                        <div className="flex justify-between text-[10px] text-slate-400 mt-1.5 font-mono font-medium px-0.5">
+                          <span>1.0%</span>
+                          <span>2.0%</span>
+                          <span>4.0%</span>
+                          <span className="font-bold text-amber-700">8.0% max</span>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-4 gap-1 mt-3 pt-2.5 border-t border-slate-100">
+                      <div className="grid grid-cols-4 gap-1.5 mt-3 pt-2.5 border-t border-slate-100">
                         {[1.5, 2.0, 3.0, 5.0].map((rate) => (
                           <button
                             key={rate}
@@ -6963,7 +6961,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 localStorage.setItem("forge_launch_min_engagement", String(rate));
                               } catch (err) {}
                             }}
-                            className={`py-1 rounded-md text-[9.5px] font-mono font-bold transition-all text-center cursor-pointer ${
+                            className={`py-1 px-1 rounded-md text-[10px] font-mono font-bold transition-all text-center cursor-pointer whitespace-nowrap ${
                               Math.abs(minEngagement - rate) < 0.05
                                 ? "bg-amber-500 text-white shadow-2xs"
                                 : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800 border border-slate-200/60"
@@ -6975,15 +6973,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       </div>
                     </div>
 
-                    {/* Card 4: Target Creators to Discover (Max 50) */}
-                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between">
+                    {/* Card 3: Target Creators to Discover (Max 50) */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between h-full overflow-hidden">
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <Target className="w-3.5 h-3.5 text-purple-600" />
-                            <label className="text-xs font-bold text-slate-800">Creators Target</label>
+                        <div className="flex items-center justify-between mb-3 gap-1">
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Target className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                            <label className="text-xs font-bold text-slate-800 whitespace-nowrap">Creators Target</label>
                           </div>
-                          <span className="text-xs font-mono font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-lg shadow-2xs">
+                          <span className="text-xs font-mono font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-lg shadow-2xs whitespace-nowrap shrink-0">
                             {creatorsBatchCount || 25} Creators
                           </span>
                         </div>
@@ -7002,35 +7000,37 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           }}
                           className="w-full accent-purple-600 cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none"
                         />
-                        <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono font-medium">
+                        <div className="flex justify-between text-[10px] text-slate-400 mt-1.5 font-mono font-medium px-0.5">
                           <span>5</span>
                           <span>15</span>
                           <span>25</span>
                           <span>35</span>
-                          <span>50 max</span>
+                          <span className="font-bold text-purple-700">50 max</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between gap-1 mt-3 pt-2.5 border-t border-slate-100">
-                        <span className="text-[10px] text-slate-400 font-mono font-bold">Quick:</span>
-                        {[5, 10, 25, 40, 50].map((preset) => (
-                          <button
-                            key={preset}
-                            type="button"
-                            onClick={() => {
-                              setCreatorsBatchCount(preset);
-                              try {
-                                localStorage.setItem("forge_launch_creators_batch_count", String(preset));
-                              } catch (err) {}
-                            }}
-                            className={`px-2 py-1 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                              (creatorsBatchCount || 25) === preset
-                                ? "bg-purple-600 text-white shadow-2xs"
-                                : "bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
-                            }`}
-                          >
-                            {preset}
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-5 gap-1.5 mt-3 pt-2.5 border-t border-slate-100">
+                        {[5, 10, 25, 35, 50].map((preset) => {
+                          const isCurrent = (creatorsBatchCount || 25) === preset;
+                          return (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => {
+                                setCreatorsBatchCount(preset);
+                                try {
+                                  localStorage.setItem("forge_launch_creators_batch_count", String(preset));
+                                } catch (err) {}
+                              }}
+                              className={`py-1 px-1 rounded-md text-[10px] font-mono font-bold transition-all text-center cursor-pointer whitespace-nowrap ${
+                                isCurrent
+                                  ? "bg-purple-600 text-white shadow-2xs ring-1 ring-purple-600"
+                                  : "bg-slate-50 text-slate-500 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 border border-slate-200/60"
+                              }`}
+                            >
+                              {preset}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -7510,7 +7510,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <button
                       type="button"
                       onClick={() => {
-                        const val = Math.min(100, (creatorsBatchCount || 25) + 5);
+                        const val = Math.min(50, (creatorsBatchCount || 25) + 5);
                         setCreatorsBatchCount(val);
                         try { localStorage.setItem("forge_launch_creators_batch_count", String(val)); } catch (err) {}
                       }}
