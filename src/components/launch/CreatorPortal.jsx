@@ -15,6 +15,7 @@ import DIYSubscriptionModal from './DIYSubscriptionModal'
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
   const [project, setProject] = useState(null)
+  const productName = project?.productName || project?.name || 'Software Co-Launch'
 
   useEffect(() => {
     updatePageSEO({
