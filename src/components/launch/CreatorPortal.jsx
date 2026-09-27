@@ -12,6 +12,7 @@ import { CreatorPortalSkeleton } from './Section2Skeletons'
 import { deduplicateAndSortMessages } from './CreatorWhatsAppChat'
 import ProjectOS from './ProjectOS'
 import DIYSubscriptionModal from './DIYSubscriptionModal'
+import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards } from '../../utils/stepGuards'
 
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
@@ -424,6 +425,42 @@ export default function CreatorPortal({ portalId }) {
   const preorderUrl = `${getFrontendUrl()}/preorder?ref=${project.creatorHandle?.replace('@','') || 'creator'}`
   const targetPct = presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 0
 
+  // Dynamic Phase & Step Synchronization directly matched with the Operator / Admin Dashboard
+  const currentPhase = Number(project?.currentPhase || project?.current_phase || 1)
+  const p1Guards = useMemo(() => getPhase1StepGuards(project), [project])
+  const p2Guards = useMemo(() => getPhase2StepGuards(project), [project])
+  const p3Guards = useMemo(() => getPhase3StepGuards(project), [project])
+
+  const activePhaseSteps = useMemo(() => {
+    if (currentPhase === 2) {
+      return [
+        { id: 'plan', num: '01', label: '1. Plan & Spec', fullLabel: 'Product & Build Plan', isDone: p2Guards.isStep1Done },
+        { id: 'build', num: '02', label: '2. Build MVP', fullLabel: 'Engineering Build', isDone: p2Guards.isStep2Done },
+        { id: 'beta', num: '03', label: '3. Beta Test', fullLabel: 'Beta Testing', isDone: p2Guards.isStep3Done },
+        { id: 'gate', num: '04', label: '4. Launch Gate', fullLabel: 'Iterate & Launch Gate', isDone: p2Guards.isStep4Done },
+      ]
+    }
+    if (currentPhase === 3) {
+      return [
+        { id: 'prep', num: '01', label: '1. Prepare', fullLabel: 'Launch Preparation', isDone: p3Guards.isStep1Done },
+        { id: 'launch', num: '02', label: '2. Launch & Monitor', fullLabel: 'Live Telemetry', isDone: p3Guards.isStep2Done },
+        { id: 'review', num: '03', label: '3. Optimization', fullLabel: 'Review & Retarget', isDone: p3Guards.isStep3Done },
+        { id: 'scale', num: '04', label: '4. Retention', fullLabel: 'Scale & Community', isDone: p3Guards.isStep4Done },
+      ]
+    }
+    // Default Phase 1 (Validation Execution Workspace - EXACT MATCH with Admin Dashboard!)
+    return [
+      { id: 'plan', num: '01', label: '1. Plan', fullLabel: 'Validation Plan', isDone: p1Guards.isStep1Done },
+      { id: 'assets', num: '02', label: '2. Assets', fullLabel: 'Validation Assets', isDone: p1Guards.isStep2Done },
+      { id: 'campaign', num: '03', label: '3. Campaign', fullLabel: 'Creator Campaign', isDone: p1Guards.isStep3Done },
+      { id: 'optimize', num: '04', label: '4. Optimize', fullLabel: 'Run & Optimize', isDone: p1Guards.isStep4Done },
+      { id: 'gate', num: '05', label: '5. Gate', fullLabel: 'Validation Gate', isDone: p1Guards.isGatePassed || p1Guards.isStep5Done },
+    ]
+  }, [currentPhase, p1Guards, p2Guards, p3Guards])
+
+  const activeStepIdx = activePhaseSteps.findIndex(s => !s.isDone)
+  const resolvedActiveStepIndex = activeStepIdx === -1 ? activePhaseSteps.length - 1 : activeStepIdx
+
   return (
     <div
       className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex flex-col relative antialiased selection:bg-emerald-100 selection:text-emerald-900"
@@ -485,22 +522,22 @@ export default function CreatorPortal({ portalId }) {
               <span className="hidden sm:inline">Track 1: Interactive Pass ($50 Paid)</span>
               <span className="sm:hidden">Interactive ($50)</span>
             </div>
-          ) : project?.diyOfferStatus === 'declined' ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-xs font-mono font-bold shadow-2xs">
-              <span>🤝</span>
-              <span className="hidden sm:inline">Track 2: Studio-Managed (50/50)</span>
-              <span className="sm:hidden">Managed Track</span>
-            </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setTrackChoiceDismissed(false)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-600" />
-              <span className="hidden sm:inline">Choose Track: DIY ($50 USD) or Managed</span>
-              <span className="sm:hidden">Choose Track</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-xs font-mono font-bold shadow-2xs">
+                <span>🤝</span>
+                <span>Track 2: Studio-Managed (50/50)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDiyModal(true)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-emerald-600/25 cursor-pointer active:scale-[0.98] shrink-0"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                <span className="hidden sm:inline">Unlock Interactive Pass ($50 USD)</span>
+                <span className="sm:hidden">Pay $50 (DIY)</span>
+              </button>
+            </div>
           )}
 
           <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
@@ -565,33 +602,44 @@ export default function CreatorPortal({ portalId }) {
               </>
             ) : (
               <>
-                {/* STEP 1 & 2 COMPLETED, STEP 3 ACTIVE SPRINT (Validation) */}
-                <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold">
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="font-sans font-bold">Step 01 • Track Selection</span>
+                {/* Active Phase Badge directly matched with Operator / Admin Dashboard */}
+                <div className="px-2.5 py-1 rounded-xl bg-slate-900 text-white text-xs font-mono font-bold uppercase tracking-wider shrink-0 flex items-center gap-1.5 shadow-xs">
+                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Phase {currentPhase}: {currentPhase === 1 ? 'Validation Sprint' : currentPhase === 2 ? 'Build MVP' : 'Live Launch'}</span>
                 </div>
-                <div className="w-4 h-[1px] bg-emerald-300 hidden sm:block" />
-                <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold">
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="font-sans font-bold">Step 02 • Architecture Spec</span>
-                </div>
-                <div className="w-4 h-[1px] bg-emerald-300 hidden sm:block" />
-                <div className="flex items-center gap-2 bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs">
-                  <span className="text-slate-400">03</span>
-                  <span>STEP 03 • ACTIVE SPRINT</span>
-                  <span className="text-emerald-400 font-sans font-extrabold ml-0.5">Validation & Pre-Orders</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
-                </div>
-                <div className="w-4 h-[1px] bg-slate-200 hidden lg:block" />
-                <div className="hidden lg:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
-                  <span>04</span>
-                  <span className="font-sans">MVP Feature Lock</span>
-                </div>
-                <div className="w-4 h-[1px] bg-slate-200 hidden lg:block" />
-                <div className="hidden lg:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
-                  <span>05</span>
-                  <span className="font-sans">Commercial Launch</span>
-                </div>
+
+                <div className="w-3 h-[1px] bg-slate-200 hidden sm:block" />
+
+                {/* Dynamic Substeps Synchronized with Admin ProjectOS / Phase 1 */}
+                {activePhaseSteps.map((step, idx) => {
+                  const isActive = idx === resolvedActiveStepIndex
+                  const isDone = Boolean(step.isDone)
+                  return (
+                    <div key={step.id} className="flex items-center gap-2">
+                      {isDone ? (
+                        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                          <span className="font-sans font-bold">{step.label}</span>
+                        </div>
+                      ) : isActive ? (
+                        <div className="flex items-center gap-2 bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs">
+                          <span className="text-slate-400">{step.num}</span>
+                          <span>STEP {step.num} • ACTIVE</span>
+                          <span className="text-emerald-400 font-sans font-extrabold ml-0.5">{step.label}</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
+                        </div>
+                      ) : (
+                        <div className="hidden sm:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
+                          <span>{step.num}</span>
+                          <span className="font-sans">{step.label}</span>
+                        </div>
+                      )}
+                      {idx < activePhaseSteps.length - 1 && (
+                        <div className={`w-3 h-[1px] hidden sm:block ${isDone ? 'bg-emerald-300' : 'bg-slate-200'}`} />
+                      )}
+                    </div>
+                  )
+                })}
               </>
             )}
           </div>
@@ -605,6 +653,36 @@ export default function CreatorPortal({ portalId }) {
             <span>CF-5050 Agreement (50/50 Split)</span>
           </button>
         </div>
+
+        {/* ── INTERACTIVE CO-BUILDER PASS ($50 USD) UPGRADE BANNER ──────────────── */}
+        {!isDiyActive && !isTrackChoicePending && (
+          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 border border-emerald-300/80 rounded-2xl p-4 sm:px-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Zap className="w-5 h-5 text-amber-400 fill-amber-400" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-extrabold text-slate-900 text-sm">Interactive Co-Builder Pass ($50 USD)</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold border border-emerald-300">
+                    50/50 Equity Maintained
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600">
+                  Want full command control to trigger AI MVP sprints, modify prompt blueprints, and code alongside the studio?
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDiyModal(true)}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] shrink-0 whitespace-nowrap"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-white" />
+              <span>Unlock Interactive Pass ($50 USD) →</span>
+            </button>
+          </div>
+        )}
 
         {/* ── STATE 1: CO-LAUNCH PARTICIPATION TRACK CHOICE (Image 2) ───────────── */}
         {isTrackChoicePending ? (
@@ -1043,6 +1121,29 @@ export default function CreatorPortal({ portalId }) {
                     Open Daily Launch Kit & Scripts →
                   </button>
                 </div>
+
+                {/* DIY Pass Upgrade Card */}
+                {!isDiyActive && (
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 border border-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-slate-900">Want direct workbench & terminal access?</span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold border border-emerald-300">$50 USD</span>
+                      </div>
+                      <p className="text-[11px] text-slate-600">
+                        Unlock the Interactive Co-Builder Pass to trigger AI code generation, execute Phase 1–3 sprints yourself, and customize all specs.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowDiyModal(true)}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm hover:shadow-md cursor-pointer whitespace-nowrap active:scale-[0.98] flex items-center gap-2"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                      <span>Unlock Interactive Pass ($50 USD) →</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1528,6 +1629,17 @@ export default function CreatorPortal({ portalId }) {
 
                   {/* Better Action Buttons */}
                   <div className="space-y-2 pt-2">
+                    {!isDiyActive && (
+                      <button
+                        type="button"
+                        onClick={() => setShowDiyModal(true)}
+                        className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                      >
+                        <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
+                        <span>Unlock Interactive Pass ($50 USD)</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={handleSimulatePreorder}
