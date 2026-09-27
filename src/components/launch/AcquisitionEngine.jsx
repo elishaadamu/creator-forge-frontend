@@ -72,6 +72,7 @@ import {
 import DynamicConceptMockup, { BRAND_COLORS, getBrandColorObj } from "./DynamicConceptMockup";
 import ConceptEditorModal from "./ConceptEditorModal";
 import CustomizedDeckModal from "./CustomizedDeckModal";
+import ClientProfileModal from "./ClientProfileModal";
 import { deleteAllCreators } from "../../services/opsApi";
 import { buildSmartFallbackPlan } from "../../services/ai";
 import AdminPipelineLookup from "./AdminPipelineLookup";
@@ -3303,6 +3304,17 @@ export default function AcquisitionEngine({
   const [isSendingPitch, setIsSendingPitch] = useState(false);
   const [step1EmailTab, setStep1EmailTab] = useState("editor");
   const [step6EmailViewMode, setStep6EmailViewMode] = useState("visual");
+  const [autoDraftEnabled, setAutoDraftEnabled] = useState(() => {
+    try {
+      const saved = localStorage.getItem("forge_step6_auto_draft_enabled");
+      return saved !== "false";
+    } catch {
+      return true;
+    }
+  });
+  const [step6LeftTab, setStep6LeftTab] = useState("concept"); // "concept" | "profile"
+  const [showClientProfileModal, setShowClientProfileModal] = useState(false);
+  const [activeAutoDraftAngle, setActiveAutoDraftAngle] = useState("smart");
 
   const [showAwaitingModal, setShowAwaitingModal] = useState(false);
   const [showInterestedModal, setShowInterestedModal] = useState(false);
@@ -3809,16 +3821,125 @@ export default function AcquisitionEngine({
 
   const [isGeneratingStep6Ai, setIsGeneratingStep6Ai] = useState(false);
 
-  // Set clean subject default when creator changes; do NOT pre-generate message automatically (admin types, or clicks Generate AI Draft)
+  const generateAutoDraftCopy = (creator, angle = "smart", customConcept = null) => {
+    if (!creator) return { subject: "", body: "" };
+    const concepts = creator.productConcepts || ensureCreatorConcepts(creator);
+    const concept =
+      customConcept ||
+      concepts.find((c) => c.id === selectedConceptId) ||
+      concepts[0];
+    const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
+    const firstName = (creator.name || creator.display_name || "there").split(" ")[0];
+    const msgs = getCreatorThreadMessages(creator, realThreads);
+    const latestCreatorMsg = msgs.find(
+      (m) => !/partnerships@creatorforge\.com/i.test(m.from_address || "")
+    )?.body || "";
+
+    const conceptName = concept?.name || "the software solution";
+    const pricing = concept?.pricing || "$29/mo";
+    const tagline = concept?.tagline || "automated creator workflow";
+    const mvpTime = concept?.mvpDifficulty || "2 weeks";
+    const problem = concept?.problem || "monetizing audience attention with dedicated software";
+
+    if (angle === "kickoff") {
+      return {
+        subject: `Kickoff & 2-Week MVP Roadmap: ${conceptName} for @${cleanHandle}`,
+        body: `Hi ${firstName},\n\nThrilled to get moving on ${conceptName}!\n\nHere is our accelerated 2-week launch roadmap under our 50/50 venture co-founding partnership:\n\n1. Week 1 (Engineering & Architecture): Creator Forge engineers the complete full-stack web application, billing via Stripe Connect, and secure user authentication.\n2. Week 2 (Private Preview): We hand you a private test link to preview the product, test core features, and record a quick walkthrough.\n3. Public Launch: We announce to your ${creator.followerStr || (creator.follower_count ? creator.follower_count.toLocaleString() : "audience")} with automated 50/50 profit distributions.\n\nZero technical effort or capital is required from you. Shall we lock in this timeline to initialize the build?\n\nBest regards,\nThe Creator Forge Team`,
+      };
+    }
+
+    if (angle === "terms") {
+      return {
+        subject: `50/50 Co-Founder Terms & Zero-Cost Model — ${conceptName}`,
+        body: `Hi ${firstName},\n\nTo clarify exactly how our 50/50 venture co-founding works:\n\n• Zero Upfront Cost: Creator Forge covers 100% of engineering, cloud infrastructure, AI models, maintenance, and ongoing customer support.\n• Revenue Share: All subscription revenues are deposited into Stripe Connect, automatically splitting net platform profits 50/50.\n• Your Role: Pure distribution, audience feedback, and co-founder branding. You never touch code, server configurations, or bug fixes.\n\nWe want you doing what you do best while we operate the software machinery. Ready to move forward with ${conceptName}?\n\nBest regards,\nThe Creator Forge Team`,
+      };
+    }
+
+    if (angle === "demo_call") {
+      return {
+        subject: `Quick 15-min alignment call: ${conceptName} for @${cleanHandle}`,
+        body: `Hi ${firstName},\n\nWe would love to show you a quick 15-minute live preview of the architecture we designed for ${conceptName} (${pricing}) and discuss how we can tailor it for your community.\n\nWould you have 15 minutes open this week for a brief walkthrough, or would you prefer a 2-minute Loom screen recording first?\n\nLooking forward to your thoughts!\n\nBest regards,\nThe Creator Forge Team`,
+      };
+    }
+
+    if (angle === "concept_deep_dive") {
+      return {
+        subject: `Deep-Dive: How ${conceptName} monetizes your ${creator.niche || "content"} audience`,
+        body: `Hi ${firstName},\n\nHere is why ${conceptName} stood out as the highest-converting opportunity for your followers:\n\n• Core Value: ${tagline}\n• The Problem It Solves: ${problem}\n• Monetization Engine: Priced at ${pricing} with automated monthly recurring revenue\n• Target Build Time: Ready in ${mvpTime}\n\nOur engineering team handles the entire technical execution at zero cost to you under our 50/50 revenue share.\n\nWhat do you think of this approach?\n\nBest regards,\nThe Creator Forge Team`,
+      };
+    }
+
+    // Default "smart" contextual draft based on conversation
+    if (latestCreatorMsg) {
+      const lower = latestCreatorMsg.toLowerCase();
+      if (
+        lower.includes("concept 1") ||
+        lower.includes("concept 2") ||
+        lower.includes("concept 3") ||
+        lower.includes("interested in")
+      ) {
+        return {
+          subject: `Awesome! Moving forward with ${conceptName} (@${cleanHandle})`,
+          body: `Hi ${firstName},\n\nFantastic choice! ${conceptName} is an exceptional fit for your audience.\n\nUnder our 50/50 agreement, our engineering team is ready to begin development immediately. We build, host, and maintain 100% of the software with zero cost or technical effort on your end.\n\nOur target is to have a working prototype for you to test in about ${mvpTime}. Shall we lock in the build and get started?\n\nBest regards,\nThe Creator Forge Team`,
+        };
+      }
+      if (
+        lower.includes("cost") ||
+        lower.includes("how much") ||
+        lower.includes("free") ||
+        lower.includes("split") ||
+        lower.includes("percentage")
+      ) {
+        return {
+          subject: `Re: Zero upfront cost & 50/50 revenue split on ${conceptName}`,
+          body: `Hi ${firstName},\n\nGreat question! There is completely zero upfront cost or financial risk for you.\n\nCreator Forge funds and executes 100% of development, hosting, and support. Once live, all subscription profits are split 50/50 automatically through Stripe Connect.\n\nWould you like us to proceed with building the initial MVP for ${conceptName}?\n\nBest regards,\nThe Creator Forge Team`,
+        };
+      }
+    }
+
+    return {
+      subject: `Top 3 software concepts tailored for @${cleanHandle}`,
+      body: `Hi ${firstName},\n\nFollowing up on our partnership! Based on our analysis of your ${creator.niche || "content"} audience, we engineered 3 custom software concepts for your community.\n\nOur top recommendation is:\n• ${conceptName} (${pricing}) — ${tagline}\n  Key Focus: Solves ${problem} (Target MVP: ${mvpTime})\n\nUnder our 50/50 model, Creator Forge handles 100% of the engineering and infrastructure at zero cost to you.\n\nTake a look and let us know if ${conceptName} sounds like a winner, or if you'd like to explore the other 2 concepts!\n\nBest regards,\nThe Creator Forge Team`,
+    };
+  };
+
+  const applyAutoDraft = (creator, angle = "smart", customConcept = null, showNotification = true) => {
+    if (!creator) return;
+    const draft = generateAutoDraftCopy(creator, angle, customConcept);
+    setCustomPitchSubject(draft.subject);
+    setCustomPitchBody(draft.body);
+    setActiveAutoDraftAngle(angle);
+    if (showNotification) {
+      const angleLabels = {
+        smart: "Smart Context",
+        kickoff: "MVP Roadmap",
+        terms: "50/50 Terms",
+        demo_call: "Demo Call",
+        concept_deep_dive: "Concept Deep-Dive",
+      };
+      notify(
+        "success",
+        "Auto-Draft Applied",
+        `Generated ${angleLabels[angle] || angle} draft for ${creator.name || creator.display_name}.`,
+        2500
+      );
+    }
+  };
+
+  // Set subject & auto-draft default when creator, concept, or autoDraft toggle changes
   useEffect(() => {
     if (selectedCreator) {
-      const cleanHandle = (selectedCreator.handle || "").replace(/^@/, "").trim();
-      const creatorName = selectedCreator.name || selectedCreator.display_name || "Creator";
-      setCustomPitchSubject(`Re: Partnering with Creator Forge - ${creatorName} (@${cleanHandle})`);
-      setCustomPitchBody(""); // Empty by default: admin writes direct reply, or clicks Generate AI Draft
+      if (autoDraftEnabled) {
+        applyAutoDraft(selectedCreator, activeAutoDraftAngle || "smart", null, false);
+      } else {
+        const cleanHandle = (selectedCreator.handle || "").replace(/^@/, "").trim();
+        const creatorName = selectedCreator.name || selectedCreator.display_name || "Creator";
+        setCustomPitchSubject(`Re: Partnering with Creator Forge - ${creatorName} (@${cleanHandle})`);
+        setCustomPitchBody(""); // Empty when auto-draft disabled
+      }
       setIsEditingPitch(false);
     }
-  }, [selectedCreator?.id]);
+  }, [selectedCreator?.id, selectedConceptId, autoDraftEnabled]);
 
   // On-demand AI draft generation using backend LLM
   const handleRegenerateStep6Draft = async () => {
@@ -9869,11 +9990,21 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           {/* Section Header with Creator Profile & Actions */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3.5">
-              <img
-                src={selectedCreator?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
-                alt=""
-                className="w-12 h-12 rounded-xl object-cover border border-slate-200"
-              />
+              <button
+                type="button"
+                onClick={() => setShowClientProfileModal(true)}
+                className="group relative flex-shrink-0 cursor-pointer text-left"
+                title="Click to view full client profile & channel intel"
+              >
+                <img
+                  src={selectedCreator?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
+                  alt=""
+                  className="w-12 h-12 rounded-xl object-cover border border-slate-200 group-hover:border-indigo-500 group-hover:ring-2 group-hover:ring-indigo-200 transition-all"
+                />
+                <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] shadow-xs group-hover:scale-110 transition-transform">
+                  <User className="w-2.5 h-2.5" />
+                </span>
+              </button>
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-pink-600">
@@ -9884,12 +10015,20 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     50/50 Revenue Split
                   </span>
                 </div>
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 mt-0.5">
-                  <span>{selectedCreator?.name || selectedCreator?.display_name || "Creator"}</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowClientProfileModal(true)}
+                    className="text-base font-bold text-slate-900 hover:text-indigo-600 transition-colors flex items-center gap-1.5 cursor-pointer text-left group"
+                    title="Click to view full client profile"
+                  >
+                    <span>{selectedCreator?.name || selectedCreator?.display_name || "Creator"}</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                  </button>
                   <span className="text-xs font-normal text-slate-500 font-mono">
                     ({selectedCreator?.email || selectedCreator?.email_public || "No email"})
                   </span>
-                </h2>
+                </div>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Review the 3 engineered concepts, converse with the creator, and click <strong>Create Project</strong> when ready to launch.
                 </p>
@@ -9897,6 +10036,18 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             </div>
 
             <div className="flex items-center gap-2">
+              {selectedCreator && (
+                <button
+                  type="button"
+                  onClick={() => setShowClientProfileModal(true)}
+                  className="h-9 px-3.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-2xs"
+                  title="Inspect channel reach, metrics, bio and concepts dossier"
+                >
+                  <User className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Client Profile</span>
+                  <ExternalLink className="w-3 h-3 text-indigo-400" />
+                </button>
+              )}
               {selectedCreator && (
                 <button
                   type="button"
@@ -10116,222 +10267,395 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
             return (
               <div className="grid lg:grid-cols-12 gap-6">
-                {/* Left Column (5 cols): Decided Project Concept & Partnership Terms */}
+                {/* Left Column (5 cols): Decided Project Concept & Partnership Terms OR Full Client Profile & Intel */}
                 <div className="lg:col-span-5 space-y-4">
-                  {/* 1. Product Concept Card */}
-                  {(() => {
-                    const detectedChoice = selectedCreator ? aiDetectedChoiceMap[selectedCreator.id] : null;
-                    const isCommittedChoice = detectedChoice?.decision === "CREATE_PROJECT" || detectedChoice?.decision === "COMMITTED";
-                    const isAlreadyLaunched = Boolean(
-                      selectedCreator?.project_id ||
-                      ["launched", "active_project", "partnered"].includes((selectedCreator?.status || "").toLowerCase())
-                    );
-                    const isCommitted = Boolean(
-                      isCommittedChoice ||
-                      selectedCreator?.isCommitted === true ||
-                      isAlreadyLaunched
-                    );
-                    const hasStep6Feedback = Boolean(detectedChoice?.isStep6Reply && !isCommitted);
-
-                    return (
-                      <div className={`p-5 rounded-2xl bg-white border shadow-2xs space-y-4 relative overflow-hidden transition-all ${isCommitted ? "border-emerald-300 ring-1 ring-emerald-200" : "border-slate-200/90"
-                        }`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {isCommitted ? (
-                              <>
-                                <span className="w-6 h-6 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-black text-xs flex items-center justify-center">
-                                  ✓
-                                </span>
-                                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                                  Decided Project Concept
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="w-6 h-6 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 font-black text-xs flex items-center justify-center">
-                                  💡
-                                </span>
-                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                  Proposed Concept (Recommended #1)
-                                </span>
-                              </>
-                            )}
-                          </div>
-                          <span className="text-xs font-black text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                            <span>Score: {chosenConcept?.opportunityScore || 94}/100</span>
-                          </span>
-                        </div>
-
-                        <div className="space-y-2 border-b border-slate-100 pb-3">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-                              {chosenConcept?.name}
-                            </h3>
-                            <span className="text-xs font-bold text-emerald-700 font-mono bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                              {chosenConcept?.pricing}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-800 font-semibold">
-                            {chosenConcept?.tagline}
-                          </p>
-                          <p className="text-xs text-slate-600 leading-relaxed">
-                            <strong className="text-slate-700">Solves:</strong> {chosenConcept?.problem}
-                          </p>
-                        </div>
-
-                        {/* Target Specs & Status */}
-                        <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                            <span className="text-[10px] text-slate-500 block uppercase font-bold">Target MVP</span>
-                            <span className="font-bold text-slate-800">{chosenConcept?.mvpDifficulty || "2 weeks"}</span>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                            <span className="text-[10px] text-slate-500 block uppercase font-bold">Selection Status</span>
-                            {isCommitted ? (
-                              <span className="font-bold text-emerald-700 flex items-center justify-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>Confirmed by Creator</span>
-                              </span>
-                            ) : hasStep6Feedback ? (
-                              <span className="font-bold text-blue-700 flex items-center justify-center gap-1">
-                                <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Feedback In Review</span>
-                              </span>
-                            ) : (
-                              <span className="font-bold text-amber-800 flex items-center justify-center gap-1">
-                                <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                <span>Awaiting Creator Reply</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Concept Switcher Dropdown / Pills (in case admin wants to toggle) */}
-                        {concepts.length > 1 && (
-                          <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-                              Change Selected Concept:
-                            </span>
-                            <div className="flex items-center gap-2">
-                              {concepts.map((c, i) => {
-                                const isCurrent = (chosenConcept?.id === c.id) || (!chosenConcept && i === 0);
-                                return (
-                                  <button
-                                    key={c.id || i}
-                                    type="button"
-                                    onClick={() => handleSelectConcept(c.id, selectedCreator.id)}
-                                    className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer truncate ${isCurrent
-                                        ? "bg-[#0F172A] text-white border-slate-800 shadow-2xs"
-                                        : "bg-white text-slate-600 border-slate-200 hover:text-slate-900 hover:border-slate-300 shadow-2xs"
-                                      }`}
-                                  >
-                                    #{i + 1} {c.name.split(" ")[0]}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* 2. 50/50 Co-Founder Terms Card */}
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 space-y-2 shadow-2xs">
-                    <div className="font-bold flex items-center gap-1.5 text-slate-900">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>50/50 Co-Founder Partnership Terms</span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 leading-relaxed">
-                      Creator Forge builds, hosts, and supports 100% of the MVP. Creator provides distribution and feedback. Net subscription profits split 50/50 via automated Stripe payouts.
-                    </p>
+                  {/* Segmented Controller: Concept & Terms vs Client Profile & Intel */}
+                  <div className="p-1 rounded-xl bg-slate-100/90 border border-slate-200/80 flex items-center gap-1 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => setStep6LeftTab("concept")}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${step6LeftTab === "concept"
+                          ? "bg-white text-slate-900 shadow-xs border border-slate-200/60"
+                          : "text-slate-600 hover:text-slate-900"
+                        }`}
+                    >
+                      <span>💡</span>
+                      <span>Concept & Terms</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep6LeftTab("profile")}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${step6LeftTab === "profile"
+                          ? "bg-white text-slate-900 shadow-xs border border-slate-200/60"
+                          : "text-slate-600 hover:text-slate-900"
+                        }`}
+                    >
+                      <User className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Client Profile & Intel</span>
+                    </button>
                   </div>
 
-                  {/* 3. Creator Profile Quick Summary */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs space-y-1.5 shadow-2xs">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                      Creator Profile
-                    </span>
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span>Audience:</span>
-                      <strong className="text-slate-900 font-mono">{selectedCreator.followerStr || selectedCreator.follower_count || "100K+"}</strong>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span>Niche:</span>
-                      <strong className="text-slate-900">{selectedCreator.niche || "Creator Economy"}</strong>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span>Contact Email:</span>
-                      <strong className="text-emerald-700 font-mono text-[11px]">{selectedCreator.email || selectedCreator.email_public || "No email"}</strong>
-                    </div>
+                  {step6LeftTab === "profile" ? (
+                    /* Inline Client Profile & Channel Intelligence Dossier */
+                    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-4">
+                      {/* Profile Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={selectedCreator.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
+                            alt=""
+                            className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shadow-2xs"
+                          />
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="font-bold text-slate-900 text-sm">{selectedCreator.name || selectedCreator.display_name}</h3>
+                              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">
+                                {selectedCreator.platform || "YouTube"}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 font-mono">@{selectedCreator.handle?.replace(/^@/, '')}</p>
+                            <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
+                              <span>📍</span>
+                              <span>{selectedCreator.location || "Global / Remote"}</span>
+                            </p>
+                          </div>
+                        </div>
 
-                    {/* Hunter.io Intelligence Block in Drawer */}
-                    <div className="pt-2 border-t border-slate-200/80 space-y-2">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-amber-800 flex items-center gap-1">
-                          <Target className="w-3 h-3 text-amber-600" />
-                          <span>Hunter.io Intelligence</span>
-                        </span>
-                        {(hunterDataMap[selectedCreator.id]?.score || selectedCreator.hunter_score) ? (
-                          <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                            {hunterDataMap[selectedCreator.id]?.score || selectedCreator.hunter_score}% Deliverable
-                          </span>
-                        ) : null}
+                        {(() => {
+                          const cleanH = (selectedCreator.handle || "").replace(/^@/, "");
+                          const pSlug = (selectedCreator.platform || "youtube").toLowerCase();
+                          const pUrl = selectedCreator.profile_url || selectedCreator.url || (
+                            pSlug === "youtube" ? `https://www.youtube.com/@${cleanH}` :
+                            pSlug === "instagram" ? `https://www.instagram.com/${cleanH}` :
+                            pSlug === "tiktok" ? `https://www.tiktok.com/@${cleanH}` :
+                            `https://twitter.com/${cleanH}`
+                          );
+                          return (
+                            <a
+                              href={pUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs"
+                              title="Open creator's public profile in new tab"
+                            >
+                              <span>Channel</span>
+                              <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-indigo-600" />
+                            </a>
+                          );
+                        })()}
                       </div>
 
-                      {(selectedCreator.email || selectedCreator.email_public) ? (
-                        <div className="space-y-1.5">
+                      {/* Reach & Engagement Metrics */}
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Audience</span>
+                          <span className="text-xs font-black text-slate-900 font-mono">
+                            {selectedCreator.followerStr || selectedCreator.follower_count || "100K+"}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Engagement</span>
+                          <span className="text-xs font-black text-emerald-700 font-mono">
+                            {selectedCreator.engagement_rate || selectedCreator.engagementRate || "4.8%"}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Creator Score</span>
+                          <span className="text-xs font-black text-amber-700 font-mono flex items-center justify-center gap-0.5">
+                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                            <span>{selectedCreator.creatorScore || 95}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Channel Bio */}
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Bio & Content Focus</span>
+                        <p className="text-xs text-slate-700 leading-relaxed italic">
+                          "{selectedCreator.bio || "Leading creator producing high-affinity content, tutorials, and community discussions."}"
+                        </p>
+                      </div>
+
+                      {/* Target Niches */}
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Niche & Verticals</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            selectedCreator.niche,
+                            ...(selectedCreator.topics || selectedCreator.niches || ["SaaS", "Creator Economy", "Digital Tools"])
+                          ].filter(Boolean).slice(0, 4).map((tag, idx) => (
+                            <span key={idx} className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-medium border border-slate-200/60">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Deliverability & Contact */}
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contact Email</span>
+                          {(hunterDataMap[selectedCreator.id]?.score || selectedCreator.hunter_score) && (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              {hunterDataMap[selectedCreator.id]?.score || selectedCreator.hunter_score}% Deliverable
+                            </span>
+                          )}
+                        </div>
+                        <div className="font-mono text-xs font-bold text-slate-900 bg-white p-2 rounded-lg border border-slate-200 break-all select-all">
+                          {selectedCreator.email || selectedCreator.email_public || "No verified email"}
+                        </div>
+                      </div>
+
+                      {/* Full Client Dossier Modal Trigger */}
+                      <button
+                        type="button"
+                        onClick={() => setShowClientProfileModal(true)}
+                        className="w-full py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                      >
+                        <User className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Inspect Full Client Dossier & Concepts</span>
+                        <ExternalLink className="w-3 h-3 text-indigo-500" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* 1. Product Concept Card */}
+                      {(() => {
+                        const detectedChoice = selectedCreator ? aiDetectedChoiceMap[selectedCreator.id] : null;
+                        const isCommittedChoice = detectedChoice?.decision === "CREATE_PROJECT" || detectedChoice?.decision === "COMMITTED";
+                        const isAlreadyLaunched = Boolean(
+                          selectedCreator?.project_id ||
+                          ["launched", "active_project", "partnered"].includes((selectedCreator?.status || "").toLowerCase())
+                        );
+                        const isCommitted = Boolean(
+                          isCommittedChoice ||
+                          selectedCreator?.isCommitted === true ||
+                          isAlreadyLaunched
+                        );
+                        const hasStep6Feedback = Boolean(detectedChoice?.isStep6Reply && !isCommitted);
+
+                        return (
+                          <div className={`p-5 rounded-2xl bg-white border shadow-2xs space-y-4 relative overflow-hidden transition-all ${isCommitted ? "border-emerald-300 ring-1 ring-emerald-200" : "border-slate-200/90"
+                            }`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {isCommitted ? (
+                                  <>
+                                    <span className="w-6 h-6 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-black text-xs flex items-center justify-center">
+                                      ✓
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                                      Decided Project Concept
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="w-6 h-6 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 font-black text-xs flex items-center justify-center">
+                                      💡
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                      Proposed Concept (Recommended #1)
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                              <span className="text-xs font-black text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                                <span>Score: {chosenConcept?.opportunityScore || 94}/100</span>
+                              </span>
+                            </div>
+
+                            <div className="space-y-2 border-b border-slate-100 pb-3">
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+                                  {chosenConcept?.name}
+                                </h3>
+                                <span className="text-xs font-bold text-emerald-700 font-mono bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                                  {chosenConcept?.pricing}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-800 font-semibold">
+                                {chosenConcept?.tagline}
+                              </p>
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                <strong className="text-slate-700">Solves:</strong> {chosenConcept?.problem}
+                              </p>
+                            </div>
+
+                            {/* Target Specs & Status */}
+                            <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                                <span className="text-[10px] text-slate-500 block uppercase font-bold">Target MVP</span>
+                                <span className="font-bold text-slate-800">{chosenConcept?.mvpDifficulty || "2 weeks"}</span>
+                              </div>
+                              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                                <span className="text-[10px] text-slate-500 block uppercase font-bold">Selection Status</span>
+                                {isCommitted ? (
+                                  <span className="font-bold text-emerald-700 flex items-center justify-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Confirmed by Creator</span>
+                                  </span>
+                                ) : hasStep6Feedback ? (
+                                  <span className="font-bold text-blue-700 flex items-center justify-center gap-1">
+                                    <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>Feedback In Review</span>
+                                  </span>
+                                ) : (
+                                  <span className="font-bold text-amber-800 flex items-center justify-center gap-1">
+                                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                    <span>Awaiting Creator Reply</span>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Concept Switcher Dropdown / Pills (in case admin wants to toggle) */}
+                            {concepts.length > 1 && (
+                              <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                                  Change Selected Concept:
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  {concepts.map((c, i) => {
+                                    const isCurrent = (chosenConcept?.id === c.id) || (!chosenConcept && i === 0);
+                                    return (
+                                      <button
+                                        key={c.id || i}
+                                        type="button"
+                                        onClick={() => handleSelectConcept(c.id, selectedCreator.id)}
+                                        className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer truncate ${isCurrent
+                                            ? "bg-[#0F172A] text-white border-slate-800 shadow-2xs"
+                                            : "bg-white text-slate-600 border-slate-200 hover:text-slate-900 hover:border-slate-300 shadow-2xs"
+                                          }`}
+                                      >
+                                        #{i + 1} {c.name.split(" ")[0]}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* 2. 50/50 Co-Founder Terms Card */}
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 space-y-2 shadow-2xs">
+                        <div className="font-bold flex items-center gap-1.5 text-slate-900">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <span>50/50 Co-Founder Partnership Terms</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          Creator Forge builds, hosts, and supports 100% of the MVP. Creator provides distribution and feedback. Net subscription profits split 50/50 via automated Stripe payouts.
+                        </p>
+                      </div>
+
+                      {/* 3. Creator Profile Quick Summary */}
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs space-y-2 shadow-2xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Creator Profile
+                          </span>
                           <button
                             type="button"
-                            onClick={(e) => handleHunterVerifyEmail(selectedCreator, e)}
-                            disabled={hunterLoadingId === selectedCreator.id}
-                            className="w-full py-1.5 px-2.5 rounded-lg bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-700 hover:text-emerald-800 flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                            onClick={() => setShowClientProfileModal(true)}
+                            className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
                           >
-                            {hunterLoadingId === selectedCreator.id && hunterActionType === 'verify' ? (
-                              <RefreshCw className="w-3 h-3 animate-spin text-emerald-600" />
-                            ) : (
-                              <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                            )}
-                            <span>Verify Deliverability (Hunter.io)</span>
+                            <span>Full Dossier</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
                           </button>
-                          {hunterDataMap[selectedCreator.id] && (
-                            <div className="p-2 rounded-lg bg-white border border-slate-200 text-[10px] space-y-1 text-slate-600 shadow-2xs">
-                              <div className="flex justify-between">
-                                <span>Status:</span>
-                                <strong className="text-emerald-700 uppercase font-mono">{hunterDataMap[selectedCreator.id].status}</strong>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>SMTP Check:</span>
-                                <strong className={hunterDataMap[selectedCreator.id].smtp_check ? "text-emerald-700" : "text-amber-700"}>
-                                  {hunterDataMap[selectedCreator.id].smtp_check ? "Passed" : "Blocked/Failed"}
-                                </strong>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Public Sources:</span>
-                                <strong className="text-slate-800">{hunterDataMap[selectedCreator.id].sources_count || (hunterDataMap[selectedCreator.id].sources || []).length} web sources</strong>
-                              </div>
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex items-center justify-between text-slate-600">
+                            <span>Audience:</span>
+                            <strong className="text-slate-900 font-mono">{selectedCreator.followerStr || selectedCreator.follower_count || "100K+"}</strong>
+                          </div>
+                          <div className="flex items-center justify-between text-slate-600">
+                            <span>Niche:</span>
+                            <strong className="text-slate-900">{selectedCreator.niche || "Creator Economy"}</strong>
+                          </div>
+                          <div className="flex items-center justify-between text-slate-600">
+                            <span>Contact Email:</span>
+                            <strong className="text-emerald-700 font-mono text-[11px]">{selectedCreator.email || selectedCreator.email_public || "No email"}</strong>
+                          </div>
+                        </div>
+
+                        {/* Hunter.io Intelligence Block in Drawer */}
+                        <div className="pt-2 border-t border-slate-200/80 space-y-2">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-amber-800 flex items-center gap-1">
+                              <Target className="w-3 h-3 text-amber-600" />
+                              <span>Hunter.io Intelligence</span>
+                            </span>
+                            {(hunterDataMap[selectedCreator.id]?.score || selectedCreator.hunter_score) ? (
+                              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                {hunterDataMap[selectedCreator.id]?.score || selectedCreator.hunter_score}% Deliverable
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {(selectedCreator.email || selectedCreator.email_public) ? (
+                            <div className="space-y-1.5">
+                              <button
+                                type="button"
+                                onClick={(e) => handleHunterVerifyEmail(selectedCreator, e)}
+                                disabled={hunterLoadingId === selectedCreator.id}
+                                className="w-full py-1.5 px-2.5 rounded-lg bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-700 hover:text-emerald-800 flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                              >
+                                {hunterLoadingId === selectedCreator.id && hunterActionType === 'verify' ? (
+                                  <RefreshCw className="w-3 h-3 animate-spin text-emerald-600" />
+                                ) : (
+                                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                )}
+                                <span>Verify Deliverability (Hunter.io)</span>
+                              </button>
+                              {hunterDataMap[selectedCreator.id] && (
+                                <div className="p-2 rounded-lg bg-white border border-slate-200 text-[10px] space-y-1 text-slate-600 shadow-2xs">
+                                  <div className="flex justify-between">
+                                    <span>Status:</span>
+                                    <strong className="text-emerald-700 uppercase font-mono">{hunterDataMap[selectedCreator.id].status}</strong>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>SMTP Check:</span>
+                                    <strong className={hunterDataMap[selectedCreator.id].smtp_check ? "text-emerald-700" : "text-amber-700"}>
+                                      {hunterDataMap[selectedCreator.id].smtp_check ? "Passed" : "Blocked/Failed"}
+                                    </strong>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Public Sources:</span>
+                                    <strong className="text-slate-800">{hunterDataMap[selectedCreator.id].sources_count || (hunterDataMap[selectedCreator.id].sources || []).length} web sources</strong>
+                                  </div>
+                                </div>
+                              )}
                             </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => handleHunterFindEmail(selectedCreator, e)}
+                              disabled={hunterLoadingId === selectedCreator.id}
+                              className="w-full py-1.5 px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                            >
+                              {hunterLoadingId === selectedCreator.id && hunterActionType === 'find' ? (
+                                <RefreshCw className="w-3 h-3 animate-spin text-amber-600" />
+                              ) : (
+                                <Target className="w-3.5 h-3.5 text-amber-600" />
+                              )}
+                              <span>Find Business Email (Hunter.io)</span>
+                            </button>
                           )}
                         </div>
-                      ) : (
+
                         <button
                           type="button"
-                          onClick={(e) => handleHunterFindEmail(selectedCreator, e)}
-                          disabled={hunterLoadingId === selectedCreator.id}
-                          className="w-full py-1.5 px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                          onClick={() => setShowClientProfileModal(true)}
+                          className="w-full pt-1.5 py-1.5 px-2 rounded-lg bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                         >
-                          {hunterLoadingId === selectedCreator.id && hunterActionType === 'find' ? (
-                            <RefreshCw className="w-3 h-3 animate-spin text-amber-600" />
-                          ) : (
-                            <Target className="w-3.5 h-3.5 text-amber-600" />
-                          )}
-                          <span>Find Business Email (Hunter.io)</span>
+                          <User className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>View Full Client Profile Dossier ↗</span>
                         </button>
-                      )}
-                    </div>
-                  </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Right Column (7 cols): Live Conversation Thread & Admin Reply Composer */}
@@ -10404,7 +10728,45 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       </div>
 
                       {/* TOP ACTION BUTTONS */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                        {/* Auto-Draft Toggle Switch */}
+                        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/80">
+                          <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-700 select-none">
+                            <input
+                              type="checkbox"
+                              checked={autoDraftEnabled}
+                              onChange={(e) => {
+                                const val = e.target.checked;
+                                setAutoDraftEnabled(val);
+                                try {
+                                  localStorage.setItem("forge_step6_auto_draft_enabled", val ? "true" : "false");
+                                } catch {}
+                                if (val && selectedCreator) {
+                                  applyAutoDraft(selectedCreator, activeAutoDraftAngle);
+                                }
+                              }}
+                              className="w-3.5 h-3.5 accent-indigo-600 rounded cursor-pointer"
+                            />
+                            <span className="flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-indigo-600" />
+                              <span>Auto Draft:</span>
+                              <span className={autoDraftEnabled ? "text-emerald-700 font-extrabold" : "text-slate-500 font-normal"}>
+                                {autoDraftEnabled ? "ON" : "OFF"}
+                              </span>
+                            </span>
+                          </label>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => applyAutoDraft(selectedCreator, activeAutoDraftAngle, null, true)}
+                          className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          title="Generate fresh auto-draft for current angle"
+                        >
+                          <Wand2 className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Re-Draft</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={handleRegenerateStep6Draft}
@@ -10435,6 +10797,36 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         </button>
                       </div>
                     </div>
+
+                    {/* Auto-Draft Quick Angle Presets */}
+                    {autoDraftEnabled && (
+                      <div className="p-2 rounded-xl bg-indigo-50/70 border border-indigo-100 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1 mr-1">
+                          <Sparkles className="w-3 h-3 text-indigo-600" />
+                          <span>Auto Draft Angle:</span>
+                        </span>
+                        {[
+                          { id: "smart", label: "⚡ Smart Context", desc: "Replies directly to creator's questions & comments" },
+                          { id: "kickoff", label: "🚀 2-Week MVP Roadmap", desc: "Build & launch timeline" },
+                          { id: "terms", label: "🤝 50/50 & Zero Cost", desc: "Transparent partnership economics" },
+                          { id: "demo_call", label: "📅 15-Min Walkthrough", desc: "Quick call or Loom video walkthrough" },
+                          { id: "concept_deep_dive", label: "💡 Concept Deep-Dive", desc: "Feature & monetization breakdown" },
+                        ].map((angle) => (
+                          <button
+                            key={angle.id}
+                            type="button"
+                            onClick={() => applyAutoDraft(selectedCreator, angle.id, null, true)}
+                            title={angle.desc}
+                            className={`px-2 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 ${activeAutoDraftAngle === angle.id
+                                ? "bg-indigo-600 text-white shadow-2xs font-bold"
+                                : "bg-white text-slate-700 hover:text-indigo-900 hover:bg-indigo-50 border border-slate-200"
+                              }`}
+                          >
+                            <span>{angle.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Subject Line Input */}
                     <div className="space-y-1">
@@ -11624,6 +12016,26 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         onEditConcept={(c) => {
           setEditingConcept(c);
           setEditingConceptIndex(viewingDeckIndex);
+        }}
+      />
+
+      {/* Step 6 Client Profile & Intel Inspector Modal */}
+      <ClientProfileModal
+        isOpen={showClientProfileModal}
+        creator={selectedCreator}
+        selectedConceptId={creatorConceptSelectionMap[selectedCreator?.id] || selectedConceptId || selectedCreator?.selectedConceptId}
+        threadMessages={selectedCreator ? getCreatorThreadMessages(selectedCreator, realThreads) : []}
+        hunterData={selectedCreator ? (hunterDataMap[selectedCreator.id] || null) : null}
+        onClose={() => setShowClientProfileModal(false)}
+        onSelectConcept={(cid) => {
+          if (selectedCreator) {
+            handleSelectConcept(cid, selectedCreator.id);
+          }
+        }}
+        onApplyAutoDraft={(angle, concept) => {
+          if (selectedCreator) {
+            applyAutoDraft(selectedCreator, angle, concept, true);
+          }
         }}
       />
     </div>
