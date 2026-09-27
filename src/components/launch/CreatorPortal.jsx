@@ -22,6 +22,7 @@ export default function CreatorPortal({ portalId }) {
   const [copiedKey, setCopiedKey] = useState(null)
   const [showDiyModal, setShowDiyModal] = useState(false)
   const [viewDraftTask, setViewDraftTask] = useState(null)
+  const [showAgreementModal, setShowAgreementModal] = useState(false)
   const [creatorReplyText, setCreatorReplyText] = useState('')
   const [isSendingReply, setIsSendingReply] = useState(false)
   const [section1Threads, setSection1Threads] = useState([])
@@ -595,10 +596,14 @@ export default function CreatorPortal({ portalId }) {
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-300 text-[11px] font-mono font-bold shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowAgreementModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 text-[11px] font-mono font-bold shrink-0 transition-all cursor-pointer active:scale-95 shadow-2xs"
+          >
             <Check className="w-3.5 h-3.5 text-emerald-600" />
             <span>CF-5050 Agreement (50/50 Split)</span>
-          </div>
+          </button>
         </div>
 
         {/* ── STATE 1: CO-LAUNCH PARTICIPATION TRACK CHOICE (Image 2) ───────────── */}
@@ -699,10 +704,10 @@ export default function CreatorPortal({ portalId }) {
                           setSelectedTrack('interactive')
                           setShowDiyModal(true)
                         }}
-                        className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                        className="group w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-emerald-500"
                       >
                         <span>Unlock Interactive Co-Builder Pass ($50 USD)</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:translate-x-1 transition-transform" />
                       </button>
                       <p className="text-[10px] text-center text-slate-400 font-mono">
                         Stripe & PayPal verified • Instant workspace provision
@@ -767,10 +772,10 @@ export default function CreatorPortal({ portalId }) {
                           setSelectedTrack('managed')
                           handleDeclineDiyOffer()
                         }}
-                        className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                        className="group w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-slate-900/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-slate-900"
                       >
                         <span>Select Studio-Managed Track (50/50)</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:translate-x-1 transition-transform" />
                       </button>
                       <p className="text-[10px] text-center text-slate-400 font-mono">
                         Standard tracking portal activated immediately
@@ -893,28 +898,28 @@ export default function CreatorPortal({ portalId }) {
                       <button
                         type="button"
                         onClick={() => setShowDiyModal(true)}
-                        className="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                        className="group w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-slate-900/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-slate-900"
                       >
                         <span>Continue with Interactive Pass ($50)</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:translate-x-1 transition-transform" />
                       </button>
                     ) : (
                       <button
                         type="button"
                         onClick={handleDeclineDiyOffer}
-                        className="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                        className="group w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-slate-900/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-slate-900"
                       >
                         <span>Continue with Studio-Managed Track</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:translate-x-1 transition-transform" />
                       </button>
                     )}
 
                     <button
                       type="button"
                       onClick={() => setSelectedTrack(prev => prev === 'interactive' ? 'managed' : 'interactive')}
-                      className="w-full py-2 px-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 text-slate-700 hover:text-slate-900 text-xs font-semibold transition-all duration-150 shadow-2xs hover:shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                     >
-                      <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                      <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
                       <span>Reset Selection</span>
                     </button>
                   </div>
@@ -925,10 +930,14 @@ export default function CreatorPortal({ portalId }) {
 
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-500">
                     <span>Venture Spec:</span>
-                    <span className="text-emerald-700 font-bold flex items-center gap-1 cursor-pointer hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => setShowAgreementModal(true)}
+                      className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 cursor-pointer hover:underline transition-colors"
+                    >
                       <FileText className="w-3 h-3" />
                       <span>CF-5050 Agreement (50/50)</span>
-                    </span>
+                    </button>
                   </div>
 
                   {/* Security Banner */}
@@ -1182,7 +1191,7 @@ export default function CreatorPortal({ portalId }) {
                           <button
                             type="button"
                             onClick={() => setViewDraftTask(schedule.find(t => t.day === 2) || schedule[0])}
-                            className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 text-slate-700 hover:text-slate-900 text-xs font-bold transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs active:scale-[0.98]"
                           >
                             <Eye className="w-3.5 h-3.5 text-slate-500" />
                             <span>View Draft</span>
@@ -1190,9 +1199,9 @@ export default function CreatorPortal({ portalId }) {
                           <button
                             type="button"
                             onClick={() => toggleChecklist(schedule.find(t => t.day === 2)?.id || 'day-2')}
-                            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow-md hover:shadow-slate-900/20 active:scale-[0.98]"
                           >
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
                             <span>Mark Done</span>
                           </button>
                         </div>
@@ -1253,9 +1262,9 @@ export default function CreatorPortal({ portalId }) {
                               <button
                                 type="button"
                                 onClick={() => setViewDraftTask(task)}
-                                className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold shrink-0 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                                className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 text-slate-700 hover:text-slate-900 text-xs font-semibold shrink-0 transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs active:scale-[0.98]"
                               >
-                                <Eye className="w-3.5 h-3.5 text-slate-400" />
+                                <Eye className="w-3.5 h-3.5 text-slate-500" />
                                 <span>View Draft</span>
                               </button>
                             </div>
@@ -1522,16 +1531,16 @@ export default function CreatorPortal({ portalId }) {
                     <button
                       type="button"
                       onClick={handleSimulatePreorder}
-                      className="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                      className="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-slate-900/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-slate-900"
                     >
-                      <Plus className="w-4 h-4 text-emerald-400" />
+                      <Plus className="w-4 h-4 text-emerald-400 stroke-[3]" />
                       <span>Simulate Backer Pre-Order (+$49)</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setViewDraftTask(schedule.find(t => t.day === 2) || schedule[0])}
-                      className="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 text-slate-700 hover:text-slate-900 text-xs font-semibold transition-all duration-150 shadow-2xs hover:shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                     >
                       <Eye className="w-4 h-4 text-slate-500" />
                       <span>View Today's Story Assets</span>
@@ -1544,10 +1553,14 @@ export default function CreatorPortal({ portalId }) {
 
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-500">
                     <span>Venture Spec:</span>
-                    <span className="text-emerald-700 font-bold flex items-center gap-1 cursor-pointer hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => setShowAgreementModal(true)}
+                      className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 cursor-pointer hover:underline transition-colors"
+                    >
                       <FileText className="w-3 h-3" />
                       <span>CF-5050 Agreement (50/50)</span>
-                    </span>
+                    </button>
                   </div>
 
                   {/* Settlement Banner */}
@@ -1605,7 +1618,7 @@ export default function CreatorPortal({ portalId }) {
               <button
                 type="button"
                 onClick={() => copyToClipboard(getTaskDraftContent(viewDraftTask), 'draft')}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98] transition-all"
               >
                 {copiedKey === 'draft' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copiedKey === 'draft' ? 'Copied!' : 'Copy to Clipboard'}</span>
@@ -1613,9 +1626,88 @@ export default function CreatorPortal({ portalId }) {
               <button
                 type="button"
                 onClick={() => setViewDraftTask(null)}
-                className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 text-slate-700 hover:text-slate-900 text-xs font-semibold cursor-pointer active:scale-[0.98] transition-all shadow-2xs"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CF-5050 CO-FOUNDER AGREEMENT SPEC MODAL ─────────────────────────────── */}
+      {showAgreementModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="max-w-xl w-full bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 sm:p-7 space-y-5 text-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
+                  LEGAL CHARTER SPECIFICATION • VERIFIED
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 mt-1">
+                  Equal 50/50 Co-Founder Equity Agreement
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAgreementModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg cursor-pointer transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+              <div>
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase block">PARTNER A (STUDIO)</span>
+                <span className="font-bold text-slate-900 block mt-0.5">Creator Forge Studio</span>
+                <span className="text-[11px] text-slate-500 block">Engineering, Hosting, AI Architecture</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase block">PARTNER B (CREATOR)</span>
+                <span className="font-bold text-slate-900 block mt-0.5">{creatorName}</span>
+                <span className="text-[11px] text-slate-500 block">Audience, Co-Marketing, Feedback</span>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-700 max-h-64 overflow-y-auto pr-1">
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="font-bold text-slate-900">1. Equal 50/50 Gross Net Revenue Division</span>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  All gross revenue generated from founding presales, monthly/annual software subscriptions, and add-on modules is divided exactly 50% to Creator Forge Studio and 50% to {creatorName}.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="font-bold text-slate-900">2. Irrevocable Automated Settlement</span>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Payouts are handled through automated payment gateway webhooks (Stripe Connect). The creator's 50% share is routed directly to the verified partner ledger without artificial holding periods.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="font-bold text-slate-900">3. Full Engineering & Technical Provisioning</span>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  The studio assumes 100% responsibility for infrastructure, code deployments, LLM token provisioning, database scaling, and technical bug fixes.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="font-bold text-slate-900">4. Mutual Commercial IP & Transparency</span>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Both parties maintain transparent visibility into real-time telemetry, transaction volumes, backer accounts, and sprint progress.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-mono font-bold">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Verified Legal Charter v2.4</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAgreementModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-[0.98]"
+              >
+                Close Spec
               </button>
             </div>
           </div>
