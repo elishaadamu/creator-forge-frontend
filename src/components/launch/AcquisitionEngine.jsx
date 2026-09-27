@@ -10659,7 +10659,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       <span>Manually Confirm & Unlock</span>
                     </button>
                   )}
-                  )}
                   {isAlreadyLaunched ? (
                     <div className="flex items-center gap-2 flex-wrap">
                       {selectedCreator.diyOfferStatus === 'accepted' || selectedCreator.isDIY ? (
