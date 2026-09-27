@@ -363,52 +363,115 @@ export function LaunchReportSkeleton() {
 }
 
 /**
- * 9. Creator Partner Portal Skeleton
+ * 9. Creator Partner Portal Skeleton — Light Blueprint Matching Real Portal
  */
 export function CreatorPortalSkeleton() {
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 sm:p-8 space-y-6 max-w-5xl mx-auto animate-fade-in">
-      {/* Top Banner Skeleton */}
-      <div className="p-6 rounded-3xl bg-[#0e1117] border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <SkeletonCircle size={48} variant="purple" />
+    <div
+      className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex flex-col relative antialiased animate-fade-in"
+      style={{
+        backgroundImage: 'radial-gradient(#cbd5e1 1.25px, transparent 1.25px)',
+        backgroundSize: '20px 20px',
+      }}
+    >
+      {/* Top Nav Header Skeleton */}
+      <header className="h-16 border-b border-slate-200/90 bg-white/90 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-900/10 animate-pulse shrink-0" />
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <Skeleton rounded="rounded-full" className="w-48 h-4" />
-              <Skeleton variant="emerald" rounded="rounded-full" className="w-16 h-4" />
+              <div className="w-36 h-4 rounded-md bg-slate-200 animate-pulse" />
+              <div className="w-28 h-4 rounded-full bg-emerald-100/60 border border-emerald-200/60 animate-pulse" />
             </div>
-            <Skeleton rounded="rounded-full" className="w-64 h-3" />
+            <div className="w-24 h-2.5 rounded bg-slate-100 animate-pulse" />
           </div>
         </div>
 
-        <Skeleton variant="emerald" rounded="rounded-2xl" className="w-44 h-12 shrink-0" />
-      </div>
-
-      {/* Tabs Skeleton */}
-      <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3">
-        <Skeleton rounded="rounded-xl" className="w-32 h-8" />
-        <Skeleton rounded="rounded-xl" className="w-32 h-8" />
-        <Skeleton rounded="rounded-xl" className="w-32 h-8" />
-      </div>
-
-      {/* Checklist Rows Skeleton */}
-      <div className="space-y-3">
-        {[1, 2, 3, 4, 5].map(i => (
-          <div
-            key={i}
-            className="p-4 rounded-2xl bg-[#0e1117] border border-white/[0.06] flex items-center justify-between gap-4"
-          >
-            <div className="flex items-center gap-3">
-              <SkeletonCircle size={22} variant="purple" />
-              <div className="space-y-1">
-                <Skeleton rounded="rounded-full" className="w-48 sm:w-64 h-3.5" />
-                <Skeleton rounded="rounded-full" className="w-32 sm:w-44 h-2.5" />
-              </div>
-            </div>
-            <SkeletonButton width={90} height={30} variant="default" />
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 p-1 bg-slate-100 rounded-xl">
+            <div className="w-32 h-7 rounded-lg bg-white shadow-2xs animate-pulse" />
+            <div className="w-32 h-7 rounded-lg bg-slate-200/60 animate-pulse" />
           </div>
-        ))}
-      </div>
+          <div className="w-36 h-8 rounded-xl bg-slate-100 border border-slate-200 animate-pulse" />
+        </div>
+      </header>
+
+      {/* Main Container */}
+      <main className="max-w-6xl w-full mx-auto px-4 sm:px-8 py-8 space-y-6 flex-1">
+        {/* Hero Revenue Card Skeleton */}
+        <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3 max-w-xl">
+            <div className="flex items-center gap-2">
+              <div className="w-24 h-5 rounded-full bg-emerald-50 border border-emerald-200 animate-pulse" />
+              <div className="w-32 h-4 rounded-full bg-slate-100 animate-pulse" />
+            </div>
+            <div className="w-64 sm:w-80 h-8 rounded-xl bg-slate-200 animate-pulse" />
+            <div className="w-full sm:w-96 h-4 rounded-md bg-slate-100 animate-pulse" />
+          </div>
+
+          <div className="p-5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3 min-w-[240px]">
+            <div className="flex items-center justify-between">
+              <div className="w-24 h-3 rounded bg-slate-200 animate-pulse" />
+              <div className="w-12 h-3 rounded bg-emerald-200 animate-pulse" />
+            </div>
+            <div className="w-32 h-7 rounded-lg bg-slate-300 animate-pulse" />
+            <div className="w-full h-2 rounded-full bg-slate-200 animate-pulse" />
+          </div>
+        </div>
+
+        {/* 4 Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-2xs space-y-2">
+              <div className="w-20 h-3 rounded bg-slate-100 animate-pulse" />
+              <div className="w-16 h-6 rounded-lg bg-slate-200 animate-pulse" />
+              <div className="w-24 h-2.5 rounded bg-slate-100 animate-pulse" />
+            </div>
+          ))}
+        </div>
+
+        {/* Step Progression Bar */}
+        <div className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="w-40 h-3.5 rounded bg-slate-200 animate-pulse" />
+            <div className="w-20 h-3 rounded bg-slate-100 animate-pulse" />
+          </div>
+          <div className="grid grid-cols-5 gap-2">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-slate-200 animate-pulse shrink-0" />
+                <div className="w-16 h-3 rounded bg-slate-200 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Daily Tasks Card */}
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="space-y-1">
+              <div className="w-48 h-4 rounded bg-slate-200 animate-pulse" />
+              <div className="w-72 h-3 rounded bg-slate-100 animate-pulse" />
+            </div>
+            <div className="w-24 h-8 rounded-xl bg-slate-100 animate-pulse" />
+          </div>
+
+          <div className="space-y-2.5">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/70 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-lg bg-slate-200 animate-pulse shrink-0" />
+                  <div className="space-y-1.5">
+                    <div className="w-48 sm:w-64 h-3.5 rounded bg-slate-200 animate-pulse" />
+                    <div className="w-32 sm:w-44 h-2.5 rounded bg-slate-100 animate-pulse" />
+                  </div>
+                </div>
+                <div className="w-20 h-7 rounded-lg bg-white border border-slate-200 animate-pulse shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
     </div>
   )
 }
@@ -455,44 +518,83 @@ export function PreorderLandingSkeleton() {
 }
 
 /**
- * 11. Follow-Up CRM & Inbox Skeleton Table
+ * 11. Follow-Up CRM & Inbox Skeleton Table & Card Mockups
  */
 export function CRMSkeleton() {
   return (
     <div className="space-y-4 w-full animate-fade-in">
+      {/* KPI Status Pills Skeleton */}
+      <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        {[1, 2, 3, 4, 5, 6].map(i => (
+          <div key={i} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-pulse" />
+              <div className="w-16 h-3 rounded bg-slate-200 animate-pulse" />
+            </div>
+            <div className="w-6 h-4 rounded bg-slate-200 animate-pulse" />
+          </div>
+        ))}
+      </div>
+
       {/* Search & Filter Bar Skeleton */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
-        <div className="w-full sm:w-64 h-9 rounded-xl bg-slate-100 animate-pulse" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+        <div className="w-full sm:w-80 h-9 rounded-xl bg-slate-100 animate-pulse" />
         <div className="flex items-center gap-2">
-          <div className="w-20 h-8 rounded-lg bg-slate-100 animate-pulse" />
-          <div className="w-20 h-8 rounded-lg bg-slate-100 animate-pulse" />
-          <div className="w-24 h-8 rounded-lg bg-slate-900/10 animate-pulse" />
+          <div className="w-24 h-8 rounded-lg bg-slate-100 animate-pulse" />
+          <div className="w-24 h-8 rounded-lg bg-slate-100 animate-pulse" />
         </div>
       </div>
 
-      {/* Directory Table Rows */}
-      <div className="rounded-2xl bg-white border border-slate-200/90 shadow-sm overflow-hidden divide-y divide-slate-100">
-        {[1, 2, 3, 4, 5, 6].map(i => (
-          <div key={i} className="p-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-10 h-10 rounded-2xl bg-slate-100 animate-pulse shrink-0" />
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-32 h-3.5 rounded-full bg-slate-200 animate-pulse" />
-                  <div className="w-16 h-3 rounded-full bg-slate-100 animate-pulse" />
+      {/* Directory Full Cards Mockups */}
+      <div className="space-y-4">
+        {[1, 2].map(i => (
+          <div key={i} className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-4">
+            {/* Header: Avatar, Name, Handle, Stage Badge */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 animate-pulse shrink-0" />
+                <div className="space-y-1.5">
+                  <div className="w-44 h-4 rounded bg-slate-200 animate-pulse" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-3 rounded bg-emerald-100 animate-pulse" />
+                    <div className="w-16 h-3 rounded bg-slate-100 animate-pulse" />
+                  </div>
                 </div>
-                <div className="w-48 h-2.5 rounded-full bg-slate-100 animate-pulse" />
+              </div>
+              <div className="w-36 h-6 rounded-full bg-slate-100 border border-slate-200 animate-pulse" />
+            </div>
+
+            {/* 6 Stats Tiles */}
+            <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-32 h-3 rounded bg-slate-200 animate-pulse" />
+                <div className="w-24 h-4 rounded bg-amber-100 animate-pulse" />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                {[1, 2, 3, 4, 5, 6].map(idx => (
+                  <div key={idx} className="p-2 rounded-lg bg-white border border-slate-200/80 text-center space-y-1">
+                    <div className="w-12 h-2.5 mx-auto rounded bg-slate-100 animate-pulse" />
+                    <div className="w-10 h-3.5 mx-auto rounded bg-slate-200 animate-pulse" />
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-3">
-              <div className="w-24 h-6 rounded-full bg-emerald-50 border border-emerald-100 animate-pulse" />
-              <div className="w-16 h-4 rounded-full bg-slate-100 animate-pulse" />
+            {/* Content Bio Box */}
+            <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-1.5">
+              <div className="w-24 h-2.5 rounded bg-slate-200 animate-pulse" />
+              <div className="w-full h-3 rounded bg-slate-100 animate-pulse" />
+              <div className="w-3/4 h-3 rounded bg-slate-100 animate-pulse" />
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="w-20 h-8 rounded-xl bg-slate-100 animate-pulse" />
-              <div className="w-24 h-8 rounded-xl bg-slate-900/10 animate-pulse" />
+            {/* Buttons Row */}
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <div className="flex items-center gap-2">
+                <div className="w-16 h-7 rounded-xl bg-slate-100 animate-pulse" />
+                <div className="w-24 h-7 rounded-xl bg-slate-100 animate-pulse" />
+                <div className="w-28 h-7 rounded-xl bg-slate-900/10 animate-pulse" />
+              </div>
+              <div className="w-40 h-7 rounded-xl bg-slate-100 animate-pulse" />
             </div>
           </div>
         ))}

@@ -16,6 +16,7 @@ import { getFrontendUrl, recordGateDecision } from '../../services/opsApi'
 import { ProjectOSSkeleton } from './Section2Skeletons'
 import CreatorWhatsAppChat from './CreatorWhatsAppChat'
 import ProjectFileExplorer from './ProjectFileExplorer'
+import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards } from '../../utils/stepGuards'
 
 // Detect raw UUID strings (prevent displaying raw UUIDs as creator names/handles)
@@ -2255,14 +2256,8 @@ partnerships@creatorforge.com`
           <div className="max-w-5xl w-full max-h-[92vh] overflow-y-auto rounded-3xl bg-[#090b0e] border border-white/[0.1] p-6 space-y-6 shadow-2xl overscroll-contain">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  currentPhase === 2
-                    ? 'bg-blue-500/10 border border-blue-500/30 text-blue-400'
-                    : currentPhase === 3
-                    ? 'bg-purple-500/10 border border-purple-500/30 text-purple-400'
-                    : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-                }`}>
-                  {currentPhase === 2 ? <Code className="w-5 h-5" /> : currentPhase === 3 ? <Sparkles className="w-5 h-5" /> : <Target className="w-5 h-5" />}
+                <div className="w-10 h-10 rounded-xl bg-[#0F172A] border border-white/15 flex items-center justify-center shrink-0 shadow-md">
+                  <CreatorForgeLogo size={20} showText={false} theme="dark" />
                 </div>
                 <div>
                   <h2 className="text-base sm:text-lg font-extrabold text-white">

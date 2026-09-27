@@ -12,6 +12,7 @@ import { CreatorPortalSkeleton } from './Section2Skeletons'
 import { deduplicateAndSortMessages } from './CreatorWhatsAppChat'
 import ProjectOS from './ProjectOS'
 import DIYSubscriptionModal from './DIYSubscriptionModal'
+import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards } from '../../utils/stepGuards'
 
 export default function CreatorPortal({ portalId }) {
@@ -27,11 +28,46 @@ export default function CreatorPortal({ portalId }) {
   const [creatorReplyText, setCreatorReplyText] = useState('')
   const [isSendingReply, setIsSendingReply] = useState(false)
   const [section1Threads, setSection1Threads] = useState([])
+  const [creatorAvatar, setCreatorAvatar] = useState(null)
+  const [avatarLoadError, setAvatarLoadError] = useState(false)
   const chatMessagesEndRef = useRef(null)
 
   const productName = project?.productName || project?.name || 'Software Co-Launch'
   const creatorName = project?.creatorName || 'Creator Partner'
   const ventureSlug = (productName || 'venture').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+  // Resolve creator avatar from project or creator lookup
+  useEffect(() => {
+    let isMounted = true
+    const resolveAvatar = async () => {
+      const direct = project?.creatorAvatar || project?.creator_avatar || project?.avatar || project?.avatar_url
+      if (direct) {
+        setCreatorAvatar(direct)
+        return
+      }
+      if (project?.creatorId || project?.creatorHandle) {
+        try {
+          const { getCreators } = await import('../../services/opsApi')
+          const allCreators = await getCreators()
+          if (isMounted && Array.isArray(allCreators)) {
+            const cId = project?.creatorId
+            const cHandle = (project?.creatorHandle || '').toLowerCase().replace(/^@/, '').trim()
+            const match = allCreators.find(c =>
+              (cId && String(c.id) === String(cId)) ||
+              (cHandle && (c.handle || '').toLowerCase().replace(/^@/, '').trim() === cHandle)
+            )
+            if (match?.avatar_url || match?.avatar) {
+              setCreatorAvatar(match.avatar_url || match.avatar)
+            }
+          }
+        } catch (e) {
+          console.warn('[CreatorPortal] Avatar resolution error:', e)
+        }
+      }
+    }
+    resolveAvatar()
+    return () => { isMounted = false }
+  }, [project?.creatorAvatar, project?.creator_avatar, project?.avatar, project?.avatar_url, project?.creatorId, project?.creatorHandle])
 
   useEffect(() => {
     updatePageSEO({
@@ -371,6 +407,44 @@ export default function CreatorPortal({ portalId }) {
     return ck.announcementPost || 'Social Announcement Post Copy tailored for your community'
   }
 
+  // Dynamic Phase & Step Synchronization directly matched with the Operator / Admin Dashboard
+  // MUST BE CALLED UNCONDITIONALLY BEFORE ANY EARLY RETURNS TO PREVENT REACT ERROR #310
+  const currentPhase = Number(project?.currentPhase || project?.current_phase || 1)
+  const p1Guards = useMemo(() => getPhase1StepGuards(project || {}), [project])
+  const p2Guards = useMemo(() => getPhase2StepGuards(project || {}), [project])
+  const p3Guards = useMemo(() => getPhase3StepGuards(project || {}), [project])
+
+  const activePhaseSteps = useMemo(() => {
+    if (currentPhase === 2) {
+      return [
+        { id: 'plan', num: '01', label: '1. Plan & Spec', fullLabel: 'Product & Build Plan', isDone: p2Guards.isStep1Done },
+        { id: 'build', num: '02', label: '2. Build MVP', fullLabel: 'Engineering Build', isDone: p2Guards.isStep2Done },
+        { id: 'beta', num: '03', label: '3. Beta Test', fullLabel: 'Beta Testing', isDone: p2Guards.isStep3Done },
+        { id: 'gate', num: '04', label: '4. Launch Gate', fullLabel: 'Iterate & Launch Gate', isDone: p2Guards.isStep4Done },
+      ]
+    }
+    if (currentPhase === 3) {
+      return [
+        { id: 'prep', num: '01', label: '1. Prepare', fullLabel: 'Launch Preparation', isDone: p3Guards.isStep1Done },
+        { id: 'launch', num: '02', label: '2. Launch & Monitor', fullLabel: 'Live Telemetry', isDone: p3Guards.isStep2Done },
+        { id: 'review', num: '03', label: '3. Optimization', fullLabel: 'Review & Retarget', isDone: p3Guards.isStep3Done },
+        { id: 'scale', num: '04', label: '4. Retention', fullLabel: 'Scale & Community', isDone: p3Guards.isStep4Done },
+      ]
+    }
+    // Default Phase 1 (Validation Execution Workspace - EXACT MATCH with Admin Dashboard!)
+    return [
+      { id: 'plan', num: '01', label: '1. Plan', fullLabel: 'Validation Plan', isDone: p1Guards.isStep1Done },
+      { id: 'assets', num: '02', label: '2. Assets', fullLabel: 'Validation Assets', isDone: p1Guards.isStep2Done },
+      { id: 'campaign', num: '03', label: '3. Campaign', fullLabel: 'Creator Campaign', isDone: p1Guards.isStep3Done },
+      { id: 'optimize', num: '04', label: '4. Optimize', fullLabel: 'Run & Optimize', isDone: p1Guards.isStep4Done },
+      { id: 'gate', num: '05', label: '5. Gate', fullLabel: 'Validation Gate', isDone: p1Guards.isGatePassed || p1Guards.isStep5Done },
+    ]
+  }, [currentPhase, p1Guards, p2Guards, p3Guards])
+
+  const activeStepIdx = activePhaseSteps.findIndex(s => !s.isDone)
+  const resolvedActiveStepIndex = activeStepIdx === -1 ? activePhaseSteps.length - 1 : activeStepIdx
+  const resolvedAvatar = creatorAvatar || project?.creatorAvatar || project?.creator_avatar || project?.avatar || project?.avatar_url
+
   if (loading) {
     return <CreatorPortalSkeleton />
   }
@@ -425,42 +499,6 @@ export default function CreatorPortal({ portalId }) {
   const preorderUrl = `${getFrontendUrl()}/preorder?ref=${project.creatorHandle?.replace('@','') || 'creator'}`
   const targetPct = presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 0
 
-  // Dynamic Phase & Step Synchronization directly matched with the Operator / Admin Dashboard
-  const currentPhase = Number(project?.currentPhase || project?.current_phase || 1)
-  const p1Guards = useMemo(() => getPhase1StepGuards(project), [project])
-  const p2Guards = useMemo(() => getPhase2StepGuards(project), [project])
-  const p3Guards = useMemo(() => getPhase3StepGuards(project), [project])
-
-  const activePhaseSteps = useMemo(() => {
-    if (currentPhase === 2) {
-      return [
-        { id: 'plan', num: '01', label: '1. Plan & Spec', fullLabel: 'Product & Build Plan', isDone: p2Guards.isStep1Done },
-        { id: 'build', num: '02', label: '2. Build MVP', fullLabel: 'Engineering Build', isDone: p2Guards.isStep2Done },
-        { id: 'beta', num: '03', label: '3. Beta Test', fullLabel: 'Beta Testing', isDone: p2Guards.isStep3Done },
-        { id: 'gate', num: '04', label: '4. Launch Gate', fullLabel: 'Iterate & Launch Gate', isDone: p2Guards.isStep4Done },
-      ]
-    }
-    if (currentPhase === 3) {
-      return [
-        { id: 'prep', num: '01', label: '1. Prepare', fullLabel: 'Launch Preparation', isDone: p3Guards.isStep1Done },
-        { id: 'launch', num: '02', label: '2. Launch & Monitor', fullLabel: 'Live Telemetry', isDone: p3Guards.isStep2Done },
-        { id: 'review', num: '03', label: '3. Optimization', fullLabel: 'Review & Retarget', isDone: p3Guards.isStep3Done },
-        { id: 'scale', num: '04', label: '4. Retention', fullLabel: 'Scale & Community', isDone: p3Guards.isStep4Done },
-      ]
-    }
-    // Default Phase 1 (Validation Execution Workspace - EXACT MATCH with Admin Dashboard!)
-    return [
-      { id: 'plan', num: '01', label: '1. Plan', fullLabel: 'Validation Plan', isDone: p1Guards.isStep1Done },
-      { id: 'assets', num: '02', label: '2. Assets', fullLabel: 'Validation Assets', isDone: p1Guards.isStep2Done },
-      { id: 'campaign', num: '03', label: '3. Campaign', fullLabel: 'Creator Campaign', isDone: p1Guards.isStep3Done },
-      { id: 'optimize', num: '04', label: '4. Optimize', fullLabel: 'Run & Optimize', isDone: p1Guards.isStep4Done },
-      { id: 'gate', num: '05', label: '5. Gate', fullLabel: 'Validation Gate', isDone: p1Guards.isGatePassed || p1Guards.isStep5Done },
-    ]
-  }, [currentPhase, p1Guards, p2Guards, p3Guards])
-
-  const activeStepIdx = activePhaseSteps.findIndex(s => !s.isDone)
-  const resolvedActiveStepIndex = activeStepIdx === -1 ? activePhaseSteps.length - 1 : activeStepIdx
-
   return (
     <div
       className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex flex-col relative antialiased selection:bg-emerald-100 selection:text-emerald-900"
@@ -472,8 +510,22 @@ export default function CreatorPortal({ portalId }) {
       {/* ── TOP NAV HEADER ──────────────────────────────────────────────────────── */}
       <header className="h-16 border-b border-slate-200/90 bg-white/90 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center shadow-xs text-white">
-            <Rocket className="w-5 h-5 text-white" />
+          <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-[#0F172A] border border-slate-800 flex items-center justify-center shadow-xs text-white shrink-0">
+            {resolvedAvatar && !avatarLoadError ? (
+              <>
+                <img
+                  src={resolvedAvatar}
+                  alt={creatorName || 'Creator'}
+                  className="w-full h-full object-cover"
+                  onError={() => setAvatarLoadError(true)}
+                />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#0F172A] border border-slate-700 flex items-center justify-center p-0.5 shadow-xs z-10">
+                  <CreatorForgeLogo size={10} showText={false} theme="dark" />
+                </div>
+              </>
+            ) : (
+              <CreatorForgeLogo size={20} showText={false} theme="dark" />
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2">

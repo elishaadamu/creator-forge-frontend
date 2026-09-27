@@ -79,6 +79,7 @@ export default function CreatorFollowUpCRM({
   const [statusFilter, setStatusFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
   const [copiedEmail, setCopiedEmail] = useState(null);
+  const [studioRepliedMap, setStudioRepliedMap] = useState({});
 
   // Local editable overrides for labels, status, and emails
   const [labelOverrides, setLabelOverrides] = useState({});
@@ -224,87 +225,72 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    // Check database threads with strict creator isolation
+    // Match threads across database records by ID, unique handle, or contact email
     const matchedThreads = (realThreads || []).filter((t) => {
       if (!t) return false;
-      if (t.creator_id && cId && t.creator_id === cId) return true;
-      if (t.creator_id && cId && t.creator_id !== cId) return false;
+      // Direct ID match
+      if (t.creator_id && cId && String(t.creator_id) === String(cId)) return true;
+      if (t.creatorId && cId && String(t.creatorId) === String(cId)) return true;
+
+      // Handle match (handle is unique per creator)
+      const tH = (t.creator_handle || t.handle || "").toLowerCase().replace(/^@/, "").trim();
+      if (handle && tH && tH === handle) return true;
+
+      // Email match
+      const tE = (t.creator_email || t.recipient_email || t.email || "").toLowerCase().trim();
+      if (email && tE && tE === email) return true;
 
       const tSubj = (t.subject || t.original_subject || (t.replies && t.replies[0] && t.replies[0].subject) || "").toLowerCase();
 
       // Handle token match: [#<handle>] or "for <handle>"
       if (handle && handle.length >= 2 && (tSubj.includes(`[#${handle}]`) || tSubj.includes(`for ${handle}`))) return true;
-      if (handle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === handle) return true;
       if (cName && cName.length >= 3 && tSubj.includes(`for ${cName}`)) return true;
 
-      // Email match ONLY if thread has no explicit creator_id and does not belong to another creator
-      if (!t.creator_id && email && (t.creator_email?.toLowerCase().trim() === email || t.recipient_email?.toLowerCase().trim() === email)) {
-        const otherCreators = (creators || []).filter((other) => other.id !== cId);
-        const belongsToOther = otherCreators.some((other) => {
-          const oName = (other.name || other.display_name || "").toLowerCase().trim();
-          const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
-          return (
-            (oName && oName.length >= 3 && tSubj.includes(oName)) ||
-            (oHandle && oHandle.length >= 2 && (tSubj.includes(`[#${oHandle}]`) || tSubj.includes(`for ${oHandle}`)))
-          );
-        });
-        if (!belongsToOther) return true;
-      }
       return false;
     });
 
     let inboundReplies = [];
+    let outboundReplies = [];
+
     matchedThreads.forEach((t) => {
       (t.replies || []).forEach((r) => {
         const fromAddr = (r.from_address || "").toLowerCase().trim();
         const isAdmin =
           fromAddr.includes("partnerships@creatorforge.com") ||
           fromAddr.includes("creatorforgeweb@gmail.com") ||
+          fromAddr.includes("brevosend.com") ||
+          fromAddr.includes("google.com") ||
           r.direction === "outbound" ||
           r.is_outgoing ||
-          r.ai_summary === "Outgoing reply from you";
-        if (isAdmin) return;
+          r.ai_summary === "Outgoing reply from you" ||
+          (r.classification === "other" && (r.ai_summary || "").toLowerCase().includes("outgoing"));
 
-        const bodyLower = (r.body || "").toLowerCase();
-        const subjLower = (r.subject || "").toLowerCase();
-
-        // Check if reply explicitly belongs to another creator
-        if (bodyLower.includes("cf-cid:")) {
-          const hasMyCid = bodyLower.includes(`cf-cid:${cId.toLowerCase()}`);
-          const hasMyHandle = handle && (bodyLower.includes(`handle:@${handle}`) || bodyLower.includes(`[#${handle}]`));
-          if (!hasMyCid && !hasMyHandle) return;
+        if (isAdmin) {
+          outboundReplies.push(r);
+          return;
         }
-        if (subjLower.includes("[#") && handle && !subjLower.includes(`[#${handle}]`)) return;
 
-        const otherCreators = (creators || []).filter((other) => other.id !== cId);
-        const hasOtherToken = otherCreators.some((other) => {
-          const oName = (other.name || other.display_name || "").toLowerCase().trim();
-          const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
-          const oId = (other.id || "").toLowerCase();
-          return (
-            (oId && bodyLower.includes(`cf-cid:${oId}`)) ||
-            (oHandle && oHandle.length >= 2 && subjLower.includes(`[#${oHandle}]`)) ||
-            (oName && oName.length >= 4 && subjLower.includes(`idea for ${oName}`)) ||
-            (oName && oName.length >= 4 && subjLower.includes(`outreach to ${oName}`))
-          );
-        });
-        if (hasOtherToken) return;
-
-        // Clean quoted original message lines to verify new content was actually written
+        // Clean quoted original message lines
         const stripped = (r.body || "")
           .replace(/^>.*$/gm, "")
           .replace(/On\s+[\s\S]*wrote:[\s\S]*/i, "")
           .replace(/---\s*Ref:[\s\S]*/i, "")
           .trim();
-        if (!stripped || stripped.length < 2) return;
 
-        inboundReplies.push({ ...r, cleanBody: stripped });
+        inboundReplies.push({ ...r, cleanBody: stripped || r.body || "" });
       });
     });
 
     inboundReplies.sort((a, b) => new Date(b.received_at || 0) - new Date(a.received_at || 0));
+    outboundReplies.sort((a, b) => new Date(b.received_at || 0) - new Date(a.received_at || 0));
 
     const overriddenCls = labelOverrides[c.id];
+    const hasStudioReplied =
+      outboundReplies.length > 0 ||
+      Boolean(studioRepliedMap[c.id]) ||
+      Boolean(studioRepliedMap[handle]) ||
+      Boolean(c.has_studio_replied) ||
+      Boolean(c.hasStudioReplied);
 
     if (inboundReplies.length > 0) {
       const latest = inboundReplies[0];
@@ -323,7 +309,9 @@ export default function CreatorFollowUpCRM({
       }
       const cls = (overriddenCls || resolvedCls).toLowerCase();
       const sentiment = cls === "interested" ? "positive" : cls === "question" ? "questioning" : cls === "not_interested" ? "negative" : "neutral";
-      const reasoning = cls === "interested"
+      const reasoning = hasStudioReplied
+        ? "Studio has responded to creator's interest. Active dialogue in progress."
+        : cls === "interested"
         ? "Creator replied positively to Step 4 outreach. Qualified for Step 5 Audience & Product Synthesis — awaiting concept selection."
         : cls === "question"
         ? "Creator requested more technical details or clarifications regarding revenue split and time commitment."
@@ -332,6 +320,7 @@ export default function CreatorFollowUpCRM({
         : "Inbound creator response received and logged.";
       return {
         hasReply: true,
+        hasStudioReplied,
         classification: cls,
         sentiment,
         reasoning,
@@ -342,26 +331,24 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    const hasExplicitRepliedText = Boolean(
-      (c.reply_text || c.replyText) &&
-      !c.reply_text?.startsWith("Creator responded") &&
-      !c.replyText?.startsWith("Creator responded") &&
-      c.reply_text !== "Yes, I would be interested." &&
-      c.replyText !== "Yes, I would be interested."
-    );
+    const explicitClassification = c.replyClassification || c.reply_classification;
+    const hasExplicitRepliedText = Boolean(c.reply_text || c.replyText);
 
-    if (overriddenCls || hasExplicitRepliedText) {
-      const cls = (overriddenCls || c.replyClassification || c.reply_classification || "question").toLowerCase();
+    if (overriddenCls || explicitClassification || hasExplicitRepliedText) {
+      const cls = (overriddenCls || explicitClassification || "interested").toLowerCase();
       const sentiment = cls === "interested" ? "positive" : cls === "question" ? "questioning" : cls === "not_interested" ? "negative" : "neutral";
-      const reasoning = cls === "interested"
+      const reasoning = hasStudioReplied
+        ? "Studio responded to creator's interest. Active dialogue in progress."
+        : cls === "interested"
         ? "Creator replied positively to Step 4 outreach."
         : "Creator response received and logged.";
       return {
         hasReply: true,
+        hasStudioReplied,
         classification: cls,
         sentiment,
         reasoning,
-        snippet: c.reply_text || c.replyText || "",
+        snippet: c.reply_text || c.replyText || "Creator confirmed interest in co-launching.",
         subject: "Re: Outreach to " + (c.name || c.display_name || c.handle || "Creator"),
         time: "Recently",
         totalInbound: 1,
@@ -371,6 +358,7 @@ export default function CreatorFollowUpCRM({
     if (!email || !email.includes("@")) {
       return {
         hasReply: false,
+        hasStudioReplied: false,
         classification: "no_email",
         sentiment: "neutral",
         reasoning: "No verified public email address found yet. Add manual email address to enable outreach.",
@@ -383,6 +371,7 @@ export default function CreatorFollowUpCRM({
 
     return {
       hasReply: false,
+      hasStudioReplied: false,
       classification: isContacted ? "awaiting_reply" : "ready_for_outreach",
       sentiment: "neutral",
       reasoning: isContacted
@@ -396,10 +385,11 @@ export default function CreatorFollowUpCRM({
   };
 
   // ── 2. Helper to resolve creator pipeline stage & status badge ───────────────
-  const getCreatorPipelineStage = (c) => {
+  const getCreatorPipelineStage = (c, extra = {}) => {
     if (!c) return { stageId: "unknown", stageName: "Unknown", badgeClass: "bg-slate-100 text-slate-700 border-slate-200", dotClass: "bg-slate-400", description: "" };
 
     const cleanH = (c.handle || "").toLowerCase().replace(/^@/, "");
+    const cCleanName = (c.name || c.display_name || "").toLowerCase().trim();
     const overrideStatus = statusOverrides[c.id] || statusOverrides[cleanH] || "";
     const effectiveStatus = (overrideStatus || c.status || "").toLowerCase();
 
@@ -418,11 +408,36 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    const isPartnered =
+    // 1. Check if creator is in an active venture (Section 2 / Phase 1: Validation)
+    const matchedProject = extra.matchedProject || (dbProjects || []).find((p) => {
+      if (!p) return false;
+      const pCleanHandle = (p.creatorHandle || "").replace(/^@/, "").toLowerCase().trim();
+      const pCleanName = (p.creatorName || "").toLowerCase().trim();
+      return (
+        (p.creatorId && (String(p.creatorId) === String(c.id) || String(p.creatorId) === String(c.handle))) ||
+        (p.id && (p.id === c.project_id || p.id === c.projectId || p.id === c.active_project_id)) ||
+        (cleanH && pCleanHandle && cleanH === pCleanHandle) ||
+        (cCleanName && pCleanName && cCleanName === pCleanName && cCleanName.length > 3 && !["creator", "partner", "lead"].includes(cCleanName))
+      );
+    });
+
+    const isPartnered = Boolean(
+      matchedProject ||
+      extra.stepInfo?.stepNumber === 7 ||
       effectiveStatus === "partnered" ||
+      effectiveStatus === "launched" ||
       effectiveStatus === "active" ||
       effectiveStatus === "building" ||
-      stageMap[c.id]?.step === "section2";
+      effectiveStatus === "active_project" ||
+      c.has_project ||
+      c.hasProject ||
+      Boolean(c.project_id || c.projectId || c.active_project_id) ||
+      c.isCommitted === true ||
+      stageMap[c.id]?.step === "section2" ||
+      stageMap[c.id]?.step === 7 ||
+      stageMap[cleanH]?.step === "section2" ||
+      stageMap[cleanH]?.step === 7
+    );
 
     if (isPartnered) {
       return {
@@ -434,40 +449,61 @@ export default function CreatorFollowUpCRM({
       };
     }
 
-    const isPitched = Boolean(pitchSentMap[c.id]) || effectiveStatus === "pitched" || stageMap[c.id]?.step === 6;
+    // 2. Check if creator is in Step 6 (Pitch Sent)
+    const isPitched = Boolean(
+      pitchSentMap[c.id] ||
+      pitchSentMap[cleanH] ||
+      c.pitch_sent ||
+      effectiveStatus === "pitched" ||
+      stageMap[c.id]?.step === 6 ||
+      stageMap[cleanH]?.step === 6
+    );
     if (isPitched) {
       return {
         stageId: "step6_pitch",
         stageName: "Step 6: In Pitch / Proposal Sent",
-        badgeClass: "bg-purple-50 text-purple-700 border-purple-200 font-semibold",
+        badgeClass: "bg-purple-50 text-purple-700 border-purple-200 font-semibold shadow-2xs",
         dotClass: "bg-purple-500",
         description: "Opportunity Deck & 3 SaaS Concepts active in pitch",
       };
     }
 
-    const isApproved = effectiveStatus === "approved";
+    // Dynamic reply resolution from threads & database
+    const replyInfo = extra.replyInfo || getCreatorReplyInfo(c);
+    const overriddenCls = labelOverrides[c.id];
+    const cls = (overriddenCls || replyInfo.classification || c.replyClassification || c.reply_classification || "").toLowerCase();
+
+    // 3. Studio has responded to the creator's interested reply
+    if (replyInfo.hasStudioReplied) {
+      return {
+        stageId: "studio_replied",
+        stageName: "Studio Replied • In Discussion",
+        badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold shadow-2xs",
+        dotClass: "bg-indigo-500",
+        description: "Studio responded to creator's interest. Active dialogue in progress.",
+      };
+    }
+
+    // 4. Approved Lead for Step 5
+    const isApproved = effectiveStatus === "approved" || c.isApproved || stageMap[c.id]?.step === 5 || stageMap[cleanH]?.step === 5;
     if (isApproved) {
       return {
         stageId: "approved",
         stageName: "Step 5: Approved • In Product Review",
-        badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold",
+        badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold shadow-2xs",
         dotClass: "bg-emerald-500",
         description: "Qualified & approved by studio for Step 5 Audience & Product Synthesis",
       };
     }
 
-    // Dynamic reply resolution from threads & database
-    const replyInfo = getCreatorReplyInfo(c);
-    const overriddenCls = labelOverrides[c.id];
-    const cls = (overriddenCls || replyInfo.classification || c.replyClassification || c.reply_classification || "").toLowerCase();
-
-    if (replyInfo.hasReply || (cls && cls !== "awaiting_reply" && cls !== "no_email")) {
+    // 5. Inbound Creator Replies
+    if (replyInfo.hasReply || (cls && cls !== "awaiting_reply" && cls !== "no_email" && cls !== "ready_for_outreach")) {
       if (cls === "interested") {
         return {
           stageId: "interested",
-          stageName: "Interested Reply Received",
-          badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold",
-          dotClass: "bg-emerald-500",
+          stageName: "AI: Interested Reply Received",
+          badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold shadow-2xs",
+          dotClass: "bg-emerald-500 animate-pulse",
           description: "Creator replied positively with interest",
         };
       }
@@ -476,7 +512,7 @@ export default function CreatorFollowUpCRM({
         return {
           stageId: "question",
           stageName: "Questions / Clarification",
-          badgeClass: "bg-amber-50 text-amber-700 border-amber-200 font-semibold",
+          badgeClass: "bg-amber-50 text-amber-700 border-amber-200 font-semibold shadow-2xs",
           dotClass: "bg-amber-500",
           description: "Creator asked questions about revenue or tech stack",
         };
@@ -486,7 +522,7 @@ export default function CreatorFollowUpCRM({
         return {
           stageId: "not_interested",
           stageName: "Hesitant / Uninterested",
-          badgeClass: "bg-orange-50 text-orange-700 border-orange-200 font-semibold",
+          badgeClass: "bg-orange-50 text-orange-700 border-orange-200 font-semibold shadow-2xs",
           dotClass: "bg-orange-500",
           description: "Creator expressed hesitation or soft pass",
         };
@@ -505,7 +541,7 @@ export default function CreatorFollowUpCRM({
       return {
         stageId: "inbound_reply",
         stageName: "Inbound Reply Received",
-        badgeClass: "bg-teal-50 text-teal-700 border-teal-200 font-semibold",
+        badgeClass: "bg-teal-50 text-teal-700 border-teal-200 font-semibold shadow-2xs",
         dotClass: "bg-teal-500",
         description: "Creator sent a response to outreach",
       };
@@ -539,28 +575,18 @@ export default function CreatorFollowUpCRM({
     const cName = (c.name || c.display_name || "").toLowerCase().trim();
     const cId = c.id;
 
-    // Find all matching threads for this creator in database with strict isolation
+    // Find all matching threads for this creator in database with robust attribution
     const matchedThreads = (realThreads || []).filter((t) => {
       if (!t) return false;
-      if (t.creator_id && cId && t.creator_id === cId) return true;
-      if (!t.creator_id) {
-        if (handle && t.creator_handle && t.creator_handle.toLowerCase().replace(/^@/, "").trim() === handle) return true;
-        if (cName && cName.length >= 3 && (t.subject || "").toLowerCase().includes(cName)) return true;
-        if (email && t.creator_email && t.creator_email.toLowerCase().trim() === email) {
-          const tSubj = (t.subject || "").toLowerCase();
-          const otherCreators = (creators || []).filter((other) => other.id !== cId);
-          const belongsToOther = otherCreators.some((other) => {
-            const oName = (other.name || other.display_name || "").toLowerCase().trim();
-            const oHandle = (other.handle || "").toLowerCase().replace(/^@/, "").trim();
-            return (
-              (oName && oName.length >= 3 && tSubj.includes(oName)) ||
-              (oHandle && oHandle.length >= 3 && tSubj.includes(oHandle))
-            );
-          });
-          if (!belongsToOther) return true;
-        }
-      }
-      return false;
+      if (t.creator_id && cId && String(t.creator_id) === String(cId)) return true;
+      if (t.creatorId && cId && String(t.creatorId) === String(cId)) return true;
+      const tH = (t.creator_handle || t.handle || "").toLowerCase().replace(/^@/, "").trim();
+      if (handle && tH && tH === handle) return true;
+      const tE = (t.creator_email || t.recipient_email || t.email || "").toLowerCase().trim();
+      if (email && tE && tE === email) return true;
+      const tSubj = (t.subject || "").toLowerCase();
+      if (handle && handle.length >= 2 && (tSubj.includes(`[#${handle}]`) || tSubj.includes(`for ${handle}`))) return true;
+      if (cName && cName.length >= 3 && tSubj.includes(`for ${cName}`)) return true;
     });
 
     const items = [];
@@ -892,15 +918,33 @@ export default function CreatorFollowUpCRM({
   // Enriched creators with follow-up intelligence & explicit stage resolution
   const enrichedCreators = useMemo(() => {
     return (creators || []).map((c) => {
+      const cleanH = (c.handle || "").toLowerCase().replace(/^@/, "");
+      const cCleanName = (c.name || c.display_name || "").toLowerCase().trim();
       const replyInfo = getCreatorReplyInfo(c);
       const effectiveStatus = (statusOverrides[c.id] || c.status || "").toLowerCase();
       const isPitched = Boolean(pitchSentMap[c.id]) || effectiveStatus === "pitched";
-      const isPartnered =
+
+      const matchedDbProj = (dbProjects || []).find((p) => {
+        if (!p) return false;
+        const pCleanHandle = (p.creatorHandle || "").replace(/^@/, "").toLowerCase().trim();
+        const pCleanName = (p.creatorName || "").toLowerCase().trim();
+        return (
+          (p.creatorId && (String(p.creatorId) === String(c.id) || String(p.creatorId) === String(c.handle))) ||
+          (p.id && (p.id === c.project_id || p.id === c.projectId || p.id === c.active_project_id)) ||
+          (cleanH && pCleanHandle && cleanH === pCleanHandle) ||
+          (cCleanName && pCleanName && cCleanName === pCleanName && cCleanName.length > 3 && !["creator", "partner", "lead"].includes(cCleanName))
+        );
+      });
+
+      const isPartnered = Boolean(
+        matchedDbProj ||
         effectiveStatus === "partnered" ||
+        effectiveStatus === "launched" ||
         effectiveStatus === "active" ||
         effectiveStatus === "building" ||
         stageMap[c.id]?.step === "section2" ||
-        stageMap[c.id]?.step === 7;
+        stageMap[c.id]?.step === 7
+      );
       const isRejected =
         effectiveStatus === "rejected" ||
         effectiveStatus === "declined" ||
@@ -913,8 +957,9 @@ export default function CreatorFollowUpCRM({
           stageMap[c.id]?.step >= 5 ||
           stageMap[c.id]?.step === "section2") &&
         !isRejected;
-      const stageInfo = getCreatorPipelineStage(c);
+
       const stepInfo = getCreatorCurrentStepInfo({ ...c, replyInfo, isApproved, isRejected });
+      const stageInfo = getCreatorPipelineStage(c, { replyInfo, stepInfo, matchedProject: matchedDbProj });
 
       return {
         ...c,
@@ -928,12 +973,14 @@ export default function CreatorFollowUpCRM({
         isRejected,
       };
     });
-  }, [creators, realThreads, pitchSentMap, labelOverrides, statusOverrides, stageMap]);
+  }, [creators, realThreads, pitchSentMap, labelOverrides, statusOverrides, stageMap, studioRepliedMap, dbProjects]);
 
   // Metric counts for filter tabs
   const counts = useMemo(() => {
     return {
       all: enrichedCreators.length,
+      section2: enrichedCreators.filter((c) => c.stageInfo.stageId === "section2").length,
+      studio_replied: enrichedCreators.filter((c) => c.stageInfo.stageId === "studio_replied").length,
       step6_pitch: enrichedCreators.filter((c) => c.stageInfo.stageId === "step6_pitch").length,
       approved: enrichedCreators.filter((c) => c.stageInfo.stageId === "approved").length,
       interested: enrichedCreators.filter((c) => c.stageInfo.stageId === "interested").length,
@@ -1009,6 +1056,12 @@ export default function CreatorFollowUpCRM({
       const subj = replySubject.trim() || `Re: Partnering with Creator Forge - ${detailCreator.name || detailCreator.handle}`;
       await sendDirectEmail(recipientEmail, subj, replyText.trim(), detailCreator.id);
       
+      setStudioRepliedMap((prev) => ({
+        ...prev,
+        [detailCreator.id]: true,
+        [(detailCreator.handle || "").toLowerCase().replace(/^@/, "")]: true,
+      }));
+
       setReplyText("");
       setReplySubject("");
       if (onNotify) {
@@ -1293,13 +1346,14 @@ export default function CreatorFollowUpCRM({
         </div>
 
         {/* KPI Status Pills */}
-        <div className="p-4 bg-white border-b border-slate-200/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        <div className="p-4 bg-white border-b border-slate-200/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {[
             { id: "all", label: "All Leads", count: counts.all, color: "text-slate-900", activeBg: "bg-slate-900 text-white border-slate-900 ring-slate-900", dot: "bg-slate-400" },
+            { id: "section2", label: "Active Ventures", count: counts.section2, color: "text-emerald-700", activeBg: "bg-emerald-600 text-white border-emerald-600 ring-emerald-600", dot: "bg-emerald-500" },
             { id: "interested", label: "Interested", count: counts.interested, color: "text-emerald-700", activeBg: "bg-emerald-600 text-white border-emerald-600 ring-emerald-600", dot: "bg-emerald-500" },
+            { id: "studio_replied", label: "Studio Replied", count: counts.studio_replied, color: "text-indigo-700", activeBg: "bg-indigo-600 text-white border-indigo-600 ring-indigo-600", dot: "bg-indigo-500" },
             { id: "question", label: "Questions", count: counts.question, color: "text-amber-700", activeBg: "bg-amber-600 text-white border-amber-600 ring-amber-600", dot: "bg-amber-500" },
             { id: "awaiting_reply", label: "Awaiting Reply", count: counts.awaiting_reply, color: "text-blue-700", activeBg: "bg-blue-600 text-white border-blue-600 ring-blue-600", dot: "bg-blue-500" },
-            { id: "unsubscribe", label: "Unsubscribed", count: counts.unsubscribe, color: "text-slate-600", activeBg: "bg-slate-700 text-white border-slate-700 ring-slate-700", dot: "bg-slate-400" },
           ].map((item) => {
             const isActive = statusFilter === item.id;
             return (
@@ -1440,11 +1494,7 @@ export default function CreatorFollowUpCRM({
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 shadow-2xs ${stage.badgeClass}`}>
                         <span className={`w-2 h-2 rounded-full ${stage.dotClass} animate-pulse`} />
-                        <span>
-                          {reply.hasReply
-                            ? `AI: ${reply.classification.replace("_", " ").charAt(0).toUpperCase() + reply.classification.replace("_", " ").slice(1)}`
-                            : stage.stageName}
-                        </span>
+                        <span>{stage.stageName}</span>
                       </span>
                     </div>
                   </div>

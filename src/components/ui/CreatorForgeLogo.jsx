@@ -1,5 +1,6 @@
-export default function CreatorForgeLogo({ size = 22, className = '', showText = true, theme = 'dark' }) {
+export default function CreatorForgeLogo({ size = 22, className = '', showText = true, showWordmark = undefined, theme = 'dark' }) {
   const isLight = theme === 'light'
+  const displayWordmark = showWordmark !== undefined ? showWordmark : showText
   return (
     <div className={`inline-flex items-center gap-2.5 select-none shrink-0 ${className}`}>
       {/* Geometric Forge / Catalyst Symbol (creator → idea → product → business) */}
@@ -21,7 +22,7 @@ export default function CreatorForgeLogo({ size = 22, className = '', showText =
         <rect x="12" y="13" width="7" height="7" rx="1.5" fill={isLight ? "#65A30D" : "#C8FF3D"} />
       </svg>
 
-      {showText && (
+      {displayWordmark && (
         <div className="flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0">
           <span className={`font-display font-bold text-xs sm:text-[14px] tracking-tight uppercase whitespace-nowrap ${isLight ? 'text-[#0F172A]' : 'text-[#F5F3EA]'}`}>
             CREATOR FORGE

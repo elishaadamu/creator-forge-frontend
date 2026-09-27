@@ -6,6 +6,7 @@ import {
 import ProjectOS from './ProjectOS'
 import { ProjectOSSkeleton } from './Section2Skeletons'
 import DIYSubscriptionModal from './DIYSubscriptionModal'
+import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import {
   getCoLaunchProjects,
   getCoLaunchProject,
@@ -306,14 +307,14 @@ export default function ProjectOSPage() {
           <div className="h-4 w-px bg-white/10 hidden sm:block" />
 
           {/* Studio Brand & Section Indicator */}
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#101419] border border-white/10 flex items-center justify-center text-emerald-400 font-bold text-xs shadow-md">
-              CF
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#0F172A] border border-white/15 flex items-center justify-center shadow-md shrink-0">
+              <CreatorForgeLogo size={18} showText={false} theme="dark" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-white tracking-wide">CREATOR FORGE</span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="text-xs font-black text-white tracking-tight uppercase">CREATOR FORGE</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   PROJECT OS
                 </span>
               </div>
