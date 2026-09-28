@@ -36,8 +36,6 @@ export default function AudienceGroundingModal({
     }
   }, [isOpen, onClose])
 
-  if (!isOpen) return null
-
   const [liveVideos, setLiveVideos] = useState(null)
   const [isFetchingLive, setIsFetchingLive] = useState(false)
 
@@ -61,6 +59,8 @@ export default function AudienceGroundingModal({
       }
     }
   }, [isOpen, project, liveVideos, isFetchingLive])
+
+  if (!isOpen) return null
 
   const effectiveProject = liveVideos ? { ...project, recentPosts: liveVideos, videos: liveVideos } : project
   const grounding = getProjectAudienceGrounding(effectiveProject)
