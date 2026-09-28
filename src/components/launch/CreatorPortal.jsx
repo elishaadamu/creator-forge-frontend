@@ -508,9 +508,10 @@ export default function CreatorPortal({ portalId }) {
       }}
     >
       {/* ── TOP NAV HEADER ──────────────────────────────────────────────────────── */}
-      <header className="h-16 border-b border-slate-200/90 bg-white/90 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 shadow-2xs">
-        <div className="flex items-center gap-3">
-          <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-[#0F172A] border border-slate-800 flex items-center justify-center shadow-xs text-white shrink-0">
+      <header className="h-13 sm:h-14 border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-3 sm:px-6 shadow-2xs">
+        {/* Brand / Partner Identity */}
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-[#0F172A] border border-slate-800 flex items-center justify-center shadow-xs text-white shrink-0">
             {resolvedAvatar && !avatarLoadError ? (
               <>
                 <img
@@ -519,90 +520,95 @@ export default function CreatorPortal({ portalId }) {
                   className="w-full h-full object-cover"
                   onError={() => setAvatarLoadError(true)}
                 />
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#0F172A] border border-slate-700 flex items-center justify-center p-0.5 shadow-xs z-10">
-                  <CreatorForgeLogo size={10} showText={false} theme="dark" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#0F172A] border border-slate-700 flex items-center justify-center p-0.5 shadow-xs z-10">
+                  <CreatorForgeLogo size={8} showText={false} theme="dark" />
                 </div>
               </>
             ) : (
-              <CreatorForgeLogo size={20} showText={false} theme="dark" />
+              <CreatorForgeLogo size={18} showText={false} theme="dark" />
             )}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-slate-900 tracking-tight text-sm">{productName}</span>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
-                50/50 Co-Founder Portal
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-extrabold text-slate-900 tracking-tight text-xs sm:text-sm truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[200px] md:max-w-[240px]">
+                {productName}
+              </span>
+              <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300/80 shrink-0">
+                50/50 Portal
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 font-medium">Signed Partner: {creatorName}</p>
+            <p className="text-[10px] text-slate-500 font-medium truncate max-w-[150px] sm:max-w-[200px] hidden sm:block">
+              Signed Partner: {creatorName}
+            </p>
           </div>
         </div>
 
-        {/* Live Revenue Share & Track Indicator */}
-        <div className="flex items-center gap-3">
-          {/* Main View Switcher (When not in track choice) */}
+        {/* Center & Right Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Main View Switcher (Launch Kit vs ProjectOS) */}
           {!isTrackChoicePending && (
-            <div className="hidden md:flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
+            <div className="hidden md:flex items-center gap-0.5 p-0.5 bg-slate-100/90 rounded-lg border border-slate-200">
               <button
                 type="button"
                 onClick={() => setActiveMainView('launch_kit')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                   activeMainView === 'launch_kit'
                     ? 'bg-white text-slate-900 shadow-2xs'
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
-                Daily Launch Kit & Scripts
+                Launch Kit
               </button>
               <button
                 type="button"
                 onClick={() => setActiveMainView('projectos')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                   activeMainView === 'projectos'
                     ? 'bg-white text-slate-900 shadow-2xs'
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
-                Full ProjectOS Pipeline
+                ProjectOS
               </button>
             </div>
           )}
 
+          {/* Track Indicator & Upgrade Pass Action */}
           {isDiyActive ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-mono font-bold shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="hidden sm:inline">Track 1: Interactive Pass ($50 Paid)</span>
-              <span className="sm:hidden">Interactive ($50)</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] font-mono font-bold shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="hidden sm:inline">Track 1: Co-Builder ($50 Paid)</span>
+              <span className="sm:hidden">Co-Builder ($50)</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-xs font-mono font-bold shadow-2xs">
+            <div className="flex items-center gap-1.5">
+              <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-300/80 text-slate-700 text-[11px] font-mono font-bold shadow-2xs">
                 <span>🤝</span>
                 <span>Track 2: Studio-Managed (50/50)</span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowDiyModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-emerald-600/25 cursor-pointer active:scale-[0.98] shrink-0"
+                className="h-7 sm:h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
               >
-                <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-                <span className="hidden sm:inline">Unlock Interactive Pass ($50 USD)</span>
-                <span className="sm:hidden">Pay $50 (DIY)</span>
+                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300" />
+                <span className="hidden sm:inline">Unlock Pass ($50)</span>
+                <span className="sm:hidden">$50 Pass</span>
               </button>
             </div>
           )}
 
-          <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
-            <div className="hidden sm:flex flex-col text-right">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                {isDiyActive ? 'Your 100% Revenue Pool' : 'Your 50% Revenue Share'}
+          {/* Revenue Share Pill */}
+          <div className="h-7 sm:h-8 flex items-center gap-1.5 pl-2 border-l border-slate-200">
+            <div className="px-2 py-0.5 rounded-lg bg-emerald-50/80 border border-emerald-200 flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-800">
+              <DollarSign className="w-3 h-3 text-emerald-600 shrink-0" />
+              <span className="hidden md:inline text-[10px] text-emerald-600 font-sans font-semibold">
+                {isDiyActive ? '100% Pool:' : '50%:'}
               </span>
-              <span className="text-xs font-mono font-black text-emerald-700">
-                ${(isDiyActive ? presalesRevenue : creatorRevenueShare).toLocaleString()} Earned
+              <span className="text-emerald-700 font-extrabold">
+                ${(isDiyActive ? presalesRevenue : creatorRevenueShare).toLocaleString()}
               </span>
-            </div>
-            <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-700 shadow-2xs">
-              <DollarSign className="w-4 h-4" />
             </div>
           </div>
         </div>
@@ -617,93 +623,163 @@ export default function CreatorPortal({ portalId }) {
       )}
 
       {/* ── MAIN BODY CONTAINER ─────────────────────────────────────────────────── */}
-      <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-5 lg:p-8 space-y-5 sm:space-y-6">
 
-        {/* ── STEP / PHASE PROGRESS BAR (Image 2 & Image 3) ────────────────────── */}
-        <div className="bg-white/95 rounded-2xl border border-slate-200 p-3 sm:px-6 shadow-2xs flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center flex-wrap gap-2 text-xs">
-            {isTrackChoicePending ? (
-              <>
-                {/* STEP 1 ACTIVE (Track Choice) */}
-                <div className="flex items-center gap-2 bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs">
-                  <span className="text-slate-400">01</span>
-                  <span>STEP 01 • ACTIVE</span>
-                  <span className="text-emerald-400 font-sans font-extrabold ml-0.5">Co-Launch Track Choice</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
-                </div>
-                <div className="w-4 h-[1px] bg-slate-200 hidden sm:block" />
-                <div className="hidden sm:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
-                  <span>02</span>
-                  <span className="font-sans">Venture Architecture</span>
-                </div>
-                <div className="w-4 h-[1px] bg-slate-200 hidden sm:block" />
-                <div className="hidden md:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
-                  <span>03</span>
-                  <span className="font-sans">Sprint 1 Execution</span>
-                </div>
-                <div className="w-4 h-[1px] bg-slate-200 hidden md:block" />
-                <div className="hidden lg:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
-                  <span>04</span>
-                  <span className="font-sans">Audience Validation</span>
-                </div>
-                <div className="w-4 h-[1px] bg-slate-200 hidden lg:block" />
-                <div className="hidden lg:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
-                  <span>05</span>
-                  <span className="font-sans">Commercial Launch</span>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Active Phase Badge directly matched with Operator / Admin Dashboard */}
-                <div className="px-2.5 py-1 rounded-xl bg-slate-900 text-white text-xs font-mono font-bold uppercase tracking-wider shrink-0 flex items-center gap-1.5 shadow-xs">
-                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Phase {currentPhase}: {currentPhase === 1 ? 'Validation Sprint' : currentPhase === 2 ? 'Build MVP' : 'Live Launch'}</span>
-                </div>
+        {/* ── STEP / PHASE PROGRESS BAR ────────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-2xs space-y-3.5">
+          {/* LEVEL 1: PROJECT ROADMAP & THE 3 PHASES (Distinct top row!) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs shrink-0">
+                <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Roadmap:</span>
+                <span className="text-xs font-bold text-slate-800">
+                  Phase {currentPhase} of 3 — {currentPhase === 1 ? 'Market Validation' : currentPhase === 2 ? 'AI MVP Build' : 'Live Launch'}
+                </span>
+              </div>
+            </div>
 
-                <div className="w-3 h-[1px] bg-slate-200 hidden sm:block" />
+            {/* The 3 Phases Macro Stepper */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              {/* Phase 1 */}
+              <div className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
+                currentPhase === 1
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : currentPhase > 1
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  : 'bg-slate-100 text-slate-500'
+              }`}>
+                {currentPhase > 1 ? (
+                  <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                ) : currentPhase === 1 ? (
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                ) : null}
+                <span>Phase 1: Validation</span>
+              </div>
 
-                {/* Dynamic Substeps Synchronized with Admin ProjectOS / Phase 1 */}
-                {activePhaseSteps.map((step, idx) => {
+              <div className="w-2.5 h-[1px] bg-slate-200 shrink-0" />
+
+              {/* Phase 2 */}
+              <div className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
+                currentPhase === 2
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : currentPhase > 2
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  : 'bg-slate-100/80 text-slate-400'
+              }`}>
+                {currentPhase > 2 ? (
+                  <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                ) : currentPhase === 2 ? (
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                ) : null}
+                <span>Phase 2: Build MVP</span>
+              </div>
+
+              <div className="w-2.5 h-[1px] bg-slate-200 shrink-0" />
+
+              {/* Phase 3 */}
+              <div className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
+                currentPhase === 3
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100/80 text-slate-400'
+              }`}>
+                {currentPhase === 3 ? (
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                ) : null}
+                <span>Phase 3: Live Launch</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEVEL 2: DISTINCT EXECUTION STEPS (Clearly on its own row!) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                  Execution Progress
+                </span>
+                <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                  {isTrackChoicePending ? '1 of 5' : `${activePhaseSteps.filter(s => s.isDone).length} of ${activePhaseSteps.length}`} Done
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+                {isTrackChoicePending ? 'Step 01 Active' : `Active: Step ${activePhaseSteps[resolvedActiveStepIndex]?.num || '01'}`}
+              </span>
+            </div>
+
+            {/* Steps Container */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              {isTrackChoicePending ? (
+                <>
+                  <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs shrink-0 ring-2 ring-emerald-400/30">
+                    <span className="px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">01</span>
+                    <span>STEP 01 • ACTIVE</span>
+                    <span className="text-emerald-400 font-sans font-extrabold ml-0.5">Co-Launch Track Choice</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
+                  </div>
+                  <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
+                  <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
+                    <span className="text-slate-400 font-bold">02</span>
+                    <span className="font-sans">Venture Architecture</span>
+                  </div>
+                  <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
+                  <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
+                    <span className="text-slate-400 font-bold">03</span>
+                    <span className="font-sans">Sprint 1 Execution</span>
+                  </div>
+                  <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
+                  <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
+                    <span className="text-slate-400 font-bold">04</span>
+                    <span className="font-sans">Audience Validation</span>
+                  </div>
+                  <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
+                  <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
+                    <span className="text-slate-400 font-bold">05</span>
+                    <span className="font-sans">Commercial Launch</span>
+                  </div>
+                </>
+              ) : (
+                activePhaseSteps.map((step, idx) => {
                   const isActive = idx === resolvedActiveStepIndex
                   const isDone = Boolean(step.isDone)
                   return (
-                    <div key={step.id} className="flex items-center gap-2">
+                    <div key={step.id} className="flex items-center gap-2 shrink-0">
                       {isDone ? (
-                        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold">
-                          <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
-                          <span className="font-sans font-bold">{step.label}</span>
+                        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold shadow-2xs">
+                          <div className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                          <span className="font-sans font-bold text-slate-900">{step.label}</span>
                         </div>
                       ) : isActive ? (
-                        <div className="flex items-center gap-2 bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs">
-                          <span className="text-slate-400">{step.num}</span>
-                          <span>STEP {step.num} • ACTIVE</span>
-                          <span className="text-emerald-400 font-sans font-extrabold ml-0.5">{step.label}</span>
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
+                        <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs ring-2 ring-emerald-400/40">
+                          <span className="px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">
+                            STEP {step.num}
+                          </span>
+                          <span className="text-white font-sans font-extrabold">{step.label}</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
                         </div>
                       ) : (
-                        <div className="hidden sm:flex items-center gap-1.5 text-slate-400 font-mono text-xs">
-                          <span>{step.num}</span>
-                          <span className="font-sans">{step.label}</span>
+                        <div className="flex items-center gap-1.5 bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono">
+                          <span className="text-slate-400 font-bold">{step.num}</span>
+                          <span className="font-sans font-medium text-slate-600">{step.label}</span>
                         </div>
                       )}
                       {idx < activePhaseSteps.length - 1 && (
-                        <div className={`w-3 h-[1px] hidden sm:block ${isDone ? 'bg-emerald-300' : 'bg-slate-200'}`} />
+                        <div
+                          className={`w-4 sm:w-5 h-[2px] rounded-full shrink-0 ${
+                            isDone ? 'bg-emerald-400' : 'bg-slate-200'
+                          }`}
+                        />
                       )}
                     </div>
                   )
-                })}
-              </>
-            )}
+                })
+              )}
+            </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShowAgreementModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 text-[11px] font-mono font-bold shrink-0 transition-all cursor-pointer active:scale-95 shadow-2xs"
-          >
-            <Check className="w-3.5 h-3.5 text-emerald-600" />
-            <span>CF-5050 Agreement (50/50 Split)</span>
-          </button>
         </div>
 
         {/* ── INTERACTIVE CO-BUILDER PASS ($50 USD) UPGRADE BANNER ──────────────── */}
