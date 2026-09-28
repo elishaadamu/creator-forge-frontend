@@ -154,7 +154,13 @@ export default function CreatorPortal({ portalId }) {
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search)
       const v = sp.get('view')
+      if (v === 'launch_kit') return 'launch_kit'
       if (v === 'projectos' || v === 'pipeline' || v === 'diy') {
+        return 'projectos'
+      }
+      const isPaidParam = sp.get('token') === 'cf_diy_paid' || sp.get('paid') === 'true'
+      const isLocalPaid = window.localStorage.getItem('forge_diy_paid') === 'true'
+      if (isPaidParam || isLocalPaid) {
         return 'projectos'
       }
     }
@@ -176,6 +182,19 @@ export default function CreatorPortal({ portalId }) {
       new URLSearchParams(window.location.search).get('paid') === 'true'
     ))
   )
+
+  // When creator has paid, projectOS is the default view (unless explicitly overridden by URL)
+  const hasAutoSwitchedToProjectOS = useRef(false)
+  useEffect(() => {
+    if (!hasAutoSwitchedToProjectOS.current && isDiyActive) {
+      if (typeof window !== 'undefined') {
+        const sp = new URLSearchParams(window.location.search)
+        if (sp.get('view') === 'launch_kit') return
+      }
+      setActiveMainView('projectos')
+      hasAutoSwitchedToProjectOS.current = true
+    }
+  }, [isDiyActive])
 
   const isTrackChoiceUrl = typeof window !== 'undefined' && (
     new URLSearchParams(window.location.search).get('offer') === 'track_choice' ||
@@ -252,7 +271,7 @@ export default function CreatorPortal({ portalId }) {
     handleUpdateProject(updated)
     setTrackChoiceDismissed(true)
     setShowDiyModal(false)
-    setActiveMainView('launch_kit')
+    setActiveMainView('projectos')
     showToast('Interactive Co-Builder Pass active ($50 USD)!')
   }
 
@@ -962,7 +981,7 @@ export default function CreatorPortal({ portalId }) {
                           e.stopPropagation()
                           if (isDiyActive) {
                             setTrackChoiceDismissed(true)
-                            setActiveMainView('launch_kit')
+                            setActiveMainView('projectos')
                             if (typeof window !== 'undefined') {
                               const searchParams = new URLSearchParams(window.location.search)
                               searchParams.delete('offer')
@@ -1171,7 +1190,7 @@ export default function CreatorPortal({ portalId }) {
                         onClick={() => {
                           if (isDiyActive) {
                             setTrackChoiceDismissed(true)
-                            setActiveMainView('launch_kit')
+                            setActiveMainView('projectos')
                             if (typeof window !== 'undefined') {
                               const searchParams = new URLSearchParams(window.location.search)
                               searchParams.delete('offer')

@@ -32,12 +32,6 @@ export default function ProjectOS({
   userRole = 'admin',
   isDIY = false
 }) {
-  const [rolePerspective, setRolePerspective] = useState(() => {
-    if (userRole === 'creator' || isDIY || project?.isDIY || project?.diySubscription?.active) {
-      return 'creator'
-    }
-    return 'admin'
-  })
   const [isLoadingProject, setIsLoadingProject] = useState(() => !project)
 
   // Initialize sidebarTab from URL search param or default 'overview'
@@ -646,36 +640,6 @@ partnerships@creatorforge.com`
 
         {/* Right CTA / Portal Quick Button */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Role Perspective Switcher: Studio Operator vs Creator Co-Founder (NO EMOJIS) */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl text-xs shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setRolePerspective('admin')}
-              className={`px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                rolePerspective === 'admin'
-                  ? 'bg-purple-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Studio Operator Command View"
-            >
-              <Crown className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Studio Operator</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setRolePerspective('creator')}
-              className={`px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                rolePerspective === 'creator'
-                  ? 'bg-amber-400 text-slate-950 font-black shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Autonomous Creator Co-Founder View (Full Execution Authority)"
-            >
-              <Zap className="w-3.5 h-3.5 fill-slate-950" />
-              <span>Creator DIY Mode</span>
-            </button>
-          </div>
-
           <a
             href={portalUrl}
             target="_blank"
@@ -711,41 +675,6 @@ partnerships@creatorforge.com`
           )}
         </div>
       </div>
-
-      {/* Autonomous Creator DIY Mode Banner (High-Contrast Light Theme) */}
-      {(rolePerspective === 'creator' || isDIY || project?.isDIY || project?.diySubscription?.active) && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50/90 via-amber-50/70 to-emerald-50/50 border border-amber-300/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-slate-900 animate-in fade-in">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-xs">
-              <Zap className="w-5 h-5 text-slate-950 fill-slate-950 stroke-[2.5]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black uppercase tracking-wider text-amber-950">
-                  Autonomous Creator Co-Founder Mode Active
-                </span>
-                <span className="text-xs text-slate-400">•</span>
-                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
-                  Full Pipeline Execution Authority
-                </span>
-                {(project?.diySubscription?.active || isDIY) && (
-                  <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
-                    Paid DIY Subscription • Verified
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-700 mt-1 leading-relaxed max-w-3xl">
-                You have full authority to drive every phase yourself: customize the validation plan, run AI MVP sprints, execute gate decisions, and deploy live.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-extrabold text-amber-950 bg-white border border-amber-300 px-3.5 py-1.5 rounded-xl shadow-2xs">
-              50/50 Co-Founder Equity • Interactive Access
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* EXPANDED FULL-WIDTH COMMAND CENTER (MAIN IDEA WORKSPACE - S2 EXPANDED, S3 REMOVED) */}
       <div className="w-full space-y-4">
