@@ -3,75 +3,219 @@ import { Skeleton, SkeletonText, SkeletonCircle, SkeletonButton, SkeletonCard } 
 import { Layers, Sparkles, Rocket, RefreshCw, Megaphone, TrendingUp, Flag, Layout, FileText, Code, CheckCircle2 } from 'lucide-react'
 
 /**
- * 1. Project OS Section 2 Full Overview Skeleton
+ * 1. Project OS Section 2 Full Overview Skeleton — Light Mode Command Center
  */
 export function ProjectOSSkeleton() {
   return (
-    <div className="space-y-6 w-full max-w-full overflow-hidden animate-fade-in">
-      {/* Header Banner Skeleton */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+    <div className="space-y-6 w-full max-w-full overflow-hidden animate-fade-in text-slate-900">
+      {/* Top Banner Skeleton */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/90 pb-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Skeleton variant="emerald" rounded="rounded-full" className="w-20 h-4" />
-            <span className="text-slate-600">•</span>
-            <Skeleton variant="default" rounded="rounded-full" className="w-32 h-4" />
+            <span className="w-16 h-4 rounded bg-emerald-100/70 border border-emerald-200/80 animate-pulse" />
+            <span className="text-xs text-slate-300">•</span>
+            <span className="w-32 h-5 rounded-full bg-slate-100 border border-slate-200 animate-pulse" />
           </div>
-          <Skeleton variant="default" rounded="rounded-lg" className="w-64 h-7" />
-          <div className="flex items-center gap-2 pt-1">
-            <Skeleton variant="default" rounded="rounded-full" className="w-28 h-3.5" />
-            <Skeleton variant="emerald" rounded="rounded-full" className="w-36 h-3.5" />
+          <div className="w-64 sm:w-80 h-7 rounded-xl bg-slate-200/90 animate-pulse" />
+          <div className="flex items-center gap-2 pt-0.5">
+            <div className="w-36 h-3 rounded-full bg-slate-200/70 animate-pulse" />
+            <span className="text-slate-300">•</span>
+            <div className="w-56 h-3 rounded-full bg-slate-100 animate-pulse" />
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <SkeletonButton width={110} height={36} variant="default" />
-          <SkeletonButton width={130} height={36} variant="default" />
+        {/* Right Buttons Placeholder */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="w-36 h-8 rounded-xl bg-white border border-slate-200 shadow-2xs animate-pulse" />
+          <div className="w-32 h-8 rounded-xl bg-white border border-slate-200 shadow-2xs animate-pulse" />
+          <div className="w-28 h-8 rounded-xl bg-rose-50 border border-rose-200 shadow-2xs animate-pulse" />
         </div>
       </div>
 
-      {/* KPI Top Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="p-4 rounded-2xl bg-[#0e1117]/90 border border-white/[0.08] space-y-2">
-            <div className="flex items-center justify-between">
-              <Skeleton rounded="rounded-full" className="w-16 h-3" />
-              <SkeletonCircle size={16} />
+      {/* Expanded Command Center Skeleton (Matching ProjectOS Command Center) */}
+      <div className="w-full space-y-4">
+        <div className="rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-stretch w-full relative">
+          {/* Left Mini Sidebar Skeleton */}
+          <div className="w-full md:w-56 lg:w-60 bg-slate-50/95 border-b md:border-b-0 md:border-r border-slate-200/90 p-3 sm:p-3.5 flex flex-row md:flex-col justify-between items-center md:items-stretch gap-2 shrink-0 md:self-start md:min-h-[580px] rounded-t-2xl md:rounded-tr-none md:rounded-l-2xl">
+            <div className="flex md:flex-col items-center md:items-stretch gap-1 overflow-x-auto scrollbar-none shrink-0 w-full pt-0.5">
+              <div className="hidden md:block px-2 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Command Center
+              </div>
+
+              {[
+                { label: 'Overview', active: true },
+                { label: 'Tasks' },
+                { label: 'Metrics' },
+                { label: 'Files' },
+                { label: 'Messages' },
+                { label: 'Decisions' },
+              ].map((tab, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold w-full shrink-0 ${
+                    tab.active
+                      ? 'bg-white text-slate-950 shadow-xs border border-slate-200'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  <div className={`w-3.5 h-3.5 rounded shrink-0 ${tab.active ? 'bg-emerald-500/40' : 'bg-slate-200'} animate-pulse`} />
+                  <span className={`h-3 rounded-full animate-pulse ${tab.active ? 'w-20 bg-slate-300' : 'w-16 bg-slate-200'}`} />
+                </div>
+              ))}
             </div>
-            <Skeleton rounded="rounded-lg" className="w-24 h-6" />
-            <Skeleton rounded="rounded-full" className="w-28 h-2.5" />
+
+            {/* Bottom Active Phase Box */}
+            <div className="md:mt-auto md:pt-4 shrink-0 w-full">
+              <div className="p-2 sm:p-3 rounded-2xl bg-white border border-slate-200 text-center flex md:flex-col items-center gap-2 shadow-2xs">
+                <span className="hidden md:block w-20 h-2.5 rounded bg-slate-200 animate-pulse mx-auto" />
+                <div className="flex items-center justify-center gap-1.5">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-100 border border-emerald-300 animate-pulse" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 animate-pulse" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 animate-pulse" />
+                </div>
+                <span className="hidden md:block w-24 h-2 rounded bg-slate-200 animate-pulse mx-auto" />
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* Phase 1-5 Milestone Matrix */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Skeleton rounded="rounded-full" className="w-48 h-4" />
-          <Skeleton rounded="rounded-full" className="w-24 h-3" />
-        </div>
+          {/* Right Main Command Center Inner Area Skeleton */}
+          <div className="flex-1 min-w-0 p-4 sm:p-5 lg:p-6 space-y-4 bg-white rounded-b-2xl md:rounded-bl-none md:rounded-r-2xl overflow-x-hidden">
+            {/* Header inside Command Center */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-200/80 pb-3.5">
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-48 sm:w-60 h-6 sm:h-7 rounded-xl bg-slate-200 animate-pulse" />
+                  <span className="text-slate-300">×</span>
+                  <div className="w-36 sm:w-44 h-6 sm:h-7 rounded-xl bg-slate-200/70 animate-pulse" />
+                </div>
 
-        <div className="space-y-2.5">
-          {[
-            { num: '1. Validation Plan & Target Specification', color: 'emerald' },
-            { num: '2. Build Validation Assets & Live Funnel', color: 'blue' },
-            { num: '3. 7-Day Creator Launch Campaign', color: 'blue' },
-            { num: '4. Live Telemetry & Growth Optimizations', color: 'amber' },
-            { num: '5. Executive Validation Gate Milestone', color: 'emerald' }
-          ].map((item, idx) => (
-            <div
-              key={idx}
-              className="p-3.5 rounded-xl bg-[#141720]/80 border border-white/[0.06] flex items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <SkeletonCircle size={22} variant={item.color} />
-                <div className="space-y-1">
-                  <Skeleton rounded="rounded-full" className="w-56 sm:w-72 h-3.5" />
-                  <Skeleton rounded="rounded-full" className="w-36 sm:w-48 h-2.5" />
+                {/* Unified metadata row: Pricing, AI experiment, Chosen Concept & Archetype */}
+                <div className="flex items-center gap-2 flex-wrap max-w-full pt-0.5">
+                  <div className="w-44 h-6 rounded-lg bg-emerald-50 border border-emerald-200 shadow-2xs animate-pulse" />
+                  <div className="w-52 h-6 rounded-lg bg-emerald-50 border border-emerald-200 shadow-2xs animate-pulse" />
+                  <div className="w-36 h-6 rounded-lg bg-slate-100 border border-slate-200 animate-pulse" />
+                </div>
+
+                <div className="w-full sm:w-3/4 h-3.5 rounded-full bg-slate-100 animate-pulse pt-0.5" />
+              </div>
+
+              {/* Action buttons on right of Command Center Header */}
+              <div className="flex items-center gap-2 shrink-0 self-start sm:pt-0.5 flex-wrap">
+                <div className="w-32 h-7 rounded-full bg-emerald-50 border border-emerald-300 shadow-2xs animate-pulse" />
+                <div className="w-40 h-8 rounded-xl bg-slate-900/15 animate-pulse" />
+              </div>
+            </div>
+
+            {/* Overview Hero Blueprint Card Skeleton */}
+            <div className="relative rounded-2xl bg-gradient-to-br from-white via-slate-50/70 to-emerald-50/30 border-2 border-emerald-500/40 p-4 sm:p-5 lg:p-6 shadow-sm space-y-4 overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600" />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 animate-pulse shrink-0 shadow-2xs" />
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="w-44 h-4 rounded bg-emerald-100 border border-emerald-300 animate-pulse" />
+                      <div className="w-24 h-4 rounded-full bg-slate-100 border border-slate-200 animate-pulse" />
+                      <div className="w-36 h-4 rounded-full bg-emerald-50 border border-emerald-300 animate-pulse" />
+                    </div>
+                    <div className="w-48 h-6 rounded-lg bg-slate-200 animate-pulse mt-1" />
+                  </div>
+                </div>
+                <div className="w-36 h-8 rounded-xl bg-emerald-600/30 border border-emerald-500/30 animate-pulse shrink-0" />
+              </div>
+
+              {/* Blueprint Columns: Left Details + Right Simulated Architecture Preview */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                <div className="lg:col-span-7 space-y-3">
+                  <div className="w-full h-3.5 rounded-full bg-slate-200 animate-pulse" />
+                  <div className="w-4/5 h-3 rounded-full bg-slate-100 animate-pulse" />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+                      <div className="w-24 h-3.5 rounded bg-rose-100 border border-rose-200 animate-pulse" />
+                      <div className="w-full h-2.5 rounded bg-slate-100 animate-pulse" />
+                      <div className="w-4/5 h-2.5 rounded bg-slate-100 animate-pulse" />
+                    </div>
+                    <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+                      <div className="w-24 h-3.5 rounded bg-blue-100 border border-blue-200 animate-pulse" />
+                      <div className="w-full h-2.5 rounded bg-slate-100 animate-pulse" />
+                      <div className="w-3/4 h-2.5 rounded bg-slate-100 animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-5 rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 shadow-md">
+                  <div className="px-3.5 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500/60" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+                      <div className="w-32 h-2.5 rounded bg-slate-800 ml-2 animate-pulse" />
+                    </div>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  </div>
+                  <div className="p-4 space-y-2.5">
+                    <div className="w-full h-3 rounded bg-slate-800 animate-pulse" />
+                    <div className="w-4/5 h-3 rounded bg-slate-800 animate-pulse" />
+                    <div className="w-3/5 h-3 rounded bg-slate-800 animate-pulse" />
+                    <div className="w-1/2 h-8 rounded-xl bg-emerald-600/30 border border-emerald-500/30 mt-3 animate-pulse" />
+                  </div>
                 </div>
               </div>
-              <Skeleton variant={item.color} rounded="rounded-full" className="w-20 h-5 shrink-0" />
             </div>
-          ))}
+
+            {/* Top 4 KPI Metric Cards Skeleton */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 shadow-2xs">
+                  <div className="w-20 h-2.5 rounded bg-slate-200 animate-pulse" />
+                  <div className="w-24 h-6 rounded-lg bg-slate-300 animate-pulse" />
+                  <div className="w-28 h-2 rounded bg-slate-200/80 animate-pulse" />
+                  <div className="w-full h-1.5 rounded-full bg-slate-200 animate-pulse mt-1" />
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom 2 Columns: Tasks & AI Activity Stream */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <div className="w-36 h-3.5 rounded bg-slate-300 animate-pulse" />
+                  <div className="w-12 h-3.5 rounded bg-slate-200 animate-pulse" />
+                </div>
+                <div className="space-y-2.5">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3.5 h-3.5 rounded-full bg-slate-200 animate-pulse" />
+                        <div className="w-44 h-3 rounded bg-slate-200 animate-pulse" />
+                      </div>
+                      <div className="w-12 h-2.5 rounded bg-slate-200/70 animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <div className="w-32 h-3.5 rounded bg-slate-300 animate-pulse" />
+                  <div className="w-20 h-4 rounded-full bg-emerald-50 border border-emerald-200 animate-pulse" />
+                </div>
+                <div className="space-y-2.5">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="flex items-start gap-2 py-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500/50 mt-1 shrink-0 animate-pulse" />
+                      <div className="space-y-1 w-full">
+                        <div className="w-3/4 h-3 rounded bg-slate-200 animate-pulse" />
+                        <div className="w-1/2 h-2 rounded bg-slate-100 animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -79,42 +223,50 @@ export function ProjectOSSkeleton() {
 }
 
 /**
- * 2. Phase 1 Validation View Skeleton
+ * 2. Phase 1 Validation View Skeleton — Light Mode
  */
 export function Phase1ValidateSkeleton() {
   return (
-    <div className="space-y-5 w-full max-w-full overflow-hidden animate-fade-in">
+    <div className="space-y-5 w-full max-w-full overflow-hidden animate-fade-in text-slate-900">
       {/* 5-Step Progress Nav Skeleton */}
-      <div className="p-2 rounded-2xl bg-[#0e1117] border border-white/[0.08] flex items-center justify-between overflow-x-auto gap-2">
+      <div className="p-2 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between overflow-x-auto gap-2">
         <div className="flex items-center gap-2 min-w-max">
           {[1, 2, 3, 4, 5].map(i => (
-            <Skeleton key={i} rounded="rounded-xl" className="w-24 h-7" />
+            <div key={i} className="w-24 h-7 rounded-xl bg-slate-100 border border-slate-200 animate-pulse" />
           ))}
         </div>
-        <Skeleton variant="emerald" rounded="rounded-xl" className="w-32 h-7 shrink-0" />
+        <div className="w-32 h-7 rounded-xl bg-emerald-50 border border-emerald-300 animate-pulse shrink-0" />
       </div>
 
       {/* Main Spec Card Skeleton */}
-      <div className="p-6 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-6">
-        <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
+      <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
           <div className="space-y-1.5">
-            <Skeleton rounded="rounded-full" className="w-48 h-4" />
-            <Skeleton rounded="rounded-full" className="w-72 h-3" />
+            <div className="w-48 h-4 rounded-full bg-slate-200 animate-pulse" />
+            <div className="w-72 h-3 rounded-full bg-slate-100 animate-pulse" />
           </div>
-          <SkeletonButton width={120} height={32} variant="default" />
+          <div className="w-28 h-8 rounded-xl bg-slate-100 border border-slate-200 animate-pulse" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SkeletonCard lines={4} hasHeader={true} />
-          <SkeletonCard lines={4} hasHeader={true} />
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+            <div className="w-24 h-4 rounded bg-slate-200 animate-pulse" />
+            <div className="w-full h-3 rounded bg-slate-100 animate-pulse" />
+            <div className="w-3/4 h-3 rounded bg-slate-100 animate-pulse" />
+          </div>
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+            <div className="w-24 h-4 rounded bg-slate-200 animate-pulse" />
+            <div className="w-full h-3 rounded bg-slate-100 animate-pulse" />
+            <div className="w-3/4 h-3 rounded bg-slate-100 animate-pulse" />
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3 pt-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] space-y-2">
-              <Skeleton rounded="rounded-full" className="w-20 h-3" />
-              <Skeleton rounded="rounded-lg" className="w-16 h-5" />
-              <Skeleton rounded="rounded-full" className="w-full h-2" />
+            <div key={i} className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+              <div className="w-20 h-3 rounded-full bg-slate-200 animate-pulse" />
+              <div className="w-16 h-5 rounded-lg bg-slate-300 animate-pulse" />
+              <div className="w-full h-2 rounded-full bg-slate-100 animate-pulse" />
             </div>
           ))}
         </div>

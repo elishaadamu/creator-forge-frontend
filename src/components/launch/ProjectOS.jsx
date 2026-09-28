@@ -536,13 +536,10 @@ partnerships@creatorforge.com`
   const audienceGroundingData = getProjectAudienceGrounding(project)
 
   const defaultScheduleTasks = [
-    { id: 'day-1', day: 1, title: 'Post Instagram Story #1: The Problem Teaser', channel: 'Instagram Stories', done: true, role: 'Creator Task' },
-    { id: 'day-2', day: 2, title: 'Post Instagram Story #2: Behind-The-Scenes Co-Founding', channel: 'Instagram Stories', isToday: true, done: false, role: 'Creator Task' },
-    { id: 'day-3', day: 3, title: 'YouTube Video Integration Script (60s Mid-Roll)', channel: 'YouTube / Video', done: false, role: 'Creator Task' },
-    { id: 'day-4', day: 4, title: 'Newsletter Broadcast: Founding Cohort Announcement', channel: 'Email Newsletter', done: false, role: 'Creator Task' },
-    { id: 'day-5', day: 5, title: 'X / Twitter Breakdown Thread', channel: 'Twitter / X', done: false, role: 'Creator Task' },
-    { id: 'day-6', day: 6, title: 'Post Instagram Story #3: Live Backer Progress', channel: 'Instagram Stories', done: false, role: 'Creator Task' },
-    { id: 'day-7', day: 7, title: 'Community Post & Final Call', channel: 'All Channels', done: false, role: 'Creator Task' }
+    { id: 'milestone-1', day: 1, milestoneNumber: 1, title: 'Problem Teaser & Community Discovery Poll', channel: 'Twitter / Community / Stories', done: true, role: 'Creator Task', effort: '~10 mins' },
+    { id: 'milestone-2', day: 4, milestoneNumber: 2, title: 'Native 60s Video Integration / Demo', channel: 'YouTube / Video', isToday: true, done: false, role: 'Creator Task', effort: '~15 mins' },
+    { id: 'milestone-3', day: 8, milestoneNumber: 3, title: '1:1 Plain-Text VIP Letter to Core Supporters', channel: 'Email Newsletter', done: false, role: 'Creator Task', effort: '~10 mins' },
+    { id: 'milestone-4', day: 12, milestoneNumber: 4, title: 'Founding Cohort Cap Lock & Final Wrap-Up', channel: 'All Channels', done: false, role: 'Creator Task', effort: '~5 mins' }
   ]
 
   const rawTasks = (project.campaignKit?.postingSchedule?.length > 0
@@ -688,11 +685,11 @@ partnerships@creatorforge.com`
 
       {/* EXPANDED FULL-WIDTH COMMAND CENTER (MAIN IDEA WORKSPACE - S2 EXPANDED, S3 REMOVED) */}
       <div className="w-full space-y-4">
-        <div className="rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col md:flex-row min-h-[580px] items-stretch w-full overflow-hidden">
-          {/* Left Mini Sidebar (S1) */}
-          <div className="w-full md:w-52 lg:w-56 bg-slate-50/90 border-b md:border-b-0 md:border-r border-slate-200 p-3 sm:p-4 flex flex-row md:flex-col justify-between items-center md:items-stretch gap-2 shrink-0 md:sticky md:top-20 md:self-start md:min-h-[580px] z-10 overflow-x-auto scrollbar-none">
-            <div className="flex md:flex-col items-center md:items-stretch gap-1.5 overflow-x-auto scrollbar-none shrink-0 w-full">
-              <div className="hidden md:block px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+        <div className="rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-stretch w-full relative">
+          {/* Left Mini Sidebar (S1 - FIXED/STICKY) */}
+          <div className="w-full md:w-56 lg:w-60 bg-slate-50/95 border-b md:border-b-0 md:border-r border-slate-200/90 p-3 sm:p-3.5 flex flex-row md:flex-col justify-between items-center md:items-stretch gap-2 shrink-0 md:sticky md:top-14 md:self-start md:h-[calc(100vh-4.5rem)] md:max-h-[calc(100vh-4.5rem)] md:overflow-y-auto md:overflow-x-hidden scrollbar-thin z-20 rounded-t-2xl md:rounded-tr-none md:rounded-l-2xl">
+            <div className="flex md:flex-col items-center md:items-stretch gap-1 overflow-x-auto scrollbar-none shrink-0 w-full pt-0.5">
+              <div className="hidden md:block px-2 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
                 Command Center
               </div>
 
@@ -787,10 +784,10 @@ partnerships@creatorforge.com`
           </div>
 
           {/* Main Command Center Inner Area (S2 - WIDE & EXPANDED) */}
-          <div className="flex-1 min-w-0 p-5 sm:p-7 lg:p-8 space-y-6 bg-white overflow-x-hidden">
+          <div className="flex-1 min-w-0 p-4 sm:p-5 lg:p-6 space-y-4 bg-white rounded-b-2xl md:rounded-bl-none md:rounded-r-2xl overflow-x-hidden">
             {/* Header inside Command Center */}
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-200/90 pb-5">
-              <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-200/80 pb-3.5">
+              <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight flex items-center gap-2 flex-wrap">
                     <span>{cleanProductName}</span>
@@ -799,37 +796,37 @@ partnerships@creatorforge.com`
                   </h2>
                 </div>
 
-                {/* Pricing and active AI experiment badges */}
-                {(() => {
-                  if (!project?.pricing) return null
-                  const rawPricing = String(project.pricing).trim()
-                  const match = rawPricing.match(/^(.*?)(?:\s*\((?:Pricing adjusted via )?AI Experiment:\s*(.*?)\))?$/i)
-                  const corePrice = match && match[1] ? match[1].trim() : rawPricing
-                  const expTitle = match && match[2] ? match[2].trim() : null
+                {/* Unified metadata row: Pricing, AI experiment, Chosen Concept & Archetype */}
+                <div className="flex items-center gap-2 flex-wrap max-w-full pt-0.5">
+                  {(() => {
+                    if (!project?.pricing) return null
+                    const rawPricing = String(project.pricing).trim()
+                    const match = rawPricing.match(/^(.*?)(?:\s*\((?:Pricing adjusted via )?AI Experiment:\s*(.*?)\))?$/i)
+                    const corePrice = match && match[1] ? match[1].trim() : rawPricing
+                    const expTitle = match && match[2] ? match[2].trim() : null
 
-                  return (
-                    <div className="flex items-center gap-2 flex-wrap max-w-full">
-                      <span
-                        className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 shadow-2xs inline-flex items-center gap-1.5 max-w-full sm:max-w-xl"
-                        title={rawPricing}
-                      >
-                        <Tag className="w-3 h-3 text-emerald-600 shrink-0" />
-                        <span className="truncate">{corePrice}</span>
-                      </span>
-                      {expTitle && (
+                    return (
+                      <>
                         <span
-                          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-800 bg-slate-100 border border-slate-200 shadow-2xs inline-flex items-center gap-1.5 shrink-0"
-                          title={`Pricing adjusted via AI Experiment: ${expTitle}`}
+                          className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 shadow-2xs inline-flex items-center gap-1.5 max-w-full sm:max-w-xl"
+                          title={rawPricing}
                         >
-                          <Sparkles className="w-3 h-3 text-slate-600 shrink-0" />
-                          <span>AI Experiment: {expTitle}</span>
+                          <Tag className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <span className="truncate">{corePrice}</span>
                         </span>
-                      )}
-                    </div>
-                  )
-                })()}
+                        {expTitle && (
+                          <span
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-800 bg-slate-100 border border-slate-200 shadow-2xs inline-flex items-center gap-1.5 shrink-0"
+                            title={`Pricing adjusted via AI Experiment: ${expTitle}`}
+                          >
+                            <Sparkles className="w-3 h-3 text-slate-600 shrink-0" />
+                            <span>AI Experiment: {expTitle}</span>
+                          </span>
+                        )}
+                      </>
+                    )
+                  })()}
 
-                <div className="flex items-center gap-2 flex-wrap max-w-full">
                   <span className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
                     <Target className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Chosen Concept: {chosenConcept?.name || cleanProductName}</span>
@@ -839,7 +836,7 @@ partnerships@creatorforge.com`
                   </span>
                 </div>
 
-                <p className="text-xs sm:text-sm text-slate-600 max-w-3xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 max-w-3xl leading-relaxed pt-0.5">
                   {cleanTagline}
                 </p>
               </div>
@@ -882,12 +879,12 @@ partnerships@creatorforge.com`
 
               {/* OVERVIEW TAB CONTENT */}
               {sidebarTab === 'overview' && (
-                <div className="space-y-5 animate-fade-in">
+                <div className="space-y-4 animate-fade-in">
                   {/* STEP 5 CHOSEN CONCEPT BLUEPRINT (HERO CARD - THE MAIN IDEA) */}
-                  <div className="relative rounded-2xl bg-gradient-to-br from-white via-slate-50/70 to-emerald-50/30 border-2 border-emerald-500/80 p-6 sm:p-7 shadow-sm space-y-5 overflow-hidden">
+                  <div className="relative rounded-2xl bg-gradient-to-br from-white via-slate-50/70 to-emerald-50/30 border-2 border-emerald-500/80 p-4 sm:p-5 lg:p-6 shadow-sm space-y-4 overflow-hidden">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600" />
 
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shrink-0 shadow-2xs">
                           <Target className="w-5 h-5 text-emerald-700" />
@@ -1178,7 +1175,7 @@ partnerships@creatorforge.com`
                         title="View YouTube transcripts & audience comments"
                       >
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Audience Citations (06:48)</span>
+                        <span>Audience Citations</span>
                       </button>
                       <button
                         onClick={() => openPhaseStep('campaign')}
@@ -1216,7 +1213,7 @@ partnerships@creatorforge.com`
                     </div>
 
                     <p className="text-[11px] text-slate-700 leading-relaxed">
-                      All co-launch sprint actions, scripts, and stories are derived directly from <strong>{cleanCreatorName}'s verified uploads</strong> — extracted from <strong>{audienceGroundingData.stats.transcriptsAnalyzed} YouTube transcripts</strong> (including hook at <strong>timestamp 06:48</strong>), <strong>{audienceGroundingData.stats.commentsIngested}+ fan comments</strong>, and custom voice guidelines. Not generic AI slop. Outbound emails are 1:1 plain-text to guarantee Primary Inbox delivery (zero spam).
+                      All co-launch sprint actions, scripts, and stories are derived directly from <strong>{cleanCreatorName}'s verified uploads</strong> — extracted from <strong>{audienceGroundingData.stats.transcriptsAnalyzed} channel videos</strong>, channel description, <strong>{audienceGroundingData.stats.commentsIngested}+ fan comments</strong>, and custom voice guidelines. Not generic AI slop. Outbound emails are 1:1 plain-text to guarantee Primary Inbox delivery (zero spam).
                     </p>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5 text-[10px]">
@@ -1231,7 +1228,7 @@ partnerships@creatorforge.com`
                         <Youtube className="w-3.5 h-3.5 text-red-600 shrink-0 group-hover:scale-110 transition-transform" />
                         <div className="min-w-0">
                           <span className="font-bold text-slate-900 block truncate">Transcripts</span>
-                          <span className="text-slate-500 font-mono truncate block">Hook @ 06:48</span>
+                          <span className="text-slate-500 font-mono truncate block">Native Integration</span>
                         </div>
                       </button>
 
@@ -1268,7 +1265,7 @@ partnerships@creatorforge.com`
                       <button
                         type="button"
                         onClick={() => {
-                          setAudienceIntelModalTab('deliverability')
+                          setAudienceIntelModalTab('comments')
                           setShowAudienceIntelModal(true)
                         }}
                         className="p-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 flex items-center gap-2 transition-all cursor-pointer text-left shadow-2xs group"
@@ -1427,7 +1424,7 @@ partnerships@creatorforge.com`
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        setAudienceIntelModalTab(task.groundingType === 'video_transcript' ? 'transcripts' : task.groundingType === 'anti_spam' ? 'deliverability' : 'comments')
+                                        setAudienceIntelModalTab(task.groundingType === 'video_transcript' ? 'transcripts' : 'comments')
                                         setShowAudienceIntelModal(true)
                                       }}
                                       className="text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-1 cursor-pointer"

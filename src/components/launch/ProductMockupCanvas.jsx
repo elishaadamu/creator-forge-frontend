@@ -194,7 +194,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
   }
 
   return (
-    <div className="keep-dark product-mockup-canvas product-mockup-display space-y-4 w-full max-w-full overflow-hidden px-3 sm:px-5 pb-6">
+    <div className="keep-dark product-mockup-canvas product-mockup-display space-y-4 w-full max-w-full overflow-hidden px-3 sm:px-5 pt-4 sm:pt-6 pb-6">
       {/* Compact Responsive Control Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-[#101419] border border-[#252B32]">
         {/* View Mode Tabs */}

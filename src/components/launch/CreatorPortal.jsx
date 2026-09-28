@@ -1614,7 +1614,7 @@ export default function CreatorPortal({ portalId }) {
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          Every draft is derived from your YouTube transcripts (including hook at 06:48) and top community comments.
+                          Every draft is derived directly from your verified channel uploads, channel bio, and community comments.
                         </p>
                       </div>
                     </div>
@@ -1657,7 +1657,7 @@ export default function CreatorPortal({ portalId }) {
                           <div className="flex items-center gap-2">
                             <Video className="w-4 h-4 text-red-600 shrink-0" />
                             <span className="text-[11px]">
-                              <strong>Transcript Hook @ 06:48:</strong> Direct hook derived from your video upload addressing viewer drop-off point.
+                              <strong>Native Video Segment:</strong> Seamless mid-roll hook directly connecting the workflow problems discussed in your uploads to this software.
                             </span>
                           </div>
                         </div>

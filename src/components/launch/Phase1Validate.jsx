@@ -6,7 +6,7 @@ import {
   CreditCard, Users, TrendingUp, RefreshCw, FileText, Megaphone, Target,
   Flag, ArrowRight, Layers, HelpCircle, BarChart3, Radio, ShieldCheck,
   Palette, Smartphone, Send, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell, Lock, RotateCcw,
-  Youtube, Shield
+  Youtube, Shield, Sliders
 } from 'lucide-react'
 import {
   generateValidationPlanAI,
@@ -97,6 +97,28 @@ export default function Phase1Validate({
   const [showAudienceIntelModal, setShowAudienceIntelModal] = useState(false)
   const [audienceIntelModalTab, setAudienceIntelModalTab] = useState('transcripts')
   const audienceGroundingData = getProjectAudienceGrounding(project)
+
+  const creatorChannelUrl = (() => {
+    if (project?.channelUrl && String(project.channelUrl).startsWith('http')) return project.channelUrl
+    if (project?.youtubeUrl && String(project.youtubeUrl).startsWith('http')) return project.youtubeUrl
+    if (project?.creatorChannel && String(project.creatorChannel).startsWith('http')) return project.creatorChannel
+    if (project?.socialUrl && String(project.socialUrl).startsWith('http')) return project.socialUrl
+    if (project?.channel_url && String(project.channel_url).startsWith('http')) return project.channel_url
+    if (project?.youtube_url && String(project.youtube_url).startsWith('http')) return project.youtube_url
+
+    const handle = String(project?.creatorHandle || project?.creator_handle || project?.handle || '').replace(/^@/, '').trim()
+    if (handle && !/^[0-9a-f-]{10,}$/i.test(handle)) {
+      return `https://www.youtube.com/@${handle}`
+    }
+
+    const name = String(project?.creatorName || project?.creator_name || '').trim()
+    if (name && !/^[0-9a-f-]{10,}$/i.test(name)) {
+      return `https://www.youtube.com/results?search_query=${encodeURIComponent(name)}`
+    }
+
+    return 'https://www.youtube.com'
+  })()
+
   const [isStep2Approved, setIsStep2Approved] = useState(() => Boolean(
     project?.assetsApproved ||
     project?.landingPageApproved ||
@@ -233,6 +255,13 @@ export default function Phase1Validate({
   useEffect(() => {
     setSimBuyerTier(activeFoundingPrice)
   }, [activeFoundingPrice])
+
+  // Creator Launch Pacing & Customizable Strategy Guidance Prompt
+  const [campaignPacing, setCampaignPacing] = useState(() => project?.campaignKit?.pacingMode || 'low_burden')
+  const [postingFrequency, setPostingFrequency] = useState('1 video per week (Standard YouTube)')
+  const [campaignStrategyPrompt, setCampaignStrategyPrompt] = useState(
+    "Based on creator's normal posting frequency, channel description, and recent video topics: generate launch assets that hit the Phase 1 validation goal ($1,000 / 50 presales) with minimal creator burden. Space milestones realistically (avoiding daily promotional spam), keep scripts organic to their natural voice, and directly connect to problems discussed in their recent videos."
+  )
 
   // Check if Campaign Kit has been generated or populated
   const hasCampaignGenerated = Boolean(
@@ -637,7 +666,11 @@ export default function Phase1Validate({
   const generateCampaign = async () => {
     setIsGeneratingCampaign(true)
     try {
-      const generated = await generateValidationCampaignKitAI(project)
+      const generated = await generateValidationCampaignKitAI(project, {
+        pacing: campaignPacing,
+        postingFrequency,
+        customPrompt: campaignStrategyPrompt
+      })
       if (generated) {
         setCampaignKit(generated)
         const updated = {
@@ -693,7 +726,7 @@ export default function Phase1Validate({
 
           logProjectActivity(project.id, {
             action: 'AI Campaign Content Generated & Locked',
-            details: `Generated 7-day creator campaign schedule with Instagram stories, TikTok scripts, newsletter, and VIP DM templates.`,
+            details: `Generated tailored creator launch roadmap (${campaignPacing === 'low_burden' ? '4 non-burdensome milestones' : 'paced sprint'}) with video scripts, newsletter, and social assets.`,
             step: 'campaign',
             phase: 1
           }).catch(e => console.warn(e))
@@ -1713,7 +1746,7 @@ export default function Phase1Validate({
               </div>
 
               {/* Product Mockup Studio & Visual Asset */}
-              <div className="space-y-2 pt-2 pb-4">
+              <div className="space-y-2.5 pt-4 pb-4">
                 <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wider block font-mono px-1">
                   Product Mockup Studio & Visual Asset
                 </span>
@@ -2281,19 +2314,34 @@ export default function Phase1Validate({
                 Posts, Instagram stories, newsletter copy, videos, polls, CTAs, images & 60s scripts for the creator.
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {/* Creator Official Channel Link */}
+              <a
+                href={creatorChannelUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs font-bold transition-all active:scale-95 shadow-2xs group cursor-pointer"
+                title={`Investigate ${project?.creatorName || 'creator'}'s official YouTube channel`}
+              >
+                <Youtube className="w-3.5 h-3.5 text-red-600 shrink-0 group-hover:scale-110 transition-transform" />
+                <span>Creator Channel</span>
+                <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-colors" />
+              </a>
+
+              {/* High-Contrast Audience Citations Button */}
               <button
                 type="button"
                 onClick={() => {
                   setAudienceIntelModalTab('transcripts')
                   setShowAudienceIntelModal(true)
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold transition-all active:scale-95 shadow-2xs cursor-pointer group"
                 title="View YouTube transcripts & audience comments"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Audience Citations (06:48)</span>
+                <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="text-emerald-900 font-extrabold">Audience Citations</span>
               </button>
+
               <button
                 onClick={generateCampaign}
                 disabled={isGeneratingCampaign}
@@ -2321,25 +2369,214 @@ export default function Phase1Validate({
             </div>
           </div>
 
+          {/* CREATOR CHANNEL & AUDIENCE DATA INVESTIGATION BAR */}
+          <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-900">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center shrink-0 shadow-2xs">
+                <Youtube className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-black text-slate-950 truncate">
+                    {project?.creatorName || 'Creator Partner'}
+                  </span>
+                  {project?.creatorHandle && (
+                    <span className="text-[11px] font-mono font-medium text-slate-500">
+                      {project.creatorHandle.startsWith('@') ? project.creatorHandle : `@${project.creatorHandle}`}
+                    </span>
+                  )}
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Audience Data Grounded</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 truncate mt-0.5">
+                  Verified channel telemetry sourced directly from {project?.creatorName || 'creator'}'s uploads, channel description, and audience discussions.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href={creatorChannelUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 text-xs font-bold transition-all shadow-2xs cursor-pointer group"
+                title="Investigate creator's YouTube channel directly"
+              >
+                <Youtube className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                <span>Open Channel</span>
+                <ExternalLink className="w-3 h-3 text-red-500 group-hover:translate-x-0.5 transition-transform" />
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  setAudienceIntelModalTab('transcripts')
+                  setShowAudienceIntelModal(true)
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                title="Investigate the collected audience transcripts and comments"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Investigate Sourced Data</span>
+              </button>
+            </div>
+          </div>
+
+          {/* CREATOR LAUNCH STRATEGY & PACING ENGINE CUSTOMIZER */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-indigo-600" />
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Creator Launch Strategy & Pacing Engine
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Non-Burdensome Cadence
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Customized around {project?.creatorName || 'the creator'}'s normal rhythm — avoiding daily promotional spam while ensuring enough touchpoints to hit Phase 1 validation.
+                </p>
+              </div>
+
+              {/* Target Phase 1 Metric Pill */}
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono shrink-0">
+                <Target className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-slate-500">Phase 1 Target:</span>
+                <span className="font-bold text-slate-900">50 Presales / $1,000+</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {/* Cadence Mode Selector */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-700 block">
+                  Launch Pacing Mode (Prevents Creator Burnout & Unfollow Spikes)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'low_burden', label: 'Low-Burden', desc: '4 Spaced Milestones', badge: 'Recommended' },
+                    { id: 'balanced', label: 'Balanced', desc: '5 Spaced Milestones', badge: '10-14 days' },
+                    { id: 'intensive', label: 'Sprint', desc: '6-7 Milestones', badge: 'High-Volume' }
+                  ].map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setCampaignPacing(p.id)}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        campaignPacing === p.id
+                          ? 'bg-slate-900 border-slate-900 text-white shadow-xs'
+                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold truncate">{p.label}</span>
+                        <span className={`text-[9px] font-mono px-1 rounded ${
+                          campaignPacing === p.id ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+                        }`}>{p.badge}</span>
+                      </div>
+                      <p className={`text-[10px] mt-0.5 truncate ${
+                        campaignPacing === p.id ? 'text-slate-300' : 'text-slate-500'
+                      }`}>
+                        {p.desc}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Normal Posting Rhythm Selector */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-700 block">
+                  Creator's Normal Posting Rhythm
+                </label>
+                <select
+                  value={postingFrequency}
+                  onChange={e => setPostingFrequency(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 outline-none focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 transition-all cursor-pointer"
+                >
+                  <option value="1 video per week (Standard YouTube)">1 video / week (Standard YouTube upload cycle)</option>
+                  <option value="2-3 posts per week (Multi-channel)">2–3 posts / week (Active Multi-channel)</option>
+                  <option value="Bi-weekly or monthly (Long-form deep dives)">Bi-weekly or monthly (Long-form deep dives)</option>
+                  <option value="High-frequency short-form (Daily TikTok/Reels)">High-frequency short-form (Daily TikTok/Reels)</option>
+                </select>
+                <p className="text-[10px] text-slate-500">
+                  Touchpoints space across Days 1, 4, 8, and 12 so promo feels 100% organic to their viewers.
+                </p>
+              </div>
+            </div>
+
+            {/* Editable Strategy & Pacing Guidance Prompt */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Strategy & Pacing Prompt (Customizable AI Guidance)</span>
+                </label>
+                <span className="text-[10px] text-slate-500 font-mono">Tailors all copy, video scripts & roadmap</span>
+              </div>
+              <textarea
+                value={campaignStrategyPrompt}
+                onChange={e => setCampaignStrategyPrompt(e.target.value)}
+                rows={2}
+                className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 transition-all resize-y"
+                placeholder="E.g., based on creator's normal posting frequency, what you think will hit the next phase goal, what will be enough but not burden the creator..."
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-slate-100">
+              <div className="flex items-center gap-2 text-[11px] text-slate-600">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>
+                  {campaignPacing === 'low_burden' 
+                    ? '4 Spaced Milestones (Day 1, 4, 8, 12) · ~40 mins total effort · 0% Burnout' 
+                    : campaignPacing === 'balanced' 
+                    ? '5 Milestones (Day 1, 3, 6, 9, 12) · ~55 mins total effort' 
+                    : 'Sprint Cadence (6-7 Milestones)'}
+                </span>
+              </div>
+
+              <button
+                onClick={generateCampaign}
+                disabled={isGeneratingCampaign}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
+              >
+                {isGeneratingCampaign ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                    <span>Generating Tailored Kit...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
+                    <span>{hasCampaignGenerated ? 'Regenerate with Custom Pacing' : 'Generate Tailored Campaign Kit'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
           {/* If Campaign Kit is actively generating */}
           {isGeneratingCampaign ? (
             <Phase1CampaignGenSkeleton />
           ) : !hasCampaignGenerated ? (
-            <div className="p-8 sm:p-12 rounded-2xl bg-[#0e1117] border border-dashed border-white/[0.12] text-center space-y-4 max-w-xl mx-auto my-6 shadow-xl">
-              <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-slate-300 shadow-lg">
-                <Megaphone className="w-7 h-7" />
+            <div className="p-8 sm:p-12 rounded-2xl bg-white border border-dashed border-slate-200 text-center space-y-4 max-w-xl mx-auto my-6 shadow-xs text-slate-900">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center mx-auto text-indigo-600 shadow-2xs">
+                <Megaphone className="w-8 h-8 text-indigo-600" />
               </div>
               <div className="space-y-1.5 max-w-md mx-auto">
-                <h4 className="text-base font-bold text-white">Campaign Kit Not Generated Yet</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Generate a complete 7-day multi-channel launch schedule, social copy, story sequences, 60s video scripts, newsletter drafts, and tracking links customized for {project?.creatorName || 'the creator'}.
+                <h4 className="text-base font-bold text-slate-900">Campaign Kit Ready to Generate</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Generate a tailored launch roadmap with non-burdensome spaced milestones, social copy, story sequences, 60s video scripts, newsletter drafts, and tracking links customized for {project?.creatorName || 'the creator'}.
                 </p>
               </div>
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
                   onClick={generateCampaign}
                   disabled={isGeneratingCampaign}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-900 hover:bg-black text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4 text-white" />
                   <span>Generate Campaign Kit with AI</span>
@@ -2390,23 +2627,23 @@ export default function Phase1Validate({
                           <button
                             onClick={() => handleSendTaskReminder(todayTask)}
                             disabled={remindingTaskId === todayTask.id}
-                            className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-bold border border-amber-500/40 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                            className="px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold border border-amber-300 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
                             title="Send email reminder to creator"
                           >
                             {remindingTaskId === todayTask.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700" />
                             ) : (
-                              <Bell className="w-3.5 h-3.5 text-amber-400" />
+                              <Bell className="w-3.5 h-3.5 text-amber-700" />
                             )}
                             <span>{remindingTaskId === todayTask.id ? 'Sending...' : 'Remind Creator'}</span>
                           </button>
 
                           <button
                             onClick={() => handleWhatsAppNudge(todayTask)}
-                            className="px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-xs font-bold border border-emerald-500/30 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                            className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                             title="Copy WhatsApp Nudge message"
                           >
-                            <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
                             <span>WhatsApp Nudge</span>
                           </button>
                         </>
@@ -2414,7 +2651,7 @@ export default function Phase1Validate({
 
                       <button
                         onClick={() => setViewDraftTask(todayTask)}
-                        className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>View Draft</span>
@@ -2424,8 +2661,8 @@ export default function Phase1Validate({
                         onClick={() => handleToggleScheduleTask(todayTask.id)}
                         className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors border cursor-pointer ${
                           todayTask.done
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                            : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-2xs'
                         }`}
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
@@ -2437,15 +2674,15 @@ export default function Phase1Validate({
               })()}
 
               {/* AUDIENCE PROVENANCE & ANTI-SPAM ARCHITECTURE BANNER */}
-              <div className="p-3.5 rounded-xl border border-emerald-500/25 bg-emerald-950/20 text-xs text-slate-300 space-y-2.5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/15 pb-2">
+              <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 text-xs text-slate-700 space-y-2.5 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/80 pb-2.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="font-extrabold text-white flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
                       <span>Grounded in Real Creator Content & Audience Data</span>
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-900/50 text-emerald-300 border border-emerald-500/30">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white text-emerald-800 border border-emerald-300 shadow-2xs">
                       Anti-AI Slop · 99.4% Voice Match
                     </span>
                   </div>
@@ -2455,20 +2692,20 @@ export default function Phase1Validate({
                       setAudienceIntelModalTab('transcripts')
                       setShowAudienceIntelModal(true)
                     }}
-                    className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer transition-colors"
+                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <span>Inspect Transcripts & Evidence Citations →</span>
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Every post, 60s script, and email draft is derived from <strong>{audienceGroundingData.stats.transcriptsAnalyzed} YouTube video transcripts</strong> (including hook at <strong>timestamp 06:48</strong>), <strong>{audienceGroundingData.stats.commentsIngested}+ fan comments</strong>, and custom voice guidelines. Outbound emails are 1:1 plain-text to guarantee Primary Inbox delivery (zero spam).
+                <p className="text-[11px] text-slate-700 leading-relaxed">
+                  Every post, 60s script, and email draft is derived directly from <strong className="text-slate-900 font-semibold">{project?.creatorName || 'the creator'}'s channel uploads</strong>, channel bio, and <strong className="text-slate-900 font-semibold">{audienceGroundingData.stats.commentsIngested}+ community comments</strong>. Formatted into spaced milestones with 1:1 plain-text emails to guarantee Primary Inbox delivery.
                 </p>
               </div>
 
               {/* Subtabs Navigation */}
-              <div className="flex items-center gap-1.5 border-b border-white/[0.08] pb-3 overflow-x-auto">
+              <div className="flex items-center gap-1.5 border-b border-slate-200 pb-3 overflow-x-auto no-scrollbar scrollbar-none">
                 {[
-                  { id: 'schedule', label: '1. Schedule & Checklist', icon: Calendar },
+                  { id: 'schedule', label: '1. Schedule & Roadmap', icon: Calendar },
                   { id: 'post', label: '2. Social Posts', icon: MessageSquare },
                   { id: 'story', label: '3. Stories & Polls', icon: Smartphone },
                   { id: 'video', label: '4. Video Script', icon: Video },
@@ -2477,17 +2714,18 @@ export default function Phase1Validate({
                   { id: 'links', label: '7. Tracking Links', icon: Globe },
                 ].map(tab => {
                   const Icon = tab.icon
+                  const isActive = campaignSubTab === tab.id
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setCampaignSubTab(tab.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                        campaignSubTab === tab.id
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                        isActive
                           ? 'bg-slate-900 text-white shadow-xs border border-slate-900'
-                          : 'text-slate-400 hover:text-white bg-white/[0.03] border border-transparent'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200/80 shadow-2xs'
                       }`}
                     >
-                      <Icon className="w-3.5 h-3.5" />
+                      <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                       <span>{tab.label}</span>
                     </button>
                   )
@@ -2499,14 +2737,24 @@ export default function Phase1Validate({
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-white">Creator 7-Day Campaign Checklist</h4>
-                      <p className="text-[11px] text-slate-400">
-                        Step-by-step daily launch actions with ready-to-use drafts for the creator.
+                      <h4 className="text-sm font-bold text-slate-900">Creator Launch Roadmap (Non-Burdensome Cadence)</h4>
+                      <p className="text-[11px] text-slate-500">
+                        Spaced milestones tailored to {project?.creatorName || 'the creator'}'s upload rhythm — hitting validation targets with under 45 mins total effort.
                       </p>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 shadow-2xs font-mono">
                       {(campaignKit?.postingSchedule || []).filter(t => t.done)?.length || 0} / {(campaignKit?.postingSchedule || []).length} Completed
                     </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${(((campaignKit?.postingSchedule || []).filter(t => t.done)?.length || 0) / Math.max(1, (campaignKit?.postingSchedule || []).length)) * 100}%` 
+                      }}
+                    />
                   </div>
 
                   <div className="space-y-2.5">
@@ -2516,29 +2764,29 @@ export default function Phase1Validate({
                         ? Math.max(1, Math.floor((Date.now() - new Date(campaignStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)
                         : 1
 
-                      return (campaignKit?.postingSchedule || []).map((task) => {
+                      return (campaignKit?.postingSchedule || []).map((task, taskIdx) => {
                         const isOverdue = !task.done && task.day < currentCampaignDay
 
                         return (
                           <div
-                            key={task.id}
+                            key={task.id || taskIdx}
                             className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                               isOverdue
-                                ? 'bg-amber-950/20 border-amber-500/40 shadow-sm shadow-amber-950/30'
+                                ? 'bg-amber-50/70 border-amber-200 shadow-2xs'
                                 : task.isToday
-                                ? 'bg-[#141824] border-slate-700 shadow-sm'
+                                ? 'bg-white border-emerald-400 ring-2 ring-emerald-500/15 shadow-xs'
                                 : task.done
-                                ? 'bg-[#0e1117] border-white/[0.04] opacity-80'
-                                : 'bg-[#11141c] border-white/[0.06]'
+                                ? 'bg-slate-50/80 border-slate-200 opacity-80'
+                                : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
                             }`}
                           >
                             <div className="flex items-start gap-3">
                               <button
                                 onClick={() => handleToggleScheduleTask(task.id)}
-                                className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                                className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 cursor-pointer ${
                                   task.done
-                                    ? 'bg-emerald-500 border-emerald-400 text-slate-950'
-                                    : 'border-white/[0.2] bg-white/[0.02] hover:border-slate-400'
+                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-2xs'
+                                    : 'border-slate-300 bg-white hover:border-emerald-500 hover:bg-emerald-50/50'
                                 }`}
                               >
                                 {task.done && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -2547,29 +2795,42 @@ export default function Phase1Validate({
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {isOverdue ? (
-                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                                      <AlertCircle className="w-3 h-3 text-amber-400" />
-                                      <span>Missed · Day {task.day}</span>
+                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 font-mono">
+                                      <AlertCircle className="w-3 h-3 text-amber-600" />
+                                      <span>Missed · Milestone {task.milestoneNumber || taskIdx + 1}</span>
+                                    </span>
+                                  ) : task.isToday ? (
+                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono shadow-2xs flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                                      <span>Active · Milestone {task.milestoneNumber || taskIdx + 1} (Day {task.day})</span>
+                                    </span>
+                                  ) : task.done ? (
+                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
+                                      Milestone {task.milestoneNumber || taskIdx + 1} (Day {task.day})
                                     </span>
                                   ) : (
-                                    <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                                      task.isToday
-                                        ? 'bg-slate-800 text-slate-200 border border-slate-700'
-                                        : task.done
-                                        ? 'bg-emerald-500/10 text-emerald-400'
-                                        : 'bg-white/[0.06] text-slate-400'
-                                    }`}>
-                                      {task.isToday ? 'Today · Day ' + task.day : 'Day ' + task.day}
+                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                                      Milestone {task.milestoneNumber || taskIdx + 1} (Day {task.day})
                                     </span>
                                   )}
-                                  <span className="text-[10px] font-bold text-slate-400 font-mono">
+                                  {(task.effort || task.effortEstimate) && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono">
+                                      ⏱️ {task.effort || task.effortEstimate}
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] font-semibold text-slate-500 font-mono">
                                     {task.channel}
                                   </span>
+                                  {task.groundingBadge && (
+                                    <span className="text-[10px] font-medium text-slate-600 bg-white border border-slate-200 px-2 py-0.5 rounded-md truncate max-w-[210px]" title={task.groundingSummary}>
+                                      {task.groundingBadge}
+                                    </span>
+                                  )}
                                 </div>
-                                <h5 className={`text-xs font-bold ${task.done ? 'line-through text-slate-400' : 'text-white'}`}>
+                                <h5 className={`text-xs font-bold ${task.done ? 'line-through text-slate-400' : 'text-slate-900'}`}>
                                   {task.title}
                                 </h5>
-                                <p className="text-[11px] text-slate-400 leading-relaxed">
+                                <p className="text-[11px] text-slate-600 leading-relaxed">
                                   {task.description}
                                 </p>
                               </div>
@@ -2581,23 +2842,23 @@ export default function Phase1Validate({
                                   <button
                                     onClick={() => handleSendTaskReminder(task)}
                                     disabled={remindingTaskId === task.id}
-                                    className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-bold border border-amber-500/40 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                                    className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold border border-amber-300 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
                                     title="Send email reminder to creator"
                                   >
                                     {remindingTaskId === task.id ? (
-                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                      <Loader2 className="w-3 h-3 animate-spin text-amber-700" />
                                     ) : (
-                                      <Bell className="w-3 h-3 text-amber-400" />
+                                      <Bell className="w-3 h-3 text-amber-700" />
                                     )}
                                     <span>{remindingTaskId === task.id ? 'Sending...' : 'Remind Creator'}</span>
                                   </button>
 
                                   <button
                                     onClick={() => handleWhatsAppNudge(task)}
-                                    className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-xs font-bold border border-emerald-500/30 flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                                    className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300 flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
                                     title="Copy WhatsApp Nudge message"
                                   >
-                                    <MessageSquare className="w-3 h-3 text-emerald-400" />
+                                    <MessageSquare className="w-3 h-3 text-emerald-600" />
                                     <span className="hidden sm:inline">WhatsApp Nudge</span>
                                   </button>
                                 </>
@@ -2605,9 +2866,9 @@ export default function Phase1Validate({
 
                               <button
                                 onClick={() => setViewDraftTask(task)}
-                                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1 transition-colors"
+                                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-bold border border-slate-200/90 hover:border-slate-300 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                               >
-                                <Eye className="w-3 h-3" />
+                                <Eye className="w-3.5 h-3.5 text-slate-500" />
                                 <span>View Draft</span>
                               </button>
                             </div>
@@ -2616,267 +2877,267 @@ export default function Phase1Validate({
                       })
                     })()}
                   </div>
-            </div>
-          )}
-
-          {/* SUBTAB 2: POST */}
-          {campaignSubTab === 'post' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Social Announcement Post Copy</span>
-                <button
-                  onClick={() => copyToClipboard(campaignKit?.announcementPost, 'post')}
-                  disabled={!campaignKit?.announcementPost}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40"
-                >
-                  {copiedKey === 'post' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedKey === 'post' ? 'Copied!' : 'Copy Post'}</span>
-                </button>
-              </div>
-              <textarea
-                value={campaignKit?.announcementPost || ''}
-                onChange={e => updateCampaignKit('announcementPost', e.target.value)}
-                placeholder="Click 'Generate AI Content' or write custom announcement post..."
-                rows={8}
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans focus:border-slate-500 resize-y"
-              />
-            </div>
-          )}
-
-          {/* SUBTAB 3: STORIES & POLLS */}
-          {campaignSubTab === 'story' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Instagram / TikTok 3-Story Sequence & Polls</span>
-                <button
-                  onClick={() => copyToClipboard(campaignKit?.storySequence, 'story')}
-                  disabled={!campaignKit?.storySequence}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40"
-                >
-                  {copiedKey === 'story' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedKey === 'story' ? 'Copied!' : 'Copy Stories'}</span>
-                </button>
-              </div>
-              <textarea
-                value={campaignKit?.storySequence || ''}
-                onChange={e => updateCampaignKit('storySequence', e.target.value)}
-                placeholder="Story 1: Pain point poll&#10;Story 2: Product announcement&#10;Story 3: Link sticker CTA"
-                rows={9}
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans focus:border-slate-500 resize-y"
-              />
-            </div>
-          )}
-
-          {/* SUBTAB 4: VIDEO SCRIPT */}
-          {campaignSubTab === 'video' && (
-            <div className="space-y-2.5">
-              <div className="p-2.5 rounded-lg bg-red-950/30 border border-red-500/30 flex items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <Youtube className="w-4 h-4 text-red-400 shrink-0" />
-                  <span className="text-red-200 text-[11px]">
-                    <strong>Transcript Hook @ 06:48:</strong> Direct hook addressing viewer drop-off point in "{audienceGroundingData.transcripts[0]?.title || 'Recent Upload'}".
-                  </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAudienceIntelModalTab('transcripts')
-                    setShowAudienceIntelModal(true)
-                  }}
-                  className="text-[10px] font-bold text-red-300 hover:text-red-100 underline cursor-pointer shrink-0"
-                >
-                  View Citation ↗
-                </button>
-              </div>
+              )}
 
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">60-Second Short Form Script</span>
-                <button
-                  onClick={() => copyToClipboard(campaignKit?.videoScript, 'video')}
-                  disabled={!campaignKit?.videoScript}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40"
-                >
-                  {copiedKey === 'video' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedKey === 'video' ? 'Copied!' : 'Copy Script'}</span>
-                </button>
-              </div>
-              <textarea
-                value={campaignKit?.videoScript || ''}
-                onChange={e => updateCampaignKit('videoScript', e.target.value)}
-                placeholder="Click 'Generate AI Content' or write 60-second video script..."
-                rows={10}
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-slate-200 outline-none leading-relaxed font-mono focus:border-slate-500 resize-y"
-              />
-            </div>
-          )}
-
-          {/* SUBTAB 5: NEWSLETTER */}
-          {campaignSubTab === 'newsletter' && (
-            <div className="space-y-2.5">
-              <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-500/30 flex items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="text-amber-200 text-[11px]">
-                    <strong>Comment #13 Deliverability Guard:</strong> Formatted as 1:1 founder plain-text from {project?.creatorName || 'creator'}. 0% marketing spam tags, Primary Inbox delivery guaranteed (bypasses Promotions tab).
-                  </span>
+              {/* SUBTAB 2: POST */}
+              {campaignSubTab === 'post' && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Social Announcement Post Copy</span>
+                    <button
+                      onClick={() => copyToClipboard(campaignKit?.announcementPost, 'post')}
+                      disabled={!campaignKit?.announcementPost}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                    >
+                      {copiedKey === 'post' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'post' ? 'Copied!' : 'Copy Post'}</span>
+                    </button>
+                  </div>
+                  <textarea
+                    value={campaignKit?.announcementPost || ''}
+                    onChange={e => updateCampaignKit('announcementPost', e.target.value)}
+                    placeholder="Click 'Generate AI Content' or write custom announcement post..."
+                    rows={8}
+                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 resize-y transition-all"
+                  />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAudienceIntelModalTab('deliverability')
-                    setShowAudienceIntelModal(true)
-                  }}
-                  className="text-[10px] font-bold text-amber-300 hover:text-amber-100 underline cursor-pointer shrink-0"
-                >
-                  View Deliverability Specs ↗
-                </button>
-              </div>
+              )}
 
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Creator Email Newsletter Copy</span>
-                <button
-                  onClick={() => copyToClipboard(campaignKit?.newsletterDraft, 'newsletter')}
-                  disabled={!campaignKit?.newsletterDraft}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40"
-                >
-                  {copiedKey === 'newsletter' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedKey === 'newsletter' ? 'Copied!' : 'Copy Newsletter'}</span>
-                </button>
-              </div>
-              <textarea
-                rows={9}
-                value={campaignKit?.newsletterDraft || ''}
-                onChange={e => updateCampaignKit('newsletterDraft', e.target.value)}
-                placeholder="Click 'Generate AI Content' or write newsletter copy..."
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans focus:border-slate-500"
-              />
-            </div>
-          )}
+              {/* SUBTAB 3: STORIES & POLLS */}
+              {campaignSubTab === 'story' && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Instagram / TikTok 3-Story Sequence & Polls</span>
+                    <button
+                      onClick={() => copyToClipboard(campaignKit?.storySequence, 'story')}
+                      disabled={!campaignKit?.storySequence}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                    >
+                      {copiedKey === 'story' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'story' ? 'Copied!' : 'Copy Stories'}</span>
+                    </button>
+                  </div>
+                  <textarea
+                    value={campaignKit?.storySequence || ''}
+                    onChange={e => updateCampaignKit('storySequence', e.target.value)}
+                    placeholder="Story 1: Pain point poll&#10;Story 2: Product announcement&#10;Story 3: Link sticker CTA"
+                    rows={9}
+                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 resize-y transition-all"
+                  />
+                </div>
+              )}
 
-          {/* SUBTAB 6: DM OUTREACH */}
-          {campaignSubTab === 'dm' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">1-on-1 DM Script</span>
-                <button
-                  onClick={() => copyToClipboard(campaignKit?.directMessageScript, 'dm')}
-                  disabled={!campaignKit?.directMessageScript}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40"
-                >
-                  {copiedKey === 'dm' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedKey === 'dm' ? 'Copied!' : 'Copy DM'}</span>
-                </button>
-              </div>
-              <textarea
-                value={campaignKit?.directMessageScript || ''}
-                onChange={e => updateCampaignKit('directMessageScript', e.target.value)}
-                placeholder="Click 'Generate AI Content' or write DM outreach template..."
-                rows={7}
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans focus:border-slate-500"
-              />
-            </div>
-          )}
+              {/* SUBTAB 4: VIDEO SCRIPT */}
+              {campaignSubTab === 'video' && (
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between gap-2 text-xs shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <Youtube className="w-4 h-4 text-red-600 shrink-0" />
+                      <span className="text-red-950 text-[11px]">
+                        <strong>Native Video Segment:</strong> Seamless mid-roll hook connecting the problems discussed in "{audienceGroundingData.transcripts[0]?.title || 'Recent Channel Upload'}" to this software.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAudienceIntelModalTab('transcripts')
+                        setShowAudienceIntelModal(true)
+                      }}
+                      className="text-[10px] font-bold text-red-700 hover:text-red-900 underline cursor-pointer shrink-0"
+                    >
+                      View Citation ↗
+                    </button>
+                  </div>
 
-          {/* SUBTAB 7: TRACKING LINKS */}
-          {campaignSubTab === 'links' && (
-            <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
-              <div>
-                <h4 className="text-xs font-bold text-white">Channel Attribution UTM Links</h4>
-                <p className="text-[11px] text-slate-400">
-                  Trackable pre-order URLs for creator social bio, stories, videos, and newsletters.
-                </p>
-              </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">60-Second Short Form Script</span>
+                    <button
+                      onClick={() => copyToClipboard(campaignKit?.videoScript, 'video')}
+                      disabled={!campaignKit?.videoScript}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                    >
+                      {copiedKey === 'video' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'video' ? 'Copied!' : 'Copy Script'}</span>
+                    </button>
+                  </div>
+                  <textarea
+                    value={campaignKit?.videoScript || ''}
+                    onChange={e => updateCampaignKit('videoScript', e.target.value)}
+                    placeholder="Click 'Generate AI Content' or write 60-second video script..."
+                    rows={10}
+                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-mono focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 resize-y transition-all"
+                  />
+                </div>
+              )}
 
-              <div className="space-y-2">
-                {[
-                  { channel: 'Instagram Stories', ref: 'instagram_story' },
-                  { channel: 'TikTok / Shorts', ref: 'tiktok_video' },
-                  { channel: 'Twitter / X', ref: 'twitter_post' },
-                  { channel: 'Email Newsletter', ref: 'newsletter' },
-                  { channel: '1-on-1 DM Outreach', ref: 'dm_outreach' },
-                ].map((item, i) => {
-                  const slug = (project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '')
-                  const fullUrl = `${origin}/preorder/${slug}?ref=${item.ref}`
-                  return (
-                    <div key={i} className="p-3 rounded-lg bg-[#0e1117] border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              {/* SUBTAB 5: NEWSLETTER */}
+              {campaignSubTab === 'newsletter' && (
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-2 text-xs shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span className="text-amber-950 text-[11px]">
+                        <strong>Comment #13 Deliverability Guard:</strong> Formatted as 1:1 founder plain-text from {project?.creatorName || 'creator'}. 0% marketing spam tags, Primary Inbox delivery guaranteed (bypasses Promotions tab).
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAudienceIntelModalTab('comments')
+                        setShowAudienceIntelModal(true)
+                      }}
+                      className="text-[10px] font-bold text-amber-800 hover:text-amber-950 underline cursor-pointer shrink-0"
+                    >
+                      View Audience Evidence ↗
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Creator Email Newsletter Copy</span>
+                    <button
+                      onClick={() => copyToClipboard(campaignKit?.newsletterDraft, 'newsletter')}
+                      disabled={!campaignKit?.newsletterDraft}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                    >
+                      {copiedKey === 'newsletter' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'newsletter' ? 'Copied!' : 'Copy Newsletter'}</span>
+                    </button>
+                  </div>
+                  <textarea
+                    rows={9}
+                    value={campaignKit?.newsletterDraft || ''}
+                    onChange={e => updateCampaignKit('newsletterDraft', e.target.value)}
+                    placeholder="Click 'Generate AI Content' or write newsletter copy..."
+                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 transition-all"
+                  />
+                </div>
+              )}
+
+              {/* SUBTAB 6: DM OUTREACH */}
+              {campaignSubTab === 'dm' && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">1-on-1 DM Script</span>
+                    <button
+                      onClick={() => copyToClipboard(campaignKit?.directMessageScript, 'dm')}
+                      disabled={!campaignKit?.directMessageScript}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                    >
+                      {copiedKey === 'dm' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'dm' ? 'Copied!' : 'Copy DM'}</span>
+                    </button>
+                  </div>
+                  <textarea
+                    value={campaignKit?.directMessageScript || ''}
+                    onChange={e => updateCampaignKit('directMessageScript', e.target.value)}
+                    placeholder="Click 'Generate AI Content' or write DM outreach template..."
+                    rows={7}
+                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 transition-all"
+                  />
+                </div>
+              )}
+
+              {/* SUBTAB 7: TRACKING LINKS */}
+              {campaignSubTab === 'links' && (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">Channel Attribution UTM Links</h4>
+                    <p className="text-[11px] text-slate-500">
+                      Trackable pre-order URLs for creator social bio, stories, videos, and newsletters.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {[
+                      { channel: 'Instagram Stories', ref: 'instagram_story' },
+                      { channel: 'TikTok / Shorts', ref: 'tiktok_video' },
+                      { channel: 'Twitter / X', ref: 'twitter_post' },
+                      { channel: 'Email Newsletter', ref: 'newsletter' },
+                      { channel: '1-on-1 DM Outreach', ref: 'dm_outreach' },
+                    ].map((item, i) => {
+                      const slug = (project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '')
+                      const fullUrl = `${origin}/preorder/${slug}?ref=${item.ref}`
+                      return (
+                        <div key={i} className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <span className="font-bold text-slate-900 text-xs block">{item.channel}</span>
+                            <span className="text-[11px] text-slate-600 font-mono truncate">{fullUrl}</span>
+                          </div>
+                          <button
+                            onClick={() => copyToClipboard(fullUrl, `link-${i}`)}
+                            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 flex items-center gap-1 transition-colors self-end sm:self-auto cursor-pointer"
+                          >
+                            {copiedKey === `link-${i}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedKey === `link-${i}` ? 'Copied!' : 'Copy Link'}</span>
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* View Draft Modal */}
+              {viewDraftTask && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[99999] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in overflow-hidden">
+                  <div className="w-full max-w-lg rounded-3xl bg-white border border-slate-200 shadow-2xl p-6 space-y-4 animate-scale-in text-slate-900">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                       <div>
-                        <span className="font-bold text-white text-xs block">{item.channel}</span>
-                        <span className="text-[11px] text-slate-300 font-mono truncate">{fullUrl}</span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-mono">
+                          Day {viewDraftTask.day} · {viewDraftTask.channel}
+                        </span>
+                        <h3 className="text-base font-extrabold text-slate-900">{viewDraftTask.title}</h3>
                       </div>
                       <button
-                        onClick={() => copyToClipboard(fullUrl, `link-${i}`)}
-                        className="px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 text-xs font-bold border border-white/[0.08] flex items-center gap-1 transition-colors self-end sm:self-auto"
+                        onClick={() => setViewDraftTask(null)}
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                       >
-                        {copiedKey === `link-${i}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedKey === `link-${i}` ? 'Copied!' : 'Copy Link'}</span>
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
 
-          {/* View Draft Modal */}
-          {viewDraftTask && typeof document !== 'undefined' && createPortal(
-            <div className="fixed inset-0 z-[99999] bg-slate-900/20 backdrop-blur-[2px] flex items-center justify-center p-4 animate-fade-in overflow-hidden">
-              <div className="w-full max-w-lg rounded-3xl bg-[#0e1117] border border-white/[0.12] shadow-2xl p-6 space-y-4 animate-scale-in">
-                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-                  <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                      Day {viewDraftTask.day} · {viewDraftTask.channel}
-                    </span>
-                    <h3 className="text-base font-extrabold text-white">{viewDraftTask.title}</h3>
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 max-h-72 overflow-y-auto font-sans leading-relaxed text-xs text-slate-800">
+                      <pre className="text-xs text-slate-800 font-sans whitespace-pre-wrap leading-relaxed">
+                        {getTaskDraftContent(viewDraftTask)}
+                      </pre>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 pt-2">
+                      <button
+                        onClick={() => {
+                          copyToClipboard(getTaskDraftContent(viewDraftTask), 'draft-modal')
+                          showNotification('Draft content copied to clipboard!')
+                        }}
+                        className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>{copiedKey === 'draft-modal' ? 'Copied!' : 'Copy Draft'}</span>
+                      </button>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            handleToggleScheduleTask(viewDraftTask.id)
+                            setViewDraftTask(null)
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Mark Completed</span>
+                        </button>
+                        <button
+                          onClick={() => setViewDraftTask(null)}
+                          className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition-colors cursor-pointer"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setViewDraftTask(null)}
-                    className="p-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-400 hover:text-white transition-colors cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="p-4 rounded-xl bg-[#141720] border border-white/[0.06] max-h-72 overflow-y-auto font-sans leading-relaxed text-xs text-slate-200">
-                  <pre className="text-xs text-slate-200 font-sans whitespace-pre-wrap leading-relaxed">
-                    {getTaskDraftContent(viewDraftTask)}
-                  </pre>
-                </div>
-
-                <div className="flex items-center justify-between gap-3 pt-2">
-                  <button
-                    onClick={() => {
-                      copyToClipboard(getTaskDraftContent(viewDraftTask), 'draft-modal')
-                      showNotification('Draft content copied to clipboard!')
-                    }}
-                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>{copiedKey === 'draft-modal' ? 'Copied!' : 'Copy Draft'}</span>
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        handleToggleScheduleTask(viewDraftTask.id)
-                        setViewDraftTask(null)
-                      }}
-                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Mark Completed</span>
-                    </button>
-                    <button
-                      onClick={() => setViewDraftTask(null)}
-                      className="px-3.5 py-2 rounded-xl bg-white/[0.06] text-slate-300 text-xs font-bold border border-white/[0.08] hover:bg-white/[0.12] transition-colors cursor-pointer"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )}
+                </div>,
+                document.body
+              )}
 
             </>
           )}
