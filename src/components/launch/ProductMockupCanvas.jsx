@@ -11,7 +11,7 @@ import { generateProductImageWithOpenAI } from '../../services/ai'
 export default function ProductMockupCanvas({ project, onSaveMockupImage, onShowNotification }) {
   const mockupRef = useRef(null)
   const [viewMode, setViewMode] = useState('interactive') // 'interactive' | 'ai_generated' | 'converted'
-  const [accentColor, setAccentColor] = useState('lime')
+  const [accentColor, setAccentColor] = useState('yellow')
   const [isCapturing, setIsCapturing] = useState(false)
   const [isGeneratingAI, setIsGeneratingAI] = useState(false)
   const [convertedImageUrl, setConvertedImageUrl] = useState(() => project?.mockupImage || null)
@@ -67,29 +67,32 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
 
   // Accent color themes
   const themeMap = {
+    yellow: {
+      border: 'border-[#252B32]',
+      glow: 'shadow-[0_20px_50px_rgba(0,0,0,0.6)]',
+      badge: 'bg-yellow-400/15 text-yellow-300 border border-yellow-400/30',
+      primaryBg: 'bg-yellow-400',
+      primaryText: 'text-slate-950 font-black',
+      bar: 'bg-yellow-400',
+      text: 'text-yellow-400',
+      gradient: 'from-[#101419] to-[#0D1014]'
+    },
     lime: {
       border: 'border-[#252B32]',
       glow: 'shadow-[0_20px_50px_rgba(0,0,0,0.6)]',
-      badge: 'bg-[#C8FF3D]/10 text-[#C8FF3D] border border-[#C8FF3D]/30',
-      primaryBg: 'bg-[#C8FF3D] text-[#080A0C]',
-      bar: 'bg-[#C8FF3D]',
-      text: 'text-[#C8FF3D]',
-      gradient: 'from-[#101419] to-[#0D1014]'
-    },
-    purple: {
-      border: 'border-[#252B32]',
-      glow: 'shadow-[0_20px_50px_rgba(0,0,0,0.6)]',
-      badge: 'bg-[#C8FF3D]/10 text-[#C8FF3D] border border-[#C8FF3D]/30',
-      primaryBg: 'bg-[#C8FF3D] text-[#080A0C]',
-      bar: 'bg-[#C8FF3D]',
-      text: 'text-[#C8FF3D]',
+      badge: 'bg-yellow-400/15 text-yellow-300 border border-yellow-400/30',
+      primaryBg: 'bg-yellow-400',
+      primaryText: 'text-slate-950 font-black',
+      bar: 'bg-yellow-400',
+      text: 'text-yellow-400',
       gradient: 'from-[#101419] to-[#0D1014]'
     },
     emerald: {
       border: 'border-emerald-500/40',
       glow: 'shadow-emerald-950/50',
-      badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+      badge: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30',
       primaryBg: 'bg-emerald-600',
+      primaryText: 'text-white font-bold',
       bar: 'bg-emerald-500',
       text: 'text-emerald-400',
       gradient: 'from-emerald-950/40 to-[#0e1117]'
@@ -99,6 +102,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
       glow: 'shadow-indigo-950/50',
       badge: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
       primaryBg: 'bg-indigo-600',
+      primaryText: 'text-white font-bold',
       bar: 'bg-indigo-500',
       text: 'text-indigo-400',
       gradient: 'from-indigo-950/40 to-[#0e1117]'
@@ -106,8 +110,9 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
     amber: {
       border: 'border-amber-500/40',
       glow: 'shadow-amber-950/50',
-      badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-      primaryBg: 'bg-amber-600',
+      badge: 'bg-amber-500/15 text-amber-300 border border-amber-500/30',
+      primaryBg: 'bg-amber-500',
+      primaryText: 'text-slate-950 font-black',
       bar: 'bg-amber-500',
       text: 'text-amber-400',
       gradient: 'from-amber-950/40 to-[#0e1117]'
@@ -117,13 +122,14 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
       glow: 'shadow-rose-950/50',
       badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
       primaryBg: 'bg-rose-600',
+      primaryText: 'text-white font-bold',
       bar: 'bg-rose-500',
       text: 'text-rose-400',
       gradient: 'from-rose-950/40 to-[#0e1117]'
     },
   }
 
-  const currentTheme = themeMap[accentColor] || themeMap.lime
+  const currentTheme = themeMap[accentColor] || themeMap.yellow || themeMap.lime
 
   // Convert live rendered DOM to PNG image
   const handleConvertToImage = async () => {
@@ -188,7 +194,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
   }
 
   return (
-    <div className="space-y-4 w-full max-w-full overflow-hidden">
+    <div className="keep-dark product-mockup-canvas product-mockup-display space-y-4 w-full max-w-full overflow-hidden px-3 sm:px-5 pb-6">
       {/* Compact Responsive Control Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-[#101419] border border-[#252B32]">
         {/* View Mode Tabs */}
@@ -196,7 +202,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
           <button
             onClick={() => setViewMode('interactive')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-              viewMode === 'interactive' ? 'bg-[#C8FF3D] text-[#080A0C]' : 'text-[#969DA6] hover:text-[#F5F3EA]'
+              viewMode === 'interactive' ? 'bg-yellow-400 text-slate-950 font-black' : 'text-[#969DA6] hover:text-[#F5F3EA]'
             }`}
           >
             Studio
@@ -204,10 +210,10 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
           <button
             onClick={() => setViewMode('ai_generated')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${
-              viewMode === 'ai_generated' ? 'bg-[#C8FF3D] text-[#080A0C]' : 'text-[#969DA6] hover:text-[#F5F3EA]'
+              viewMode === 'ai_generated' ? 'bg-yellow-400 text-slate-950 font-black' : 'text-[#969DA6] hover:text-[#F5F3EA]'
             }`}
           >
-            <Sparkles className="w-3 h-3 text-[#C8FF3D]" />
+            <Sparkles className="w-3 h-3 text-yellow-400" />
             <span>DALL-E 3</span>
           </button>
           {convertedImageUrl && (
@@ -227,16 +233,16 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
           {/* Accent Palette Selector */}
           {viewMode === 'interactive' && (
             <div className="flex items-center gap-1 pr-1.5 border-r border-[#252B32]">
-              {['lime', 'emerald', 'indigo', 'amber', 'rose'].map(color => (
+              {['yellow', 'emerald', 'indigo', 'amber', 'rose'].map(color => (
                 <button
                   key={color}
                   onClick={() => setAccentColor(color)}
                   className={`w-4 h-4 rounded-full border transition-transform ${
-                    color === 'lime' ? 'bg-[#C8FF3D]' :
+                    color === 'yellow' ? 'bg-yellow-400' :
                     color === 'emerald' ? 'bg-emerald-500' :
                     color === 'indigo' ? 'bg-indigo-500' :
                     color === 'amber' ? 'bg-amber-500' : 'bg-rose-500'
-                  } ${accentColor === color ? 'border-white scale-110 shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                  } ${accentColor === color || (color === 'yellow' && accentColor === 'lime') ? 'border-white scale-110 shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'}`}
                   title={`${color} theme`}
                 />
               ))}
@@ -248,7 +254,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
             <button
               onClick={() => setShowCustomizer(!showCustomizer)}
               className={`px-2.5 py-1 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-colors ${
-                showCustomizer ? 'bg-[#C8FF3D]/10 text-[#C8FF3D] border-[#C8FF3D]/40' : 'bg-[#171C22] text-[#969DA6] border-[#252B32] hover:text-[#F5F3EA]'
+                showCustomizer ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/40' : 'bg-[#171C22] text-[#969DA6] border-[#252B32] hover:text-[#F5F3EA]'
               }`}
             >
               <Settings2 className="w-3 h-3" />
@@ -372,7 +378,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
           {/* Mockup Canvas to be captured */}
           <div
             ref={mockupRef}
-            className={`rounded-2xl bg-[#090b0e] border ${currentTheme.border} p-4 sm:p-6 shadow-2xl ${currentTheme.glow} transition-all space-y-4`}
+            className={`keep-dark product-mockup-canvas product-mockup-display rounded-2xl bg-[#090b0e] border ${currentTheme.border} p-4 sm:p-6 shadow-2xl ${currentTheme.glow} transition-all space-y-4`}
           >
             {/* macOS Window Titlebar */}
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
@@ -401,7 +407,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
               {/* Mini App Sidebar */}
               <div className="md:col-span-3 bg-[#11141c] border border-white/[0.06] rounded-xl p-3 space-y-3">
                 <div className="flex items-center gap-2 px-1">
-                  <div className={`w-7 h-7 rounded-lg ${currentTheme.primaryBg} flex items-center justify-center text-white font-black text-xs shadow-md`}>
+                  <div className={`w-7 h-7 rounded-lg ${currentTheme.primaryBg} flex items-center justify-center ${currentTheme.primaryText || 'text-white'} font-black text-xs shadow-md`}>
                     {productName.slice(0, 2).toUpperCase()}
                   </div>
                   <div>
@@ -423,12 +429,12 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
                         key={i}
                         className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 ${
                           nav.active
-                            ? `${currentTheme.primaryBg} text-white shadow-sm`
+                            ? `${currentTheme.primaryBg} ${currentTheme.primaryText || 'text-white'} shadow-sm font-bold`
                             : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
                         }`}
                       >
-                        <NavIcon className="w-3.5 h-3.5" />
-                        <span>{nav.label}</span>
+                        <NavIcon className={`w-3.5 h-3.5 ${nav.active ? (currentTheme.primaryText || 'text-white') : ''}`} />
+                        <span className={nav.active ? (currentTheme.primaryText || 'text-white') : ''}>{nav.label}</span>
                       </div>
                     )
                   })}
@@ -489,11 +495,11 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+          <div className="flex items-center justify-between text-xs text-slate-400 px-2.5 pt-2.5 pb-4">
             <span>Interactive Studio Canvas • Rendered at 2x Ultra HD resolution</span>
             <button
               onClick={handleConvertToImage}
-              className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
+              className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 cursor-pointer transition-colors"
             >
               <span>Click "Convert to PNG" to save snapshot</span>
               <ArrowRight className="w-3.5 h-3.5" />

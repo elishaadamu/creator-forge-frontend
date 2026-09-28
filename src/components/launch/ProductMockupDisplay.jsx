@@ -265,7 +265,7 @@ export default function ProductMockupDisplay({ project, theme = 'lime' }) {
   const currentTheme = themeMap[theme] || themeMap.lime
 
   return (
-    <div className={`w-full rounded-2xl bg-[#101419] border ${currentTheme.border} p-4 sm:p-6 shadow-2xl ${currentTheme.glow} transition-all space-y-4 text-left select-none`}>
+    <div className={`w-full rounded-2xl bg-[#101419] border ${currentTheme.border} p-4 sm:p-6 shadow-2xl ${currentTheme.glow} transition-all space-y-4 text-left select-none keep-dark product-mockup-display`}>
       {/* macOS Window Titlebar */}
       <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 border-b border-[#252B32] pb-3">
         <div className="flex items-center gap-2 min-w-0">
@@ -564,7 +564,7 @@ export default function ProductMockupDisplay({ project, theme = 'lime' }) {
                     <FeatIcon className="w-3.5 h-3.5" />
                     <span className="truncate">{feat.title}</span>
                   </div>
-                  <p className="text-[10px] text-[#969DA6] leading-relaxed line-clamp-2">
+                  <p className="text-[10px] text-slate-300 font-medium leading-relaxed line-clamp-2">
                     {feat.desc}
                   </p>
                 </div>

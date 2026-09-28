@@ -15,7 +15,7 @@ export function Skeleton({
 }) {
   const variantStyles = {
     default: 'bg-white/[0.04] border-white/[0.06]',
-    purple: 'bg-purple-500/[0.05] border-purple-500/20',
+    purple: 'bg-slate-100 border-slate-200',
     emerald: 'bg-emerald-500/[0.05] border-emerald-500/20',
     blue: 'bg-blue-500/[0.05] border-blue-500/20',
     amber: 'bg-amber-500/[0.05] border-amber-500/20',

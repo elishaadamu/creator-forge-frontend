@@ -7,6 +7,8 @@
  * Keys stored in localStorage — never sent to Forge servers.
  */
 
+import { getProjectAudienceGrounding, enrichTasksWithGrounding } from "../utils/audienceGrounding";
+
 // ── Key management ─────────────────────────────────────────────────────────────
 
 let inMemoryAiKeys = {
@@ -1673,6 +1675,8 @@ export function buildSmartFallbackCampaignKit(source) {
     storySequence: `STORY 1 — PAIN POINT HOOK\nVisual: Selfie video or background video of workflow.\nText: "Quick question for anyone in ${niche}... How many hours do you waste weekly on manual tasks?"\n[STICKER: Interactive Poll -> "1-3 Hours" / "5+ Hours (Help!)"]\n\nSTORY 2 — THE PRODUCT REVEAL\nVisual: Mockup screenshot / screen recording of ${product}.\nText: "That's why @creator and the team are co-building ${product} — ${tagline}."\n\nSTORY 3 — FOUNDING MEMBER OFFER & LINK\nVisual: Founding badge overlay.\nText: "Opening 50 Founding Member spots with lifetime 50% discount ($${unitPrice}/yr) + private beta access."\n[STICKER: Link -> "Claim Founding Pass ↗" -> ${origin}/preorder/${slug}?ref=instagram_story]`,
     newsletterDraft: `Subject: Why I'm building ${product} (and an invite for you)\n\nHey [First Name],\n\nIf you've been following my content in ${niche}, you know how frustrating manual bottlenecks have been.\n\nToday, I'm thrilled to announce that we are officially co-founding ${product} — ${tagline}.\n\nBefore we start full engineering on the MVP, we are opening a private Founding Member cohort of 50 people.\n\nAs a Founding Member, you get:\n• 50% Lifetime Price Lock ($${unitPrice}/year forever)\n• Direct input on product features & roadmap in our private channel\n• 1-on-1 onboarding session directly with the core team\n• 100% money-back guarantee if validation goals aren't met\n\n👉 Claim your founding member pass ($${unitPrice}) or reserve with a $${depositVal} refundable deposit here:\n${origin}/preorder/${slug}?ref=newsletter\n\nCan't wait to build this with you,\n${creator}`,
     directMessageScript: `Hey [First Name]! Saw your recent post about ${niche} and loved your perspective.\n\nWe're putting together a private founding group for ${product} (${tagline}).\n\nSince you're active in this space, I'd love to give you early access + direct input on the roadmap. Check out the founding pre-order ($${unitPrice}) here: ${origin}/preorder/${slug}?ref=dm_outreach — let me know what you think!`,
+    postingSchedule: enrichTasksWithGrounding(defaultSchedule, source),
+    audienceGrounding: getProjectAudienceGrounding(source),
     landingPageCopy: {
       headline: `The High-Leverage Platform Built For ${niche}`,
       subheadline: `${tagline}. Co-founded with ${creator} for ambitious creators.`,
@@ -1856,11 +1860,14 @@ Return JSON with exact keys:
           String(resObj.directMessageScript || fallback.directMessageScript),
         ),
         landingPageCopy: resObj.landingPageCopy || fallback.landingPageCopy,
-        postingSchedule:
+        postingSchedule: enrichTasksWithGrounding(
           Array.isArray(resObj.postingSchedule) &&
           resObj.postingSchedule.length > 0
             ? resObj.postingSchedule
             : fallback.postingSchedule,
+          projectData
+        ),
+        audienceGrounding: resObj.audienceGrounding || getProjectAudienceGrounding(projectData),
       };
     }
     throw new Error("Incomplete campaign kit schema");
