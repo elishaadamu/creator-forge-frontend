@@ -556,6 +556,10 @@ export default function AcquisitionEngine({
       return null;
     }
   });
+  const [showResetUrlModal, setShowResetUrlModal] = useState(false);
+  const [showSetUrlModal, setShowSetUrlModal] = useState(false);
+  const [inputUrlCreatorId, setInputUrlCreatorId] = useState("");
+  const [inputUrlTargetStep, setInputUrlTargetStep] = useState(4);
   const [selectedConceptId, setSelectedConceptId] = useState(null);
   const [creatorConceptSelectionMap, setCreatorConceptSelectionMap] = useState(() => {
     try {
@@ -629,15 +633,7 @@ export default function AcquisitionEngine({
     return () => window.removeEventListener('popstate', handleUrlSync);
   }, []);
 
-  const handleClearScopedCreator = useCallback(() => {
-    setScopedCreatorId(null);
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('creator');
-      url.searchParams.delete('creatorId');
-      window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
-    } catch (e) { }
-  }, []);
+
 
   const getCreatorAvatar = useCallback((c) => {
     if (!c) return "https://ui-avatars.com/api/?name=Creator&background=0f172a&color=fff&bold=true";
@@ -813,6 +809,39 @@ export default function AcquisitionEngine({
   const dismissToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  const handleClearScopedCreator = useCallback((targetStep = null) => {
+    setScopedCreatorId(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('creator');
+      url.searchParams.delete('creatorId');
+      if (targetStep) {
+        url.searchParams.set('step', String(targetStep));
+      }
+      window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+    } catch (e) { }
+    if (targetStep) {
+      setActiveStep(Number(targetStep));
+    }
+    notify("success", "URL Reset", "Creator ID removed. Full cohort pipeline active across all steps.", 3000);
+  }, [notify]);
+
+  const handleApplyScopedUrl = useCallback((newId, targetStep = 4) => {
+    if (!newId || !newId.trim()) return;
+    const cleanId = newId.trim();
+    setScopedCreatorId(cleanId);
+    setSelectedCreatorId(cleanId);
+    setActiveStep(Number(targetStep) || 4);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('creator', cleanId);
+      url.searchParams.set('step', String(targetStep));
+      window.history.pushState({}, '', url.pathname + (url.search ? url.search : ''));
+    } catch (e) { }
+    setShowSetUrlModal(false);
+    notify("success", "URL Focus Set", `Now scoped to creator ID: ${cleanId}`, 3000);
+  }, [notify]);
 
   const handleDeleteAllCreators = () => {
     setShowDeleteConfirmModal(true);
@@ -6680,6 +6709,59 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           }}
         />
 
+        {/* Top Control Bar: Pipeline Scope + Set Focus URL / Reset URL triggers */}
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-display">
+              Pipeline Workspace
+            </span>
+            <span className="text-slate-300">•</span>
+            {scopedCreatorId ? (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse flex-shrink-0" />
+                <span className="font-medium truncate max-w-[240px]">
+                  Individual Focus: <strong>{scopedIndividualCreator?.name || scopedIndividualCreator?.handle || scopedCreatorId}</strong>
+                </span>
+                <span className="text-[10px] font-mono text-indigo-500 bg-white px-1.5 py-0.5 rounded border border-indigo-100">
+                  ID: {scopedCreatorId.slice(0, 8)}...
+                </span>
+              </div>
+            ) : (
+              <span className="text-xs text-slate-600 font-medium flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                Collective Cohort View ({unlaunchedCreators.length} active leads)
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {scopedCreatorId && (
+              <button
+                type="button"
+                onClick={() => setShowResetUrlModal(true)}
+                className="h-8 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95"
+                title="Reset URL to remove creator ID and return to collective pipeline across all steps"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                <span>Reset URL</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setInputUrlCreatorId(scopedCreatorId || "");
+                setInputUrlTargetStep(activeStep || 4);
+                setShowSetUrlModal(true);
+              }}
+              className="h-8 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95"
+              title="Set or customize the creator ID in the URL to focus any individual creator"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-indigo-300" />
+              <span>{scopedCreatorId ? "Change URL ID" : "Set URL ID"}</span>
+            </button>
+          </div>
+        </div>
+
         {/* Stepper Buttons (Matching User HTML Design) */}
         <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 w-full min-w-0">
           {[
@@ -6695,7 +6777,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             return (
               <button
                 key={item.step}
-                onClick={() => setActiveStep(item.step)}
+                onClick={() => {
+                  if (item.step === 1 && scopedCreatorId) {
+                    setShowResetUrlModal(true);
+                  } else {
+                    setActiveStep(item.step);
+                  }
+                }}
                 className={`relative flex items-center gap-3 p-3 rounded-xl text-left transition cursor-pointer group min-w-0 ${
                   isActive
                     ? "bg-slate-900 text-white border border-slate-900 shadow-sm"
@@ -13098,6 +13186,225 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           }
         }}
       />
+
+      {/* Reset URL & Exit Focus Modal */}
+      {showResetUrlModal && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-5 animate-in zoom-in-95">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center flex-shrink-0 text-rose-600 shadow-2xs">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm font-display">
+                    Reset URL & Exit Individual Focus?
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Switch back to collective creator pipeline
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResetUrlModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-2">
+              <p>
+                The operator currently opened an individual creator in the workspace:
+              </p>
+              <div className="p-2.5 rounded-lg bg-white border border-slate-200 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                <span className="font-semibold text-slate-900">
+                  {scopedIndividualCreator?.name || scopedIndividualCreator?.handle || "Selected Creator"}
+                </span>
+                <span className="text-[11px] font-mono text-slate-500 truncate ml-auto">
+                  {scopedCreatorId}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Returning to Step 01 (Campaign Setup) or resetting will remove this ID from the URL so you will not see this single creator restricted in Step 2, 3, 4, 5, or 6 again.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  handleClearScopedCreator(1);
+                  setShowResetUrlModal(false);
+                }}
+                className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-xs transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset URL & View All</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveStep(1);
+                  setShowResetUrlModal(false);
+                }}
+                className="w-full sm:w-auto py-2.5 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
+                title="Go to Step 1 without removing the creator ID from URL"
+              >
+                Keep Focus & Go to Step 1
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowResetUrlModal(false)}
+                className="w-full sm:w-auto py-2.5 px-3 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs font-medium transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Set / Change Creator Focus URL Modal */}
+      {showSetUrlModal && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-4 animate-in zoom-in-95">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center flex-shrink-0 text-indigo-600 shadow-2xs">
+                  <ExternalLink className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm font-display">
+                    Set Creator Focus URL
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Scope steps 4, 5, or 6 to a single creator by ID
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSetUrlModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Creator ID or Handle
+                </label>
+                <input
+                  type="text"
+                  value={inputUrlCreatorId}
+                  onChange={(e) => setInputUrlCreatorId(e.target.value)}
+                  placeholder="e.g. 818dee64-eeca-4111-9d4a-9d222184327d or jpgcoaching"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-xs font-mono outline-hidden shadow-2xs transition"
+                />
+              </div>
+
+              {/* Quick Picker from active pipeline creators */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">
+                  Or pick from active leads:
+                </label>
+                <div className="max-h-36 overflow-y-auto space-y-1 pr-1 border border-slate-100 rounded-xl p-1 bg-slate-50/50">
+                  {unlaunchedCreators.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setInputUrlCreatorId(c.id)}
+                      className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-xs transition cursor-pointer ${
+                        inputUrlCreatorId === c.id
+                          ? "bg-indigo-600 text-white font-semibold"
+                          : "hover:bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <img
+                          src={getCreatorAvatar(c)}
+                          alt=""
+                          className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                        />
+                        <span className="truncate">{c.name || c.display_name || c.handle}</span>
+                      </div>
+                      <span className={`text-[10px] font-mono ml-2 ${inputUrlCreatorId === c.id ? "text-indigo-200" : "text-slate-400"}`}>
+                        {c.id.slice(0, 8)}...
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Target Step Selector */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Target Pipeline Step
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { step: 1, label: "Step 01" },
+                    { step: 4, label: "Step 04" },
+                    { step: 5, label: "Step 05" },
+                    { step: 6, label: "Step 06" },
+                  ].map((s) => (
+                    <button
+                      key={s.step}
+                      type="button"
+                      onClick={() => setInputUrlTargetStep(s.step)}
+                      className={`py-1.5 px-2 rounded-lg border text-xs font-semibold transition cursor-pointer text-center ${
+                        inputUrlTargetStep === s.step
+                          ? "bg-slate-900 border-slate-900 text-white shadow-2xs"
+                          : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+              {scopedCreatorId ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleClearScopedCreator();
+                    setShowSetUrlModal(false);
+                  }}
+                  className="py-2 px-3 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-semibold transition cursor-pointer"
+                >
+                  Clear URL
+                </button>
+              ) : <div />}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSetUrlModal(false)}
+                  className="py-2 px-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!inputUrlCreatorId.trim()}
+                  onClick={() => handleApplyScopedUrl(inputUrlCreatorId, inputUrlTargetStep)}
+                  className="py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                >
+                  Apply & Open URL
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
