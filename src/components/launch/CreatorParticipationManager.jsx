@@ -30,7 +30,9 @@ import {
   Info,
   Trash2,
   Sun,
-  Moon
+  Moon,
+  MoreHorizontal,
+  RotateCcw
 } from 'lucide-react'
 import {
   getCoLaunchProjects,
@@ -82,6 +84,9 @@ export default function CreatorParticipationManager() {
 
   // Manual payment / DIY modal state
   const [diyModalProject, setDiyModalProject] = useState(null)
+
+  // Actions menu modal state (Ellipsis action menu that floats over table without clipping)
+  const [actionModalProject, setActionModalProject] = useState(null)
 
   // Preview modal
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -831,74 +836,62 @@ export default function CreatorParticipationManager() {
                       )}
                     </div>
 
-                    {/* Right: Real-Time Action Controls */}
-                    <div className="flex flex-wrap lg:flex-col items-stretch gap-1.5 w-full lg:w-44 shrink-0">
-                      {/* Send / Resend Follow-up Email */}
-                      <button
-                        onClick={() => handleOpenEmailModal(proj, isCoBuilder ? 'portal_link' : 'followup')}
-                        className={`flex-1 lg:flex-initial py-2 px-3 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-800' : 'bg-white/[0.06] hover:bg-white/[0.12] border-white/[0.1] text-slate-200 hover:text-white'} border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5`}
-                      >
-                        <Mail className="w-3.5 h-3.5 text-amber-500" />
-                        <span>{isCoBuilder ? 'Send Workspace Email' : 'Send Follow-Up'}</span>
-                      </button>
-
+                    {/* Right: Streamlined Action Controls (Quick actions + Ellipsis modal trigger) */}
+                    <div className="flex items-center gap-2 shrink-0 self-start lg:self-center">
                       {/* Copy Workspace URL */}
                       <button
+                        type="button"
                         onClick={() => handleCopyUrl(proj)}
-                        className={`flex-1 lg:flex-initial py-2 px-3 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-800' : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'} border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5`}
+                        className={`h-9 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs active:scale-95 ${
+                          isLight
+                            ? 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                            : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'
+                        }`}
+                        title="Copy Workspace URL"
                       >
                         {copiedId === proj.id ? (
                           <>
                             <Check className="w-3.5 h-3.5 text-emerald-500" />
-                            <span className="text-emerald-600 font-bold">Copied!</span>
+                            <span className="text-emerald-600 font-bold">Copied</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Copy Workspace URL</span>
+                            <Copy className="w-3.5 h-3.5 text-slate-500" />
+                            <span className="hidden sm:inline">Copy URL</span>
                           </>
                         )}
                       </button>
-
-                      {/* State Toggle Buttons */}
-                      {!isCoBuilder ? (
-                        <button
-                          onClick={() => handleMarkAsPaidCoBuilder(proj)}
-                          className="flex-1 lg:flex-initial py-2 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/20"
-                        >
-                          <CreditCard className="w-3.5 h-3.5" />
-                          <span>Mark Paid DIY ($50)</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleSwitchToStudioManaged(proj)}
-                          className={`flex-1 lg:flex-initial py-1.5 px-3 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-red-50 border-slate-200 hover:border-red-200 text-slate-600 hover:text-red-600' : 'bg-white/[0.03] hover:bg-red-500/10 border-white/[0.06] hover:border-red-500/20 text-slate-400 hover:text-red-300'} border text-[11px] font-semibold transition-all cursor-pointer flex items-center justify-center gap-1`}
-                        >
-                          <span>Revert to Managed</span>
-                        </button>
-                      )}
 
                       {/* Live Portal Preview */}
                       <a
                         href={workspaceUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className={`flex-1 lg:flex-initial py-1.5 px-3 rounded-xl ${isLight ? 'bg-slate-100/70 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200' : 'bg-white/[0.02] hover:bg-white/[0.06] text-slate-400 hover:text-slate-200'} text-[11px] transition-all text-center flex items-center justify-center gap-1`}
+                        className={`h-9 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs active:scale-95 ${
+                          isLight
+                            ? 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900'
+                            : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'
+                        }`}
+                        title="Preview Portal View in New Tab"
                       >
-                        <Eye className="w-3 h-3" />
-                        <span>Preview Portal View</span>
-                        <ExternalLink className="w-2.5 h-2.5" />
+                        <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        <span className="hidden sm:inline">Portal</span>
+                        <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
                       </a>
 
-                      {/* Delete Venture Button */}
+                      {/* Ellipsis Button: Opens Modal with All Actions */}
                       <button
                         type="button"
-                        onClick={() => handleDeleteProject(proj)}
-                        className={`flex-1 lg:flex-initial py-1.5 px-3 rounded-xl ${isLight ? 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600' : 'bg-red-500/10 hover:bg-red-500/20 border-red-500/30 hover:border-red-500/50 text-red-400 hover:text-red-300'} border text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5`}
-                        title="Permanently Delete this Co-Launch Venture from Section 2"
+                        onClick={() => setActionModalProject(proj)}
+                        className={`h-9 px-3.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs hover:shadow-sm active:scale-95 ${
+                          isLight
+                            ? 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900 shadow-slate-900/10'
+                            : 'bg-white hover:bg-slate-100 text-slate-950 border-white shadow-white/10'
+                        }`}
+                        title="Open Venture Actions Menu"
                       >
-                        <Trash2 className="w-3 h-3 text-red-400" />
-                        <span>Delete Venture</span>
+                        <MoreHorizontal className="w-4 h-4 stroke-[2.5]" />
+                        <span className="hidden sm:inline">Actions</span>
                       </button>
                     </div>
                   </div>
@@ -908,6 +901,239 @@ export default function CreatorParticipationManager() {
           </div>
         )}
       </main>
+
+      {/* ── VENTURE ACTIONS MODAL (ELLIPSIS MENU - NEVER CLIPPED BY TABLE) ── */}
+      {actionModalProject && (
+        <div
+          className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActionModalProject(null)
+          }}
+        >
+          <div
+            className={`relative w-full max-w-lg rounded-3xl ${
+              isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl shadow-slate-900/15' : 'bg-[#0f131c] border-white/[0.12] text-white shadow-2xl'
+            } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
+          >
+            {/* Header: Title, Creator & Close */}
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3 min-w-0">
+                {actionModalProject.creatorAvatar ? (
+                  <img
+                    src={actionModalProject.creatorAvatar}
+                    alt=""
+                    className="w-11 h-11 rounded-2xl object-cover border border-slate-200 shadow-2xs shrink-0"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className={`w-11 h-11 rounded-2xl ${isLight ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-amber-500/20 text-white border-white/10'} border flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs`}>
+                    {(actionModalProject.creatorName || actionModalProject.creatorHandle || 'C').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className={`text-base font-black ${isLight ? 'text-slate-900' : 'text-white'} truncate`}>
+                      {actionModalProject.productName || 'Venture Workspace'}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
+                      50/50 Equity
+                    </span>
+                  </div>
+                  <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'} truncate mt-0.5`}>
+                    Partner: <strong className={isLight ? 'text-slate-800' : 'text-slate-200'}>{actionModalProject.creatorName || 'Creator'}</strong>{' '}
+                    <span className="font-mono text-emerald-700">({actionModalProject.creatorHandle || '@creator'})</span>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActionModalProject(null)}
+                className={`p-2 rounded-xl ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
+                } transition-colors cursor-pointer shrink-0`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Current Track Snapshot Bar */}
+            <div className={`p-3 rounded-2xl ${isLight ? 'bg-slate-50 border-slate-200/80' : 'bg-white/[0.03] border-white/[0.08]'} border flex items-center justify-between text-xs`}>
+              <span className={`font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Current Track:</span>
+              {(actionModalProject.isDIY || actionModalProject.diySubscription?.active) ? (
+                <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                  <Zap className="w-3 h-3 fill-slate-950" />
+                  Track 1: Co-Builder ($50 Paid)
+                </span>
+              ) : actionModalProject.diyOfferStatus === 'declined' ? (
+                <span className={`px-2.5 py-1 rounded-full ${isLight ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-purple-500/20 text-purple-300'} border font-bold text-[10px] uppercase tracking-wider`}>
+                  Track 2: Studio-Managed (50/50)
+                </span>
+              ) : (
+                <span className={`px-2.5 py-1 rounded-full ${isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-500/20 text-amber-300'} border font-bold text-[10px] uppercase tracking-wider`}>
+                  Awaiting Track Choice
+                </span>
+              )}
+            </div>
+
+            {/* Action Buttons List */}
+            <div className="space-y-2 pt-1">
+              {/* 1. Send Follow-Up / Workspace Email Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const p = actionModalProject
+                  const isCoB = p.isDIY || p.diySubscription?.active
+                  setActionModalProject(null)
+                  handleOpenEmailModal(p, isCoB ? 'portal_link' : 'followup')
+                }}
+                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
+                  isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                    <Mail className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold">
+                      {(actionModalProject.isDIY || actionModalProject.diySubscription?.active) ? 'Send Workspace Email' : 'Send Follow-Up'}
+                    </div>
+                    <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Dispatch personalized email to {actionModalProject.creatorEmail || 'creator'}
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </button>
+
+              {/* 2. Copy Workspace URL Button */}
+              <button
+                type="button"
+                onClick={() => handleCopyUrl(actionModalProject)}
+                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
+                  isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+                    <Copy className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold">Copy Workspace URL</div>
+                    <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Copy direct portal authentication URL to clipboard
+                    </div>
+                  </div>
+                </div>
+                {copiedId === actionModalProject.id ? (
+                  <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> Copied!
+                  </span>
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                )}
+              </button>
+
+              {/* 3. Mark Paid DIY ($50) or Revert Track Button */}
+              {!(actionModalProject.isDIY || actionModalProject.diySubscription?.active) ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = actionModalProject
+                    setActionModalProject(null)
+                    handleMarkAsPaidCoBuilder(p)
+                  }}
+                  className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-105 text-slate-950 shadow-md shadow-amber-950/15 flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-slate-950/10 flex items-center justify-center shrink-0">
+                      <CreditCard className="w-5 h-5 text-slate-950" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-wide">Mark Paid DIY ($50)</div>
+                      <div className="text-[11px] text-slate-900/80 font-medium">Activate full autonomous Co-Builder OS for creator</div>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-950 text-white font-mono text-[10px] font-bold shrink-0">$50 USD</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = actionModalProject
+                    setActionModalProject(null)
+                    handleSwitchToStudioManaged(p)
+                  }}
+                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer ${
+                    isLight ? 'bg-purple-50 hover:bg-purple-100/80 border-purple-200 text-purple-950' : 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-purple-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                      <RotateCcw className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold">Revert to Managed</div>
+                      <div className={`text-[11px] ${isLight ? 'text-purple-700' : 'text-purple-300'}`}>Return to standard studio execution (50/50 revenue split)</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-purple-500" />
+                </button>
+              )}
+
+              {/* 4. Live Portal Preview Link */}
+              <a
+                href={getCreatorWorkspaceUrl(actionModalProject)}
+                target="_blank"
+                rel="noreferrer"
+                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
+                  isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-600 flex items-center justify-center shrink-0">
+                    <Eye className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold">Preview Portal View</div>
+                    <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Open partner workspace view in a new browser tab
+                    </div>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-slate-400" />
+              </a>
+
+              {/* 5. Delete Venture Button (Danger Zone) */}
+              <div className="pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = actionModalProject
+                    setActionModalProject(null)
+                    handleDeleteProject(p)
+                  }}
+                  className={`w-full p-3 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer ${
+                    isLight ? 'bg-rose-50/80 hover:bg-rose-100 border-rose-200 text-rose-700' : 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/30 text-rose-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-600 flex items-center justify-center shrink-0">
+                      <Trash2 className="w-4 h-4 text-rose-600" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold">Delete Venture</div>
+                      <div className={`text-[11px] ${isLight ? 'text-rose-600/80' : 'text-rose-400/80'}`}>Permanently remove venture from Section 2</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-200/60 text-rose-800">Delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Real-Time Direct Email Dispatch Modal */}
       {emailModalProject && (

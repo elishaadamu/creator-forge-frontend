@@ -139,6 +139,10 @@ export default function DIYSubscriptionModal({
 
       // Broadcast event so portal & ProjectOS immediately sync
       if (typeof window !== 'undefined') {
+        if (project?.id) {
+          window.localStorage.setItem(`forge_diy_${project.id}`, 'true')
+        }
+        window.localStorage.setItem('forge_diy_paid', 'true')
         window.dispatchEvent(
           new CustomEvent('forge_project_updated', { detail: updatedProject })
         )
@@ -334,7 +338,18 @@ export default function DIYSubscriptionModal({
               <div className="pt-2 max-w-lg mx-auto">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      const searchParams = new URLSearchParams(window.location.search)
+                      searchParams.delete('offer')
+                      searchParams.delete('track')
+                      const newSearch = searchParams.toString()
+                      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash
+                      window.history.replaceState({}, '', newUrl)
+                      window.dispatchEvent(new CustomEvent('forge_view_change', { detail: 'projectos' }))
+                    }
+                    onClose()
+                  }}
                   className="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm transition-all shadow-md shadow-emerald-600/20 cursor-pointer active:scale-98 flex items-center justify-center gap-2"
                 >
                   <span>Open Interactive ProjectOS Workspace</span>
@@ -613,22 +628,13 @@ export default function DIYSubscriptionModal({
                     )}
                   </button>
 
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      <span>Instant URL dispatch to email</span>
+                  <div className="flex items-center justify-center gap-2.5 text-[10px] text-slate-500 py-1">
+                    <span className="flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Instant URL dispatch & workspace provision</span>
                     </span>
-
-                    {/* Instant Test Mode Bypass */}
-                    <button
-                      type="button"
-                      onClick={() => handleProcessPayment(true)}
-                      disabled={isProcessing}
-                      className="font-bold text-emerald-700 hover:text-emerald-800 underline underline-offset-2 cursor-pointer transition-colors text-[10px] sm:text-[11px]"
-                      title="Unlock immediately in test mode without card charge"
-                    >
-                      ⚡ Demo Test Unlock (Instant Access)
-                    </button>
+                    <span className="text-slate-300">•</span>
+                    <span className="font-mono text-slate-400">256-bit SSL Encrypted</span>
                   </div>
                 </div>
               </div>

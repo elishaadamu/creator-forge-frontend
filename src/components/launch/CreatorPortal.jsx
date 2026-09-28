@@ -126,12 +126,27 @@ export default function CreatorPortal({ portalId }) {
     const handleSync = (e) => {
       try {
         const updated = (e?.detail && typeof e.detail === 'object') ? e.detail : null
-        if (updated) setProject(updated)
+        if (updated) {
+          setProject(updated)
+          if (updated.isDIY || updated.diySubscription?.active || updated.diyOfferStatus === 'accepted') {
+            setTrackChoiceDismissed(true)
+          }
+        }
+      } catch (e) {}
+    }
+    const handleViewChange = (e) => {
+      try {
+        if (e?.detail && typeof e.detail === 'string') {
+          setActiveMainView(e.detail)
+          setTrackChoiceDismissed(true)
+        }
       } catch (e) {}
     }
     window.addEventListener('forge_project_updated', handleSync)
+    window.addEventListener('forge_view_change', handleViewChange)
     return () => {
       window.removeEventListener('forge_project_updated', handleSync)
+      window.removeEventListener('forge_view_change', handleViewChange)
     }
   }, [])
 
@@ -152,7 +167,14 @@ export default function CreatorPortal({ portalId }) {
   const isDiyActive = Boolean(
     project?.isDIY ||
     project?.diySubscription?.active ||
-    (typeof window !== 'undefined' && project?.id && window.localStorage.getItem(`forge_diy_${project.id}`) === 'true')
+    project?.diyOfferStatus === 'accepted' ||
+    (typeof window !== 'undefined' && (
+      (project?.id && window.localStorage.getItem(`forge_diy_${project.id}`) === 'true') ||
+      (ventureSlug && window.localStorage.getItem(`forge_diy_${ventureSlug}`) === 'true') ||
+      window.localStorage.getItem('forge_diy_paid') === 'true' ||
+      new URLSearchParams(window.location.search).get('token') === 'cf_diy_paid' ||
+      new URLSearchParams(window.location.search).get('paid') === 'true'
+    ))
   )
 
   const isTrackChoiceUrl = typeof window !== 'undefined' && (
@@ -160,10 +182,25 @@ export default function CreatorPortal({ portalId }) {
     new URLSearchParams(window.location.search).get('track') === 'choice'
   )
 
-  const isTrackChoicePending = !trackChoiceDismissed && (
+  // Critical fix: If the user has already paid ($50 Co-Builder) or accepted/dismissed, track choice MUST NOT block them
+  const isTrackChoicePending = !isDiyActive && !trackChoiceDismissed && project?.diyOfferStatus !== 'accepted' && (
     isTrackChoiceUrl ||
-    (!isDiyActive && project?.diyOfferStatus !== 'declined' && project?.diyOfferStatus !== 'accepted')
+    project?.diyOfferStatus !== 'declined'
   )
+
+  // Automatically clean up offer/track URL params once paid/active on Track 1
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isDiyActive) {
+      const searchParams = new URLSearchParams(window.location.search)
+      if (searchParams.has('offer') || searchParams.has('track')) {
+        searchParams.delete('offer')
+        searchParams.delete('track')
+        const newSearch = searchParams.toString()
+        const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash
+        window.history.replaceState({}, '', newUrl)
+      }
+    }
+  }, [isDiyActive])
 
   const handleUpdateProject = (updatedProj) => {
     setProject(updatedProj)
@@ -188,13 +225,29 @@ export default function CreatorPortal({ portalId }) {
     showToast('Standard Studio-Managed track active (50/50 Revenue Split).')
   }
 
-  const handleUnlockDiySuccess = (subRecord) => {
+  const handleUnlockDiySuccess = (subRecordOrProj) => {
     if (!project) return
+    const subRecord = subRecordOrProj?.diySubscription || subRecordOrProj
     const updated = {
       ...project,
       isDIY: true,
       diyOfferStatus: 'accepted',
       diySubscription: subRecord
+    }
+    if (typeof window !== 'undefined') {
+      if (project?.id) {
+        window.localStorage.setItem(`forge_diy_${project.id}`, 'true')
+      }
+      if (ventureSlug) {
+        window.localStorage.setItem(`forge_diy_${ventureSlug}`, 'true')
+      }
+      window.localStorage.setItem('forge_diy_paid', 'true')
+      const searchParams = new URLSearchParams(window.location.search)
+      searchParams.delete('offer')
+      searchParams.delete('track')
+      const newSearch = searchParams.toString()
+      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash
+      window.history.replaceState({}, '', newUrl)
     }
     handleUpdateProject(updated)
     setTrackChoiceDismissed(true)
@@ -907,16 +960,28 @@ export default function CreatorPortal({ portalId }) {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
-                          setSelectedTrack('interactive')
-                          setShowDiyModal(true)
+                          if (isDiyActive) {
+                            setTrackChoiceDismissed(true)
+                            setActiveMainView('launch_kit')
+                            if (typeof window !== 'undefined') {
+                              const searchParams = new URLSearchParams(window.location.search)
+                              searchParams.delete('offer')
+                              searchParams.delete('track')
+                              const newSearch = searchParams.toString()
+                              window.history.replaceState({}, '', window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash)
+                            }
+                          } else {
+                            setSelectedTrack('interactive')
+                            setShowDiyModal(true)
+                          }
                         }}
                         className="group w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-emerald-500"
                       >
-                        <span>Unlock Interactive Co-Builder Pass ($50 USD)</span>
+                        <span>{isDiyActive ? 'Open Co-Builder Workspace →' : 'Unlock Interactive Co-Builder Pass ($50 USD)'}</span>
                         <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:translate-x-1 transition-transform" />
                       </button>
                       <p className="text-[10px] text-center text-slate-400 font-mono">
-                        Stripe & PayPal verified • Instant workspace provision
+                        {isDiyActive ? 'Pass active • Workspace ready' : 'Stripe & PayPal verified • Instant workspace provision'}
                       </p>
                     </div>
                   </div>
@@ -1103,10 +1168,24 @@ export default function CreatorPortal({ portalId }) {
                     {selectedTrack === 'interactive' ? (
                       <button
                         type="button"
-                        onClick={() => setShowDiyModal(true)}
+                        onClick={() => {
+                          if (isDiyActive) {
+                            setTrackChoiceDismissed(true)
+                            setActiveMainView('launch_kit')
+                            if (typeof window !== 'undefined') {
+                              const searchParams = new URLSearchParams(window.location.search)
+                              searchParams.delete('offer')
+                              searchParams.delete('track')
+                              const newSearch = searchParams.toString()
+                              window.history.replaceState({}, '', window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash)
+                            }
+                          } else {
+                            setShowDiyModal(true)
+                          }
+                        }}
                         className="group w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-slate-900/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-slate-900"
                       >
-                        <span>Continue with Interactive Pass ($50)</span>
+                        <span>{isDiyActive ? 'Access Co-Builder Workspace →' : 'Continue with Interactive Pass ($50)'}</span>
                         <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:translate-x-1 transition-transform" />
                       </button>
                     ) : (
