@@ -619,9 +619,9 @@ partnerships@creatorforge.com`
     : checklistTasks
 
   return (
-    <div className="space-y-6 w-full max-w-full">
+    <div className="space-y-4 sm:space-y-5 w-full max-w-full">
       {/* SECTION 2 HEADER (LIGHT MODE & HIGH-CONTRAST) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-emerald-700">
@@ -748,7 +748,7 @@ partnerships@creatorforge.com`
       )}
 
       {/* EXPANDED FULL-WIDTH COMMAND CENTER (MAIN IDEA WORKSPACE - S2 EXPANDED, S3 REMOVED) */}
-      <div className="w-full space-y-5">
+      <div className="w-full space-y-4">
         <div className="rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col md:flex-row min-h-[580px] items-stretch w-full overflow-hidden">
           {/* Left Mini Sidebar (S1) */}
           <div className="w-full md:w-52 lg:w-56 bg-slate-50/90 border-b md:border-b-0 md:border-r border-slate-200 p-3 sm:p-4 flex flex-row md:flex-col justify-between items-center md:items-stretch gap-2 shrink-0 md:sticky md:top-20 md:self-start md:min-h-[580px] z-10 overflow-x-auto scrollbar-none">

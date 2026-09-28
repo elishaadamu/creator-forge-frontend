@@ -676,7 +676,7 @@ export default function CreatorPortal({ portalId }) {
       )}
 
       {/* ── MAIN BODY CONTAINER ─────────────────────────────────────────────────── */}
-      <div className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-5 lg:p-8 space-y-5 sm:space-y-6">
+      <div className="flex-1 w-full max-w-[96%] xl:max-w-[95%] 2xl:max-w-[1720px] mx-auto px-2 sm:px-4 lg:px-6 py-4 space-y-4 sm:space-y-5">
 
         {/* ── STEP / PHASE PROGRESS BAR ────────────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-2xs space-y-3.5">

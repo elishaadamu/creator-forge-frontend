@@ -455,21 +455,23 @@ export default function ProjectOSPage() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col">
         {loading ? (
-          <div className="p-6 max-w-7xl mx-auto w-full">
+          <div className="px-3 sm:px-5 lg:px-6 py-4 max-w-[96%] xl:max-w-[95%] 2xl:max-w-[1720px] mx-auto w-full">
             <ProjectOSSkeleton />
           </div>
         ) : activeProject ? (
-          <ProjectOS
-            key={activeProject.id}
-            project={activeProject}
-            onUpdateProject={handleUpdateActiveProject}
-            onGoToAcquisition={() => {
-              window.location.href = '/launch'
-            }}
-            onResetProject={handleResetProject}
-            userRole={activeProject.isDIY || activeProject.diySubscription?.active ? 'creator' : 'admin'}
-            isDIY={Boolean(activeProject.isDIY || activeProject.diySubscription?.active)}
-          />
+          <div className="px-3 sm:px-5 lg:px-6 py-4 max-w-[96%] xl:max-w-[95%] 2xl:max-w-[1720px] mx-auto w-full">
+            <ProjectOS
+              key={activeProject.id}
+              project={activeProject}
+              onUpdateProject={handleUpdateActiveProject}
+              onGoToAcquisition={() => {
+                window.location.href = '/launch'
+              }}
+              onResetProject={handleResetProject}
+              userRole={activeProject.isDIY || activeProject.diySubscription?.active ? 'creator' : 'admin'}
+              isDIY={Boolean(activeProject.isDIY || activeProject.diySubscription?.active)}
+            />
+          </div>
         ) : (
           /* Empty State: No Projects Created Yet */
           <div className="flex-1 flex items-center justify-center p-6">
