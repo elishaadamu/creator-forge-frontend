@@ -45,6 +45,7 @@ import {
   Globe,
   Loader2,
   RotateCw,
+  RotateCcw,
   User,
   UserCheck,
   Lock,
@@ -1674,6 +1675,31 @@ export default function AcquisitionEngine({
     );
   };
 
+  // ── Helper to ensure distinct pricing across the 3 product concept archetypes ─
+  const ensureDistinctPricing = (concepts = []) => {
+    if (!concepts || concepts.length < 2) return concepts;
+    const defaultArchetypePricings = [
+      "$19/mo Starter • $49/mo Pro",
+      "$29/mo Pro • $79/mo Studio Copilot",
+      "$49/mo Membership • $149/mo VIP Mastermind",
+    ];
+    const seen = new Set();
+    let hasDuplicate = false;
+    for (const c of concepts) {
+      const p = (c.pricing || "").trim();
+      if (!p || seen.has(p)) {
+        hasDuplicate = true;
+        break;
+      }
+      seen.add(p);
+    }
+    if (!hasDuplicate) return concepts;
+    return concepts.map((c, idx) => ({
+      ...c,
+      pricing: defaultArchetypePricings[idx % defaultArchetypePricings.length],
+    }));
+  };
+
   // ── Helper to ensure all creators have tailored, rich product concepts ───────
   const ensureCreatorConcepts = (c) => {
     if (!c) return [];
@@ -1755,7 +1781,7 @@ export default function AcquisitionEngine({
       c.productConcepts?.[0]?.tagline?.includes("developers") &&
       category !== "tech";
     if (hasExistingValid && !isStaleDev) {
-      return c.productConcepts;
+      return ensureDistinctPricing(c.productConcepts);
     }
 
     switch (category) {
@@ -2926,6 +2952,31 @@ export default function AcquisitionEngine({
     } catch (e) { }
   }, [activeStep]);
 
+  // ── Helper to accurately classify studio outbound vs creator inbound messages ──
+  const isStudioMessage = (m) => {
+    if (!m) return false;
+    if (m.is_outgoing || m.is_outbound || m.direction === "outbound") return true;
+    if (m.ai_summary === "Outgoing reply from you" || m.actor === "admin") return true;
+    const addr = (m.from_address || "").toLowerCase().trim();
+    if (!addr) return false;
+    if (
+      addr.includes("creatorforge") ||
+      addr.includes("brevosend") ||
+      addr.includes("creatorforgeweb@gmail.com") ||
+      addr.includes("creatorforgestudio@gmail.com") ||
+      addr.startsWith("admin@") ||
+      addr.startsWith("team@") ||
+      addr.startsWith("partnerships@") ||
+      addr.startsWith("noreply@") ||
+      addr.startsWith("hello@creatorforge")
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  const isCreatorMessage = (m) => !isStudioMessage(m);
+
   // ── Helper to match creator with real IMAP thread or simulation ───────────
   const getCreatorReply = (c, threads = realThreads) => {
     if (!c) return { hasRealReply: false, classification: "awaiting_reply" };
@@ -3563,7 +3614,7 @@ export default function AcquisitionEngine({
     if (cls === "not_interested" || cls === "unsubscribe" || cls === "opt_out" || cls === "rejected") return true;
 
     // Check if the creator explicitly requested a solid no / opt-out in their messages
-    const msgs = getCreatorThreadMessages(c, realThreads);
+    const msgs = getCreatorThreadMessages(c, realThreads).filter(isCreatorMessage);
     const hasSolidNo = msgs.some((m) => {
       const b = (m.body || "").toLowerCase();
       return (
@@ -3934,9 +3985,7 @@ export default function AcquisitionEngine({
     const cleanHandle = (creator.handle || "").replace(/^@/, "").trim();
     const firstName = (creator.name || creator.display_name || "there").split(" ")[0];
     const msgs = getCreatorThreadMessages(creator, realThreads);
-    const latestCreatorMsg = msgs.find(
-      (m) => !/partnerships@creatorforge\.com/i.test(m.from_address || "")
-    )?.body || "";
+    const latestCreatorMsg = msgs.find(isCreatorMessage)?.body || "";
 
     const conceptName = concept?.name || "the software solution";
     const pricing = concept?.pricing || "$29/mo";
@@ -4713,6 +4762,7 @@ export default function AcquisitionEngine({
             ...c,
             status: "rejected",
             isApproved: false,
+            isCommitted: false,
             rejectedAt: new Date().toISOString(),
           };
         }
@@ -4720,13 +4770,16 @@ export default function AcquisitionEngine({
       }),
     );
 
+    // Clear any previous autonomous committed choice for this rejected lead
+    setAiDetectedChoiceMap((prev) => ({ ...prev, [id]: null }));
+
     // 2. Persist to database (source of truth) and send rejection email
     try {
       const { updateCreatorDetails, sendDirectEmail } = await import("../../services/opsApi");
       await updateCreatorDetails(id, { status: "rejected" });
       console.log(`[AcquisitionEngine] Creator ${id} rejected in DB.`);
 
-      // Automatically dispatch polite rejection email if email is present
+      // Automatically dispatch polite rejection email if email is present (NEVER include concepts)
       if (targetCreator) {
         const targetEmail = (targetCreator.email || targetCreator.email_public || "").trim();
         if (targetEmail && targetEmail.includes("@")) {
@@ -4736,8 +4789,12 @@ export default function AcquisitionEngine({
           const rejectBody = `Hi ${firstName},\n\nThank you for getting back to us and for considering a partnership with Creator Forge.\n\nAfter reviewing our current co-launch roster and active category capacity, we won't be able to move forward with a software project at this time.\n\nWe genuinely appreciate your time and wish you continued success with your channel and community.\n\nBest regards,\nCreator Forge Studio Team`;
 
           try {
-            await sendDirectEmail(targetEmail, rejectSubject, rejectBody, targetCreator.id);
-            console.log(`[AcquisitionEngine] Rejection notice delivered to ${targetEmail}`);
+            await sendDirectEmail(targetEmail, rejectSubject, rejectBody, targetCreator.id, {
+              is_rejection: true,
+              include_concepts: false,
+              concepts: [],
+            });
+            console.log(`[AcquisitionEngine] Clean rejection notice delivered to ${targetEmail}`);
           } catch (mailErr) {
             console.warn("[AcquisitionEngine] Failed to send rejection email:", mailErr);
           }
@@ -4750,9 +4807,39 @@ export default function AcquisitionEngine({
     notify(
       "error",
       "Creator Rejected & Notified",
-      `Creator archived — polite rejection email sent.`,
+      `Creator archived — clean rejection notice dispatched without concept lists.`,
       4000,
     );
+  };
+
+  const handleRestoreCreator = async (id) => {
+    if (!id) return;
+    setCreators((prevCreators) =>
+      prevCreators.map((c) => {
+        const isMatch =
+          c.id === id ||
+          (c.handle && id && c.handle.toLowerCase().replace(/^@/, "") === `${id}`.toLowerCase().replace(/^@/, "")) ||
+          (c.email && id && c.email.toLowerCase() === `${id}`.toLowerCase());
+        if (isMatch) {
+          return {
+            ...c,
+            status: "qualified",
+            isApproved: true,
+            isCommitted: false,
+            rejectedAt: null,
+          };
+        }
+        return c;
+      })
+    );
+    try {
+      const { updateCreatorDetails } = await import("../../services/opsApi");
+      await updateCreatorDetails(id, { status: "qualified" });
+      notify("success", "Lead Restored", "Creator successfully restored to active pipeline.", 3000);
+    } catch (err) {
+      console.warn("[AcquisitionEngine] Failed to restore creator in DB:", err);
+    }
+  };
 
     // Auto-advance selection to the next active, non-rejected creator
     setCreators((current) => {
@@ -4872,7 +4959,15 @@ export default function AcquisitionEngine({
     if (sendEmail && targetEmail && targetEmail.includes("@") && body.trim()) {
       try {
         const { sendDirectEmail } = await import("../../services/opsApi");
-        await sendDirectEmail(targetEmail, subject, body, creator.id);
+        if (decisionType === "reject") {
+          await sendDirectEmail(targetEmail, subject, body, creator.id, {
+            is_rejection: true,
+            include_concepts: false,
+            concepts: [],
+          });
+        } else {
+          await sendDirectEmail(targetEmail, subject, body, creator.id);
+        }
         notify(
           "success",
           "Decision Email Dispatched",
@@ -4915,6 +5010,20 @@ export default function AcquisitionEngine({
   const handlePitchAndCreateProject = async () => {
     if (!selectedCreator) return;
     if (isLaunchingProject) return;
+
+    // Strict Gate: Never promote a rejected or archived creator to ProjectOS
+    const isSelectedRejected =
+      (selectedCreator.status || "").toLowerCase() === "rejected" ||
+      isCreatorDeclined(selectedCreator);
+    if (isSelectedRejected) {
+      notify(
+        "warning",
+        "Lead Archived",
+        "Cannot promote a rejected lead to ProjectOS. Please restore the lead first.",
+        4500
+      );
+      return;
+    }
 
     // Strict Gate: No approval to ProjectOS until creator confirms full commitment
     const detectedChoice = aiDetectedChoiceMap[selectedCreator.id];
@@ -5705,15 +5814,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       "interest in concept",
       "interested in option",
       "interest in option",
-      "i will be interested",
-      "i will be interest",
-      "i am interested",
-      "i'm interested",
-      "im interested",
-      "definitely interested",
-      "very interested",
-      "would be interested",
-      "interested",
       "i choose",
       "i prefer",
       "let's go with",
@@ -5735,13 +5835,26 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       "deal",
       "agreed",
       "ready to launch",
+    ];
+
+    const generalInterestPhrases = [
+      "i will be interested",
+      "i will be interest",
+      "i am interested",
+      "i'm interested",
+      "im interested",
+      "definitely interested",
+      "very interested",
+      "would be interested",
+      "interested",
       "sounds great",
+      "sounds good",
+      "tell me more",
       "love this",
       "love it",
+      "share the details",
+      "send more info",
     ];
-    const hasExplicitSelection = explicitConceptSelection.some((p) =>
-      text.includes(p),
-    );
 
     // Resolve concept match
     let matchedConcept = concepts.find((con) =>
@@ -5793,15 +5906,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         text.includes("number 1") ||
         text.includes("no 1") ||
         text.includes("interest in concept 1") ||
-        text.includes("interested in concept 1") ||
-        hasExplicitSelection
+        text.includes("interested in concept 1")
       ) {
         matchedConcept = concepts[0];
       }
     }
 
-    if (hasExplicitSelection || (matchedConcept && text.length > 5)) {
-      const chosen = matchedConcept || concepts[0];
+    // A. Explicit concept confirmation passed: Creator picked a specific concept or named product
+    if (matchedConcept && text.length > 3) {
+      const chosen = matchedConcept;
       return {
         decision: "CREATE_PROJECT",
         actionLabel: `Launch & Create Project (${chosen.name})`,
@@ -5811,6 +5924,21 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         reasoning: `Creator confirmed positive agreement with concrete intent: "${latestBody.slice(0, 60)}...". Selected Concept: ${chosen.name}. Verified alignment threshold passed; click Create Project to initialize Section 2.`,
         color: "emerald",
         badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+      };
+    }
+
+    // B. General positive interest without naming a specific concept yet (e.g. "I will be interested. Thanks")
+    const hasGeneralInterest = generalInterestPhrases.some((p) => text.includes(p));
+    if (hasGeneralInterest) {
+      return {
+        decision: "INTERESTED_PENDING_SELECTION",
+        actionLabel: "Creator Interested — Awaiting Concept Selection",
+        confidence: 88,
+        conceptName: concepts[0]?.name || "Proposed Concept",
+        conceptId: null,
+        reasoning: `Creator expressed positive interest: "${latestBody.slice(0, 60)}...", but has not yet specified Concept 1, 2, or 3. Pitch the 3 concepts or follow up with concept breakdown.`,
+        color: "blue",
+        badgeClass: "bg-blue-500/20 text-blue-300 border-blue-500/40",
       };
     }
 
@@ -6233,12 +6361,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           return /blueprint|opportunity deck|software concepts|concept pitch|concepts for|answers to your questions|co-founder partnership|zero upfront cost|preview/i.test(subj);
         });
 
+        const isCDeclined = (c.status || "").toLowerCase() === "rejected" || isCreatorDeclined(c);
+        if (isCDeclined) continue;
+
         const pitchWasDispatched = Boolean(latestOutboundTime > 0 || pitchSent || hasStep6PitchThread);
         if (!pitchWasDispatched) continue;
 
-        // Filter messages to find those that are GENUINE feedback/replies to our Step 6 outreach:
+        // Filter messages to find those that are GENUINE feedback/replies to our Step 6 outreach (strictly from creator):
         const step6Replies = incoming.filter((msg) =>
-          isStep6Message(msg, latestOutboundTime),
+          isCreatorMessage(msg) && isStep6Message(msg, latestOutboundTime),
         );
 
         if (step6Replies.length > 0) {
@@ -10636,17 +10767,58 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </button>
               )}
               {selectedCreator && (
-                <button
-                  type="button"
-                  onClick={() => openDecisionModal(selectedCreator, "reject")}
-                  className="h-9 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-2xs"
-                >
-                  <XCircle className="w-3.5 h-3.5 text-rose-500" />
-                  <span>Reject Lead</span>
-                </button>
+                (() => {
+                  const isSelectedRejected =
+                    (selectedCreator.status || "").toLowerCase() === "rejected" ||
+                    isCreatorDeclined(selectedCreator);
+                  if (isSelectedRejected) {
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-9 px-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                          <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                          <span>Archived (Rejected)</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRestoreCreator(selectedCreator.id)}
+                          className="h-9 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs"
+                          title="Restore this creator to active pipeline"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Restore Lead</span>
+                        </button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => openDecisionModal(selectedCreator, "reject")}
+                      className="h-9 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-2xs"
+                    >
+                      <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                      <span>Reject Lead</span>
+                    </button>
+                  );
+                })()
               )}
 
               {(() => {
+                const isSelectedRejected =
+                  (selectedCreator?.status || "").toLowerCase() === "rejected" ||
+                  isCreatorDeclined(selectedCreator);
+
+                if (isSelectedRejected) {
+                  return (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-medium text-rose-700 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-1.5 shadow-2xs">
+                        <XCircle className="w-3 h-3 text-rose-500" />
+                        <span>Lead Rejected &amp; Archived</span>
+                      </span>
+                    </div>
+                  );
+                }
+
                 const selCleanHandle = (selectedCreator?.handle || "").replace(/^@/, "").toLowerCase().trim();
                 const selCleanName = (selectedCreator?.name || selectedCreator?.display_name || "").toLowerCase().trim();
 
@@ -10736,6 +10908,41 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
           {/* Admin Promotion Review Gate Banner */}
           {(() => {
+            const isSelectedRejected =
+              (selectedCreator?.status || "").toLowerCase() === "rejected" ||
+              isCreatorDeclined(selectedCreator);
+
+            if (isSelectedRejected) {
+              return (
+                <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-2xs transition-all">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border text-rose-800 bg-rose-100 border-rose-300">
+                        Lead Rejected &amp; Archived
+                      </span>
+                      <span className="text-xs font-bold text-slate-900">
+                        Step 6 Co-Launch Gate Locked
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600">
+                      This lead has been rejected or opted out. Co-launch concepts, promotion gates, and kickoff dispatches are paused and archived. Click Restore Lead to re-open.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleRestoreCreator(selectedCreator.id)}
+                      className="h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs"
+                      title="Re-open and restore lead to active pipeline"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Re-Open / Restore Lead</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
             const detectedChoice = selectedCreator ? aiDetectedChoiceMap[selectedCreator.id] : null;
             const isCommittedChoice = detectedChoice?.decision === "CREATE_PROJECT" || detectedChoice?.decision === "COMMITTED";
             const isAlreadyLaunched = Boolean(
@@ -10904,7 +11111,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             const msgs = getCreatorThreadMessages(selectedCreator, realThreads);
             const pitchSent = Boolean(pitchSentMap[selectedCreator.id]);
             const detectedChoice = aiDetectedChoiceMap[selectedCreator.id];
-            const concepts = selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
+            const rawConcepts = selectedCreator.productConcepts || ensureCreatorConcepts(selectedCreator);
+            const concepts = ensureDistinctPricing(rawConcepts);
             const savedConceptId = creatorConceptSelectionMap[selectedCreator.id] || selectedConceptId || selectedCreator.selectedConceptId;
             const chosenConcept =
               concepts.find((c) => c.id === savedConceptId) ||
@@ -11067,25 +11275,41 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <>
                       {/* 1. Product Concept Card */}
                       {(() => {
+                        const isSelectedRejected =
+                          (selectedCreator?.status || "").toLowerCase() === "rejected" ||
+                          isCreatorDeclined(selectedCreator);
                         const detectedChoice = selectedCreator ? aiDetectedChoiceMap[selectedCreator.id] : null;
-                        const isCommittedChoice = detectedChoice?.decision === "CREATE_PROJECT" || detectedChoice?.decision === "COMMITTED";
+                        const isCommittedChoice = !isSelectedRejected && (detectedChoice?.decision === "CREATE_PROJECT" || detectedChoice?.decision === "COMMITTED");
                         const isAlreadyLaunched = Boolean(
                           selectedCreator?.project_id ||
                           ["launched", "active_project", "partnered"].includes((selectedCreator?.status || "").toLowerCase())
                         );
-                        const isCommitted = Boolean(
+                        const isCommitted = !isSelectedRejected && Boolean(
                           isCommittedChoice ||
                           selectedCreator?.isCommitted === true ||
                           isAlreadyLaunched
                         );
-                        const hasStep6Feedback = Boolean(detectedChoice?.isStep6Reply && !isCommitted);
+                        const hasStep6Feedback = Boolean(detectedChoice?.isStep6Reply && !isCommitted && !isSelectedRejected);
 
                         return (
-                          <div className={`p-5 rounded-2xl bg-white border shadow-2xs space-y-4 relative overflow-hidden transition-all ${isCommitted ? "border-emerald-300 ring-1 ring-emerald-200" : "border-slate-200/90"
+                          <div className={`p-5 rounded-2xl bg-white border shadow-2xs space-y-4 relative overflow-hidden transition-all ${isSelectedRejected
+                              ? "border-slate-200/90 bg-slate-50/40"
+                              : isCommitted
+                                ? "border-emerald-300 ring-1 ring-emerald-200"
+                                : "border-slate-200/90"
                             }`}>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                {isCommitted ? (
+                                {isSelectedRejected ? (
+                                  <>
+                                    <span className="w-6 h-6 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-black text-xs flex items-center justify-center">
+                                      ✕
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                      Archived Product Concepts
+                                    </span>
+                                  </>
+                                ) : isCommitted ? (
                                   <>
                                     <span className="w-6 h-6 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-black text-xs flex items-center justify-center">
                                       ✓
@@ -11136,7 +11360,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               </div>
                               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
                                 <span className="text-[10px] text-slate-500 block uppercase font-bold">Selection Status</span>
-                                {isCommitted ? (
+                                {isSelectedRejected ? (
+                                  <span className="font-bold text-rose-700 flex items-center justify-center gap-1">
+                                    <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                                    <span>Lead Rejected (Archived)</span>
+                                  </span>
+                                ) : isCommitted ? (
                                   <span className="font-bold text-emerald-700 flex items-center justify-center gap-1">
                                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                                     <span>Confirmed by Creator</span>
@@ -11186,15 +11415,30 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       })()}
 
                       {/* 2. 50/50 Co-Founder Terms Card */}
-                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 space-y-2 shadow-2xs">
-                        <div className="font-bold flex items-center gap-1.5 text-slate-900">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span>50/50 Co-Founder Partnership Terms</span>
-                        </div>
-                        <p className="text-[11px] text-slate-600 leading-relaxed">
-                          Creator Forge builds, hosts, and supports 100% of the MVP. Creator provides distribution and feedback. Net subscription profits split 50/50 via automated Stripe payouts.
-                        </p>
-                      </div>
+                      {(() => {
+                        const isSelectedRejected =
+                          (selectedCreator?.status || "").toLowerCase() === "rejected" ||
+                          isCreatorDeclined(selectedCreator);
+
+                        return (
+                          <div className={`p-4 rounded-xl border text-xs space-y-2 shadow-2xs ${isSelectedRejected ? "bg-slate-50/60 border-slate-200 text-slate-500" : "bg-slate-50 border-slate-200 text-slate-900"}`}>
+                            <div className={`font-bold flex items-center gap-1.5 ${isSelectedRejected ? "text-slate-600" : "text-slate-900"}`}>
+                              {isSelectedRejected ? (
+                                <Lock className="w-4 h-4 text-slate-400" />
+                              ) : (
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              )}
+                              <span>{isSelectedRejected ? "50/50 Co-Founder Partnership Terms (Inactive)" : "50/50 Co-Founder Partnership Terms"}</span>
+                            </div>
+                            <p className={`text-[11px] leading-relaxed ${isSelectedRejected ? "text-slate-500" : "text-slate-600"}`}>
+                              {isSelectedRejected
+                                ? "This lead is currently archived. Re-open or restore the lead to re-activate 50/50 venture terms and resume launch incubation."
+                                : "Creator Forge builds, hosts, and supports 100% of the MVP. Creator provides distribution and feedback. Net subscription profits split 50/50 via automated Stripe payouts."
+                              }
+                            </p>
+                          </div>
+                        );
+                      })()}
 
                       {/* 3. Creator Profile Quick Summary */}
                       <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs space-y-2 shadow-2xs">
@@ -11321,7 +11565,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <div className="p-3 space-y-2.5 max-h-[260px] overflow-y-auto">
                       {msgs.length > 0 ? (
                         msgs.map((msg, idx) => {
-                          const isFromCreator = !/partnerships@creatorforge\.com/i.test(msg.from_address || "");
+                          const isFromCreator = isCreatorMessage(msg);
                           return (
                             <div
                               key={msg.id || idx}
@@ -11333,9 +11577,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                               <div className="flex items-center justify-between text-[11px]">
                                 <span className="font-bold text-slate-900 flex items-center gap-1.5">
                                   <span>{isFromCreator ? (selectedCreator.name || msg.from_address) : "Creator Forge Studio"}</span>
-                                  {isFromCreator && (
+                                  {isFromCreator ? (
                                     <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                                       Creator Reply
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                      Studio Outgoing
                                     </span>
                                   )}
                                 </span>
