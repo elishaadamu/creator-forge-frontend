@@ -714,10 +714,12 @@ export default function AcquisitionEngine({
       setPersuasionSentMap({});
       setHasAutoCreatedProject(false);
       setActiveStep(1);
+      setCompletedSteps([]);
       setDiscoveryLog("");
       setOutreachLog("");
 
       // Deep wipe of all launch persistence keys in localStorage
+      localStorage.removeItem("forge_acquisition_completed_steps");
       localStorage.removeItem("forge_launch_discovered_creators");
       localStorage.removeItem("forge_launch_active_project");
       localStorage.removeItem("forge_launch_acquisition_step");
@@ -1481,7 +1483,9 @@ export default function AcquisitionEngine({
       localStorage.removeItem("forge_launch_creators_batch_count");
       localStorage.removeItem("forge_deleted_creator_ids");
       localStorage.removeItem("forge_last_deleted_timestamp");
+      localStorage.removeItem("forge_acquisition_completed_steps");
     } catch (e) { }
+    setCompletedSteps([]);
     setCreatorsBatchCount(25);
     setCountdownSeconds(30);
     setActiveStep(1);
@@ -1523,7 +1527,7 @@ export default function AcquisitionEngine({
     const controller = new AbortController();
     discoveryAbortRef.current = controller;
 
-    // 1. Immediately wipe previous batch state so Step 2 renders completely fresh
+    // 1. Reset discovery batch UI state so Step 2 renders a fresh incoming cohort
     setCreators([]);
     setSelectedCreatorId(null);
     setSelectedConceptId(null);
@@ -1533,20 +1537,6 @@ export default function AcquisitionEngine({
     setAiDetectedChoiceMap({});
     setAutoAdvancedIds(new Set());
     autoAdvancedIdsRef.current = new Set();
-    try {
-      const { deleteAllCreators } = await import("../../services/opsApi");
-      await deleteAllCreators();
-    } catch (e) {
-      console.warn("[Discovery] Notice on DB clear:", e);
-    }
-    try {
-      localStorage.removeItem("forge_launch_discovered_creators");
-      localStorage.removeItem("forge_launch_real_threads");
-      localStorage.removeItem("forge_launch_pitch_sent_map");
-      localStorage.removeItem("forge_launch_ai_choice_map");
-      localStorage.removeItem("forge_launch_active_step");
-      localStorage.removeItem("forge_launch_acquisition_step");
-    } catch (e) { }
 
     setDiscovering(true);
     setActiveStep(2); // Transition to Step 2
@@ -1598,6 +1588,9 @@ export default function AcquisitionEngine({
         });
         setCreators(enrichedCreators);
         setSelectedCreatorId(enrichedCreators[0].id);
+        try {
+          localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(enrichedCreators));
+        } catch (e) { }
         const emailsFound = enrichedCreators.filter((c) =>
           (c.email || c.email_public || "").includes("@"),
         ).length;
@@ -2830,6 +2823,108 @@ export default function AcquisitionEngine({
   const [pollingImap, setPollingImap] = useState(false);
   const isSyncingImapRef = useRef(false);
   const [imapSyncLog, setImapSyncLog] = useState("");
+
+  // ── Persistent Completed Steps & Status Tracking ────────────────────────────
+  const [completedSteps, setCompletedSteps] = useState(() => {
+    try {
+      const saved = localStorage.getItem("forge_acquisition_completed_steps");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) { }
+    return [];
+  });
+
+  const isStepCompleted = useCallback((stepNum) => {
+    if (completedSteps.includes(stepNum)) return true;
+    if (activeStep > stepNum) return true;
+    if (stepNum === 1 && (creators?.length > 0 || (niches && niches.length > 0 && selectedPlatforms && selectedPlatforms.length > 0))) return true;
+    if (
+      stepNum === 2 &&
+      creators?.length > 0 &&
+      (activeStep > 2 || creators.some((c) => c.status === "outreach_sent" || c.status === "replied" || c.status === "in_review" || c.status === "approved"))
+    )
+      return true;
+    if (
+      stepNum === 3 &&
+      (activeStep > 3 || (realThreads && realThreads.length > 0) || (creators && creators.some((c) => c.status === "replied" || c.replied || c.status === "in_review" || c.status === "approved")))
+    )
+      return true;
+    if (
+      stepNum === 4 &&
+      (activeStep > 4 || (selectedCreatorId && (activeStep >= 5 || (creators && creators.find((c) => c.id === selectedCreatorId)?.productConcepts?.length > 0))))
+    )
+      return true;
+    if (
+      stepNum === 5 &&
+      (activeStep > 5 || (selectedCreatorId && creatorConceptSelectionMap[selectedCreatorId]))
+    )
+      return true;
+    if (
+      stepNum === 6 &&
+      (allProjects && allProjects.length > 0)
+    )
+      return true;
+    return false;
+  }, [completedSteps, activeStep, creators, niches, selectedPlatforms, realThreads, selectedCreatorId, creatorConceptSelectionMap, allProjects]);
+
+  // Synchronize completed steps and URL step param across navigation and refreshes
+  useEffect(() => {
+    setCompletedSteps((prev) => {
+      const set = new Set(prev);
+      for (let s = 1; s < activeStep; s++) {
+        set.add(s);
+      }
+      if (creators?.length > 0) set.add(1);
+      if (
+        creators?.length > 0 &&
+        (activeStep > 2 || creators.some((c) => c.status === "outreach_sent" || c.status === "replied" || c.status === "in_review" || c.status === "approved"))
+      ) {
+        set.add(1);
+        set.add(2);
+      }
+      if (
+        activeStep > 3 ||
+        (realThreads && realThreads.length > 0) ||
+        (creators && creators.some((c) => c.status === "replied" || c.replied || c.status === "in_review" || c.status === "approved"))
+      ) {
+        set.add(1);
+        set.add(2);
+        set.add(3);
+      }
+      if (selectedCreatorId && activeStep >= 5) {
+        set.add(4);
+      }
+      if (activeStep > 5 || (selectedCreatorId && creatorConceptSelectionMap[selectedCreatorId])) {
+        set.add(5);
+      }
+      if (allProjects && allProjects.length > 0) {
+        set.add(6);
+      }
+      const nextArr = Array.from(set).sort((a, b) => a - b);
+      if (JSON.stringify(nextArr) !== JSON.stringify(prev)) {
+        try {
+          localStorage.setItem("forge_acquisition_completed_steps", JSON.stringify(nextArr));
+        } catch (e) { }
+        return nextArr;
+      }
+      return prev;
+    });
+  }, [activeStep, creators, realThreads, selectedCreatorId, allProjects, creatorConceptSelectionMap]);
+
+  // Keep browser URL synced with current step so refreshes preserve active step
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      if (activeStep > 1) {
+        url.searchParams.set("step", String(activeStep));
+      } else {
+        url.searchParams.delete("step");
+      }
+      window.history.replaceState({}, "", url.toString());
+    } catch (e) { }
+  }, [activeStep]);
 
   // ── Helper to match creator with real IMAP thread or simulation ───────────
   const getCreatorReply = (c, threads = realThreads) => {
@@ -6326,6 +6421,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeStep === item.step;
+            const isDone = isStepCompleted(item.step);
             return (
               <button
                 key={item.step}
@@ -6333,27 +6429,66 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 className={`relative flex items-center gap-3 p-3 rounded-xl text-left transition cursor-pointer group min-w-0 ${
                   isActive
                     ? "bg-slate-900 text-white border border-slate-900 shadow-sm"
+                    : isDone
+                    ? "bg-emerald-50/40 hover:bg-emerald-50/80 border border-emerald-200/80 text-slate-700 shadow-2xs"
                     : "hover:bg-slate-50 border border-transparent hover:border-slate-200 text-slate-600"
                 }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    isActive ? "bg-white/10 text-white" : "bg-slate-100 text-slate-500"
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                    isActive
+                      ? isDone
+                        ? "bg-emerald-500/20 text-emerald-400"
+                        : "bg-white/10 text-white"
+                      : isDone
+                      ? "bg-emerald-100 text-emerald-600 font-bold"
+                      : "bg-slate-100 text-slate-500 group-hover:bg-slate-200/70"
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  {isDone && !isActive ? (
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                  ) : (
+                    <Icon className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="min-w-0">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    {item.num}
-                  </span>
-                  <span className={`text-xs truncate block ${isActive ? "font-semibold text-white" : "font-medium text-slate-700"}`}>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wider block ${
+                        isActive
+                          ? "text-slate-300"
+                          : isDone
+                          ? "text-emerald-700"
+                          : "text-slate-400"
+                      }`}
+                    >
+                      {item.num}
+                    </span>
+                    {isDone && !isActive && (
+                      <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-100/90 px-1 py-0.5 rounded leading-none">
+                        Done
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs truncate block ${
+                      isActive
+                        ? "font-semibold text-white"
+                        : isDone
+                        ? "font-semibold text-slate-900"
+                        : "font-medium text-slate-700"
+                    }`}
+                  >
                     {item.label}
                   </span>
                 </div>
-                {isActive && (
+                {isActive ? (
                   <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                )}
+                ) : isDone ? (
+                  <span className="absolute top-2 right-2 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500 text-white shadow-2xs">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  </span>
+                ) : null}
               </button>
             );
           })}

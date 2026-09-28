@@ -8,7 +8,18 @@ import CreatorForgeLogo from "../ui/CreatorForgeLogo";
 import { HeroShallowPolygons } from "../ui/FloatingPolygons";
 
 export default function FollowUpCRMPage() {
-  const [creators, setCreators] = useState([]);
+  const [creators, setCreators] = useState(() => {
+    try {
+      const cached = JSON.parse(
+        localStorage.getItem("forge_crm_cached_creators") ||
+        localStorage.getItem("forge_launch_discovered_creators") ||
+        "[]"
+      );
+      return Array.isArray(cached) ? cached : [];
+    } catch {
+      return [];
+    }
+  });
   const [realThreads, setRealThreads] = useState([]);
   const [projects, setProjects] = useState([]);
   const [workflowState, setWorkflowState] = useState(null);
@@ -40,10 +51,40 @@ export default function FollowUpCRMPage() {
       ]);
 
       if (creatorsRes.status === "fulfilled" && creatorsRes.value) {
-        const rawList = Array.isArray(creatorsRes.value)
+        let rawList = Array.isArray(creatorsRes.value)
           ? creatorsRes.value
           : creatorsRes.value?.creators || [];
+        
+        // If DB returned empty list, check for discovered/cached creators in local storage
+        if (rawList.length === 0) {
+          try {
+            const cached = JSON.parse(
+              localStorage.getItem("forge_crm_cached_creators") ||
+              localStorage.getItem("forge_launch_discovered_creators") ||
+              "[]"
+            );
+            if (Array.isArray(cached) && cached.length > 0) {
+              rawList = cached;
+            }
+          } catch (e) { }
+        } else {
+          try {
+            localStorage.setItem("forge_crm_cached_creators", JSON.stringify(rawList));
+          } catch (e) { }
+        }
         setCreators(rawList);
+      } else {
+        // Fallback to cached creators if request failed
+        try {
+          const cached = JSON.parse(
+            localStorage.getItem("forge_crm_cached_creators") ||
+            localStorage.getItem("forge_launch_discovered_creators") ||
+            "[]"
+          );
+          if (Array.isArray(cached) && cached.length > 0) {
+            setCreators(cached);
+          }
+        } catch (e) { }
       }
       if (threadsRes.status === "fulfilled" && threadsRes.value) {
         setRealThreads(Array.isArray(threadsRes.value) ? threadsRes.value : []);
@@ -56,6 +97,17 @@ export default function FollowUpCRMPage() {
       }
     } catch (err) {
       console.warn("[FollowUpCRMPage] Data load error:", err);
+      // Fallback to cache on error
+      try {
+        const cached = JSON.parse(
+          localStorage.getItem("forge_crm_cached_creators") ||
+          localStorage.getItem("forge_launch_discovered_creators") ||
+          "[]"
+        );
+        if (Array.isArray(cached) && cached.length > 0) {
+          setCreators(cached);
+        }
+      } catch (e) { }
       if (!isSilent) {
         notify("error", "Sync Error", "Failed to retrieve latest CRM data from database.");
       }

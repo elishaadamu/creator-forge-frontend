@@ -1353,6 +1353,11 @@ export default function CreatorLaunchLayout({
                 {SECTION1_STEPS.map((s) => {
                   const Icon = s.icon
                   const isCur = section1ActiveStep === s.step
+                  let isDone = s.step < section1ActiveStep
+                  try {
+                    const saved = JSON.parse(localStorage.getItem('forge_acquisition_completed_steps') || '[]')
+                    if (saved.includes(s.step)) isDone = true
+                  } catch (e) { }
                   return (
                     <button
                       key={s.step}
@@ -1362,26 +1367,39 @@ export default function CreatorLaunchLayout({
                         setAcquisitionNavState({ step: s.step, nonce: Date.now() })
                         setShowSection1Sidebar(false)
                       }}
-                      className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer ${isCur
+                      className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer ${
+                        isCur
                           ? 'bg-slate-100 text-slate-950 shadow-xs border border-slate-300 font-semibold'
+                          : isDone
+                          ? 'bg-emerald-50/40 hover:bg-emerald-50 text-slate-800 border border-emerald-200'
                           : 'bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-950 border border-slate-100'
-                        }`}
+                      }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center mt-0.5 ${isCur ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
-                        }`}>
-                        <Icon className="w-4 h-4" />
+                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center mt-0.5 ${
+                        isCur ? 'bg-slate-900 text-white' : isDone ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-700'
+                      }`}>
+                        {isDone && !isCur ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Icon className="w-4 h-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold truncate">
-                          {s.label}
+                        <div className="text-xs font-bold truncate flex items-center gap-1.5">
+                          <span>{s.label}</span>
+                          {isDone && !isCur && (
+                            <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-100 px-1 py-0.5 rounded leading-none">
+                              Done
+                            </span>
+                          )}
                         </div>
                         <div className={`text-[11px] leading-tight mt-0.5 ${isCur ? 'text-slate-900 font-medium' : 'text-slate-500'}`}>
                           {s.desc}
                         </div>
                       </div>
-                      {isCur && (
+                      {isCur ? (
                         <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                      )}
+                      ) : isDone ? (
+                        <span className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center mt-1 shrink-0">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                        </span>
+                      ) : null}
                     </button>
                   )
                 })}
