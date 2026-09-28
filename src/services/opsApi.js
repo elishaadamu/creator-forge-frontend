@@ -147,6 +147,14 @@ export const deleteAllCreators = () =>
 export const getCreator = (id) =>
   req('GET', `/creators/${id}`)
 
+export const getCreatorVideos = (creatorIdOrHandle, limit = 8) => {
+  const isId = creatorIdOrHandle && !creatorIdOrHandle.startsWith('@') && !creatorIdOrHandle.includes('youtube.com') && !creatorIdOrHandle.includes('http')
+  const q = isId 
+    ? `/creators/${encodeURIComponent(creatorIdOrHandle)}/videos?limit=${limit}` 
+    : `/creators/youtube-videos?handle=${encodeURIComponent(creatorIdOrHandle)}&limit=${limit}`
+  return req('GET', q)
+}
+
 export const addCreatorContact = (creatorId, contactType, value) =>
   req('POST', `/creators/${creatorId}/contacts`, { contact_type: contactType, value, source: 'manual' })
 

@@ -38,7 +38,32 @@ export default function AudienceGroundingModal({
 
   if (!isOpen) return null
 
-  const grounding = getProjectAudienceGrounding(project)
+  const [liveVideos, setLiveVideos] = useState(null)
+  const [isFetchingLive, setIsFetchingLive] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const currentPosts = (Array.isArray(project?.recentPosts) && project.recentPosts.length > 0 ? project.recentPosts : null) ||
+      (Array.isArray(project?.videos) && project.videos.length > 0 ? project.videos : null)
+    
+    if (!currentPosts && !liveVideos && !isFetchingLive) {
+      const cleanH = String(project?.creatorHandle || project?.creator_handle || project?.handle || project?.creatorName || '').replace(/^@/, '').trim()
+      if (cleanH && !/^[0-9a-f-]{15,}$/i.test(cleanH)) {
+        setIsFetchingLive(true)
+        import('../../services/scraper').then(({ fetchCreatorYouTubeVideos }) => {
+          fetchCreatorYouTubeVideos(cleanH)
+            .then(vids => {
+              if (vids && vids.length > 0) setLiveVideos(vids)
+            })
+            .catch(() => {})
+            .finally(() => setIsFetchingLive(false))
+        })
+      }
+    }
+  }, [isOpen, project, liveVideos, isFetchingLive])
+
+  const effectiveProject = liveVideos ? { ...project, recentPosts: liveVideos, videos: liveVideos } : project
+  const grounding = getProjectAudienceGrounding(effectiveProject)
   const creator = grounding.creatorName
   const product = grounding.productName
 
@@ -207,11 +232,11 @@ export default function AudienceGroundingModal({
                       </div>
                       <div className="flex items-center gap-2 shrink-0 flex-wrap">
                         <a
-                          href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${creator} ${t.title}`)}`}
+                          href={t.url && String(t.url).startsWith('http') ? t.url : `https://www.youtube.com/results?search_query=${encodeURIComponent(`${creator} ${t.title}`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-2 py-1 rounded-lg text-[10px] font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 flex items-center gap-1 transition-colors cursor-pointer"
-                          title={`Search "${t.title}" on YouTube`}
+                          title={`Open "${t.title}" on YouTube`}
                         >
                           <Youtube className="w-3 h-3 text-red-600" />
                           <span>Watch on YouTube</span>

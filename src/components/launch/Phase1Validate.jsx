@@ -44,6 +44,7 @@ import ProductMockupDisplay from './ProductMockupDisplay'
 import AudienceGroundingModal from './AudienceGroundingModal'
 import { getProjectAudienceGrounding } from '../../utils/audienceGrounding'
 import { getPhase1StepGuards } from '../../utils/stepGuards'
+import { fetchCreatorYouTubeVideos } from '../../services/scraper'
 
 export default function Phase1Validate({
   project,
@@ -165,6 +166,29 @@ export default function Phase1Validate({
     project?.experiments,
     project?.telemetry?.experiments
   ])
+
+  // Live YouTube Creator Uploads Synchronization
+  useEffect(() => {
+    const hasPosts = (Array.isArray(project?.recentPosts) && project.recentPosts.length > 0) ||
+      (Array.isArray(project?.videos) && project.videos.length > 0)
+    if (!hasPosts) {
+      const cleanH = String(project?.creatorHandle || project?.creator_handle || project?.handle || project?.creatorName || '').replace(/^@/, '').trim()
+      if (cleanH && !/^[0-9a-f-]{15,}$/i.test(cleanH)) {
+        fetchCreatorYouTubeVideos(cleanH).then(vids => {
+          if (vids && vids.length > 0 && onUpdateProject) {
+            onUpdateProject(prev => {
+              if (!prev) return prev
+              return {
+                ...prev,
+                recentPosts: vids,
+                videos: vids
+              }
+            })
+          }
+        }).catch(() => {})
+      }
+    }
+  }, [project?.id, project?.creatorHandle, project?.recentPosts, onUpdateProject])
 
   // Real Project Presales State
   const [presalesRevenue, setPresalesRevenue] = useState(() => {
@@ -666,7 +690,35 @@ export default function Phase1Validate({
   const generateCampaign = async () => {
     setIsGeneratingCampaign(true)
     try {
-      const generated = await generateValidationCampaignKitAI(project, {
+      let projectForGen = project
+      const hasPosts = (Array.isArray(project?.recentPosts) && project.recentPosts.length > 0) ||
+        (Array.isArray(project?.videos) && project.videos.length > 0)
+      if (!hasPosts) {
+        const cleanH = String(project?.creatorHandle || project?.creator_handle || project?.handle || project?.creatorName || '').replace(/^@/, '').trim()
+        if (cleanH && !/^[0-9a-f-]{15,}$/i.test(cleanH)) {
+          try {
+            const fetched = await fetchCreatorYouTubeVideos(cleanH)
+            if (fetched && fetched.length > 0) {
+              projectForGen = {
+                ...(project || {}),
+                recentPosts: fetched,
+                videos: fetched
+              }
+              if (onUpdateProject) {
+                onUpdateProject(prev => ({
+                  ...(prev || {}),
+                  recentPosts: fetched,
+                  videos: fetched
+                }))
+              }
+            }
+          } catch (e) {
+            console.warn('Could not pre-fetch videos for campaign generation:', e)
+          }
+        }
+      }
+
+      const generated = await generateValidationCampaignKitAI(projectForGen, {
         pacing: campaignPacing,
         postingFrequency,
         customPrompt: campaignStrategyPrompt

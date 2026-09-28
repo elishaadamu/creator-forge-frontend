@@ -640,3 +640,96 @@ function inferNicheFromDescription(text) {
   }
   return 'Lifestyle & Creativity'
 }
+
+/**
+ * Fetch verified real video uploads for any creator by handle or channel URL.
+ * Automatically tries backend video endpoint, proxy feed, and Apify fallback.
+ * Caches in sessionStorage and localStorage for fast repeat access.
+ */
+export async function fetchCreatorYouTubeVideos(handleOrUrl, limit = 8) {
+  if (!handleOrUrl) return []
+  let clean = String(handleOrUrl).trim()
+  if (clean.includes('youtube.com/')) {
+    clean = clean.split('youtube.com/').pop().split('?')[0].replace(/^\/?@?/, '')
+  } else {
+    clean = clean.replace(/^@/, '')
+  }
+  if (!clean || /^[0-9a-f-]{15,}$/i.test(clean)) return []
+
+  const cacheKey = `forge_creator_videos_${clean.toLowerCase()}`
+  try {
+    const cached = sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey)
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch (e) {}
+
+  let videos = []
+
+  // 1. Try backend YouTube video scraper endpoint
+  try {
+    const res = await fetch(`/api/creators/youtube-videos?handle=${encodeURIComponent(clean)}&limit=${limit}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (Array.isArray(data.videos) && data.videos.length > 0) {
+        videos = data.videos
+      }
+    }
+  } catch (e) {}
+
+  // 2. Try proxy feed endpoint
+  if (!videos || videos.length === 0) {
+    try {
+      const res = await fetch(`/api/proxy/youtube-feed?handle=${encodeURIComponent(clean)}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data.videos) && data.videos.length > 0) {
+          videos = data.videos
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 3. Fallback to Apify scraper if key available
+  if (!videos || videos.length === 0) {
+    const { apifyToken } = loadKeys()
+    const envToken = import.meta.env?.VITE_APIFY_API_KEY
+    const token = apifyToken || envToken
+    if (token) {
+      try {
+        const channelUrl = `https://www.youtube.com/@${clean}`
+        const scraped = await _scrapeYouTubeApify(channelUrl, token)
+        if (Array.isArray(scraped?.recentPosts) && scraped.recentPosts.length > 0) {
+          videos = scraped.recentPosts
+        }
+      } catch (e) {}
+    }
+  }
+
+  // Format and cache
+  if (videos && videos.length > 0) {
+    const formatted = videos.slice(0, limit).map((v, idx) => {
+      const videoId = v.videoId || v.id || (v.url ? v.url.split('v=')[1]?.split('&')[0] : null) || `yt-upload-${idx+1}`
+      return {
+        id: videoId,
+        videoId,
+        title: v.title || `Upload #${idx + 1}`,
+        url: v.url || `https://www.youtube.com/watch?v=${videoId}`,
+        views: v.views ? (typeof v.views === 'number' ? `${v.views.toLocaleString()} views` : String(v.views)) : 'Verified upload',
+        description: v.description || '',
+        thumbnail: v.thumbnail || v.thumbnailUrl || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+        publishedAt: v.publishedAt || ''
+      }
+    })
+
+    try {
+      sessionStorage.setItem(cacheKey, JSON.stringify(formatted))
+      localStorage.setItem(cacheKey, JSON.stringify(formatted))
+    } catch (e) {}
+
+    return formatted
+  }
+
+  return []
+}

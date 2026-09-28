@@ -121,6 +121,20 @@ export default function ProjectOSPage() {
                 presaleTarget: 12500
               }
 
+              const cleanH = String(creator.handle || 'partner').replace(/^@/, '').trim().toLowerCase()
+              let cachedVideos = []
+              if (cleanH) {
+                try {
+                  const raw = localStorage.getItem(`forge_creator_videos_${cleanH}`) || sessionStorage.getItem(`forge_creator_videos_${cleanH}`)
+                  if (raw) cachedVideos = JSON.parse(raw)
+                } catch (e) {}
+              }
+              const creatorPosts = (Array.isArray(creator.recentPosts) && creator.recentPosts.length > 0 ? creator.recentPosts : null) ||
+                (Array.isArray(creator.recent_posts) && creator.recent_posts.length > 0 ? creator.recent_posts : null) ||
+                (Array.isArray(creator.videos) && creator.videos.length > 0 ? creator.videos : null) ||
+                (Array.isArray(cachedVideos) && cachedVideos.length > 0 ? cachedVideos : null) ||
+                []
+
               const newPayload = {
                 id: `proj_${Date.now()}`,
                 creatorId: creator.id || creatorId,
@@ -137,7 +151,11 @@ export default function ProjectOSPage() {
                 currentPhase: 1,
                 status: 'validating',
                 selectedConcept: primaryConcept,
-                selectedConceptId: primaryConcept.id
+                selectedConceptId: primaryConcept.id,
+                channelUrl: creator.profile_url || (cleanH ? `https://www.youtube.com/@${cleanH}` : ''),
+                channelDescription: creator.bio || '',
+                recentPosts: creatorPosts,
+                videos: creatorPosts,
               }
 
               const created = await createCoLaunchProject(newPayload)
@@ -155,6 +173,19 @@ export default function ProjectOSPage() {
         target = list[0]
       }
       if (target) {
+        const handleClean = String(target.creatorHandle || '').replace(/^@/, '').trim().toLowerCase()
+        let cachedVideos = []
+        if (handleClean) {
+          try {
+            const raw = localStorage.getItem(`forge_creator_videos_${handleClean}`) || sessionStorage.getItem(`forge_creator_videos_${handleClean}`)
+            if (raw) cachedVideos = JSON.parse(raw)
+          } catch (e) {}
+        }
+        const resolvedPosts = (Array.isArray(target.recentPosts) && target.recentPosts.length > 0 ? target.recentPosts : null) ||
+          (Array.isArray(target.videos) && target.videos.length > 0 ? target.videos : null) ||
+          (Array.isArray(cachedVideos) && cachedVideos.length > 0 ? cachedVideos : null) ||
+          []
+
         const resolvedKit = target.campaignKit ||
           target.validationCampaign?.campaignKit ||
           target.validationCampaign?.campaign_kit ||
@@ -170,12 +201,28 @@ export default function ProjectOSPage() {
         )
         const enhancedTarget = {
           ...target,
+          recentPosts: resolvedPosts,
+          videos: resolvedPosts,
+          channelUrl: target.channelUrl || (handleClean ? `https://www.youtube.com/@${handleClean}` : ''),
+          channelDescription: target.channelDescription || '',
           campaignKit: resolvedKit,
           campaignLaunched: hasKit,
           campaignAssetsGenerated: hasKit,
           creatorTasks: Array.isArray(target.creatorTasks) ? target.creatorTasks : []
         }
         setActiveProject(enhancedTarget)
+
+        // If target has no posts yet, fetch live from YouTube
+        if (resolvedPosts.length === 0 && handleClean && !/^[0-9a-f-]{15,}$/i.test(handleClean)) {
+          import('../../services/scraper').then(({ fetchCreatorYouTubeVideos }) => {
+            fetchCreatorYouTubeVideos(handleClean).then((vids) => {
+              if (vids && vids.length > 0) {
+                setActiveProject((prev) => (prev && prev.id === target.id ? { ...prev, recentPosts: vids, videos: vids } : prev))
+              }
+            }).catch(() => {})
+          })
+        }
+
         try {
           // Reflect project ID in URL without reload
           const url = new URL(window.location.href)

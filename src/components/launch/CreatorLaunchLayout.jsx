@@ -316,6 +316,21 @@ export default function CreatorLaunchLayout({
             }).catch(() => { })
           })
         }
+        const handleClean = (matched.creatorHandle || '').replace(/^@/, '').trim().toLowerCase()
+        let cachedVideos = []
+        if (handleClean) {
+          try {
+            const raw = localStorage.getItem(`forge_creator_videos_${handleClean}`) || sessionStorage.getItem(`forge_creator_videos_${handleClean}`)
+            if (raw) cachedVideos = JSON.parse(raw)
+          } catch (e) {}
+        }
+        if ((!matched.recentPosts || matched.recentPosts.length === 0) && cachedVideos.length > 0) {
+          matched.recentPosts = cachedVideos
+          matched.videos = cachedVideos
+        }
+        if (!matched.channelUrl && handleClean) {
+          matched.channelUrl = `https://www.youtube.com/@${handleClean}`
+        }
 
         setActiveProject(matched)
         try {
@@ -402,6 +417,25 @@ export default function CreatorLaunchLayout({
         presaleTarget: 12500,
       }
 
+      const cleanHandle = String(creatorHandle || '').replace(/^@/, '').trim().toLowerCase()
+      let cachedVideos = []
+      if (cleanHandle) {
+        try {
+          const raw = localStorage.getItem(`forge_creator_videos_${cleanHandle}`) || sessionStorage.getItem(`forge_creator_videos_${cleanHandle}`)
+          if (raw) cachedVideos = JSON.parse(raw)
+        } catch (e) {}
+      }
+
+      const rawPosts = (
+        (Array.isArray(creatorProfile?.recentPosts) && creatorProfile.recentPosts.length > 0 ? creatorProfile.recentPosts : null) ||
+        (Array.isArray(creatorProfile?.recent_posts) && creatorProfile.recent_posts.length > 0 ? creatorProfile.recent_posts : null) ||
+        (Array.isArray(creatorProfile?.videos) && creatorProfile.videos.length > 0 ? creatorProfile.videos : null) ||
+        (Array.isArray(cachedVideos) && cachedVideos.length > 0 ? cachedVideos : null) ||
+        []
+      )
+      const channelUrl = creatorProfile?.profile_url || creatorProfile?.channelUrl || creatorProfile?.channel_url || (cleanHandle ? `https://www.youtube.com/@${cleanHandle}` : '')
+      const channelBio = creatorProfile?.bio || creatorProfile?.channelDescription || creatorProfile?.creatorBio || ''
+
       const newProjPayload = {
         id: `proj_${Date.now()}`,
         creatorId: creatorProfile?.id || targetId,
@@ -419,6 +453,11 @@ export default function CreatorLaunchLayout({
         status: 'validating',
         selectedConcept: primaryConcept,
         selectedConceptId: primaryConcept.id,
+        channelUrl,
+        channelDescription: channelBio,
+        creatorBio: channelBio,
+        recentPosts: rawPosts,
+        videos: rawPosts,
       }
 
       let created = null
@@ -740,11 +779,28 @@ export default function CreatorLaunchLayout({
 
   const handleCreateProjectFromConcept = async (newProjData) => {
     const projId = `proj_${Date.now()}`
+    const cleanHandle = String(newProjData.creatorHandle || newProjData.handle || '').replace(/^@/, '').trim().toLowerCase()
+    let cachedVideos = []
+    if (cleanHandle) {
+      try {
+        const raw = localStorage.getItem(`forge_creator_videos_${cleanHandle}`) || sessionStorage.getItem(`forge_creator_videos_${cleanHandle}`)
+        if (raw) cachedVideos = JSON.parse(raw)
+      } catch (e) {}
+    }
+    const resolvedPosts = (Array.isArray(newProjData.recentPosts) && newProjData.recentPosts.length > 0 ? newProjData.recentPosts : null) ||
+      (Array.isArray(newProjData.videos) && newProjData.videos.length > 0 ? newProjData.videos : null) ||
+      (Array.isArray(cachedVideos) && cachedVideos.length > 0 ? cachedVideos : null) ||
+      []
+
     const cleanProject = {
       id: projId,
       createdAt: new Date().toISOString(),
       currentPhase: newProjData.currentPhase || 1,
       ...newProjData,
+      recentPosts: resolvedPosts,
+      videos: resolvedPosts,
+      channelUrl: newProjData.channelUrl || (cleanHandle ? `https://www.youtube.com/@${cleanHandle}` : ''),
+      channelDescription: newProjData.channelDescription || newProjData.creatorBio || '',
       // Fresh metrics
       currentPresales: 0,
       presaleTarget: newProjData.presaleTarget || 12500,
