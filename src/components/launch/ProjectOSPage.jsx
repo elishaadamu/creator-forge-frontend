@@ -274,51 +274,54 @@ export default function ProjectOSPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#06080d] text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30">
+    <div
+      className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900"
+      style={{ backgroundImage: 'radial-gradient(#cbd5e1 1.25px, transparent 1.25px)', backgroundSize: '20px 20px' }}
+    >
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl bg-[#0f1420] border border-white/10 text-white animate-in slide-in-from-bottom-2">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl bg-white border border-slate-200 text-slate-900 animate-in slide-in-from-bottom-2">
           {toast.type === 'error' ? (
-            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+            <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
           ) : (
-            <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
           )}
           <div className="text-xs">
-            <div className="font-semibold">{toast.title}</div>
-            <div className="text-slate-400">{toast.message}</div>
+            <div className="font-semibold text-slate-900">{toast.title}</div>
+            <div className="text-slate-500">{toast.message}</div>
           </div>
         </div>
       )}
 
       {/* Top Universal Operator Command Bar */}
-      <header className="sticky top-0 z-40 bg-[#080b12]/90 backdrop-blur-md border-b border-white/[0.08] px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 shadow-2xs">
         {/* Left: Branding & Back Navigation */}
         <div className="flex items-center gap-3 sm:gap-4">
           <a
             href="/launch"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 hover:text-white transition-all text-xs font-medium group"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-950 transition-all text-xs font-semibold group"
             title="Return to Creator Acquisition Engine (Steps 1–6)"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-500 group-hover:-translate-x-0.5 transition-transform" />
             <span className="hidden sm:inline">Creator Acquisition</span>
             <span className="sm:hidden">Back</span>
           </a>
 
-          <div className="h-4 w-px bg-white/10 hidden sm:block" />
+          <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
           {/* Studio Brand & Section Indicator */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#0F172A] border border-white/15 flex items-center justify-center shadow-md shrink-0">
-              <CreatorForgeLogo size={18} showText={false} theme="dark" />
+            <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center shadow-xs shrink-0">
+              <CreatorForgeLogo size={18} showText={false} theme="light" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-black text-white tracking-tight uppercase">CREATOR FORGE</span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="text-xs font-black text-slate-950 tracking-tight uppercase">CREATOR FORGE</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
                   PROJECT OS
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 hidden md:block">Co-Launch Operations & Engineering Command</p>
+              <p className="text-[10px] text-slate-500 hidden md:block">Co-Launch Operations & Engineering Command</p>
             </div>
           </div>
         </div>
@@ -329,24 +332,24 @@ export default function ProjectOSPage() {
             <button
               type="button"
               onClick={() => setShowProjectDropdown((prev) => !prev)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.1] text-xs transition-all max-w-[240px] sm:max-w-[340px]"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs text-xs transition-all max-w-[240px] sm:max-w-[340px]"
             >
               {activeProject.creatorAvatar ? (
                 <img
                   src={activeProject.creatorAvatar}
                   alt={activeProject.creatorName}
-                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-white/20"
+                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-slate-200"
                 />
               ) : (
-                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-[10px] shrink-0">
+                <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">
                   {(activeProject.creatorName || 'P')[0]}
                 </div>
               )}
               <div className="text-left truncate">
-                <div className="font-semibold text-white truncate text-[11px] sm:text-xs">
+                <div className="font-bold text-slate-900 truncate text-[11px] sm:text-xs">
                   {activeProject.productName || 'Active Venture'}
                 </div>
-                <div className="text-[10px] text-slate-400 truncate">
+                <div className="text-[10px] text-slate-500 truncate">
                   {activeProject.creatorName ? `w/ ${activeProject.creatorName}` : 'Partner Project'}
                 </div>
               </div>
@@ -360,12 +363,12 @@ export default function ProjectOSPage() {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowProjectDropdown(false)}
                 />
-                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 sm:w-80 rounded-2xl bg-[#0e121c] border border-white/[0.12] shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
-                  <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 border-b border-white/[0.06] flex items-center justify-between">
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 sm:w-80 rounded-2xl bg-white border border-slate-200 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 text-slate-900">
+                  <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100 flex items-center justify-between">
                     <span>Co-Launch Projects ({projects.length})</span>
                     <a
                       href="/launch?step=1"
-                      className="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium"
+                      className="text-emerald-600 hover:text-emerald-700 flex items-center gap-1 font-bold"
                     >
                       <Plus className="w-3 h-3" /> New Lead
                     </a>
@@ -381,8 +384,8 @@ export default function ProjectOSPage() {
                           onClick={() => handleSelectProject(p)}
                           className={`w-full text-left px-3 py-2 rounded-xl flex items-center gap-3 transition-all ${
                             isCurrent
-                              ? 'bg-emerald-500/15 border border-emerald-500/30 text-white'
-                              : 'hover:bg-white/[0.04] text-slate-300'
+                              ? 'bg-emerald-50 border border-emerald-300 text-slate-900 font-bold'
+                              : 'hover:bg-slate-50 text-slate-700'
                           }`}
                         >
                           {p.creatorAvatar ? (
@@ -392,16 +395,16 @@ export default function ProjectOSPage() {
                               className="w-7 h-7 rounded-full object-cover shrink-0"
                             />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-slate-300 shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-700 shrink-0">
                               {(p.creatorName || 'P')[0]}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold text-xs truncate flex items-center gap-1.5">
                               <span>{p.productName || 'Co-Launch Venture'}</span>
-                              {isCurrent && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                              {isCurrent && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
                             </div>
-                            <div className="text-[10px] text-slate-400 truncate">
+                            <div className="text-[10px] text-slate-500 truncate">
                               {p.creatorName || p.creatorHandle || 'Partner'} • Phase {p.currentPhase || 1}
                             </div>
                           </div>
@@ -420,22 +423,22 @@ export default function ProjectOSPage() {
           {/* Dedicated Co-Builder Passes & Participation Console Link */}
           <a
             href="/participation-manager"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 text-amber-300 hover:text-amber-200 transition-all text-xs font-bold"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 transition-all text-xs font-bold shadow-2xs"
             title="Open Dedicated Creator Participation & Co-Builder Console"
           >
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <Zap className="w-3.5 h-3.5 text-amber-700" />
             <span>Co-Builder Passes ($50)</span>
-            <ExternalLink className="w-3 h-3 text-amber-400" />
+            <ExternalLink className="w-3 h-3 text-amber-700" />
           </a>
 
           <a
             href="/follow-up-crm"
             target="_blank"
             rel="noreferrer"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 hover:text-white transition-all text-xs font-medium"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all text-xs font-semibold shadow-2xs"
             title="Open Standalone Creator Follow-Up CRM"
           >
-            <Users className="w-3.5 h-3.5 text-emerald-400" />
+            <Users className="w-3.5 h-3.5 text-emerald-600" />
             <span>CRM & Replies</span>
             <ExternalLink className="w-3 h-3 text-slate-400" />
           </a>
@@ -444,10 +447,10 @@ export default function ProjectOSPage() {
             type="button"
             onClick={() => loadProjects(true)}
             disabled={isRefreshing}
-            className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 hover:text-white transition-all text-xs"
+            className="p-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all text-xs shadow-2xs cursor-pointer"
             title="Refresh Project Data"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-400' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-600' : ''}`} />
           </button>
         </div>
       </header>
@@ -475,13 +478,13 @@ export default function ProjectOSPage() {
         ) : (
           /* Empty State: No Projects Created Yet */
           <div className="flex-1 flex items-center justify-center p-6">
-            <div className="max-w-md w-full p-8 rounded-3xl bg-[#0c0f17] border border-white/[0.08] text-center space-y-5 shadow-2xl">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400 shadow-lg shadow-emerald-500/10">
+            <div className="max-w-md w-full p-8 rounded-3xl bg-white border border-slate-200 text-center space-y-5 shadow-xl text-slate-900">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-300 flex items-center justify-center mx-auto text-emerald-600 shadow-sm">
                 <Rocket className="w-7 h-7" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-lg font-bold text-white">No Active Co-Launch Project</h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <h2 className="text-lg font-bold text-slate-900">No Active Co-Launch Project</h2>
+                <p className="text-xs text-slate-500 leading-relaxed">
                   You have not initialized a software co-launch project yet. Scout, qualify, and pitch a creator in Section 1 to launch a live project.
                 </p>
               </div>
@@ -489,14 +492,14 @@ export default function ProjectOSPage() {
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <a
                   href="/launch?step=1"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-950/25 transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
                   <span>Start Creator Acquisition</span>
                 </a>
                 <a
                   href="/follow-up-crm"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 text-xs font-medium transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold transition-all shadow-2xs"
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span>View CRM Leads</span>

@@ -297,7 +297,7 @@ partnerships@creatorforge.com`
           <button
             type="button"
             onClick={onGoToAcquisition}
-            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-xs"
+            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer shadow-xs"
           >
             Go to Section 1: Acquire Creator
           </button>
@@ -740,7 +740,7 @@ partnerships@creatorforge.com`
                               : p === 3
                               ? isLiveLaunch
                                 ? 'bg-emerald-600 text-white shadow-xs'
-                                : 'bg-purple-600 text-white shadow-xs'
+                                : 'bg-slate-900 text-white shadow-xs'
                               : 'bg-emerald-600 text-white shadow-xs'
                             : isDone
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
@@ -808,10 +808,10 @@ partnerships@creatorforge.com`
                       </span>
                       {expTitle && (
                         <span
-                          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-purple-800 bg-purple-50 border border-purple-200 shadow-2xs inline-flex items-center gap-1.5 shrink-0"
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-800 bg-slate-100 border border-slate-200 shadow-2xs inline-flex items-center gap-1.5 shrink-0"
                           title={`Pricing adjusted via AI Experiment: ${expTitle}`}
                         >
-                          <Sparkles className="w-3 h-3 text-purple-600 shrink-0" />
+                          <Sparkles className="w-3 h-3 text-slate-600 shrink-0" />
                           <span>AI Experiment: {expTitle}</span>
                         </span>
                       )}
@@ -842,7 +842,7 @@ partnerships@creatorforge.com`
                     : currentPhase === 2
                     ? 'text-blue-800 bg-blue-50 border border-blue-300'
                     : currentPhase === 3
-                    ? 'text-purple-800 bg-purple-50 border border-purple-300'
+                    ? 'text-slate-900 bg-slate-100 border border-slate-300'
                     : 'text-emerald-800 bg-emerald-50 border border-emerald-300'
                 }`}>
                   {isLiveLaunch ? (
@@ -1013,7 +1013,7 @@ partnerships@creatorforge.com`
 
                     {/* 2. Unique Visitors */}
                     <div className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100/70 border border-slate-200 space-y-1.5 shadow-2xs transition-all">
-                      <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wider block">Unique Visitors</span>
+                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">Unique Visitors</span>
                       <div className="text-xl sm:text-2xl font-black text-slate-950 font-mono tracking-tight">
                         {visitorsCount.toLocaleString()}
                       </div>
@@ -1059,7 +1059,7 @@ partnerships@creatorforge.com`
                       <div>
                         <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-3">
                           <span className="font-bold text-slate-950 text-xs flex items-center gap-1.5">
-                            <CheckSquare className="w-4 h-4 text-purple-600" />
+                            <CheckSquare className="w-4 h-4 text-slate-700" />
                             <span>
                               {currentPhase === 3 ? 'Launch & Growth Tasks' : currentPhase === 2 ? 'MVP Engineering Tasks' : 'Validation Sprint Tasks'}
                             </span>
@@ -1097,7 +1097,7 @@ partnerships@creatorforge.com`
                       </div>
                       <button
                         onClick={() => setSidebarTab('tasks')}
-                        className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 mt-2 text-left cursor-pointer transition-colors"
+                        className="text-xs font-bold text-slate-900 hover:text-slate-700 flex items-center gap-1 mt-2 text-left cursor-pointer transition-colors"
                       >
                         <span>View all tasks</span>
                         <span>→</span>
@@ -1129,7 +1129,7 @@ partnerships@creatorforge.com`
                               const details = typeof act === 'object' ? (act.details || '') : ''
                               return (
                                 <div key={idx} className="flex items-start gap-2 py-0.5">
-                                  <span className="text-purple-600 font-bold shrink-0">•</span>
+                                  <span className="text-emerald-600 font-bold shrink-0">•</span>
                                   <div className="min-w-0">
                                     <span className="font-medium text-slate-900 block truncate">{title}</span>
                                     {details && <span className="text-[10px] text-slate-500 block truncate">{details}</span>}
@@ -1142,7 +1142,7 @@ partnerships@creatorforge.com`
                       </div>
                       <button
                         onClick={() => setSidebarTab('decisions')}
-                        className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 mt-2 text-left cursor-pointer transition-colors"
+                        className="text-xs font-bold text-slate-900 hover:text-slate-700 flex items-center gap-1 mt-2 text-left cursor-pointer transition-colors"
                       >
                         <span>View all activity</span>
                         <span>→</span>
@@ -1159,7 +1159,7 @@ partnerships@creatorforge.com`
                     <span className="font-black text-slate-950 text-sm">Work: AI Tasks, Creator Tasks & Co-Launch Sprint</span>
                     <button
                       onClick={() => openPhaseStep('campaign')}
-                      className="text-purple-700 hover:text-purple-900 font-bold text-xs"
+                      className="text-slate-900 hover:text-slate-700 font-bold text-xs"
                     >
                       Open Creator Campaign Kit →
                     </button>
@@ -1181,7 +1181,7 @@ partnerships@creatorforge.com`
                               isDone
                                 ? 'bg-slate-50 border-slate-200 opacity-80'
                                 : isToday
-                                ? 'bg-purple-50/80 border-purple-300 shadow-xs'
+                                ? 'bg-slate-100 border-slate-300 shadow-xs'
                                 : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                             }`}
                           >
@@ -1190,17 +1190,17 @@ partnerships@creatorforge.com`
                                 isDone
                                   ? 'bg-emerald-600 border-emerald-600 text-white'
                                   : isToday
-                                  ? 'border-purple-400 bg-purple-100 text-purple-700'
+                                  ? 'border-slate-400 bg-slate-200 text-slate-800'
                                   : 'border-slate-300 bg-slate-50'
                               }`}>
-                                {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : isToday ? <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" /> : null}
+                                {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : isToday ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" /> : null}
                               </div>
                               <div className="min-w-0">
                                 <div className={`font-semibold text-xs truncate ${isDone ? 'line-through text-slate-400' : 'text-slate-900'}`}>
                                   {task.title || task.text}
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] text-purple-700 font-mono font-medium">{task.channel || task.role || 'Sprint Task'}</span>
+                                  <span className="text-[10px] text-slate-600 font-mono font-medium">{task.channel || task.role || 'Sprint Task'}</span>
                                   <span className="text-[10px] text-slate-300">•</span>
                                   <span className="text-[10px] text-slate-500 font-mono">Day {task.day || idx + 1}</span>
                                 </div>
@@ -1213,8 +1213,8 @@ partnerships@creatorforge.com`
                                   <span>Done</span>
                                 </span>
                               ) : isToday ? (
-                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-purple-100 text-purple-800 border border-purple-300 flex items-center gap-1">
-                                  <Flame className="w-3 h-3 text-purple-600" />
+                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-900 text-white border border-slate-900 flex items-center gap-1">
+                                  <Flame className="w-3 h-3 text-amber-400" />
                                   <span>Today's Mission</span>
                                 </span>
                               ) : (
@@ -1244,8 +1244,8 @@ partnerships@creatorforge.com`
                       <span className="text-slate-600 font-bold block uppercase text-[10px]">Unique Visitors</span>
                       <span className="text-lg font-black text-slate-950 mt-1 block">{visitorsCount.toLocaleString()}</span>
                     </div>
-                    <div className="p-4 rounded-xl bg-purple-50 border border-purple-200">
-                      <span className="text-purple-800 font-bold block uppercase text-[10px]">Conversion Rate</span>
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <span className="text-slate-600 font-bold block uppercase text-[10px]">Conversion Rate</span>
                       <span className="text-lg font-black text-slate-950 mt-1 block">{conversionRate.toFixed(1)}%</span>
                     </div>
                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
@@ -1301,7 +1301,7 @@ partnerships@creatorforge.com`
                         {/* Executive Header */}
                         <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-2xs">
                           <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="w-9 h-9 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0 shadow-2xs">
+                            <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 shrink-0 shadow-2xs">
                               <ShieldCheck className="w-4.5 h-4.5" />
                             </div>
                             <div className="min-w-0">
@@ -1309,7 +1309,7 @@ partnerships@creatorforge.com`
                                 <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">
                                   Decisions Requiring Human Approval
                                 </h3>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 shrink-0">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200 shrink-0">
                                   {decisionViewPhase === 3 ? 'Phase 3 Milestone' : decisionViewPhase === 2 ? 'Phase 2 Milestone' : 'Phase 1 Milestone'}
                                 </span>
                               </div>
@@ -1325,7 +1325,7 @@ partnerships@creatorforge.com`
                               onClick={() => setDecisionViewPhase(3)}
                               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                 decisionViewPhase === 3
-                                  ? 'bg-purple-600 text-white shadow-xs'
+                                  ? 'bg-slate-900 text-white shadow-xs'
                                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                               }`}
                             >
@@ -1361,12 +1361,12 @@ partnerships@creatorforge.com`
 
                         {/* ── PHASE 3 COMMERCIAL DECISION GATE ── */}
                         {decisionViewPhase === 3 && (
-                          <div className="relative rounded-2xl bg-white border border-purple-200 p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
-                            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-indigo-500 to-emerald-500" />
+                          <div className="relative rounded-2xl bg-white border border-slate-200 p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
+                            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-slate-900 via-slate-700 to-emerald-600" />
 
                             <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-b border-slate-100 pb-3.5">
                               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                <div className="w-8 h-8 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 shrink-0">
                                   <Rocket className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0">
@@ -1374,7 +1374,7 @@ partnerships@creatorforge.com`
                                     <h4 className="font-extrabold text-slate-900 text-sm tracking-tight">
                                       Phase 3: Launch Report & Scaling Decision Gate
                                     </h4>
-                                    <span className="text-[9px] font-mono font-bold text-purple-700 uppercase px-2 py-0.5 rounded-md bg-purple-100 border border-purple-200 shrink-0">
+                                    <span className="text-[9px] font-mono font-bold text-slate-800 uppercase px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 shrink-0">
                                       Commercial Gate
                                     </span>
                                   </div>
@@ -1387,7 +1387,7 @@ partnerships@creatorforge.com`
                                 project?.decisionNotice
                                   ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                                   : isLiveLaunch
-                                  ? 'bg-purple-100 text-purple-800 border-purple-300'
+                                  ? 'bg-slate-100 text-slate-900 border-slate-300'
                                   : 'bg-amber-100 text-amber-800 border-amber-300'
                               }`}>
                                 {project?.decisionNotice ? (
@@ -1397,7 +1397,7 @@ partnerships@creatorforge.com`
                                   </>
                                 ) : isLiveLaunch ? (
                                   <>
-                                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                                     <span>Production Live</span>
                                   </>
                                 ) : (
@@ -1422,9 +1422,9 @@ partnerships@creatorforge.com`
                                 <p className="text-xs font-bold text-slate-900 leading-relaxed">{project.decisionNotice}</p>
                               </div>
                             ) : (
-                              <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 space-y-1 text-xs">
-                                <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-purple-800 uppercase tracking-wider">
-                                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-xs">
+                                <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-slate-800 uppercase tracking-wider">
+                                  <Sparkles className="w-3.5 h-3.5 text-slate-600" />
                                   <span>Executive Co-Founder Choice Required</span>
                                 </div>
                                 <p className="text-[11px] text-slate-700 leading-relaxed">
@@ -1435,19 +1435,19 @@ partnerships@creatorforge.com`
 
                             {/* Telemetry 4-Cards Grid */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-300 transition-all flex flex-col justify-between shadow-2xs">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between shadow-2xs">
                                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Live Revenue</span>
                                 <div className="text-base font-black text-emerald-700 my-1 font-mono">
                                   ${(Number(project.telemetry?.revenue || presalesRevenue || 0)).toLocaleString()}
                                 </div>
                                 <span className="text-[9px] text-slate-500 block">Total processed</span>
                               </div>
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-300 transition-all flex flex-col justify-between shadow-2xs">
-                                <span className="text-[9px] font-bold text-purple-700 uppercase tracking-wider block">Paying Backers</span>
-                                <div className="text-base font-black text-purple-700 my-1 font-mono">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between shadow-2xs">
+                                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider block">Paying Backers</span>
+                                <div className="text-base font-black text-slate-900 my-1 font-mono">
                                   {project.telemetry?.customers || backersCount || 0}
                                 </div>
-                                <span className="text-[9px] text-purple-600/80 block">Active customers</span>
+                                <span className="text-[9px] text-slate-500 block">Active customers</span>
                               </div>
                               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 transition-all flex flex-col justify-between shadow-2xs">
                                 <span className="text-[9px] font-bold text-blue-700 uppercase tracking-wider block">Conversion Rate</span>
@@ -1466,10 +1466,10 @@ partnerships@creatorforge.com`
                             </div>
 
                             {/* AI Executive Assessment */}
-                            <div className="p-3.5 rounded-xl bg-purple-50/80 border border-purple-200 space-y-1.5 text-slate-700 shadow-2xs">
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-slate-700 shadow-2xs">
                               <div className="flex flex-wrap items-center justify-between gap-1.5">
-                                <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
-                                  <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                                  <Sparkles className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                                   <span>AI Launch Report Milestone Assessment</span>
                                 </div>
                                 <span className="text-[9px] font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 font-bold shrink-0">
@@ -1521,14 +1521,14 @@ partnerships@creatorforge.com`
 
                         {/* ── PHASE 1 VALIDATION GATE CHECKPOINT ── */}
                         {decisionViewPhase === 1 && (
-                          <div className="relative rounded-2xl bg-white border border-purple-200 p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
+                          <div className="relative rounded-2xl bg-white border border-slate-200 p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
                             {/* Top Accent Gradient Bar */}
-                            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-indigo-500 to-emerald-500" />
+                            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-slate-900 via-slate-700 to-emerald-600" />
 
                             {/* Card Title & Checkpoint Badge */}
                             <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-b border-slate-100 pb-3.5">
                               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                <div className="w-8 h-8 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 shrink-0">
                                   <Flag className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0">
@@ -1536,7 +1536,7 @@ partnerships@creatorforge.com`
                                     <h4 className="font-extrabold text-slate-900 text-sm tracking-tight">
                                       5. Validation Gate Checkpoint
                                     </h4>
-                                    <span className="text-[9px] font-mono font-bold text-purple-700 uppercase px-2 py-0.5 rounded-md bg-purple-100 border border-purple-200 shrink-0">
+                                    <span className="text-[9px] font-mono font-bold text-slate-800 uppercase px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 shrink-0">
                                       Executive Gate
                                     </span>
                                   </div>
@@ -1589,12 +1589,12 @@ partnerships@creatorforge.com`
                                   {backersCount} paying backer{backersCount === 1 ? '' : 's'}
                                 </span>
                               </div>
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-300 transition-all flex flex-col justify-between shadow-2xs">
-                                <span className="text-[9px] font-bold text-purple-700 uppercase tracking-wider block">Conversion Rate</span>
-                                <div className="text-base font-black text-purple-700 my-1 font-mono">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between shadow-2xs">
+                                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider block">Conversion Rate</span>
+                                <div className="text-base font-black text-slate-900 my-1 font-mono">
                                   {conversionRate.toFixed(1)}%
                                 </div>
-                                <span className="text-[9px] text-purple-600 block">Traffic-to-order</span>
+                                <span className="text-[9px] text-slate-500 block">Traffic-to-order</span>
                               </div>
                               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between shadow-2xs">
                                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Gate Status</span>
@@ -1624,7 +1624,7 @@ partnerships@creatorforge.com`
                                       ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-xs'
                                       : isFounderApproved
                                       ? 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-xs'
-                                      : 'bg-gradient-to-r from-purple-500 via-indigo-500 to-emerald-500'
+                                      : 'bg-gradient-to-r from-slate-900 via-slate-700 to-emerald-600'
                                   }`}
                                   style={{ width: `${presaleGoal > 0 ? Math.min(100, Math.max(currentPresales > 0 ? 3 : 0, Math.round((currentPresales / presaleGoal) * 100))) : 0}%` }}
                                 />
@@ -1632,13 +1632,13 @@ partnerships@creatorforge.com`
                             </div>
 
                             {/* AI Validation Co-Pilot Assessment */}
-                            <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 space-y-2 text-slate-700 shadow-2xs">
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-slate-700 shadow-2xs">
                               <div className="flex flex-wrap items-center justify-between gap-1.5">
-                                <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
-                                  <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                                  <Sparkles className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                                   <span>AI Executive Assessment</span>
                                 </div>
-                                <span className="text-[9px] font-mono text-purple-800 bg-purple-100 px-1.5 py-0.5 rounded border border-purple-200 shrink-0 font-bold">
+                                <span className="text-[9px] font-mono text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0 font-bold">
                                   Verified
                                 </span>
                               </div>
@@ -1647,21 +1647,21 @@ partnerships@creatorforge.com`
                                   <div className="flex items-start gap-1.5">
                                     <Flame className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                                     <span>
-                                      <strong className="text-slate-900 font-bold">Target Reached:</strong> Presale target (<strong className="text-emerald-700">${presaleGoal.toLocaleString()}</strong>) validated with <strong className="text-emerald-700">${currentPresales.toLocaleString()}</strong> across <strong className="text-slate-900">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-700 font-bold">{conversionRate.toFixed(1)}%</strong> conv.). Recommending <strong className="text-emerald-700 font-bold">Build MVP</strong> for Phase 2.
+                                      <strong className="text-slate-900 font-bold">Target Reached:</strong> Presale target (<strong className="text-emerald-700">${presaleGoal.toLocaleString()}</strong>) validated with <strong className="text-emerald-700">${currentPresales.toLocaleString()}</strong> across <strong className="text-slate-900">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-slate-900 font-bold">{conversionRate.toFixed(1)}%</strong> conv.). Recommending <strong className="text-emerald-700 font-bold">Build MVP</strong> for Phase 2.
                                     </span>
                                   </div>
                                 ) : isFounderApproved ? (
                                   <div className="flex items-start gap-1.5">
                                     <Rocket className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
                                     <span>
-                                      <strong className="text-slate-900 font-bold">Founder Greenlit:</strong> Approved for <strong className="text-blue-700 font-bold">Phase 2: Build MVP</strong> with <strong className="text-emerald-700">${currentPresales.toLocaleString()}</strong> presale revenue, <strong className="text-slate-900">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-700 font-bold">{conversionRate.toFixed(1)}%</strong> conv.). Pre-orders remain open during development.
+                                      <strong className="text-slate-900 font-bold">Founder Greenlit:</strong> Approved for <strong className="text-blue-700 font-bold">Phase 2: Build MVP</strong> with <strong className="text-emerald-700">${currentPresales.toLocaleString()}</strong> presale revenue, <strong className="text-slate-900">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-slate-900 font-bold">{conversionRate.toFixed(1)}%</strong> conv.). Pre-orders remain open during development.
                                     </span>
                                   </div>
                                 ) : (
                                   <div className="flex items-start gap-1.5">
-                                    <BarChart2 className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
+                                    <BarChart2 className="w-3.5 h-3.5 text-slate-600 shrink-0 mt-0.5" />
                                     <span>
-                                      <strong className="text-slate-900 font-bold">Validation Underway:</strong> <strong className="text-emerald-700">${currentPresales.toLocaleString()}</strong> in pre-orders, <strong className="text-slate-900">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-700 font-bold">{conversionRate.toFixed(1)}%</strong> conv.) toward <strong className="text-slate-900 font-bold">${presaleGoal.toLocaleString()}</strong> target ({presaleGoal > 0 ? Math.min(100, Math.round((currentPresales / presaleGoal) * 100)) : 0}%). Continue campaigns or execute a gate decision below.
+                                      <strong className="text-slate-900 font-bold">Validation Underway:</strong> <strong className="text-emerald-700">${currentPresales.toLocaleString()}</strong> in pre-orders, <strong className="text-slate-900">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-slate-900 font-bold">{conversionRate.toFixed(1)}%</strong> conv.) toward <strong className="text-slate-900 font-bold">${presaleGoal.toLocaleString()}</strong> target ({presaleGoal > 0 ? Math.min(100, Math.round((currentPresales / presaleGoal) * 100)) : 0}%). Continue campaigns or execute a gate decision below.
                                     </span>
                                   </div>
                                 )}
@@ -1703,14 +1703,14 @@ partnerships@creatorforge.com`
                             <div key={d.id || i} className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1.5 hover:border-slate-300 hover:shadow-xs transition-all shadow-2xs">
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <span className={`w-2 h-2 rounded-full shrink-0 ${isScale ? 'bg-purple-500' : isPassed ? 'bg-emerald-500' : isIterate ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                                  <span className={`w-2 h-2 rounded-full shrink-0 ${isScale ? 'bg-emerald-500' : isPassed ? 'bg-emerald-500' : isIterate ? 'bg-amber-500' : 'bg-rose-500'}`} />
                                   <span className="font-bold text-slate-900 text-xs truncate">
                                     {formatDecisionTitle(d)}
                                   </span>
                                 </div>
                                 <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 ${
                                   isScale
-                                    ? 'text-purple-800 bg-purple-100 border-purple-200'
+                                    ? 'text-emerald-800 bg-emerald-100 border-emerald-200'
                                     : isPassed
                                     ? 'text-emerald-800 bg-emerald-100 border-emerald-200'
                                     : isIterate
@@ -1754,7 +1754,7 @@ partnerships@creatorforge.com`
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 shadow-2xs">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0 shadow-2xs">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 shrink-0 shadow-2xs">
                   <Bot className="w-5 h-5" />
                 </div>
                 <div>
@@ -1802,11 +1802,11 @@ partnerships@creatorforge.com`
 
       {/* PHASE EXECUTION MODAL (PHASE 1 / PHASE 2 / PHASE 3) - CLEAN WHITE THEME */}
       {showPhaseExecutionModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
+        <div className="fixed inset-0 z-[9999] bg-slate-900/15 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
           <div className="max-w-5xl w-full max-h-[92vh] overflow-y-auto rounded-3xl bg-white border border-slate-200 p-6 space-y-6 shadow-2xl overscroll-contain text-slate-900 phase-modal-white-theme">
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs">
                   <CreatorForgeLogo size={20} showText={false} theme="light" />
                 </div>
                 <div>
@@ -1872,12 +1872,12 @@ partnerships@creatorforge.com`
 
       {/* SHARE CREATOR PORTAL MODAL */}
       {showShareModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
+        <div className="fixed inset-0 z-[9999] bg-slate-900/15 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
           <div className="max-w-2xl w-full p-5 sm:p-6 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-2xl max-h-[92vh] flex flex-col overscroll-contain text-slate-900">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-3 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-purple-50 text-purple-700 border border-purple-200">
+                <div className="p-2 rounded-xl bg-slate-100 text-slate-800 border border-slate-200">
                   <Share2 className="w-4 h-4" />
                 </div>
                 <div>
@@ -1917,11 +1917,11 @@ partnerships@creatorforge.com`
                       type="text"
                       readOnly
                       value={portalUrl}
-                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-mono text-slate-900 outline-none select-all shadow-2xs focus:border-purple-500"
+                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-mono text-slate-900 outline-none select-all shadow-2xs focus:border-slate-500"
                     />
                     <button
                       onClick={() => handleCopy(portalUrl, 'portal_url')}
-                      className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+                      className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
                     >
                       {copiedKey === 'portal_url' ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedKey === 'portal_url' ? 'Copied Link' : 'Copy Link'}</span>
@@ -1938,7 +1938,7 @@ partnerships@creatorforge.com`
                     href={portalUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-900 hover:text-slate-700 transition-colors"
                   >
                     <span>Open in new tab</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -2008,7 +2008,7 @@ partnerships@creatorforge.com`
                           value={portalRecipientEmail}
                           onChange={(e) => setPortalRecipientEmail(e.target.value)}
                           placeholder="creator@example.com"
-                          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 outline-none focus:border-purple-500 focus:bg-white"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 outline-none focus:border-slate-500 focus:bg-white"
                         />
                       </div>
 
@@ -2020,7 +2020,7 @@ partnerships@creatorforge.com`
                           type="text"
                           value={portalEmailSubject}
                           onChange={(e) => setPortalEmailSubject(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-none focus:border-purple-500 focus:bg-white"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-none focus:border-slate-500 focus:bg-white"
                         />
                       </div>
 
@@ -2032,7 +2032,7 @@ partnerships@creatorforge.com`
                           rows={5}
                           value={portalEmailBody}
                           onChange={(e) => setPortalEmailBody(e.target.value)}
-                          className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 outline-none leading-relaxed font-sans resize-none focus:border-purple-500 focus:bg-white"
+                          className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 outline-none leading-relaxed font-sans resize-none focus:border-slate-500 focus:bg-white"
                         />
                       </div>
 
@@ -2052,7 +2052,7 @@ partnerships@creatorforge.com`
                           type="button"
                           onClick={handleSendPortalEmail}
                           disabled={isSendingPortalEmail}
-                          className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+                          className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
                         >
                           {isSendingPortalEmail ? (
                             <>
@@ -2088,9 +2088,9 @@ partnerships@creatorforge.com`
 
                         {/* Email Card Preview */}
                         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden text-xs shadow-2xs">
-                          <div className="p-4 bg-gradient-to-r from-purple-100/60 via-indigo-100/40 to-purple-100/60 border-b border-slate-200 flex items-center justify-between">
+                          <div className="p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <Rocket className="w-4 h-4 text-purple-600" />
+                              <Rocket className="w-4 h-4 text-slate-800" />
                               <span className="font-extrabold text-slate-950 text-sm">CREATOR FORGE</span>
                             </div>
                             <span className="text-[10px] uppercase font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
@@ -2103,10 +2103,10 @@ partnerships@creatorforge.com`
                               {portalEmailBody}
                             </p>
 
-                            <div className="p-3.5 rounded-xl bg-slate-50 border border-purple-200 space-y-2">
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                               <div className="font-bold text-slate-900 text-xs">Co-Launch Venture Snapshot</div>
                               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                                <div><span className="text-slate-500">Software:</span> <strong className="text-purple-700">{project.productName || 'Custom App'}</strong></div>
+                                <div><span className="text-slate-500">Software:</span> <strong className="text-slate-900">{project.productName || 'Custom App'}</strong></div>
                                 <div><span className="text-slate-500">Revenue Split:</span> <strong className="text-emerald-700">50% Net Creator Share</strong></div>
                                 <div><span className="text-slate-500">Initial Pricing:</span> <strong className="text-slate-900">{project.pricing || '$49/mo'}</strong></div>
                                 <div><span className="text-slate-500">Validation Goal:</span> <strong className="text-emerald-700">${presaleTarget.toLocaleString()}</strong></div>
@@ -2118,7 +2118,7 @@ partnerships@creatorforge.com`
                                 href={magicPortalUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs shadow-md shadow-purple-900/20 hover:brightness-110 transition-all"
+                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-xs transition-all"
                               >
                                 <span>Open Co-Founder Portal (Passwordless Access)</span>
                                 <ExternalLink className="w-3.5 h-3.5" />
@@ -2149,11 +2149,11 @@ partnerships@creatorforge.com`
                             type="text"
                             readOnly
                             value={magicPortalUrl}
-                            className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-purple-700 outline-none select-all"
+                            className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 outline-none select-all"
                           />
                           <button
                             onClick={() => handleCopy(magicPortalUrl, 'link')}
-                            className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                           >
                             {copiedKey === 'link' ? <Check className="w-3.5 h-3.5 text-emerald-200" /> : <Copy className="w-3.5 h-3.5" />}
                             <span>{copiedKey === 'link' ? 'Copied' : 'Copy'}</span>
@@ -2169,7 +2169,7 @@ partnerships@creatorforge.com`
                           </label>
                           <button
                             onClick={() => handleCopy(kickoffMessage, 'msg')}
-                            className="text-xs text-purple-600 hover:text-purple-700 font-bold flex items-center gap-1 cursor-pointer"
+                            className="text-xs text-slate-900 hover:text-slate-700 font-bold flex items-center gap-1 cursor-pointer"
                           >
                             {copiedKey === 'msg' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                             <span>{copiedKey === 'msg' ? 'Copied Message' : 'Copy Message'}</span>
@@ -2197,7 +2197,7 @@ partnerships@creatorforge.com`
                       href={magicPortalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                      className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors"
                     >
                       <span>Preview Live Portal</span>
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -2219,17 +2219,17 @@ partnerships@creatorforge.com`
 
       {/* VENTURE FILE PREVIEW MODAL */}
       {previewingFile && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
+        <div className="fixed inset-0 z-[99999] bg-slate-900/15 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
           <div className="max-w-3xl w-full max-h-[85vh] flex flex-col rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl space-y-4 text-slate-900">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <span>{previewingFile.title}</span>
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
                       {previewingFile.badge || 'Venture Asset'}
                     </span>
                   </h3>
@@ -2264,7 +2264,7 @@ partnerships@creatorforge.com`
                 <button
                   type="button"
                   onClick={() => handleDownloadFile(previewingFile)}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                 >
                   <ArrowRight className="w-3.5 h-3.5 rotate-90" />
                   <span>Download Asset</span>

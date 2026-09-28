@@ -1321,8 +1321,8 @@ export default function Phase1Validate({
   return (
     <div className="space-y-5 w-full max-w-full overflow-hidden">
       {/* 5-Step Phase 1 Progress Nav */}
-      <div className="p-2 rounded-2xl bg-[#0e1117] border border-white/[0.08] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none min-w-0">
+      <div className="p-2 rounded-2xl bg-slate-100/90 border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none min-w-0">
           {[
             { id: 'plan', label: '1. Plan', icon: FileText, isDone: isStep1Done, canAccess: canAccessStep1 },
             { id: 'assets', label: '2. Assets', icon: Layout, isDone: isStep2Done, canAccess: canAccessStep2 },
@@ -1340,23 +1340,33 @@ export default function Phase1Validate({
                 disabled={isLocked}
                 title={isLocked ? getStepMissingPrerequisiteText(step.id) : step.label}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
-                  isLocked
-                    ? 'opacity-40 cursor-not-allowed text-slate-500 bg-white/[0.01]'
-                    : isActive
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm cursor-pointer'
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-xs border border-slate-900 cursor-pointer'
                     : step.isDone
-                    ? 'text-slate-300 hover:text-white bg-white/[0.02] cursor-pointer'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.03] cursor-pointer'
+                    ? 'bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100/80 cursor-pointer font-bold shadow-2xs'
+                    : isLocked
+                    ? 'bg-slate-200/50 text-slate-400 border border-slate-200/80 cursor-not-allowed opacity-60'
+                    : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-50 border border-slate-200 cursor-pointer shadow-2xs'
                 }`}
               >
-                {isLocked ? (
-                  <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                {isActive ? (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                ) : isLocked ? (
+                  <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 ) : step.isDone ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 ) : (
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                 )}
-                <span className={isLocked ? 'text-slate-500' : step.isDone ? 'text-slate-200 font-semibold' : ''}>
+                <span className={
+                  isActive
+                    ? 'text-white font-extrabold'
+                    : step.isDone
+                    ? 'text-emerald-950 font-bold'
+                    : isLocked
+                    ? 'text-slate-400 font-medium'
+                    : 'text-slate-800 font-bold'
+                }>
                   {step.label}
                 </span>
               </button>
@@ -1364,9 +1374,9 @@ export default function Phase1Validate({
           })}
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400 shrink-0">
-          <span className="text-[10px] text-emerald-400/80 uppercase font-mono sm:hidden">Target Goal:</span>
-          <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" /> ${presalesRevenue.toLocaleString()} / ${presaleTarget.toLocaleString()}</span>
+        <div className="flex items-center justify-between sm:justify-end gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 shrink-0 shadow-2xs">
+          <span className="text-[10px] text-emerald-800 uppercase font-mono sm:hidden">Target Goal:</span>
+          <span className="flex items-center gap-1 font-mono font-extrabold"><DollarSign className="w-3.5 h-3.5 text-emerald-700 stroke-[2.5]" /> ${presalesRevenue.toLocaleString()} / ${presaleTarget.toLocaleString()}</span>
         </div>
       </div>
 
@@ -1383,16 +1393,16 @@ export default function Phase1Validate({
 
       {/* STEP 1: VALIDATION PLAN */}
       {activeStep === 'plan' && (
-        <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
-          <div className="border-b border-white/[0.07] pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-4">
+          <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <span>1. Validation Plan Specification</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
                   AI Generated
                 </span>
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 AI defines customer, problem, offer, pricing, test method, validation period + success threshold.
               </p>
             </div>
@@ -1400,16 +1410,16 @@ export default function Phase1Validate({
               <button
                 onClick={generatePlan}
                 disabled={isGenerating}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-300" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300" />
                     <span>Generating...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Generate Plan</span>
                   </>
                 )}
@@ -1419,23 +1429,23 @@ export default function Phase1Validate({
                 disabled={saveStatus === 'saving'}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm ${
                   saveStatus === 'saved'
-                    ? 'bg-emerald-500 text-slate-950 border border-emerald-400 font-extrabold'
-                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40'
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600 font-extrabold'
+                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold'
                 }`}
               >
                 {saveStatus === 'saving' ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-300" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700" />
                     <span>Saving...</span>
                   </>
                 ) : saveStatus === 'saved' ? (
                   <>
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-3.5 h-3.5 text-white" />
                     <span>Saved!</span>
                   </>
                 ) : (
                   <>
-                    <Save className="w-3.5 h-3.5" />
+                    <Save className="w-3.5 h-3.5 text-emerald-700" />
                     <span>Save</span>
                   </>
                 )}
@@ -1449,24 +1459,24 @@ export default function Phase1Validate({
               ['pricing', 'Pricing & Deposits'], ['testMethod', 'Test Method'], ['period', 'Validation Period'],
               ['threshold', 'Success Threshold']
             ].map(([field, label]) => (
-              <label key={field} className={`p-3.5 rounded-xl bg-[#161a23] border ${field === 'threshold' ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-white/[0.08] focus-within:border-purple-500/40'} space-y-1.5 block ${field === 'testMethod' ? 'md:col-span-2' : ''} transition-all`}>
+              <label key={field} className={`p-3.5 rounded-xl bg-slate-50 border ${field === 'threshold' ? 'border-emerald-500/30 bg-emerald-50/40' : 'border-slate-200 focus-within:border-slate-400'} space-y-1.5 block ${field === 'testMethod' ? 'md:col-span-2' : ''} transition-all`}>
                 <div className="flex items-center justify-between">
-                  <span className={`${field === 'threshold' ? 'text-emerald-400' : 'text-slate-400'} font-bold uppercase tracking-wider text-[10px]`}>{label}</span>
+                  <span className={`${field === 'threshold' ? 'text-emerald-700' : 'text-slate-600'} font-bold uppercase tracking-wider text-[10px]`}>{label}</span>
                   <div className="flex items-center gap-1.5">
                     {field === 'pricing' && (plan.pricing?.includes('AI Experiment') || campaignKit?.pricingConfig?.activeExperimentTitle) && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
                         <span>AI Variant Active</span>
                       </span>
                     )}
-                    <span className="text-[10px] text-slate-500">editable</span>
+                    <span className="text-[10px] text-slate-400">editable</span>
                   </div>
                 </div>
                 <textarea
                   value={plan[field] || ''}
                   onChange={event => updatePlan(field, event.target.value)}
                   rows={field === 'testMethod' ? 3 : 2}
-                  className="w-full mt-1 resize-y bg-transparent text-slate-100 outline-none placeholder:text-slate-600 font-sans leading-relaxed text-xs"
+                  className="w-full mt-1 resize-y bg-transparent text-slate-900 outline-none placeholder:text-slate-400 font-sans leading-relaxed text-xs"
                   placeholder={`Click 'Generate Plan with AI' or enter ${label.toLowerCase()}...`}
                 />
               </label>
@@ -1501,7 +1511,7 @@ export default function Phase1Validate({
                 setActiveStep('assets')
                 onSelectStep?.('assets')
               }}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
+              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm active:scale-95"
             >
               <span>Next: Build Validation Assets</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -1525,9 +1535,9 @@ export default function Phase1Validate({
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={saveAll}
-                className="px-3.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                className="px-3.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
               >
-                <Save className="w-3.5 h-3.5" />
+                <Save className="w-3.5 h-3.5 text-emerald-700" />
                 <span>Save Assets</span>
               </button>
             </div>
@@ -1547,8 +1557,8 @@ export default function Phase1Validate({
                   onClick={() => setAssetSubTab(tab.id)}
                   className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
                     (assetSubTab === tab.id || (tab.id === 'product_assets' && (!assetSubTab || assetSubTab === 'branding')))
-                      ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50 border border-purple-500/60'
-                      : 'text-slate-400 hover:text-white bg-white/[0.03] border border-transparent'
+                      ? 'bg-slate-900 text-white shadow-xs border border-slate-900'
+                      : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -1563,13 +1573,13 @@ export default function Phase1Validate({
             <div className="space-y-4 text-xs">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Name, Branding & Positioning Card */}
-                <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
-                  <span className="text-[11px] font-bold text-purple-400 uppercase tracking-wider block">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                  <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wider block">
                     Product Identity, Branding & Positioning
                   </span>
 
                   <div>
-                    <label className="text-[10px] text-slate-400 block font-bold">Product Name</label>
+                    <label className="text-[10px] text-slate-500 block font-bold">Product Name</label>
                     <input
                       type="text"
                       value={project?.productName || ''}
@@ -1578,12 +1588,12 @@ export default function Phase1Validate({
                         if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), productName: val }))
                       }}
                       placeholder="e.g. FlutterFlow Flow AI"
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-white font-bold outline-none focus:border-purple-500/50"
+                      className="w-full mt-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-900 font-bold outline-none focus:border-slate-500"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-slate-400 block font-bold">Positioning Statement</label>
+                    <label className="text-[10px] text-slate-500 block font-bold">Positioning Statement</label>
                     <textarea
                       rows={2}
                       value={project?.productTagline || ''}
@@ -1592,13 +1602,13 @@ export default function Phase1Validate({
                         if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), productTagline: val }))
                       }}
                       placeholder="e.g. Autonomous AI workflow engine tailored to mobile app creators"
-                      className="w-full mt-1 p-2.5 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-200 outline-none resize-none focus:border-purple-500/50"
+                      className="w-full mt-1 p-2.5 rounded-lg bg-white border border-slate-200 text-slate-800 outline-none resize-none focus:border-slate-500"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="text-[10px] text-slate-400 block font-bold">Brand Tag / Tone</label>
+                      <label className="text-[10px] text-slate-500 block font-bold">Brand Tag / Tone</label>
                       <input
                         type="text"
                         value={project?.brandTone || 'Modern, Minimal, Dark SaaS'}
@@ -1606,11 +1616,11 @@ export default function Phase1Validate({
                           const val = e.target.value
                           if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), brandTone: val }))
                         }}
-                        className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-300 text-xs outline-none focus:border-purple-500/50"
+                        className="w-full mt-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-800 text-xs outline-none focus:border-slate-500"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-400 block font-bold">Target Audience</label>
+                      <label className="text-[10px] text-slate-500 block font-bold">Target Audience</label>
                       <input
                         type="text"
                         value={project?.targetAudience || project?.niche || 'Mobile Developers & Creators'}
@@ -1618,7 +1628,7 @@ export default function Phase1Validate({
                           const val = e.target.value
                           if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), targetAudience: val, niche: val }))
                         }}
-                        className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-slate-300 text-xs outline-none focus:border-purple-500/50"
+                        className="w-full mt-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-800 text-xs outline-none focus:border-slate-500"
                       />
                     </div>
                   </div>
@@ -1881,12 +1891,12 @@ export default function Phase1Validate({
               <div className="p-3 rounded-2xl bg-[#0e1117] border border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <div className="w-2.5 h-2.5 rounded-full bg-purple-500/80" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
                     <div className="w-2.5 h-2.5 rounded-full bg-indigo-500/80" />
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#141720] border border-white/[0.08] text-purple-300 font-mono text-[11px] truncate flex-1 max-w-lg">
-                    <Globe className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#141720] border border-white/[0.08] text-slate-200 font-mono text-[11px] truncate flex-1 max-w-lg">
+                    <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <span className="truncate">
                       {`${origin}/survey/${productSlug}`}
                     </span>
@@ -1912,7 +1922,7 @@ export default function Phase1Validate({
                     href={`${origin}/survey/${productSlug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1 transition-colors shadow-sm"
+                    className="px-3 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1 transition-colors shadow-xs"
                   >
                     <span>Open Live Survey</span>
                     <ExternalLink className="w-3 h-3" />
@@ -1921,14 +1931,14 @@ export default function Phase1Validate({
               </div>
 
               {/* AI Research & Validation Scorecard */}
-              <div className="p-5 rounded-2xl bg-gradient-to-b from-[#141824] to-[#0d0f17] border border-purple-500/30 space-y-4">
+              <div className="p-5 rounded-2xl bg-gradient-to-b from-[#141824] to-[#0d0f17] border border-slate-700/60 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-400">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-300">
                         AI Validation & Demand Score
                       </span>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
                         {surveyResponses.length} Responses Collected
                       </span>
                     </div>
@@ -1940,7 +1950,7 @@ export default function Phase1Validate({
                   <button
                     onClick={handleAnalyzeResponses}
                     disabled={isAnalyzingResponses || surveyResponses.length === 0}
-                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-950/50 disabled:opacity-40"
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-40"
                   >
                     {isAnalyzingResponses ? (
                       <>
@@ -1949,7 +1959,7 @@ export default function Phase1Validate({
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-3.5 h-3.5" />
+                        <Sparkles className="w-3.5 h-3.5 text-slate-300" />
                         <span>Analyze Responses with AI</span>
                       </>
                     )}
@@ -1963,7 +1973,7 @@ export default function Phase1Validate({
                     <div className="text-2xl font-black text-white">
                       {surveyAnalysis?.overallScore !== undefined ? `${surveyAnalysis.overallScore}/100` : '—'}
                     </div>
-                    <div className="text-[10px] font-bold text-purple-400">
+                    <div className="text-[10px] font-bold text-slate-300">
                       {surveyAnalysis?.recommendation === 'PROCEED' ? '🟢 Proceed to Build' : surveyAnalysis ? '🟡 Iterate Pricing' : 'Awaiting analysis'}
                     </div>
                   </div>
@@ -1988,7 +1998,7 @@ export default function Phase1Validate({
                 {/* AI Executive Synthesis */}
                 {surveyAnalysis?.executiveSummary && (
                   <div className="p-3.5 rounded-xl bg-[#0e1117] border border-white/[0.06] space-y-2">
-                    <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">
+                    <span className="text-[10px] font-bold text-slate-200 uppercase tracking-wider block">
                       AI Executive Summary
                     </span>
                     <p className="text-xs text-slate-200 leading-relaxed">
@@ -2022,7 +2032,7 @@ export default function Phase1Validate({
                   <button
                     onClick={handleGenerateSurvey}
                     disabled={isGeneratingSurvey}
-                    className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
                   >
                     {isGeneratingSurvey ? (
                       <>
@@ -2031,7 +2041,7 @@ export default function Phase1Validate({
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-3.5 h-3.5" />
+                        <Sparkles className="w-3.5 h-3.5 text-slate-300" />
                         <span>Regenerate Questions with AI</span>
                       </>
                     )}
@@ -2043,7 +2053,7 @@ export default function Phase1Validate({
                     <div key={q.id || index} className="p-3.5 rounded-xl bg-[#0e1117] border border-white/[0.06] space-y-1.5">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2 flex-1">
-                          <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-300 border border-purple-500/20 shrink-0">
+                          <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
                             {q.category || 'Discovery'}
                           </span>
                           <span className="font-bold text-white text-xs">{q.question}</span>
@@ -2065,7 +2075,7 @@ export default function Phase1Validate({
                   <select
                     value={newQuestionCategory}
                     onChange={e => setNewQuestionCategory(e.target.value)}
-                    className="px-3 py-2 rounded-xl bg-[#0e1117] border border-white/[0.08] text-xs text-purple-300 font-bold outline-none"
+                    className="px-3 py-2 rounded-xl bg-[#0e1117] border border-white/[0.08] text-xs text-slate-200 font-bold outline-none"
                   >
                     <option value="Pain Point">Pain Point</option>
                     <option value="Pricing Validation">Pricing</option>
@@ -2077,11 +2087,11 @@ export default function Phase1Validate({
                     placeholder="Add custom survey question..."
                     value={newQuestionText}
                     onChange={e => setNewQuestionText(e.target.value)}
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-purple-500/50 placeholder:text-slate-500"
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1 transition-colors"
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add</span>
@@ -2099,7 +2109,7 @@ export default function Phase1Validate({
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+                    <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">
                       {surveyResponses.length} Responses
                     </span>
                     {surveyResponses.length > 0 && (
@@ -2128,7 +2138,7 @@ export default function Phase1Validate({
                             <span className="text-[10px] text-slate-400 font-mono">({r.email})</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                               Intent: {r.rating || 8}/10 🔥
                             </span>
                             <span className="text-[10px] text-slate-500 font-mono">{r.submittedAt || r.date}</span>
@@ -2147,7 +2157,7 @@ export default function Phase1Validate({
                           <div className="space-y-1.5 text-[11px] text-slate-300 pl-1">
                             {Object.entries(r.answers).map(([key, ans]) => (
                               <div key={key} className="flex items-start gap-1.5">
-                                <span className="text-purple-400 font-bold shrink-0">•</span>
+                                <span className="text-slate-400 font-bold shrink-0">•</span>
                                 <span>{ans}</span>
                               </div>
                             ))}
@@ -2265,25 +2275,25 @@ export default function Phase1Validate({
               <button
                 onClick={generateCampaign}
                 disabled={isGeneratingCampaign}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white border border-slate-900 text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
               >
                 {isGeneratingCampaign ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-300" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
                     <span>Drafting...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
                     <span>Generate AI Content</span>
                   </>
                 )}
               </button>
               <button
                 onClick={saveAll}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 text-xs font-bold transition-all active:scale-95 shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all active:scale-95 shadow-sm"
               >
-                <Save className="w-3.5 h-3.5" />
+                <Save className="w-3.5 h-3.5 text-emerald-700" />
                 <span>Save</span>
               </button>
             </div>
@@ -2294,7 +2304,7 @@ export default function Phase1Validate({
             <Phase1CampaignGenSkeleton />
           ) : !hasCampaignGenerated ? (
             <div className="p-8 sm:p-12 rounded-2xl bg-[#0e1117] border border-dashed border-white/[0.12] text-center space-y-4 max-w-xl mx-auto my-6 shadow-xl">
-              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center mx-auto text-purple-400 shadow-lg shadow-purple-950/40">
+              <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-slate-300 shadow-lg">
                 <Megaphone className="w-7 h-7" />
               </div>
               <div className="space-y-1.5 max-w-md mx-auto">
@@ -2307,9 +2317,9 @@ export default function Phase1Validate({
                 <button
                   onClick={generateCampaign}
                   disabled={isGeneratingCampaign}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-950/50 active:scale-95 disabled:opacity-50 cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
-                  <Sparkles className="w-4 h-4 text-purple-300" />
+                  <Sparkles className="w-4 h-4 text-white" />
                   <span>Generate Campaign Kit with AI</span>
                 </button>
               </div>
@@ -2328,7 +2338,7 @@ export default function Phase1Validate({
                   <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg ${
                     isTodayTaskOverdue
                       ? 'bg-gradient-to-r from-amber-950/50 via-[#1c1815] to-[#0d0f17] border-amber-500/40 shadow-amber-950/30'
-                      : 'bg-gradient-to-r from-purple-950/40 via-[#141824] to-[#0d0f17] border-purple-500/30 shadow-purple-950/30'
+                      : 'bg-gradient-to-r from-slate-900/40 via-[#141824] to-[#0d0f17] border-slate-700/60 shadow-xs'
                   }`}>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -2338,7 +2348,7 @@ export default function Phase1Validate({
                             <span>⚠️ Missed Mission · Day {todayTask.day}</span>
                           </span>
                         ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-slate-800 text-slate-200 border border-slate-700">
                             🔥 Today's Mission (Day {todayTask.day})
                           </span>
                         )}
@@ -2382,7 +2392,7 @@ export default function Phase1Validate({
 
                       <button
                         onClick={() => setViewDraftTask(todayTask)}
-                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-950/50 active:scale-95 cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>View Draft</span>
@@ -2422,7 +2432,7 @@ export default function Phase1Validate({
                       onClick={() => setCampaignSubTab(tab.id)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
                         campaignSubTab === tab.id
-                          ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50 border border-purple-500/60'
+                          ? 'bg-slate-900 text-white shadow-xs border border-slate-900'
                           : 'text-slate-400 hover:text-white bg-white/[0.03] border border-transparent'
                       }`}
                     >
@@ -2443,7 +2453,7 @@ export default function Phase1Validate({
                         Step-by-step daily launch actions with ready-to-use drafts for the creator.
                       </p>
                     </div>
-                    <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+                    <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">
                       {(campaignKit?.postingSchedule || []).filter(t => t.done)?.length || 0} / {(campaignKit?.postingSchedule || []).length} Completed
                     </span>
                   </div>
@@ -2465,7 +2475,7 @@ export default function Phase1Validate({
                               isOverdue
                                 ? 'bg-amber-950/20 border-amber-500/40 shadow-sm shadow-amber-950/30'
                                 : task.isToday
-                                ? 'bg-[#141824] border-purple-500/40 shadow-sm shadow-purple-950/40'
+                                ? 'bg-[#141824] border-slate-700 shadow-sm'
                                 : task.done
                                 ? 'bg-[#0e1117] border-white/[0.04] opacity-80'
                                 : 'bg-[#11141c] border-white/[0.06]'
@@ -2477,7 +2487,7 @@ export default function Phase1Validate({
                                 className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
                                   task.done
                                     ? 'bg-emerald-500 border-emerald-400 text-slate-950'
-                                    : 'border-white/[0.2] bg-white/[0.02] hover:border-purple-400'
+                                    : 'border-white/[0.2] bg-white/[0.02] hover:border-slate-400'
                                 }`}
                               >
                                 {task.done && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -2493,7 +2503,7 @@ export default function Phase1Validate({
                                   ) : (
                                     <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                                       task.isToday
-                                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                                        ? 'bg-slate-800 text-slate-200 border border-slate-700'
                                         : task.done
                                         ? 'bg-emerald-500/10 text-emerald-400'
                                         : 'bg-white/[0.06] text-slate-400'
@@ -2544,7 +2554,7 @@ export default function Phase1Validate({
 
                               <button
                                 onClick={() => setViewDraftTask(task)}
-                                className="px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 text-xs font-bold border border-purple-500/30 flex items-center gap-1 transition-colors"
+                                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1 transition-colors"
                               >
                                 <Eye className="w-3 h-3" />
                                 <span>View Draft</span>
@@ -2566,7 +2576,7 @@ export default function Phase1Validate({
                 <button
                   onClick={() => copyToClipboard(campaignKit?.announcementPost, 'post')}
                   disabled={!campaignKit?.announcementPost}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40"
                 >
                   {copiedKey === 'post' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedKey === 'post' ? 'Copied!' : 'Copy Post'}</span>
@@ -2577,7 +2587,7 @@ export default function Phase1Validate({
                 onChange={e => updateCampaignKit('announcementPost', e.target.value)}
                 placeholder="Click 'Generate AI Content' or write custom announcement post..."
                 rows={8}
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans focus:border-purple-500/50 resize-y"
+                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans focus:border-slate-500 resize-y"
               />
             </div>
           )}
@@ -2590,7 +2600,7 @@ export default function Phase1Validate({
                 <button
                   onClick={() => copyToClipboard(campaignKit?.storySequence, 'story')}
                   disabled={!campaignKit?.storySequence}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40"
                 >
                   {copiedKey === 'story' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedKey === 'story' ? 'Copied!' : 'Copy Stories'}</span>
@@ -2601,7 +2611,7 @@ export default function Phase1Validate({
                 onChange={e => updateCampaignKit('storySequence', e.target.value)}
                 placeholder="Story 1: Pain point poll&#10;Story 2: Product announcement&#10;Story 3: Link sticker CTA"
                 rows={9}
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans focus:border-purple-500/50 resize-y"
+                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans focus:border-slate-500 resize-y"
               />
             </div>
           )}
@@ -2614,7 +2624,7 @@ export default function Phase1Validate({
                 <button
                   onClick={() => copyToClipboard(campaignKit?.videoScript, 'video')}
                   disabled={!campaignKit?.videoScript}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40"
                 >
                   {copiedKey === 'video' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedKey === 'video' ? 'Copied!' : 'Copy Script'}</span>
@@ -2625,7 +2635,7 @@ export default function Phase1Validate({
                 onChange={e => updateCampaignKit('videoScript', e.target.value)}
                 placeholder="Click 'Generate AI Content' or write 60-second video script..."
                 rows={10}
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-purple-200 outline-none leading-relaxed font-mono focus:border-purple-500/50 resize-y"
+                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-slate-200 outline-none leading-relaxed font-mono focus:border-slate-500 resize-y"
               />
             </div>
           )}
@@ -2638,7 +2648,7 @@ export default function Phase1Validate({
                 <button
                   onClick={() => copyToClipboard(campaignKit?.newsletterDraft, 'newsletter')}
                   disabled={!campaignKit?.newsletterDraft}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40"
                 >
                   {copiedKey === 'newsletter' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedKey === 'newsletter' ? 'Copied!' : 'Copy Newsletter'}</span>
@@ -2649,7 +2659,7 @@ export default function Phase1Validate({
                 value={campaignKit?.newsletterDraft || ''}
                 onChange={e => updateCampaignKit('newsletterDraft', e.target.value)}
                 placeholder="Click 'Generate AI Content' or write newsletter copy..."
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans"
+                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans focus:border-slate-500"
               />
             </div>
           )}
@@ -2662,7 +2672,7 @@ export default function Phase1Validate({
                 <button
                   onClick={() => copyToClipboard(campaignKit?.directMessageScript, 'dm')}
                   disabled={!campaignKit?.directMessageScript}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40"
                 >
                   {copiedKey === 'dm' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedKey === 'dm' ? 'Copied!' : 'Copy DM'}</span>
@@ -2673,7 +2683,7 @@ export default function Phase1Validate({
                 onChange={e => updateCampaignKit('directMessageScript', e.target.value)}
                 placeholder="Click 'Generate AI Content' or write DM outreach template..."
                 rows={7}
-                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans"
+                className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-white outline-none leading-relaxed font-sans focus:border-slate-500"
               />
             </div>
           )}
@@ -2702,7 +2712,7 @@ export default function Phase1Validate({
                     <div key={i} className="p-3 rounded-lg bg-[#0e1117] border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
                         <span className="font-bold text-white text-xs block">{item.channel}</span>
-                        <span className="text-[11px] text-purple-300 font-mono truncate">{fullUrl}</span>
+                        <span className="text-[11px] text-slate-300 font-mono truncate">{fullUrl}</span>
                       </div>
                       <button
                         onClick={() => copyToClipboard(fullUrl, `link-${i}`)}
@@ -2720,11 +2730,11 @@ export default function Phase1Validate({
 
           {/* View Draft Modal */}
           {viewDraftTask && typeof document !== 'undefined' && createPortal(
-            <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in overflow-hidden">
+            <div className="fixed inset-0 z-[99999] bg-slate-900/20 backdrop-blur-[2px] flex items-center justify-center p-4 animate-fade-in overflow-hidden">
               <div className="w-full max-w-lg rounded-3xl bg-[#0e1117] border border-white/[0.12] shadow-2xl p-6 space-y-4 animate-scale-in">
                 <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
                   <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-400 block">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
                       Day {viewDraftTask.day} · {viewDraftTask.channel}
                     </span>
                     <h3 className="text-base font-extrabold text-white">{viewDraftTask.title}</h3>
@@ -2749,7 +2759,7 @@ export default function Phase1Validate({
                       copyToClipboard(getTaskDraftContent(viewDraftTask), 'draft-modal')
                       showNotification('Draft content copied to clipboard!')
                     }}
-                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>{copiedKey === 'draft-modal' ? 'Copied!' : 'Copy Draft'}</span>
@@ -2802,7 +2812,7 @@ export default function Phase1Validate({
                 setActiveStep('optimize')
                 onSelectStep?.('optimize')
               }}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
+              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
             >
               <span>Next: Run & Optimize</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -2827,16 +2837,16 @@ export default function Phase1Validate({
               <button
                 onClick={handleRunExperimentsAI}
                 disabled={isAnalyzingExperiments}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white border border-slate-900 text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
               >
                 {isAnalyzingExperiments ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-300" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
                     <span>Analyzing...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
                     <span>Run AI Optimization</span>
                   </>
                 )}
@@ -2855,7 +2865,7 @@ export default function Phase1Validate({
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-center text-xs">
               {/* 1. Traffic */}
               <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
-                <span className="text-[9px] text-purple-400 font-bold uppercase tracking-wider block">Traffic</span>
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Traffic</span>
                 <span className="text-base font-extrabold text-white block">{totalTraffic.toLocaleString()}</span>
                 <span className="text-[9px] text-slate-400">Unique visitors</span>
               </div>
@@ -2900,7 +2910,7 @@ export default function Phase1Validate({
             <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white">Channel Attribution & Traffic Source CTR</span>
-                <span className="text-[10px] font-mono text-purple-300">Live Funnel Breakdown</span>
+                <span className="text-[10px] font-mono text-slate-400">Live Funnel Breakdown</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
@@ -2964,7 +2974,7 @@ export default function Phase1Validate({
                       <span className="text-[11px] font-bold text-white block truncate">{ch.name}</span>
                       <div className="flex items-center justify-between text-[10px] text-slate-400">
                         <span>Traffic: <strong className="text-white font-mono">{ch.traffic}</strong></span>
-                        <span>CTR: <strong className="text-purple-300 font-mono">{ctr}</strong></span>
+                        <span>CTR: <strong className="text-slate-300 font-mono">{ctr}</strong></span>
                       </div>
                       <div className="text-[10px] text-slate-500">
                         Pre-orders: <strong className="text-emerald-400 font-mono">{ch.conversions}</strong>
@@ -2984,7 +2994,7 @@ export default function Phase1Validate({
                     href={`${origin}/preorder/${productSlug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-purple-400 hover:text-purple-300 underline font-semibold flex items-center gap-0.5"
+                    className="text-[10px] text-slate-300 hover:text-white underline font-semibold flex items-center gap-0.5"
                   >
                     <span>Open Preorder Checkout</span>
                     <ExternalLink className="w-2.5 h-2.5" />
@@ -3009,7 +3019,7 @@ export default function Phase1Validate({
                 <div className="text-center py-6 text-slate-500 text-xs border border-dashed border-white/[0.08] rounded-xl space-y-1">
                   <p>No customer pre-orders recorded yet.</p>
                   <p className="text-[11px] text-slate-400">
-                    Visit <a href={`${origin}/preorder/${productSlug}`} target="_blank" rel="noopener noreferrer" className="text-purple-400 underline">{origin}/preorder/{productSlug}</a> to submit live pre-orders via Stripe or PayPal.
+                    Visit <a href={`${origin}/preorder/${productSlug}`} target="_blank" rel="noopener noreferrer" className="text-slate-300 underline">{origin}/preorder/{productSlug}</a> to submit live pre-orders via Stripe or PayPal.
                   </p>
                 </div>
               ) : (
@@ -3023,7 +3033,7 @@ export default function Phase1Validate({
                             <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
                               res.paymentMethod.toLowerCase().includes('paypal') 
                                 ? 'bg-[#0070ba]/20 text-[#38a9f5] border border-[#0070ba]/30'
-                                : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                : 'bg-slate-800 text-slate-300 border border-slate-700'
                             }`}>
                               {res.paymentMethod}
                             </span>
@@ -3050,14 +3060,14 @@ export default function Phase1Validate({
                   placeholder="Backer Name"
                   value={simBuyerName}
                   onChange={e => setSimBuyerName(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-purple-500/50"
+                  className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-slate-500"
                 />
                 <input
                   type="email"
                   placeholder="Backer Email"
                   value={simBuyerEmail}
                   onChange={e => setSimBuyerEmail(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-purple-500/50"
+                  className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-slate-500"
                 />
                 <select
                   value={simBuyerTier}
@@ -3082,16 +3092,16 @@ export default function Phase1Validate({
           {/* SECTION 2: AI EXPERIMENTS (4 CRITICAL AREAS) */}
           <div className="space-y-4 text-xs pt-2 border-t border-white/[0.08]">
             {/* AI Performance Audit Banner */}
-            <div className="p-4 rounded-xl bg-[#161a23] border border-purple-500/30 space-y-2">
+            <div className="p-4 rounded-xl bg-[#161a23] border border-slate-700/60 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-slate-400" />
                   <span>AI Optimization Audit & Bottleneck Analysis</span>
                 </span>
                 <button
                   onClick={handleRunExperimentsAI}
                   disabled={isAnalyzingExperiments}
-                  className="text-[10px] font-bold text-purple-200 bg-purple-600 hover:bg-purple-500 px-3 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                  className="text-[10px] font-bold text-white bg-slate-900 hover:bg-slate-800 px-3 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   {isAnalyzingExperiments ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                   <span>{experimentsData ? 'Re-Analyze with AI' : 'Generate Experiments with AI'}</span>
@@ -3112,7 +3122,7 @@ export default function Phase1Validate({
                   type="button"
                   onClick={handleRunExperimentsAI}
                   disabled={isAnalyzingExperiments}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Analyze Telemetry & Generate Experiments</span>
@@ -3122,21 +3132,21 @@ export default function Phase1Validate({
               <div className="space-y-3">
                 {/* Active Experiments Summary Banner */}
                 {experimentsData.experiments.some(e => e.status === 'applied') && (
-                  <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                  <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
-                        <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <div className="w-7 h-7 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4 text-emerald-700" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-emerald-200">
+                          <span className="text-xs font-bold text-emerald-900">
                             {experimentsData.experiments.filter(e => e.status === 'applied').length} Active Optimization Experiment{experimentsData.experiments.filter(e => e.status === 'applied').length > 1 ? 's' : ''} Implemented in Phase 1
                           </span>
-                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
                             Live in Phase 1
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-300 mt-0.5">
+                        <p className="text-[11px] text-slate-600 mt-0.5">
                           Your Phase 1 Validation Plan (Step 1), live Landing Page & checkout (Step 2), and Creator Tasks (Step 3) are running these AI variants.
                         </p>
                       </div>
@@ -3147,10 +3157,10 @@ export default function Phase1Validate({
                         setActiveStep('assets')
                         onSelectStep?.('assets')
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
                     >
                       <span>View in Step 2 Funnel</span>
-                      <ArrowRight className="w-3 h-3" />
+                      <ArrowRight className="w-3 h-3 text-emerald-700" />
                     </button>
                   </div>
                 )}
@@ -3160,7 +3170,7 @@ export default function Phase1Validate({
                     <div key={exp.id} className="p-4 rounded-xl bg-[#141720] border border-white/[0.08] space-y-3 flex flex-col justify-between">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                             {exp.category?.replace('_', ' ')} Experiment
                           </span>
                           <span className="text-[10px] font-bold text-emerald-400 font-mono">
@@ -3172,13 +3182,13 @@ export default function Phase1Validate({
                         <p className="text-[11px] text-slate-400 leading-relaxed">{exp.hypothesis}</p>
 
                         <div className="p-2.5 rounded-lg bg-[#0e1117] border border-white/[0.04] space-y-1 text-[11px]">
-                          <span className="text-purple-300 font-bold block">Proposed Variant:</span>
+                          <span className="text-slate-300 font-bold block">Proposed Variant:</span>
                           <p className="text-slate-300 italic">{exp.variant}</p>
                         </div>
 
                         {/* Phase 1 Implementation Mapping */}
                         <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5">
-                          <span className="text-purple-400 font-semibold">Phase 1 Target:</span>
+                          <span className="text-slate-400 font-semibold">Phase 1 Target:</span>
                           <span className="text-slate-300">
                             {exp.category === 'messaging'
                               ? 'Step 2 Campaign Kit & Step 3 Social Post Draft'
@@ -3222,7 +3232,7 @@ export default function Phase1Validate({
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer ${
                               exp.status === 'applied'
                                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                                : 'bg-purple-600 hover:bg-purple-500 text-white'
+                                : 'bg-slate-900 hover:bg-slate-800 text-white'
                             }`}
                           >
                             <Check className="w-3 h-3" />
@@ -3246,7 +3256,7 @@ export default function Phase1Validate({
                   Real-time qualitative insights gathered from customer discovery surveys and backer checkout notes.
                 </p>
               </div>
-              <span className="text-[10px] font-mono text-purple-300">
+              <span className="text-[10px] font-mono text-slate-400">
                 {surveyResponses?.length || 0} Discovery Feedback Recorded
               </span>
             </div>
@@ -3265,7 +3275,7 @@ export default function Phase1Validate({
                         <span className="font-bold text-white">{res.name}</span>
                         <span className="text-[10px] text-slate-400 font-mono">{res.email}</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                         Intent: {res.rating || 8}/10 🔥
                       </span>
                     </div>
@@ -3306,7 +3316,7 @@ export default function Phase1Validate({
                 setActiveStep('gate')
                 onSelectStep?.('gate')
               }}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
+              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
             >
               <span>Next: Gate</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -3331,54 +3341,54 @@ export default function Phase1Validate({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                 <button
                   onClick={() => handleStepChange('plan')}
-                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all cursor-pointer ${
-                    isStep1Done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20'
+                  className={`p-2 rounded-xl text-left text-[11px] font-bold border flex items-center justify-between transition-all cursor-pointer shadow-2xs ${
+                    isStep1Done ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-rose-50 border-rose-300 text-rose-900 hover:bg-rose-100'
                   }`}
                 >
-                  <span>1. Plan</span>
-                  <span>{isStep1Done ? '✓ Done' : '❌ Required'}</span>
+                  <span className="font-extrabold">1. Plan</span>
+                  <span className="font-mono">{isStep1Done ? '✓ Done' : '❌ Required'}</span>
                 </button>
                 <button
                   onClick={() => handleStepChange('assets')}
                   disabled={!canAccessStep2}
-                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                  className={`p-2 rounded-xl text-left text-[11px] font-bold border flex items-center justify-between transition-all shadow-2xs ${
                     isStep2Done
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900 cursor-pointer'
                       : canAccessStep2
-                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
-                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                      ? 'bg-rose-50 border-rose-300 text-rose-900 hover:bg-rose-100 cursor-pointer'
+                      : 'opacity-50 bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
                   }`}
                 >
-                  <span>2. Assets</span>
-                  <span>{isStep2Done ? '✓ Done' : '❌ Required'}</span>
+                  <span className="font-extrabold">2. Assets</span>
+                  <span className="font-mono">{isStep2Done ? '✓ Done' : '❌ Required'}</span>
                 </button>
                 <button
                   onClick={() => handleStepChange('campaign')}
                   disabled={!canAccessStep3}
-                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                  className={`p-2 rounded-xl text-left text-[11px] font-bold border flex items-center justify-between transition-all shadow-2xs ${
                     isStep3Done
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900 cursor-pointer'
                       : canAccessStep3
-                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
-                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                      ? 'bg-rose-50 border-rose-300 text-rose-900 hover:bg-rose-100 cursor-pointer'
+                      : 'opacity-50 bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
                   }`}
                 >
-                  <span>3. Campaign</span>
-                  <span>{isStep3Done ? '✓ Done' : '❌ Required'}</span>
+                  <span className="font-extrabold">3. Campaign</span>
+                  <span className="font-mono">{isStep3Done ? '✓ Done' : '❌ Required'}</span>
                 </button>
                 <button
                   onClick={() => handleStepChange('optimize')}
                   disabled={!canAccessStep4}
-                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                  className={`p-2 rounded-xl text-left text-[11px] font-bold border flex items-center justify-between transition-all shadow-2xs ${
                     isStep4Done
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900 cursor-pointer'
                       : canAccessStep4
-                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
-                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                      ? 'bg-rose-50 border-rose-300 text-rose-900 hover:bg-rose-100 cursor-pointer'
+                      : 'opacity-50 bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
                   }`}
                 >
-                  <span>4. Optimize</span>
-                  <span>{isStep4Done ? '✓ Done' : '❌ Required'}</span>
+                  <span className="font-extrabold">4. Optimize</span>
+                  <span className="font-mono">{isStep4Done ? '✓ Done' : '❌ Required'}</span>
                 </button>
               </div>
             </div>
@@ -3414,10 +3424,10 @@ export default function Phase1Validate({
           </div>
 
           {/* AI Executive Summary Card */}
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-950/30 via-[#141824] to-[#0d0f17] border border-purple-500/30 space-y-4 shadow-xl shadow-purple-950/20">
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900/40 via-[#141824] to-[#0d0f17] border border-slate-700/60 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-purple-300 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" />
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-slate-400" />
                 <span>AI Validation Gate Summary</span>
               </span>
               <span className="text-[10px] font-mono text-slate-400">
@@ -3438,7 +3448,7 @@ export default function Phase1Validate({
               </div>
               <div className="p-3 rounded-xl bg-[#0e1117]/80 border border-white/[0.06] space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Conversion</span>
-                <span className="text-base font-extrabold text-purple-300 block">{dynamicConversionRate.toFixed(1)}%</span>
+                <span className="text-base font-extrabold text-emerald-400 block">{dynamicConversionRate.toFixed(1)}%</span>
                 <span className="text-[10px] text-slate-500">Traffic-to-presale</span>
               </div>
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">

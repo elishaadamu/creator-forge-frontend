@@ -1321,7 +1321,7 @@ export default function CreatorPortal({ portalId }) {
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-900">Phase 3: Launch</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-purple-50 text-purple-800 font-mono font-bold">
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono font-bold">
                         {project?.currentPhase === 3 ? 'Active Launch' : 'Upcoming'}
                       </span>
                     </div>

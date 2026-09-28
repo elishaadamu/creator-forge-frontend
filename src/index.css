@@ -539,17 +539,118 @@
   border-color: #e2e8f0 !important;
 }
 
-.phase-modal-white-theme [class*="text-white"] {
+/* All dark buttons and primary CTAs MUST have visible, high-contrast white text and icons */
+.phase-modal-white-theme button[class*="bg-slate-900"],
+.phase-modal-white-theme button[class*="bg-slate-800"],
+.phase-modal-white-theme button[class*="bg-slate-950"],
+.phase-modal-white-theme button[class*="bg-emerald-600"],
+.phase-modal-white-theme button[class*="bg-emerald-700"],
+.phase-modal-white-theme button[class*="bg-emerald-500"],
+.phase-modal-white-theme button[class*="bg-blue-600"],
+.phase-modal-white-theme button[class*="bg-indigo-600"],
+.phase-modal-white-theme button[class*="bg-purple-600"],
+.phase-modal-white-theme button[class*="bg-purple-700"],
+.phase-modal-white-theme a[class*="bg-slate-900"],
+.phase-modal-white-theme a[class*="bg-slate-800"],
+.phase-modal-white-theme a[class*="bg-emerald-600"] {
+  color: #ffffff !important;
+}
+
+.phase-modal-white-theme button[class*="bg-slate-900"] *,
+.phase-modal-white-theme button[class*="bg-slate-800"] *,
+.phase-modal-white-theme button[class*="bg-slate-950"] *,
+.phase-modal-white-theme button[class*="bg-emerald-600"] *,
+.phase-modal-white-theme button[class*="bg-emerald-700"] *,
+.phase-modal-white-theme button[class*="bg-emerald-500"] *,
+.phase-modal-white-theme button[class*="bg-blue-600"] *,
+.phase-modal-white-theme button[class*="bg-indigo-600"] *,
+.phase-modal-white-theme button[class*="bg-purple-600"] *,
+.phase-modal-white-theme button[class*="bg-purple-700"] *,
+.phase-modal-white-theme a[class*="bg-slate-900"] *,
+.phase-modal-white-theme a[class*="bg-slate-800"] *,
+.phase-modal-white-theme a[class*="bg-emerald-600"] * {
+  color: #ffffff !important;
+}
+
+/* Explicit icons inside dark buttons */
+.phase-modal-white-theme button[class*="bg-slate-900"] svg,
+.phase-modal-white-theme button[class*="bg-slate-800"] svg,
+.phase-modal-white-theme button[class*="bg-emerald-600"] svg,
+.phase-modal-white-theme a[class*="bg-slate-900"] svg {
+  color: #ffffff !important;
+}
+
+.phase-modal-white-theme button[class*="bg-slate-900"] svg[class*="text-emerald-"],
+.phase-modal-white-theme button[class*="bg-slate-900"] [class*="text-emerald-400"] {
+  color: #34d399 !important;
+}
+
+.phase-modal-white-theme button[class*="bg-slate-900"] svg[class*="text-amber-"],
+.phase-modal-white-theme button[class*="bg-slate-900"] [class*="text-amber-400"] {
+  color: #fbbf24 !important;
+}
+
+.phase-modal-white-theme button[class*="bg-slate-900"] svg[class*="text-slate-300"],
+.phase-modal-white-theme button[class*="bg-slate-900"] svg[class*="text-slate-400"] {
+  color: #cbd5e1 !important;
+}
+
+/* Secondary light/emerald action buttons (e.g. Save, Copy, Outline) */
+.phase-modal-white-theme button[class*="bg-emerald-500/"],
+.phase-modal-white-theme button[class*="bg-emerald-50"] {
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.phase-modal-white-theme button[class*="bg-emerald-500/"] *,
+.phase-modal-white-theme button[class*="bg-emerald-50"] * {
+  color: #065f46 !important;
+}
+
+.phase-modal-white-theme button[class*="bg-slate-100"],
+.phase-modal-white-theme button[class*="bg-slate-50"] {
+  color: #1e293b !important;
+}
+
+.phase-modal-white-theme button[class*="bg-slate-100"] *,
+.phase-modal-white-theme button[class*="bg-slate-50"] * {
+  color: #1e293b !important;
+}
+
+/* Headings and labels outside buttons */
+.phase-modal-white-theme h1:not(button *),
+.phase-modal-white-theme h2:not(button *),
+.phase-modal-white-theme h3:not(button *),
+.phase-modal-white-theme h4:not(button *),
+.phase-modal-white-theme h5:not(button *),
+.phase-modal-white-theme p:not(button *),
+.phase-modal-white-theme label:not(button *) {
   color: #0f172a !important;
 }
 
-.phase-modal-white-theme [class*="text-slate-200"],
-.phase-modal-white-theme [class*="text-slate-300"] {
+.phase-modal-white-theme div:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-emerald-"])[class*="text-white"],
+.phase-modal-white-theme span:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-emerald-"])[class*="text-white"] {
+  color: #0f172a !important;
+}
+
+.phase-modal-white-theme div:not(button):not(button *)[class*="text-slate-200"],
+.phase-modal-white-theme div:not(button):not(button *)[class*="text-slate-300"],
+.phase-modal-white-theme span:not(button):not(button *)[class*="text-slate-200"],
+.phase-modal-white-theme span:not(button):not(button *)[class*="text-slate-300"] {
   color: #334155 !important;
 }
 
-.phase-modal-white-theme [class*="text-slate-400"] {
+.phase-modal-white-theme div:not(button):not(button *)[class*="text-slate-400"],
+.phase-modal-white-theme span:not(button):not(button *)[class*="text-slate-400"] {
   color: #64748b !important;
+}
+
+.phase-modal-white-theme div:not(button):not(button *)[class*="text-emerald-200"],
+.phase-modal-white-theme div:not(button):not(button *)[class*="text-emerald-300"],
+.phase-modal-white-theme span:not(button):not(button *)[class*="text-emerald-200"],
+.phase-modal-white-theme span:not(button):not(button *)[class*="text-emerald-300"] {
+  color: #065f46 !important;
 }
 
 .phase-modal-white-theme input,
@@ -559,6 +660,45 @@
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
 }
+
+/* Remove AI-centric generic purple inside modal */
+.phase-modal-white-theme [class*="bg-purple-"] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.phase-modal-white-theme [class*="bg-purple-600"],
+.phase-modal-white-theme [class*="bg-purple-700"] {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+}
+
+.phase-modal-white-theme [class*="hover:bg-purple-500"]:hover,
+.phase-modal-white-theme [class*="hover:bg-purple-600"]:hover {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+.phase-modal-white-theme [class*="text-purple-"] {
+  color: #334155 !important;
+}
+
+.phase-modal-white-theme [class*="border-purple-"] {
+  border-color: #cbd5e1 !important;
+}
+
+.phase-modal-white-theme [class*="shadow-purple-"] {
+  box-shadow: none !important;
+}
+
+.phase-modal-white-theme [class*="from-purple-"],
+.phase-modal-white-theme [class*="to-purple-"] {
+  background-image: none !important;
+  background-color: #f8fafc !important;
+}
+
 
 
 

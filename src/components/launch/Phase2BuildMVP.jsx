@@ -1207,7 +1207,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             <button
               onClick={handleGenerateAIPlan}
               disabled={isGenerating}
-              className="px-3.5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-950/40 transition-all active:scale-95 disabled:opacity-50"
+              className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {isGenerating ? (
                 <>
@@ -1216,7 +1216,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                  <Sparkles className="w-3.5 h-3.5 text-slate-300" />
                   <span>AI Generate Build Plan</span>
                 </>
               )}
@@ -1253,7 +1253,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
           <div className="p-3 rounded-2xl bg-[#090b0e] border border-white/[0.06] space-y-0.5">
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Founding Backers</span>
-            <div className="text-base sm:text-lg font-black text-purple-300 font-mono">
+            <div className="text-base sm:text-lg font-black text-slate-200 font-mono">
               {backersCount} Cohort Members
             </div>
             <span className="text-[10px] text-slate-500">Awaiting private beta access</span>
@@ -1464,17 +1464,17 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               <button
                 onClick={handleGenerateAIPlan}
                 disabled={isGenerating}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-950/50 transition-all disabled:opacity-50 active:scale-95 cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 active:scale-95 cursor-pointer"
                 title="Synthesizes Product Spec, Technical Plan, Scope Boundaries & Sprint Tasks in 1 go"
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-200" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300" />
                     <span>Synthesizing All 4 Tabs...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                    <Sparkles className="w-3.5 h-3.5 text-slate-300" />
                     <span>Generate Full Build Plan with AI</span>
                   </>
                 )}
@@ -1504,8 +1504,8 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           {/* SUBTABS CONTENT */}
           {!buildPlan ? (
             <div className="p-10 sm:p-14 rounded-3xl bg-[#0e1117] border border-white/[0.08] text-center space-y-5 my-2">
-              <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mx-auto shadow-lg shadow-purple-950/40">
-                <Sparkles className="w-8 h-8" />
+              <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center mx-auto shadow-md">
+                <Sparkles className="w-8 h-8 text-slate-300" />
               </div>
               <div className="space-y-2 max-w-lg mx-auto">
                 <h3 className="text-base sm:text-lg font-bold text-white">No MVP Build Plan Generated Yet</h3>
@@ -1517,16 +1517,16 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 <button
                   onClick={handleGenerateAIPlan}
                   disabled={isGenerating}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-950/50 transition-all disabled:opacity-50 active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all disabled:opacity-50 active:scale-95 cursor-pointer"
                 >
                   {isGenerating ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-purple-200" />
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
                       <span>Synthesizing Full Build Plan with AI...</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4 text-purple-200" />
+                      <Sparkles className="w-4 h-4 text-slate-300" />
                       <span>Generate Full Build Plan with AI</span>
                     </>
                   )}
@@ -1690,7 +1690,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
                 <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Laptop className="w-4 h-4 text-purple-400" />
+                    <Laptop className="w-4 h-4 text-slate-400" />
                     <span>Core MVP Screens & UI Canvas</span>
                   </h3>
                 </div>
@@ -1731,7 +1731,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 </div>
 
                 <div className="p-4 rounded-xl bg-[#0e1117] border border-white/[0.08] space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
                     <BarChart3 className="w-4 h-4" />
                     <span>Telemetry & Analytics</span>
                   </div>
@@ -1834,7 +1834,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
                 <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Milestone className="w-4 h-4 text-purple-400" />
+                    <Milestone className="w-4 h-4 text-slate-400" />
                     <span>Sprints & Milestones</span>
                   </h3>
                 </div>
@@ -2010,7 +2010,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                             <span className="text-[10px] text-slate-400 flex items-center gap-2">
                               <span>{task.category}</span>
                               <span>•</span>
-                              <span>Assigned: <strong className={task.assignedTo === 'AI Agent' ? 'text-purple-400' : 'text-blue-400'}>{task.assignedTo}</strong></span>
+                              <span>Assigned: <strong className={task.assignedTo === 'AI Agent' ? 'text-slate-300 font-semibold' : 'text-blue-400'}>{task.assignedTo}</strong></span>
                               <span>•</span>
                               <span>{task.estimate}</span>
                               {task.status === 'Completed' && (
@@ -2030,7 +2030,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                             className={`px-2 py-1 rounded-lg text-[10px] font-bold border outline-none cursor-pointer transition-colors ${
                               task.assignedTo === 'Human Engineer'
                                 ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
-                                : 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                                : 'bg-slate-800 text-slate-300 border-slate-700'
                             }`}
                             title="Switch task assignment between AI Agent and Human Engineer"
                           >
@@ -2055,7 +2055,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                             <button
                               onClick={() => handleDispatchAIAgent(task)}
                               disabled={executingTaskId === task.id}
-                              className="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                              className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
                               title="Dispatch AI Coding Agent to write code and tests"
                             >
                               {executingTaskId === task.id ? (
@@ -2113,8 +2113,8 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
                             <div className="flex items-center gap-2 shrink-0">
                               {task.aiOutput ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-300 text-[10px] font-sans font-semibold border border-purple-500/30 whitespace-nowrap shrink-0">
-                                  <Sparkles className="w-3 h-3 text-purple-400 shrink-0" />
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-[10px] font-sans font-semibold border border-slate-700 whitespace-nowrap shrink-0">
+                                  <Sparkles className="w-3 h-3 text-slate-300 shrink-0" />
                                   <span>Gemini 3.1 Flash Lite</span>
                                 </span>
                               ) : (
@@ -2191,7 +2191,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   <select
                     value={newTaskAssigned}
                     onChange={e => setNewTaskAssigned(e.target.value)}
-                    className="px-3 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-purple-300 outline-none font-bold"
+                    className="px-3 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-slate-300 outline-none font-bold"
                   >
                     <option value="AI Agent">🤖 AI Agent</option>
                     <option value="Human Engineer">👤 Human Engineer</option>
@@ -2323,7 +2323,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   onClick={() => setBetaSubtab(sub.id)}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
                     betaSubtab === sub.id
-                      ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
+                      ? 'bg-slate-800 text-white border border-slate-600'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -2335,7 +2335,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             <button
               onClick={handleClusterFeedbackAI}
               disabled={isClusteringAI}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-950/40 transition-all active:scale-95 disabled:opacity-50"
+              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {isClusteringAI ? (
                 <>
@@ -2357,7 +2357,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               <FeedbackClusterSkeleton />
             ) : !feedbackClusters ? (
               <div className="p-10 sm:p-14 rounded-3xl bg-[#0e1117] border border-white/[0.08] text-center space-y-4 my-2">
-                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mx-auto shadow-md shadow-purple-950/40">
+                <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center mx-auto shadow-md">
                   <Sparkles className="w-7 h-7" />
                 </div>
                 <div className="space-y-1.5 max-w-md mx-auto">
@@ -2370,7 +2370,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   <button
                     onClick={handleClusterFeedbackAI}
                     disabled={isClusteringAI}
-                    className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-lg shadow-purple-950/50 transition-all active:scale-95 cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>AI Cluster & Group Feedback</span>
@@ -2382,7 +2382,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <Sparkles className="w-4 h-4 text-slate-400" />
                     <span>AI Recurring Issue Summaries & Quantified Clusters</span>
                   </h3>
                   <p className="text-xs text-slate-400">
@@ -2520,7 +2520,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 </select>
                 <button
                   type="submit"
-                  className="py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                  className="py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors border border-white/[0.1]"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Invite Backer</span>
@@ -2543,7 +2543,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-white">{backer.name}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 font-bold">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-bold">
                             {backer.tier}
                           </span>
                         </div>
@@ -2623,7 +2623,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   <div key={f.id} className="p-3 rounded-xl bg-[#141720] border border-white/[0.06] text-xs space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-white">{f.author}</span>
-                      <span className="text-[10px] text-purple-300 font-mono">{f.type} • {f.timestamp}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">{f.type} • {f.timestamp}</span>
                     </div>
                     <p className="text-slate-300 text-[11px]">"{f.message}"</p>
                   </div>
@@ -2713,7 +2713,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
               <div>
-                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Award className="w-3.5 h-3.5" />
                   <span>Step 4: Iterate + Launch Gate</span>
                 </span>
@@ -2726,7 +2726,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 <button
                   onClick={handleApplyAIAutoFixes}
                   disabled={isAutoFixing}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-950/40 transition-all active:scale-95 disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-md border border-white/[0.1] transition-all active:scale-95 disabled:opacity-50"
                 >
                   {isAutoFixing ? (
                     <>
@@ -2784,7 +2784,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
               <div className="text-xs text-slate-400 text-left sm:text-right space-y-0.5">
                 <div>Confidence Level: <strong className="text-white">{activeReadiness.confidence}</strong></div>
-                <div>MVP Build Release: <strong className="text-purple-300 font-mono">{mvpVersion}</strong></div>
+                <div>MVP Build Release: <strong className="text-slate-300 font-mono">{mvpVersion}</strong></div>
               </div>
             </div>
 
@@ -2813,7 +2813,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
             <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Zap className="w-4 h-4 text-purple-400" />
+                <Zap className="w-4 h-4 text-amber-400" />
                 <span>AI Automated Code Hotfixes ({appliedPatches.length} Patches Applied)</span>
               </h3>
               <span className="text-[10px] font-mono text-emerald-400">All Patches Verified ✓</span>
@@ -2866,7 +2866,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
               <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
                 <span className="text-[10px] text-slate-400 font-bold uppercase">Beta Backer Provisioning</span>
-                <div className="text-base font-black text-purple-300 font-mono">
+                <div className="text-base font-black text-emerald-400 font-mono">
                   {backersCount} Ready for Public Access
                 </div>
                 <span className="text-[10px] text-slate-500">Tokens activated</span>
@@ -2929,16 +2929,16 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   setDecisionNotice('Beta cycle extended. Continue collecting usage data and inviting cohort testers.')
                   showToast('Beta cycle extended.')
                 }}
-                className="p-4 rounded-2xl bg-[#141720] hover:bg-[#1a1f2c] text-white text-left space-y-2 border border-white/[0.08] hover:border-purple-500/40 transition-all active:scale-[0.98] group"
+                className="p-4 rounded-2xl bg-[#141720] hover:bg-[#1a1f2c] text-white text-left space-y-2 border border-white/[0.08] hover:border-slate-500/40 transition-all active:scale-[0.98] group"
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300">
+                  <div className="p-2 rounded-xl bg-slate-800 text-slate-300">
                     <RotateCcw className="w-5 h-5" />
                   </div>
                   <span className="text-[10px] font-mono text-slate-400">Iterate</span>
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white group-hover:text-purple-200 transition-colors">
+                  <h4 className="text-sm font-bold text-white group-hover:text-slate-200 transition-colors">
                     2. Continue Beta
                   </h4>
                   <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">

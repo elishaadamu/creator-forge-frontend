@@ -764,7 +764,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                   isLocked
                     ? 'opacity-40 cursor-not-allowed text-slate-500 bg-white/[0.01]'
                     : isActive
-                    ? 'bg-purple-600 text-white shadow-md shadow-purple-950/60 cursor-pointer'
+                    ? 'bg-slate-900 text-white shadow-xs cursor-pointer'
                     : isDone
                     ? 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30 cursor-pointer'
                     : 'text-slate-400 hover:text-white hover:bg-white/[0.04] cursor-pointer'
@@ -812,7 +812,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                     onClick={() => setPrepSubtab(sub.id)}
                     className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
                       prepSubtab === sub.id
-                        ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30 shadow-sm'
+                        ? 'bg-slate-800 text-white border border-slate-700 shadow-xs'
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
@@ -1190,7 +1190,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                         onClick={() => setAssetTab(tab.id)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                           assetTab === tab.id
-                            ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30 shadow-sm'
+                            ? 'bg-slate-800 text-white border border-slate-700 shadow-xs'
                             : 'text-slate-400 hover:text-slate-200'
                         }`}
                       >
@@ -1202,7 +1202,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                   <button
                     onClick={handleGenerateAssets}
                     disabled={isGeneratingAssets}
-                    className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-950/40 disabled:opacity-50 cursor-pointer shrink-0"
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer shrink-0"
                   >
                     {isGeneratingAssets ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                     <span>Regenerate Assets with AI</span>
@@ -1845,12 +1845,12 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                       value={newCreatorTaskTitle}
                       onChange={(e) => setNewCreatorTaskTitle(e.target.value)}
                       placeholder="Add custom creator launch task..."
-                      className="flex-1 bg-[#141720] border border-white/[0.08] focus:border-purple-500 text-white text-xs px-3 py-2 rounded-xl outline-none"
+                      className="flex-1 bg-[#141720] border border-white/[0.08] focus:border-slate-500 text-white text-xs px-3 py-2 rounded-xl outline-none"
                     />
                     <button
                       type="submit"
                       disabled={!newCreatorTaskTitle.trim()}
-                      className="px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs disabled:opacity-50 cursor-pointer flex items-center gap-1 shrink-0"
+                      className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs disabled:opacity-50 cursor-pointer flex items-center gap-1 shrink-0"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Add</span>
@@ -2008,7 +2008,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                 {isLive ? (
                   <button
                     onClick={() => setActiveStep('monitor')}
-                    className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-purple-950/50 transition-all active:scale-95 cursor-pointer"
+                    className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
                   >
                     <span>Proceed to 2. Launch + Monitor</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -2172,7 +2172,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
               onClick={() => setActiveStep('manager')}
               className={`px-6 py-2.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all border ${
                 p3Guards.canAccessStep3
-                  ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-950/50 active:scale-95 cursor-pointer border-purple-400/30'
+                  ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs active:scale-95 cursor-pointer border-slate-700'
                   : 'bg-slate-800/80 text-slate-500 border-slate-700/60 shadow-none cursor-not-allowed opacity-50'
               }`}
               title={!p3Guards.canAccessStep3 ? 'Complete Step 1 (Prepare Launch) and Step 2 (Launch + Monitor) first' : 'Proceed to Step 3'}
@@ -2192,8 +2192,8 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
           <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
               <div>
-                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
                   <span>Step 3: Autonomous AI Launch Manager</span>
                 </span>
                 <h3 className="text-base font-black text-white">
@@ -2205,7 +2205,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                 <button
                   onClick={handleRunLaunchManager}
                   disabled={isRunningManager}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-950/40 transition-all active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer shrink-0 border border-slate-700"
                 >
                   {isRunningManager ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                   <span>{isRunningManager ? 'Analyzing...' : 'Run Diagnostic Sweep'}</span>
@@ -2315,7 +2315,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                             className={`w-full py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                               isDispatched
                                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-default'
-                                : 'bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-950/40 active:scale-95'
+                                : 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs active:scale-95 border border-slate-700'
                             }`}
                           >
                             {isDispatched ? (
@@ -2352,7 +2352,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
               onClick={() => setActiveStep('report')}
               className={`px-6 py-2.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all border ${
                 p3Guards.canAccessStep4
-                  ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-950/50 active:scale-95 cursor-pointer border-purple-400/30'
+                  ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs active:scale-95 cursor-pointer border-slate-700'
                   : 'bg-slate-800/80 text-slate-500 border-slate-700/60 shadow-none cursor-not-allowed opacity-50'
               }`}
               title={!p3Guards.canAccessStep4 ? 'Complete Steps 1–3 first' : 'Proceed to Step 4'}
@@ -2452,8 +2452,8 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
 
           {/* Decision Notice */}
           {decisionNotice && (
-            <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-200 text-xs flex items-center gap-2 font-medium">
-              <Compass className="w-4 h-4 text-purple-400 shrink-0" />
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 text-xs flex items-center gap-2 font-medium">
+              <Compass className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>{decisionNotice}</span>
             </div>
           )}
@@ -2574,9 +2574,9 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
               </div>
 
               {/* 4. Human Executive Milestone Decision Gate */}
-              <div className="p-6 rounded-3xl bg-gradient-to-br from-[#0e1117] via-[#141825] to-[#121626] border border-purple-500/40 shadow-2xl space-y-4">
+              <div className="p-6 rounded-3xl bg-[#0e1117] border border-slate-700 shadow-2xl space-y-4">
                 <div>
-                  <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest block">
+                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">
                     Human Executive Milestone Decision
                   </span>
                   <h3 className="text-lg font-black text-white tracking-tight">
@@ -2600,7 +2600,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                     }}
                     className={`p-4 rounded-2xl text-left space-y-2 transition-all group border ${
                       p3Guards.allPriorStepsDone
-                        ? 'bg-gradient-to-b from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white shadow-xl shadow-purple-950/60 active:scale-[0.98] border-purple-400/40 cursor-pointer'
+                        ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xl active:scale-[0.98] border-emerald-500/40 cursor-pointer'
                         : 'bg-slate-800/80 text-slate-500 border-slate-700/60 shadow-none cursor-not-allowed opacity-50'
                     }`}
                     title={!p3Guards.allPriorStepsDone ? 'Complete Steps 1–3 before scaling' : 'Activate Scale Mode'}
@@ -2616,10 +2616,10 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                       </span>
                     </div>
                     <div>
-                      <h4 className={`text-sm font-black transition-colors ${p3Guards.allPriorStepsDone ? 'text-white group-hover:text-purple-100' : 'text-slate-400'}`}>
+                      <h4 className={`text-sm font-black transition-colors ${p3Guards.allPriorStepsDone ? 'text-white group-hover:text-emerald-300' : 'text-slate-400'}`}>
                         1. SCALE
                       </h4>
-                      <p className={`text-[11px] leading-relaxed mt-0.5 ${p3Guards.allPriorStepsDone ? 'text-purple-100/80' : 'text-slate-500'}`}>
+                      <p className={`text-[11px] leading-relaxed mt-0.5 ${p3Guards.allPriorStepsDone ? 'text-slate-300' : 'text-slate-500'}`}>
                         {p3Guards.allPriorStepsDone
                           ? 'Double down on top converting channels, increase creator posting cadence & unlock viral loops.'
                           : 'Locked — Complete Steps 1–3 (Prepare, Monitor, and Launch Manager) first.'}
