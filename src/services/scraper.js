@@ -733,3 +733,44 @@ export async function fetchCreatorYouTubeVideos(handleOrUrl, limit = 8) {
 
   return []
 }
+
+/**
+ * Fetch real audience comments for a specific YouTube video from backend Innertube endpoint.
+ */
+export async function fetchYouTubeVideoComments(videoIdOrUrl, limit = 8) {
+  if (!videoIdOrUrl) return []
+  let cleanVid = String(videoIdOrUrl).trim()
+  if (cleanVid.includes('v=')) {
+    cleanVid = cleanVid.split('v=')[1]?.split('&')[0]?.split('#')[0] || cleanVid
+  } else if (cleanVid.includes('youtu.be/')) {
+    cleanVid = cleanVid.split('youtu.be/')[1]?.split('?')[0]?.split('#')[0] || cleanVid
+  }
+
+  const cacheKey = `forge_video_comments_${cleanVid}`
+  try {
+    const cached = sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey)
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch (e) {}
+
+  try {
+    const res = await fetch(`/api/creators/youtube-comments?video_id=${encodeURIComponent(cleanVid)}&limit=${limit}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (Array.isArray(data.comments) && data.comments.length > 0) {
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(data.comments))
+          localStorage.setItem(cacheKey, JSON.stringify(data.comments))
+        } catch (e) {}
+        return data.comments
+      }
+    }
+  } catch (e) {
+    console.warn('[Scraper] Failed to fetch comments for', cleanVid, e)
+  }
+
+  return []
+}
+

@@ -5,6 +5,7 @@ import {
   ExternalLink, Sparkles, AlertCircle, ArrowRight, CheckCircle2, Clock
 } from 'lucide-react'
 import { getProjectAudienceGrounding } from '../../utils/audienceGrounding'
+import { fetchCreatorYouTubeVideos, fetchYouTubeVideoComments } from '../../services/scraper'
 
 export default function AudienceGroundingModal({
   isOpen,
@@ -38,7 +39,10 @@ export default function AudienceGroundingModal({
 
   const [liveVideos, setLiveVideos] = useState(null)
   const [isFetchingLive, setIsFetchingLive] = useState(false)
+  const [liveComments, setLiveComments] = useState(null)
+  const [isFetchingComments, setIsFetchingComments] = useState(false)
 
+  // 1. Fetch real YouTube creator videos if not yet populated
   useEffect(() => {
     if (!isOpen) return
     const currentPosts = (Array.isArray(project?.recentPosts) && project.recentPosts.length > 0 ? project.recentPosts : null) ||
@@ -48,22 +52,41 @@ export default function AudienceGroundingModal({
       const cleanH = String(project?.creatorHandle || project?.creator_handle || project?.handle || project?.creatorName || '').replace(/^@/, '').trim()
       if (cleanH && !/^[0-9a-f-]{15,}$/i.test(cleanH)) {
         setIsFetchingLive(true)
-        import('../../services/scraper').then(({ fetchCreatorYouTubeVideos }) => {
-          fetchCreatorYouTubeVideos(cleanH)
-            .then(vids => {
-              if (vids && vids.length > 0) setLiveVideos(vids)
-            })
-            .catch(() => {})
-            .finally(() => setIsFetchingLive(false))
-        })
+        fetchCreatorYouTubeVideos(cleanH)
+          .then(vids => {
+            if (vids && vids.length > 0) setLiveVideos(vids)
+          })
+          .catch(() => {})
+          .finally(() => setIsFetchingLive(false))
       }
     }
   }, [isOpen, project, liveVideos, isFetchingLive])
 
+  // 2. Fetch real YouTube audience comments for the primary source video
+  useEffect(() => {
+    if (!isOpen) return
+    const posts = (Array.isArray(liveVideos) && liveVideos.length > 0 ? liveVideos : null) ||
+      (Array.isArray(project?.recentPosts) && project.recentPosts.length > 0 ? project.recentPosts : null) ||
+      (Array.isArray(project?.videos) && project.videos.length > 0 ? project.videos : null)
+
+    const targetVid = posts?.[0]?.videoId || posts?.[0]?.id
+    if (targetVid && !liveComments && !isFetchingComments) {
+      setIsFetchingComments(true)
+      fetchYouTubeVideoComments(targetVid)
+        .then(cmts => {
+          if (cmts && cmts.length > 0) {
+            setLiveComments(cmts)
+          }
+        })
+        .catch(() => {})
+        .finally(() => setIsFetchingComments(false))
+    }
+  }, [isOpen, project, liveVideos, liveComments, isFetchingComments])
+
   if (!isOpen) return null
 
   const effectiveProject = liveVideos ? { ...project, recentPosts: liveVideos, videos: liveVideos } : project
-  const grounding = getProjectAudienceGrounding(effectiveProject)
+  const grounding = getProjectAudienceGrounding(effectiveProject, liveComments)
   const creator = grounding.creatorName
   const product = grounding.productName
 
@@ -345,8 +368,13 @@ export default function AudienceGroundingModal({
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                            👍 {c.likes} Upvotes
+                            👍 {c.likes} {c.likes === 1 || c.likes === '1' ? 'Upvote' : 'Upvotes'}
                           </span>
+                          {c.published && (
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {c.published}
+                            </span>
+                          )}
                           <a
                             href={commentVideoUrl}
                             target="_blank"

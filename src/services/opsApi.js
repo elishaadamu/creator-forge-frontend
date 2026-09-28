@@ -155,6 +155,11 @@ export const getCreatorVideos = (creatorIdOrHandle, limit = 8) => {
   return req('GET', q)
 }
 
+export const getYouTubeVideoComments = (videoIdOrUrl, limit = 8) => {
+  const clean = String(videoIdOrUrl || '').trim()
+  return req('GET', `/creators/youtube-comments?video_id=${encodeURIComponent(clean)}&limit=${limit}`)
+}
+
 export const addCreatorContact = (creatorId, contactType, value) =>
   req('POST', `/creators/${creatorId}/contacts`, { contact_type: contactType, value, source: 'manual' })
 
