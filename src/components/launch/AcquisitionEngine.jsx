@@ -407,9 +407,10 @@ export default function AcquisitionEngine({
           (c) => c.id === initialSelectedCreatorId || c.handle === initialSelectedCreatorId
         );
         if (found) return prev;
-        import("../../services/opsApi").then(({ fetchCreators }) => {
-          fetchCreators().then((all) => {
-            if (Array.isArray(all) && all.length > 0) {
+        import("../../services/opsApi").then(({ getCreators }) => {
+          getCreators().then((res) => {
+            const all = Array.isArray(res) ? res : res?.creators || [];
+            if (all.length > 0) {
               const matched = all.find(
                 (c) => c.id === initialSelectedCreatorId || c.handle === initialSelectedCreatorId
               );
@@ -9046,12 +9047,23 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 return c.replyInfo.classification === replyFilter;
               });
 
-          const activeReviewCreator =
-            (scopedIndividualCreator ? scopedIndividualCreator : null) ||
-            creatorsWithReplies.find((c) => c.id === selectedCreatorId) ||
+          const rawActiveReviewCreator =
+            creatorsWithReplies.find((c) => c.id === selectedCreatorId || c.id === scopedCreatorId) ||
+            creatorsWithReplies.find((c) => c.handle && (c.handle === selectedCreatorId || c.handle === scopedCreatorId)) ||
             filteredReplies[0] ||
             creatorsWithReplies[0] ||
-            null;
+            (scopedIndividualCreator ? { ...scopedIndividualCreator, replyInfo: getCreatorReply(scopedIndividualCreator) } : null);
+
+          const activeReviewCreator = rawActiveReviewCreator
+            ? {
+                ...rawActiveReviewCreator,
+                replyInfo: rawActiveReviewCreator.replyInfo || getCreatorReply(rawActiveReviewCreator),
+              }
+            : null;
+
+          const activeReply = activeReviewCreator
+            ? (activeReviewCreator.replyInfo || getCreatorReply(activeReviewCreator))
+            : { classification: "awaiting_reply", sentiment: "neutral", reasoning: "Awaiting response", hasRealReply: false };
 
           return (
             <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-5 text-slate-900">
@@ -9468,48 +9480,39 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             </span>
                           ) : (
                             <span
-                              className={`text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 ${activeReviewCreator.replyInfo.classification ===
+                              className={`text-xs font-bold px-3 py-1 rounded-lg border flex items-center gap-1.5 ${activeReply.classification ===
                                   "interested"
                                   ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                  : activeReviewCreator.replyInfo
-                                    .classification === "question"
+                                  : activeReply.classification === "question"
                                     ? "bg-amber-50 text-amber-800 border-amber-200"
-                                    : activeReviewCreator.replyInfo
-                                      .classification === "not_interested"
+                                    : activeReply.classification === "not_interested"
                                       ? "bg-rose-50 text-rose-800 border-rose-200"
-                                      : activeReviewCreator.replyInfo
-                                        .classification === "unsubscribe"
+                                      : activeReply.classification === "unsubscribe"
                                         ? "bg-slate-100 text-slate-700 border-slate-200"
-                                        : activeReviewCreator.replyInfo
-                                          .classification === "no_email"
+                                        : activeReply.classification === "no_email"
                                           ? "bg-amber-50 text-amber-800 border-amber-200"
                                           : "bg-blue-50 text-blue-800 border-blue-200"
                                 }`}
                             >
                               <span
-                                className={`w-2 h-2 rounded-full ${activeReviewCreator.replyInfo.classification ===
+                                className={`w-2 h-2 rounded-full ${activeReply.classification ===
                                     "interested"
                                     ? "bg-emerald-500"
-                                    : activeReviewCreator.replyInfo
-                                      .classification === "question"
+                                    : activeReply.classification === "question"
                                       ? "bg-amber-500"
-                                      : activeReviewCreator.replyInfo
-                                        .classification === "not_interested"
+                                      : activeReply.classification === "not_interested"
                                         ? "bg-rose-500"
-                                        : activeReviewCreator.replyInfo
-                                          .classification === "unsubscribe"
+                                        : activeReply.classification === "unsubscribe"
                                           ? "bg-slate-400"
-                                          : activeReviewCreator.replyInfo
-                                            .classification === "no_email"
+                                          : activeReply.classification === "no_email"
                                             ? "bg-amber-500"
                                             : "bg-blue-500"
                                   }`}
                               />
                               <span className="capitalize">
-                                {activeReviewCreator.replyInfo.hasRealReply
-                                  ? `AI: ${activeReviewCreator.replyInfo.classification.replace("_", " ")}`
-                                  : activeReviewCreator.replyInfo
-                                    .classification === "no_email"
+                                {activeReply.hasRealReply
+                                  ? `AI: ${activeReply.classification.replace("_", " ")}`
+                                  : activeReply.classification === "no_email"
                                     ? "No Email Set"
                                     : "Awaiting Reply"}
                               </span>
@@ -9626,18 +9629,16 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             Status:{" "}
                             <strong
                               className={
-                                activeReviewCreator.replyInfo.hasRealReply
+                                activeReply.hasRealReply
                                   ? "text-emerald-700"
-                                  : activeReviewCreator.replyInfo
-                                    .classification === "no_email"
+                                  : activeReply.classification === "no_email"
                                     ? "text-amber-700"
                                     : "text-blue-700"
                               }
                             >
-                              {activeReviewCreator.replyInfo.hasRealReply
+                              {activeReply.hasRealReply
                                 ? "Reply Received"
-                                : activeReviewCreator.replyInfo
-                                  .classification === "no_email"
+                                : activeReply.classification === "no_email"
                                   ? "Email Needed"
                                   : "Waiting for Response"}
                             </strong>
@@ -9645,19 +9646,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           <span className="text-slate-500">
                             Sentiment:{" "}
                             <strong className="text-slate-800">
-                              {activeReviewCreator.replyInfo.sentiment}
+                              {activeReply.sentiment}
                             </strong>
                           </span>
                         </div>
                         <p className="text-slate-600 text-[11px] leading-relaxed">
                           <strong className="text-slate-700">Analysis:</strong>{" "}
-                          {activeReviewCreator.replyInfo.reasoning}
+                          {activeReply.reasoning}
                         </p>
                       </div>
 
                       {/* Inbound Creator Response / Conversation Stream */}
                       <div className="space-y-3">
-                        {activeReviewCreator.replyInfo.hasRealReply ? (
+                        {activeReply.hasRealReply ? (
                           <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-2 text-xs shadow-2xs">
                             <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
                               <div className="flex items-center gap-2">
