@@ -198,7 +198,9 @@ export const sendDirectEmail = (toEmail, subject, body, creatorId = null, extraO
     body,
     creator_id: creatorId,
     concept_image_url: extraOptions.concept_image_url || extraOptions.conceptImageUrl || null,
-    concepts: extraOptions.concepts || null
+    concepts: extraOptions.concepts ?? null,
+    is_rejection: extraOptions.is_rejection ?? extraOptions.isRejection ?? false,
+    include_concepts: extraOptions.include_concepts ?? extraOptions.includeConcepts ?? null,
   })
 
 export const updateOutreachDraft = (id, subject, body) =>
