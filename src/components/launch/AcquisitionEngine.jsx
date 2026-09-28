@@ -4810,6 +4810,19 @@ export default function AcquisitionEngine({
       `Creator archived — clean rejection notice dispatched without concept lists.`,
       4000,
     );
+
+    // Auto-advance selection to the next active, non-rejected creator
+    setCreators((current) => {
+      const remaining = current.filter(
+        (c) => c.id !== id && (c.status || "").toLowerCase() !== "rejected",
+      );
+      if (remaining.length > 0) {
+        setSelectedCreatorId(remaining[0].id);
+      } else {
+        setSelectedCreatorId(null);
+      }
+      return current;
+    });
   };
 
   const handleRestoreCreator = async (id) => {
@@ -4839,20 +4852,6 @@ export default function AcquisitionEngine({
     } catch (err) {
       console.warn("[AcquisitionEngine] Failed to restore creator in DB:", err);
     }
-  };
-
-    // Auto-advance selection to the next active, non-rejected creator
-    setCreators((current) => {
-      const remaining = current.filter(
-        (c) => c.id !== id && (c.status || "").toLowerCase() !== "rejected",
-      );
-      if (remaining.length > 0) {
-        setSelectedCreatorId(remaining[0].id);
-      } else {
-        setSelectedCreatorId(null);
-      }
-      return current;
-    });
   };
 
   // ── Step 4: Decision Modal State & Handlers (Accept / Reject with Optional AI Email) ──
