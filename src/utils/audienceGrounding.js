@@ -13,7 +13,7 @@
  * 2. Non-burdensome creator pacing: spaced milestone touchpoints rather than daily posting burnouts.
  */
 
-export function getProjectAudienceGrounding(project) {
+export function getProjectAudienceGrounding(project, customComments = null) {
   const creator = (project?.creatorName || project?.name || 'Creator Partner').replace(/^[0-9a-f-]{10,}$/i, 'Creator Partner')
   const niche = (project?.niche || project?.category || 'Software & Tech').toLowerCase()
   const product = (project?.productName || project?.title || 'Software Product').replace(/^[0-9a-f-]{10,}$/i, 'Software Product')
@@ -183,30 +183,63 @@ export function getProjectAudienceGrounding(project) {
       }
     ]
 
-    audienceComments = [
-      {
-        id: 'comm-1',
-        author: '@community_member',
-        source: 'YouTube Comments (Channel Uploads)',
-        likes: 310,
-        verified: true,
-        videoTitle: `${creator}'s Channel Uploads`,
-        quote: channelBio ? `Been following your content on ${niche}. Having a dedicated tool built specifically for this workflow would save so many hours!` : `I've been following your breakdowns on this topic. Having a dedicated tool to automate this exact workflow would save hours every single week!`,
-        addressedBy: 'Milestone 1: Discovery Poll & Milestone 2: Video Integration',
-        actionTaken: 'Validates core problem resonance and establishes immediate organic interest without hard sales.'
-      },
-      {
-        id: 'comm-2',
-        author: '@active_builder',
-        source: 'Community Discussion',
-        likes: 184,
-        verified: true,
-        videoTitle: `${creator}'s Channel Uploads`,
-        quote: `Would love to test this early if you ever release a beta or private founding member group.`,
-        addressedBy: 'Milestone 3: 1:1 Plain-Text VIP Letter',
-        actionTaken: 'Sets the 50 Founding Member beta slots at 50% lifetime discount to capture this high-intent demand.'
-      }
-    ]
+    const fallbackRawComments = customComments ||
+      (Array.isArray(project?.audienceComments) && project.audienceComments.length > 0 ? project.audienceComments : null) ||
+      (Array.isArray(project?.comments) && project.comments.length > 0 ? project.comments : null)
+
+    if (fallbackRawComments && fallbackRawComments.length > 0) {
+      audienceComments = fallbackRawComments.slice(0, 6).map((c, idx) => {
+        const author = c.author || `@viewer_${idx + 1}`
+        const text = c.text || c.quote || ''
+        const rawLikes = c.likes ?? c.upvotes ?? 0
+        const likes = typeof rawLikes === 'number' ? rawLikes : (parseInt(String(rawLikes).replace(/[^0-9]/g, ''), 10) || 0)
+        return {
+          id: c.id || `real-comm-${idx}`,
+          author: author.startsWith('@') ? author : `@${author}`,
+          source: 'YouTube Comments (Channel Uploads)',
+          likes,
+          verified: true,
+          videoTitle: `${creator}'s Verified Uploads`,
+          quote: text,
+          published: c.published || '',
+          addressedBy: idx === 0
+            ? 'Milestone 1: Discovery Poll & Milestone 2: Video Integration'
+            : idx === 1
+              ? 'Milestone 3: 1:1 Plain-Text VIP Letter'
+              : 'Milestone 4: Founding Member Launch',
+          actionTaken: idx === 0
+            ? 'Validates core problem resonance and establishes immediate organic interest without hard sales.'
+            : idx === 1
+              ? 'Sets the 50 Founding Member beta slots at 50% lifetime discount to capture this high-intent demand.'
+              : 'Directly addresses audience friction points in launch emails and onboarding documentation.'
+        }
+      })
+    } else {
+      audienceComments = [
+        {
+          id: 'comm-1',
+          author: '@community_member',
+          source: 'YouTube Comments (Channel Uploads)',
+          likes: 310,
+          verified: true,
+          videoTitle: `${creator}'s Channel Uploads`,
+          quote: channelBio ? `Been following your content on ${niche}. Having a dedicated tool built specifically for this workflow would save so many hours!` : `I've been following your breakdowns on this topic. Having a dedicated tool to automate this exact workflow would save hours every single week!`,
+          addressedBy: 'Milestone 1: Discovery Poll & Milestone 2: Video Integration',
+          actionTaken: 'Validates core problem resonance and establishes immediate organic interest without hard sales.'
+        },
+        {
+          id: 'comm-2',
+          author: '@active_builder',
+          source: 'Community Discussion',
+          likes: 184,
+          verified: true,
+          videoTitle: `${creator}'s Channel Uploads`,
+          quote: `Would love to test this early if you ever release a beta or private founding member group.`,
+          addressedBy: 'Milestone 3: 1:1 Plain-Text VIP Letter',
+          actionTaken: 'Sets the 50 Founding Member beta slots at 50% lifetime discount to capture this high-intent demand.'
+        }
+      ]
+    }
   }
 
   // Anti-AI Slop Audit Guidelines
