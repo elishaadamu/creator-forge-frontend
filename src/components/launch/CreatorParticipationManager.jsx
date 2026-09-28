@@ -338,6 +338,16 @@ export default function CreatorParticipationManager() {
 
     try {
       await deleteCoLaunchProject(proj.id)
+      if (proj.creatorId) {
+        try {
+          const { updateCreatorDetails } = await import('../../services/opsApi')
+          await updateCreatorDetails(proj.creatorId, {
+            status: 'qualified',
+            project_id: null,
+            projectId: null
+          })
+        } catch (e) {}
+      }
       try {
         const activeLocal = getExpiringItem('forge_launch_active_project')
         if (activeLocal?.id === proj.id) {
@@ -978,34 +988,33 @@ export default function CreatorParticipationManager() {
 
             {/* Action Buttons List */}
             <div className="space-y-2 pt-1">
-              {/* 1. Send Follow-Up / Workspace Email Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  const p = actionModalProject
-                  const isCoB = p.isDIY || p.diySubscription?.active
-                  setActionModalProject(null)
-                  handleOpenEmailModal(p, isCoB ? 'portal_link' : 'followup')
-                }}
-                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
-                  isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4 text-amber-500" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold">
-                      {(actionModalProject.isDIY || actionModalProject.diySubscription?.active) ? 'Send Workspace Email' : 'Send Follow-Up'}
+              {/* 1. Send Follow-Up Button: Only visible when creator has NOT paid yet. Once paid, it is automatically removed! */}
+              {!(actionModalProject.isDIY || actionModalProject.diySubscription?.active || actionModalProject.diyOfferStatus === 'paid' || actionModalProject.diyOfferStatus === 'accepted') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = actionModalProject
+                    setActionModalProject(null)
+                    handleOpenEmailModal(p, 'followup')
+                  }}
+                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
+                    isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                      <Mail className="w-4 h-4 text-amber-500" />
                     </div>
-                    <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                      Dispatch personalized email to {actionModalProject.creatorEmail || 'creator'}
+                    <div>
+                      <div className="text-xs font-bold">Send Follow-Up</div>
+                      <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Dispatch personalized email to {actionModalProject.creatorEmail || 'creator'}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400" />
-              </button>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+              )}
 
               {/* 2. Copy Workspace URL Button */}
               <button
@@ -1035,54 +1044,7 @@ export default function CreatorParticipationManager() {
                 )}
               </button>
 
-              {/* 3. Mark Paid DIY ($50) or Revert Track Button */}
-              {!(actionModalProject.isDIY || actionModalProject.diySubscription?.active) ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const p = actionModalProject
-                    setActionModalProject(null)
-                    handleMarkAsPaidCoBuilder(p)
-                  }}
-                  className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-105 text-slate-950 shadow-md shadow-amber-950/15 flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-slate-950/10 flex items-center justify-center shrink-0">
-                      <CreditCard className="w-5 h-5 text-slate-950" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-black uppercase tracking-wide">Mark Paid DIY ($50)</div>
-                      <div className="text-[11px] text-slate-900/80 font-medium">Activate full autonomous Co-Builder OS for creator</div>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-950 text-white font-mono text-[10px] font-bold shrink-0">$50 USD</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const p = actionModalProject
-                    setActionModalProject(null)
-                    handleSwitchToStudioManaged(p)
-                  }}
-                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer ${
-                    isLight ? 'bg-purple-50 hover:bg-purple-100/80 border-purple-200 text-purple-950' : 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-purple-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
-                      <RotateCcw className="w-4 h-4 text-purple-600" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold">Revert to Managed</div>
-                      <div className={`text-[11px] ${isLight ? 'text-purple-700' : 'text-purple-300'}`}>Return to standard studio execution (50/50 revenue split)</div>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-purple-500" />
-                </button>
-              )}
-
-              {/* 4. Live Portal Preview Link */}
+              {/* 3. Live Portal Preview Link */}
               <a
                 href={getCreatorWorkspaceUrl(actionModalProject)}
                 target="_blank"

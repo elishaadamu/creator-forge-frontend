@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   Target,
@@ -547,6 +547,14 @@ export default function AcquisitionEngine({
       return null;
     }
   });
+  const [scopedCreatorId, setScopedCreatorId] = useState(() => {
+    try {
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      return searchParams?.get('creator') || searchParams?.get('creatorId') || null;
+    } catch {
+      return null;
+    }
+  });
   const [selectedConceptId, setSelectedConceptId] = useState(null);
   const [creatorConceptSelectionMap, setCreatorConceptSelectionMap] = useState(() => {
     try {
@@ -602,12 +610,15 @@ export default function AcquisitionEngine({
       try {
         const searchParams = new URLSearchParams(window.location.search);
         const stepParam = Number(searchParams.get('step'));
-        const creatorParam = searchParams.get('creator');
+        const creatorParam = searchParams.get('creator') || searchParams.get('creatorId');
         if (stepParam >= 1 && stepParam <= 6) {
           setActiveStep(stepParam);
         }
         if (creatorParam) {
           setSelectedCreatorId(creatorParam);
+          setScopedCreatorId(creatorParam);
+        } else {
+          setScopedCreatorId(null);
         }
       } catch (e) { }
     };
@@ -616,6 +627,116 @@ export default function AcquisitionEngine({
     window.addEventListener('popstate', handleUrlSync);
     return () => window.removeEventListener('popstate', handleUrlSync);
   }, []);
+
+  const handleClearScopedCreator = useCallback(() => {
+    setScopedCreatorId(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('creator');
+      url.searchParams.delete('creatorId');
+      window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+    } catch (e) { }
+  }, []);
+
+  const getCreatorAvatar = useCallback((c) => {
+    if (!c) return "https://ui-avatars.com/api/?name=Creator&background=0f172a&color=fff&bold=true";
+    const raw = c.avatar_url || c.avatarUrl || c.avatar || c.image || c.profile_image_url;
+    if (
+      raw &&
+      typeof raw === "string" &&
+      raw.trim().length > 0 &&
+      !raw.includes("photo-1534528741775-53994a69daeb")
+    ) {
+      return raw.trim();
+    }
+    const cleanName = (c.name || c.display_name || c.handle || "Creator").replace(/^@/, "").trim();
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=0f172a&color=fff&bold=true`;
+  }, []);
+
+  // Check if a creator has already graduated/launched into Section 2 (ProjectOS)
+  const isCreatorLaunchedToSection2 = useCallback(
+    (c) => {
+      if (!c) return false;
+      const status = (c.status || "").toLowerCase();
+      if (status === "launched" || status === "partnered" || status === "active_project") {
+        return true;
+      }
+      if (c.project_id || c.projectId || c.active_project_id) {
+        return true;
+      }
+
+      const cCleanHandle = (c.handle || "").replace(/^@/, "").toLowerCase().trim();
+      const cCleanName = (c.name || c.display_name || "").toLowerCase().trim();
+      const cEmail = (c.email || c.email_public || "").toLowerCase().trim();
+
+      const matchedDbProj = (dbProjects || []).find((p) => {
+        if (!p) return false;
+        const pCleanHandle = (p.creatorHandle || "").replace(/^@/, "").toLowerCase().trim();
+        const pCleanName = (p.creatorName || "").toLowerCase().trim();
+        const pEmail = (p.creatorEmail || "").toLowerCase().trim();
+        return (
+          (p.creatorId && (p.creatorId === c.id || p.creatorId === c.handle)) ||
+          (p.id && (p.id === c.project_id || p.id === c.projectId || p.id === c.active_project_id)) ||
+          (cCleanHandle && pCleanHandle && cCleanHandle === pCleanHandle) ||
+          (cEmail && pEmail && cEmail === pEmail) ||
+          (cCleanName && pCleanName && cCleanName === pCleanName && cCleanName.length > 3 && !["creator", "partner", "lead"].includes(cCleanName))
+        );
+      });
+
+      return Boolean(matchedDbProj);
+    },
+    [dbProjects]
+  );
+
+  // Filter out any creators who have already reached Section 2
+  const unlaunchedCreators = useMemo(() => {
+    const all = Array.isArray(creators) ? creators : [];
+    return all.filter((c) => !isCreatorLaunchedToSection2(c));
+  }, [creators, isCreatorLaunchedToSection2]);
+
+  // If scoped to an individual creator from URL / CRM, find that individual
+  const scopedIndividualCreator = useMemo(() => {
+    if (!scopedCreatorId) return null;
+    const all = Array.isArray(creators) ? creators : [];
+    return (
+      all.find((c) => c.id === scopedCreatorId || c.handle === scopedCreatorId) ||
+      all.find((c) => c.id && String(c.id).toLowerCase() === String(scopedCreatorId).toLowerCase()) ||
+      all.find((c) => c.handle && c.handle.replace(/^@/, '').toLowerCase() === String(scopedCreatorId).replace(/^@/, '').toLowerCase()) ||
+      null
+    );
+  }, [scopedCreatorId, creators]);
+
+  // Lazy-load scoped creator if not already present in memory
+  useEffect(() => {
+    if (!scopedCreatorId) return;
+    const all = Array.isArray(creators) ? creators : [];
+    const found = all.some(
+      (c) =>
+        c.id === scopedCreatorId ||
+        c.handle === scopedCreatorId ||
+        (c.id && String(c.id).toLowerCase() === String(scopedCreatorId).toLowerCase()) ||
+        (c.handle && c.handle.replace(/^@/, '').toLowerCase() === String(scopedCreatorId).replace(/^@/, '').toLowerCase())
+    );
+    if (!found) {
+      import("../../services/opsApi").then(({ getCreator, getCreators }) => {
+        getCreator(scopedCreatorId)
+          .then((c) => {
+            if (c && (c.id || c.handle)) {
+              setCreators((prev) => (prev.some((p) => p.id === c.id) ? prev : [c, ...prev]));
+            }
+          })
+          .catch(() => {
+            getCreators().then((res) => {
+              const list = Array.isArray(res) ? res : res?.creators || [];
+              const matched = list.find((c) => c.id === scopedCreatorId || c.handle === scopedCreatorId);
+              if (matched) {
+                setCreators((prev) => (prev.some((p) => p.id === matched.id) ? prev : [matched, ...prev]));
+              }
+            }).catch(() => { });
+          });
+      });
+    }
+  }, [scopedCreatorId, creators]);
 
   // Real-time synchronization for creator deletion from CRM or other tabs
   useEffect(() => {
@@ -3744,33 +3865,43 @@ export default function AcquisitionEngine({
     return false;
   };
 
+  // When scopedCreatorId is set from CRM / URL, focus strictly on that individual creator in Steps 4, 5, 6
+  // Otherwise, use unlaunchedCreators (creators who have NOT reached Section 2 yet)
+  const basePipelineCreators = scopedIndividualCreator
+    ? [scopedIndividualCreator]
+    : unlaunchedCreators;
+
   // In Step 5 & 6: show creators with valid emails who haven't given a solid no and are not rejected
   const eligibleCreators =
-    activeStep >= 5
-      ? creators.filter((c) => hasValidEmail(c) && !isCreatorDeclined(c) && (c.status || "").toLowerCase() !== "rejected")
-      : creators;
+    scopedIndividualCreator
+      ? [scopedIndividualCreator]
+      : activeStep >= 5
+        ? basePipelineCreators.filter((c) => hasValidEmail(c) && !isCreatorDeclined(c) && (c.status || "").toLowerCase() !== "rejected")
+        : basePipelineCreators;
 
   // Qualified creators = strictly those who replied positively to Step 4 outreach and are not rejected
-  const interestedCreators = eligibleCreators.filter((c) =>
-    isCreatorQualifiedForPitch(c),
-  );
-  // Awaiting = those who haven't replied yet
-  const awaitingCreators = eligibleCreators.filter(
-    (c) => !isCreatorQualifiedForPitch(c),
-  );
+  const interestedCreators = scopedIndividualCreator
+    ? [scopedIndividualCreator]
+    : eligibleCreators.filter((c) => isCreatorQualifiedForPitch(c));
 
-  // In Step 5 and 6, pick selected creator ONLY from interestedCreators (never fall back to unreplied or rejected creators)
-  const rawSelectedCreator =
+  // Awaiting = those who haven't replied yet
+  const awaitingCreators = scopedIndividualCreator
+    ? []
+    : eligibleCreators.filter((c) => !isCreatorQualifiedForPitch(c));
+
+  // In Step 5 and 6, pick selected creator ONLY from interestedCreators (never fall back to unreplied, launched or rejected creators)
+  const rawSelectedCreator = scopedIndividualCreator || (
     activeStep >= 5
       ? interestedCreators.find((c) => c.id === selectedCreatorId) ||
       interestedCreators.find((c) => selectedCreatorId && (c.handle === selectedCreatorId || c.email === selectedCreatorId)) ||
       interestedCreators[0] ||
-      (selectedCreatorId ? creators.find((c) => c.id === selectedCreatorId) : null) ||
-      creators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
+      (selectedCreatorId ? unlaunchedCreators.find((c) => c.id === selectedCreatorId) : null) ||
+      unlaunchedCreators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
       null
-      : creators.find((c) => c.id === selectedCreatorId && (c.status || "").toLowerCase() !== "rejected") ||
-      creators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
-      null;
+      : unlaunchedCreators.find((c) => c.id === selectedCreatorId && (c.status || "").toLowerCase() !== "rejected") ||
+      unlaunchedCreators.find((c) => (c.status || "").toLowerCase() !== "rejected") ||
+      null
+  );
 
   const selectedCreator = rawSelectedCreator
     ? {
@@ -6560,7 +6691,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeStep === item.step;
-            const isDone = isStepCompleted(item.step);
             return (
               <button
                 key={item.step}
@@ -6568,27 +6698,17 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 className={`relative flex items-center gap-3 p-3 rounded-xl text-left transition cursor-pointer group min-w-0 ${
                   isActive
                     ? "bg-slate-900 text-white border border-slate-900 shadow-sm"
-                    : isDone
-                    ? "bg-emerald-50/40 hover:bg-emerald-50/80 border border-emerald-200/80 text-slate-700 shadow-2xs"
-                    : "hover:bg-slate-50 border border-transparent hover:border-slate-200 text-slate-600"
+                    : "bg-white hover:bg-slate-50 border border-slate-200/80 hover:border-slate-300 text-slate-700 shadow-2xs"
                 }`}
               >
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
                     isActive
-                      ? isDone
-                        ? "bg-emerald-500/20 text-emerald-400"
-                        : "bg-white/10 text-white"
-                      : isDone
-                      ? "bg-emerald-100 text-emerald-600 font-bold"
-                      : "bg-slate-100 text-slate-500 group-hover:bg-slate-200/70"
+                      ? "bg-white/10 text-white"
+                      : "bg-slate-100 text-slate-500 group-hover:bg-slate-200/70 group-hover:text-slate-700"
                   }`}
                 >
-                  {isDone && !isActive ? (
-                    <Check className="w-4 h-4 stroke-[2.5]" />
-                  ) : (
-                    <Icon className="w-4 h-4" />
-                  )}
+                  <Icon className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
@@ -6596,38 +6716,25 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       className={`text-[10px] font-bold uppercase tracking-wider block ${
                         isActive
                           ? "text-slate-300"
-                          : isDone
-                          ? "text-emerald-700"
                           : "text-slate-400"
                       }`}
                     >
                       {item.num}
                     </span>
-                    {isDone && !isActive && (
-                      <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-100/90 px-1 py-0.5 rounded leading-none">
-                        Done
-                      </span>
-                    )}
                   </div>
                   <span
                     className={`text-xs truncate block ${
                       isActive
                         ? "font-semibold text-white"
-                        : isDone
-                        ? "font-semibold text-slate-900"
-                        : "font-medium text-slate-700"
+                        : "font-medium text-slate-700 group-hover:text-slate-900"
                     }`}
                   >
                     {item.label}
                   </span>
                 </div>
-                {isActive ? (
+                {isActive && (
                   <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                ) : isDone ? (
-                  <span className="absolute top-2 right-2 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500 text-white shadow-2xs">
-                    <Check className="w-2.5 h-2.5 stroke-[3]" />
-                  </span>
-                ) : null}
+                )}
               </button>
             );
           })}
@@ -7969,8 +8076,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </span>
               </button>
             </div>
-          ) : creators.length > 0 ? (() => {
-            const validCreators = Array.isArray(creators) ? creators.slice(0, creatorsBatchCount || 25) : [];
+          ) : unlaunchedCreators.length > 0 ? (() => {
+            const validCreators = Array.isArray(unlaunchedCreators) ? unlaunchedCreators.slice(0, creatorsBatchCount || 25) : [];
             const advanceableCount = validCreators.filter((c) => (c.creatorScore || 85) >= minScoreThreshold).length;
             const verifiedEmailCount = validCreators.filter((c) => {
               const bioMatch = (c.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
@@ -8781,7 +8888,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {creators.slice(0, creatorsBatchCount || 25).map((c) => {
+                  {unlaunchedCreators.slice(0, creatorsBatchCount || 25).map((c) => {
                     const emailVal = c.email || c.email_public || "";
                     const isEditing = editingEmailCreatorId === c.id;
 
@@ -8789,7 +8896,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       <tr key={c.id} className="hover:bg-slate-50/60">
                         <td className="p-3 font-bold text-slate-900 flex items-center gap-2 font-display">
                           <img
-                            src={c.avatar}
+                            src={getCreatorAvatar(c)}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((c.name || c.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`;
+                            }}
                             alt=""
                             className="w-6 h-6 rounded-full object-cover border border-slate-200 bg-slate-100"
                           />
@@ -8896,7 +9007,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       {/* STEP 4: INTERESTED CREATOR REVIEW */}
       {activeStep === 4 &&
         (() => {
-          const creatorsWithReplies = (Array.isArray(creators) ? creators : []).map((c) => ({
+          // When scoped to an individual from CRM / deep link, only show that 1 creator
+          const step4Source = scopedIndividualCreator
+            ? [scopedIndividualCreator]
+            : unlaunchedCreators;
+
+          const creatorsWithReplies = step4Source.map((c) => ({
             ...c,
             replyInfo: getCreatorReply(c),
           }));
@@ -8923,12 +9039,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             (c) => c.replyInfo.classification === "no_email",
           ).length;
 
-          const filteredReplies = creatorsWithReplies.filter((c) => {
-            if (replyFilter === "all") return true;
-            return c.replyInfo.classification === replyFilter;
-          });
+          const filteredReplies = scopedIndividualCreator
+            ? creatorsWithReplies
+            : creatorsWithReplies.filter((c) => {
+                if (replyFilter === "all") return true;
+                return c.replyInfo.classification === replyFilter;
+              });
 
           const activeReviewCreator =
+            (scopedIndividualCreator ? scopedIndividualCreator : null) ||
             creatorsWithReplies.find((c) => c.id === selectedCreatorId) ||
             filteredReplies[0] ||
             creatorsWithReplies[0] ||
@@ -8946,7 +9065,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     </span>
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Review incoming creator responses, qualify sentiment, and advance interested leads to Step 5.
+                    {scopedIndividualCreator
+                      ? `Focused individual review for ${scopedIndividualCreator.name || scopedIndividualCreator.handle}.`
+                      : "Review incoming creator responses, qualify sentiment, and advance interested leads to Step 5."}
                   </p>
                 </div>
 
@@ -8965,6 +9086,25 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </button>
                 </div>
               </div>
+
+              {/* Scoped Individual Lead Focus Banner */}
+              {scopedIndividualCreator && (
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-indigo-50/90 border border-indigo-200 text-indigo-950 text-xs shadow-2xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse flex-shrink-0" />
+                    <span className="truncate">
+                      Focused on individual lead from CRM: <strong>{scopedIndividualCreator.name || scopedIndividualCreator.display_name || scopedIndividualCreator.handle}</strong>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClearScopedCreator}
+                    className="px-3 py-1 rounded-lg bg-white border border-indigo-200 hover:bg-indigo-100 text-indigo-700 font-semibold transition cursor-pointer text-xs flex-shrink-0 shadow-2xs"
+                  >
+                    ← View All Leads
+                  </button>
+                </div>
+              )}
 
               {/* AI Response Classification Interactive Filter Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-7 gap-2">
@@ -9737,7 +9877,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       }`}
                   >
                     <img
-                      src={c.avatar}
+                      src={getCreatorAvatar(c)}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((c.name || c.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`;
+                      }}
                       alt=""
                       className="w-5 h-5 rounded-full object-cover border border-slate-200"
                     />
@@ -10582,6 +10726,15 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex-shrink-0">
                 Creators in Step 6:
               </span>
+              {scopedIndividualCreator && (
+                <button
+                  type="button"
+                  onClick={handleClearScopedCreator}
+                  className="px-2 py-0.5 rounded-md bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-[11px] font-semibold transition cursor-pointer"
+                >
+                  ← View All Creators
+                </button>
+              )}
               {interestedCreators.map((c) => {
                 const isSelected = selectedCreator?.id === c.id;
                 const msgs = getCreatorThreadMessages(c, realThreads);
@@ -10644,7 +10797,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       }`}
                   >
                     <img
-                      src={c.avatar}
+                      src={getCreatorAvatar(c)}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((c.name || c.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`;
+                      }}
                       alt=""
                       className="w-5 h-5 rounded-full object-cover"
                     />
@@ -10714,7 +10871,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 title="Click to view full client profile & channel intel"
               >
                 <img
-                  src={selectedCreator?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
+                  src={getCreatorAvatar(selectedCreator)}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((selectedCreator?.name || selectedCreator?.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`;
+                  }}
                   alt=""
                   className="w-12 h-12 rounded-xl object-cover border border-slate-200 group-hover:border-indigo-500 group-hover:ring-2 group-hover:ring-indigo-200 transition-all"
                 />
@@ -11044,15 +11205,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             <X className="w-3.5 h-3.5" />
                             <span>Decline DIY (Set to Managed)</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAdminMarkPaidDiy(selectedCreator)}
-                            className="h-9 px-3 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold shadow-2xs cursor-pointer flex items-center gap-1.5 transition-all active:scale-95"
-                            title="Confirm $50 payment and unlock full DIY ProjectOS"
-                          >
-                            <Zap className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Mark Paid DIY ($50)</span>
-                          </button>
+
                         </>
                       )}
                       <button
@@ -11155,7 +11308,11 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <img
-                            src={selectedCreator.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
+                            src={getCreatorAvatar(selectedCreator)}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((selectedCreator?.name || selectedCreator?.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`;
+                            }}
                             alt=""
                             className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shadow-2xs"
                           />
@@ -12184,6 +12341,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         pitchSentMap={pitchSentMap}
         onSelectCreator={(cid, targetStep, conceptId) => {
           setSelectedCreatorId(cid);
+          setScopedCreatorId(cid);
           if (conceptId) setSelectedConceptId(conceptId);
           setShowFollowUpCRM(false);
           if (targetStep === "section2" || targetStep === 7) {

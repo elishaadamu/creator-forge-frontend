@@ -661,11 +661,12 @@ export default function AdminPipelineLookup({
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="relative flex-shrink-0">
                           <img
-                            src={creator.avatar || creator.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60'}
+                            src={creator.avatar || creator.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent((creator.name || creator.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`}
                             alt=""
                             className="w-10 h-10 rounded-xl object-cover border border-white/10 shadow-sm"
                             onError={(e) => {
-                              e.target.style.display = 'none'
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((creator.name || creator.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`;
                             }}
                           />
                         </div>
@@ -937,9 +938,13 @@ export default function AdminPipelineLookup({
               <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2">
                 <div className="flex items-center gap-3">
                   <img
-                    src={inspectingCreator.creator.avatar || inspectingCreator.creator.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60'}
+                    src={inspectingCreator.creator.avatar || inspectingCreator.creator.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent((inspectingCreator.creator.name || inspectingCreator.creator.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`}
                     alt=""
                     className="w-12 h-12 rounded-xl object-cover border border-white/10"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((inspectingCreator.creator.name || inspectingCreator.creator.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`;
+                    }}
                   />
                   <div>
                     <h4 className="font-bold text-white text-sm">

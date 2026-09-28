@@ -99,8 +99,12 @@ export default function ClientProfileModal({
                 src={
                   creator.avatar ||
                   creator.avatar_url ||
-                  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent((creator.name || creator.display_name || creator.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`
                 }
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((creator.name || creator.display_name || creator.handle || "Creator").replace(/^@/, ''))}&background=0f172a&color=fff&bold=true`;
+                }}
                 alt={creator.name || creator.display_name}
                 className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shadow-xs"
               />

@@ -144,6 +144,9 @@ export default function CreatorPortal({ portalId }) {
     }
     window.addEventListener('forge_project_updated', handleSync)
     window.addEventListener('forge_view_change', handleViewChange)
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('forge_diy_paid')
+    }
     return () => {
       window.removeEventListener('forge_project_updated', handleSync)
       window.removeEventListener('forge_view_change', handleViewChange)
@@ -159,8 +162,7 @@ export default function CreatorPortal({ portalId }) {
         return 'projectos'
       }
       const isPaidParam = sp.get('token') === 'cf_diy_paid' || sp.get('paid') === 'true'
-      const isLocalPaid = window.localStorage.getItem('forge_diy_paid') === 'true'
-      if (isPaidParam || isLocalPaid) {
+      if (isPaidParam) {
         return 'projectos'
       }
     }
@@ -174,13 +176,7 @@ export default function CreatorPortal({ portalId }) {
     project?.isDIY ||
     project?.diySubscription?.active ||
     project?.diyOfferStatus === 'accepted' ||
-    (typeof window !== 'undefined' && (
-      (project?.id && window.localStorage.getItem(`forge_diy_${project.id}`) === 'true') ||
-      (ventureSlug && window.localStorage.getItem(`forge_diy_${ventureSlug}`) === 'true') ||
-      window.localStorage.getItem('forge_diy_paid') === 'true' ||
-      new URLSearchParams(window.location.search).get('token') === 'cf_diy_paid' ||
-      new URLSearchParams(window.location.search).get('paid') === 'true'
-    ))
+    project?.diyOfferStatus === 'paid'
   )
 
   // When creator has paid, projectOS is the default view (unless explicitly overridden by URL)
@@ -254,13 +250,6 @@ export default function CreatorPortal({ portalId }) {
       diySubscription: subRecord
     }
     if (typeof window !== 'undefined') {
-      if (project?.id) {
-        window.localStorage.setItem(`forge_diy_${project.id}`, 'true')
-      }
-      if (ventureSlug) {
-        window.localStorage.setItem(`forge_diy_${ventureSlug}`, 'true')
-      }
-      window.localStorage.setItem('forge_diy_paid', 'true')
       const searchParams = new URLSearchParams(window.location.search)
       searchParams.delete('offer')
       searchParams.delete('track')
@@ -653,9 +642,26 @@ export default function CreatorPortal({ portalId }) {
               <span className="hidden sm:inline">Track 1: Co-Builder ($50 Paid)</span>
               <span className="sm:hidden">Co-Builder ($50)</span>
             </div>
+          ) : isTrackChoicePending ? (
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-[11px] font-mono font-bold shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="hidden sm:inline">Track Choice Pending</span>
+                <span className="sm:hidden">Choice Pending</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDiyModal(true)}
+                className="h-7 sm:h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
+              >
+                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300" />
+                <span className="hidden sm:inline">Co-Builder Pass ($50)</span>
+                <span className="sm:hidden">$50 Pass</span>
+              </button>
+            </div>
           ) : (
             <div className="flex items-center gap-1.5">
-              <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-300/80 text-slate-700 text-[11px] font-mono font-bold shadow-2xs">
+              <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 border border-purple-300/80 text-purple-800 text-[11px] font-mono font-bold shadow-2xs">
                 <span>🤝</span>
                 <span>Track 2: Studio-Managed (50/50)</span>
               </div>
@@ -665,7 +671,7 @@ export default function CreatorPortal({ portalId }) {
                 className="h-7 sm:h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
               >
                 <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300" />
-                <span className="hidden sm:inline">Unlock Pass ($50)</span>
+                <span className="hidden sm:inline">Upgrade to Co-Builder ($50)</span>
                 <span className="sm:hidden">$50 Pass</span>
               </button>
             </div>
