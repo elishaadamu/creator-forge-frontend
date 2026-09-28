@@ -6,7 +6,8 @@ import {
   FileText, Layout, Megaphone, TrendingUp, Flag, Bot, User, UserCheck,
   Calendar, Clock, CheckCircle, AlertCircle, MessageSquare, Folder,
   DollarSign, PieChart, Users, ChevronRight, ChevronLeft, Play, Eye, Smartphone, Monitor, Tablet,
-  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download, RefreshCw, Zap, Trash2, Lock, Tag
+  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download, RefreshCw, Zap, Trash2, Lock, Tag,
+  Crown, Cpu, Flame, Shield
 } from 'lucide-react'
 import Phase1Validate from './Phase1Validate'
 import Phase2BuildMVP from './Phase2BuildMVP'
@@ -155,7 +156,7 @@ export default function ProjectOS({
   const [shareNotice, setShareNotice] = useState('')
   const [shareTab, setShareTab] = useState('email') // 'email' | 'preview' | 'link'
   const [portalRecipientEmail, setPortalRecipientEmail] = useState(() => (project?.creatorEmail || project?.email_public || project?.email || '').trim())
-  const [portalEmailSubject, setPortalEmailSubject] = useState(() => `🚀 Co-Founder Portal Live: Developing ${project?.productName || 'our software'} with Creator Forge`)
+  const [portalEmailSubject, setPortalEmailSubject] = useState(() => `Co-Founder Portal Live: Developing ${project?.productName || 'our software'} with Creator Forge`)
   const [portalEmailBody, setPortalEmailBody] = useState(() => {
     const firstName = (project?.creatorName || 'there').split(' ')[0]
     const prodName = project?.productName || 'your custom software platform'
@@ -170,7 +171,7 @@ Your private, passwordless **Co-Founder Portal** is now live. Through your porta
 
 ---
 
-### 📦 Venture Overview & Architecture
+### Venture Overview & Architecture
 • **Product Name:** ${prodName}
 • **Value Proposition:** ${tagline}
 • **Pricing Tier:** ${pricing} (50/50 Net Revenue Split)
@@ -178,14 +179,14 @@ Your private, passwordless **Co-Founder Portal** is now live. Through your porta
 
 ---
 
-### 🔑 Access Your Co-Founder Portal
+### Access Your Co-Founder Portal
 Click the link below to access your private co-founder dashboard (no password required):
 
 ${mUrl}
 
 ---
 
-### 🛠️ Current Engineering Sprint:
+### Current Engineering Sprint:
 1. **MVP Architecture & Staging Environment:** Fully functional core web app ready for your private review.
 2. **Audience Pre-Order & Validation Funnel:** High-converting landing page, checkout, and email sequence.
 3. **Co-Founder Analytics Dashboard:** Live tracking of daily visitors, conversion rate, and revenue payouts.
@@ -290,19 +291,19 @@ partnerships@creatorforge.com`
 
   if (!project) {
     return (
-      <div className="p-12 rounded-2xl bg-[#0e1117] border border-white/[0.08] text-center space-y-4 max-w-lg mx-auto my-12">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400">
+      <div className="p-12 rounded-2xl bg-white border border-slate-200 text-center space-y-4 max-w-lg mx-auto my-12 shadow-sm">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-700">
           <Layers className="w-6 h-6" />
         </div>
-        <h2 className="text-base font-bold text-white">No active Co-Launch project loaded</h2>
-        <p className="text-xs text-slate-400">
+        <h2 className="text-base font-bold text-slate-900">No active Co-Launch project loaded</h2>
+        <p className="text-xs text-slate-500">
           Acquire a creator and accept a partnership deal in Section 1 to initialize your Co-Launch Project OS.
         </p>
         <div className="pt-2">
           <button
             type="button"
             onClick={onGoToAcquisition}
-            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-xs"
           >
             Go to Section 1: Acquire Creator
           </button>
@@ -337,7 +338,7 @@ partnerships@creatorforge.com`
   const daysLeft = project.daysLeft || project.validationPlan?.period || '18 days'
   const magicPortalUrl = portalUrl
 
-  const kickoffMessage = `Hey ${project.creatorName || 'there'}! 🎉\n\nYour private Co-Founder Portal for ${project.productName || 'our product'} is live.\n\nYou can track our $${presaleTarget.toLocaleString()} validation milestone, review your revenue share, and check off your daily launch tasks here:\n${magicPortalUrl}\n\nLet's build something massive!`
+  const kickoffMessage = `Hey ${project.creatorName || 'there'}!\n\nYour private Co-Founder Portal for ${project.productName || 'our product'} is live.\n\nYou can track our $${presaleTarget.toLocaleString()} validation milestone, review your revenue share, and check off your daily launch tasks here:\n${magicPortalUrl}\n\nLet's build something massive!`
 
   const handleCopy = (text, key) => {
     if (!text) return
@@ -619,58 +620,58 @@ partnerships@creatorforge.com`
 
   return (
     <div className="space-y-6 w-full max-w-full">
-      {/* SECTION 2 HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+      {/* SECTION 2 HEADER (LIGHT MODE & HIGH-CONTRAST) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold uppercase tracking-widest text-emerald-400">
+            <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-emerald-700">
               SECTION 2
             </span>
-            <span className="text-xs text-slate-500">•</span>
-            <span className="text-xs font-bold text-white bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/10">
+            <span className="text-xs text-slate-300">•</span>
+            <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200 shadow-2xs">
               {cleanProductName}
             </span>
           </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight mt-0.5">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight mt-1">
             CO-LAUNCH PROJECT OS
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+          <p className="text-xs text-slate-600 mt-0.5 flex items-center gap-1.5 flex-wrap">
             <span>Co-Founding Partner:</span>
-            <strong className="text-emerald-400 font-bold">{cleanCreatorName}</strong>
-            <span className="text-slate-500">({cleanCreatorHandle})</span>
-            <span className="text-slate-600">•</span>
-            <span className="text-slate-300 italic">"{cleanTagline}"</span>
+            <strong className="text-emerald-700 font-bold">{cleanCreatorName}</strong>
+            <span className="text-slate-500 font-mono text-[11px]">({cleanCreatorHandle})</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-600 italic">"{cleanTagline}"</span>
           </p>
         </div>
 
         {/* Right CTA / Portal Quick Button */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Role Perspective Switcher: Studio Operator vs Creator Co-Founder */}
-          <div className="flex items-center gap-1 p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl text-xs">
+          {/* Role Perspective Switcher: Studio Operator vs Creator Co-Founder (NO EMOJIS) */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl text-xs shadow-2xs">
             <button
               type="button"
               onClick={() => setRolePerspective('admin')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 rolePerspective === 'admin'
                   ? 'bg-purple-600 text-white shadow-xs'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Studio Operator Command View"
             >
-              <span>👑</span>
+              <Crown className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Studio Operator</span>
             </button>
             <button
               type="button"
               onClick={() => setRolePerspective('creator')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 rolePerspective === 'creator'
                   ? 'bg-amber-400 text-slate-950 font-black shadow-xs'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Autonomous Creator Co-Founder View (Full Execution Authority)"
             >
-              <Zap className="w-3 h-3" />
+              <Zap className="w-3.5 h-3.5 fill-slate-950" />
               <span>Creator DIY Mode</span>
             </button>
           </div>
@@ -679,16 +680,16 @@ partnerships@creatorforge.com`
             href={portalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 border border-white/[0.08] text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap"
+            className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-2xs hover:shadow-xs active:scale-95"
           >
-            <Rocket className="w-3.5 h-3.5 text-purple-400" />
+            <Rocket className="w-3.5 h-3.5 text-indigo-600" />
             <span>Co-Founder Portal</span>
             <ExternalLink className="w-3 h-3 text-slate-400" />
           </a>
 
           <button
             onClick={() => setShowShareModal(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
+            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer whitespace-nowrap active:scale-95"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>Share Portal</span>
@@ -701,262 +702,280 @@ partnerships@creatorforge.com`
                   onResetProject()
                 }
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap active:scale-95"
+              className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap active:scale-95 shadow-2xs"
               title="Reset project and return to Section 1"
             >
-              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
               <span>Reset Project</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Autonomous Creator DIY Mode Banner */}
+      {/* Autonomous Creator DIY Mode Banner (High-Contrast Light Theme) */}
       {(rolePerspective === 'creator' || isDIY || project?.isDIY || project?.diySubscription?.active) && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-emerald-500/10 border border-amber-400/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-md">
-              <Zap className="w-5 h-5 text-slate-950 stroke-[2.5]" />
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50/90 via-amber-50/70 to-emerald-50/50 border border-amber-300/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-slate-900 animate-in fade-in">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-xs">
+              <Zap className="w-5 h-5 text-slate-950 fill-slate-950 stroke-[2.5]" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black uppercase tracking-wider text-amber-300">
+                <span className="text-xs font-black uppercase tracking-wider text-amber-950">
                   Autonomous Creator Co-Founder Mode Active
                 </span>
-                <span className="text-xs text-slate-500">•</span>
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                <span className="text-xs text-slate-400">•</span>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
                   Full Pipeline Execution Authority
                 </span>
                 {(project?.diySubscription?.active || isDIY) && (
-                  <span className="text-[10px] font-extrabold text-amber-200 bg-amber-400/20 px-2 py-0.5 rounded-full border border-amber-400/30">
-                    Paid DIY Subscription · Stripe/PayPal Verified
+                  <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
+                    Paid DIY Subscription • Verified
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-slate-700 mt-1 leading-relaxed max-w-3xl">
                 You have full authority to drive every phase yourself: customize the validation plan, run AI MVP sprints, execute gate decisions, and deploy live.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-black text-amber-300 bg-amber-400/10 border border-amber-400/30 px-3 py-1.5 rounded-xl">
-              50/50 Co-Founder Equity · Interactive Access
+            <span className="text-xs font-extrabold text-amber-950 bg-white border border-amber-300 px-3.5 py-1.5 rounded-xl shadow-2xs">
+              50/50 Co-Founder Equity • Interactive Access
             </span>
           </div>
         </div>
       )}
 
-      {/* 2-COLUMN MAIN LAYOUT */}
-      <div className="flex flex-col lg:flex-row gap-5 items-start w-full">
-        {/* LEFT / CENTER: PROJECT COMMAND CENTER */}
-        <div className="flex-1 min-w-0 space-y-4 w-full">
-          <div className="rounded-2xl bg-[#0e1117] border border-white/[0.1] shadow-xl flex flex-col md:flex-row min-h-[520px] items-stretch">
-            {/* Left Mini Sidebar (Compact horizontal rail on mobile, sticky sidebar on desktop) */}
-            <div className="w-full md:w-48 bg-[#0a0c10] border-b md:border-b-0 md:border-r border-white/[0.08] p-2 sm:p-3.5 flex flex-row md:flex-col justify-between items-center md:items-stretch gap-2 shrink-0 md:sticky md:top-20 md:self-start md:h-[520px] rounded-t-2xl md:rounded-tr-none md:rounded-l-2xl z-10 overflow-x-auto scrollbar-none">
-              <div className="flex md:flex-col items-center md:items-stretch gap-1 overflow-x-auto scrollbar-none shrink-0">
-                <div className="hidden md:block px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
-                  Command Center
-                </div>
-
-                {[
-                  { id: 'overview', label: 'Overview', icon: Layers },
-                  { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-                  { id: 'metrics', label: 'Metrics', icon: BarChart2 },
-                  { id: 'files', label: 'Files', icon: Folder },
-                  { id: 'messages', label: 'Messages', icon: MessageSquare },
-                  { id: 'decisions', label: 'Decisions', icon: ShieldCheck },
-                ].map(tab => {
-                  const Icon = tab.icon
-                  const isActive = sidebarTab === tab.id
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setSidebarTab(tab.id)}
-                      className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
-                        isActive
-                          ? 'bg-white/10 text-white shadow-sm border border-white/10 font-bold'
-                          : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5 shrink-0" />
-                      <span>{tab.label}</span>
-                    </button>
-                  )
-                })}
+      {/* EXPANDED FULL-WIDTH COMMAND CENTER (MAIN IDEA WORKSPACE - S2 EXPANDED, S3 REMOVED) */}
+      <div className="w-full space-y-5">
+        <div className="rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col md:flex-row min-h-[580px] items-stretch w-full overflow-hidden">
+          {/* Left Mini Sidebar (S1) */}
+          <div className="w-full md:w-52 lg:w-56 bg-slate-50/90 border-b md:border-b-0 md:border-r border-slate-200 p-3 sm:p-4 flex flex-row md:flex-col justify-between items-center md:items-stretch gap-2 shrink-0 md:sticky md:top-20 md:self-start md:min-h-[580px] z-10 overflow-x-auto scrollbar-none">
+            <div className="flex md:flex-col items-center md:items-stretch gap-1.5 overflow-x-auto scrollbar-none shrink-0 w-full">
+              <div className="hidden md:block px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Command Center
               </div>
 
-              {/* ACTIVE PHASE PINNED TO BOTTOM ON DESKTOP, INLINE ON MOBILE */}
-              <div className="md:mt-auto md:pt-3 shrink-0">
-                <div className="p-1 sm:p-3 rounded-xl sm:rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center flex md:flex-col items-center gap-1.5 sm:gap-2">
-                  <span className="hidden md:block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                    {isLiveLaunch ? '🚀 Live Launch' : 'Active Phase'}
-                  </span>
-                  <div className="flex items-center justify-center gap-1">
-                    {[1, 2, 3].map(p => {
-                      const isDone = p === 1 ? isP1Done : p === 2 ? isP2Done : isP3Done
-                      return (
-                        <button
-                          key={p}
-                          onClick={() => setSelectedPhaseTab(p)}
-                          className={`relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
-                            currentPhase === p
-                              ? p === 2
-                                ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
-                                : p === 3
-                                ? isLiveLaunch
-                                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/50'
-                                  : 'bg-purple-600 text-white shadow-md shadow-purple-900/40'
-                                : 'bg-emerald-600 text-white shadow-md shadow-emerald-900/40'
-                              : isDone
-                              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20'
-                              : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
-                          }`}
-                          title={`Switch to Phase ${p}${isDone ? ' (Completed)' : ''}`}
-                        >
-                          <span className={isDone ? 'text-slate-200 font-black' : ''}>
-                            P{p}
-                          </span>
-                          {isDone && (
-                            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center text-[8px] font-black shadow-xs">
-                              ✓
-                            </span>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <span className="hidden md:flex text-[10px] font-extrabold text-white items-center justify-center gap-1.5 pt-0.5">
-                    {isLiveLaunch ? (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                        <span className="text-emerald-400">Live Launch ✓</span>
-                      </>
-                    ) : currentPhase === 1 ? (
-                      'Phase 1: Validate'
-                    ) : currentPhase === 2 ? (
-                      'Phase 2: Build MVP'
-                    ) : (
-                      'Phase 3: Launch'
-                    )}
-                  </span>
-                </div>
-              </div>
+              {[
+                { id: 'overview', label: 'Overview', icon: Layers },
+                { id: 'tasks', label: 'Tasks', icon: CheckSquare },
+                { id: 'metrics', label: 'Metrics', icon: BarChart2 },
+                { id: 'files', label: 'Files', icon: Folder },
+                { id: 'messages', label: 'Messages', icon: MessageSquare },
+                { id: 'decisions', label: 'Decisions', icon: ShieldCheck },
+              ].map(tab => {
+                const Icon = tab.icon
+                const isActive = sidebarTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSidebarTab(tab.id)}
+                    className={`flex items-center gap-2 sm:gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer shrink-0 w-full ${
+                      isActive
+                        ? 'bg-white text-slate-950 shadow-xs border border-slate-200 font-bold'
+                        : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100/80'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <span>{tab.label}</span>
+                  </button>
+                )
+              })}
             </div>
 
-            {/* Main Command Center Inner Area */}
-            <div className="flex-1 min-w-0 p-5 sm:p-6 space-y-5 bg-[#0e1117] overflow-x-hidden">
-              {/* Header inside Command Center */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-white/[0.06] pb-4">
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2 flex-wrap">
-                    <span>{cleanProductName}</span>
-                    <span className="text-slate-500 font-normal">×</span>
-                    <span className="text-slate-200">{cleanCreatorName}</span>
-                  </h2>
-
-                  {/* Pricing and active AI experiment badges */}
-                  {(() => {
-                    if (!project?.pricing) return null
-                    const rawPricing = String(project.pricing).trim()
-                    const match = rawPricing.match(/^(.*?)(?:\s*\((?:Pricing adjusted via )?AI Experiment:\s*(.*?)\))?$/i)
-                    const corePrice = match && match[1] ? match[1].trim() : rawPricing
-                    const expTitle = match && match[2] ? match[2].trim() : null
-
+            {/* ACTIVE PHASE PINNED TO BOTTOM ON DESKTOP, INLINE ON MOBILE */}
+            <div className="md:mt-auto md:pt-4 shrink-0 w-full">
+              <div className="p-2 sm:p-3 rounded-2xl bg-white border border-slate-200 text-center flex md:flex-col items-center gap-2 shadow-2xs">
+                <span className="hidden md:flex items-center justify-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                  {isLiveLaunch ? (
+                    <>
+                      <Rocket className="w-3 h-3 text-emerald-600" />
+                      <span>Live Launch</span>
+                    </>
+                  ) : (
+                    'Active Phase'
+                  )}
+                </span>
+                <div className="flex items-center justify-center gap-1.5">
+                  {[1, 2, 3].map(p => {
+                    const isDone = p === 1 ? isP1Done : p === 2 ? isP2Done : isP3Done
                     return (
-                      <div className="flex items-center gap-2 flex-wrap max-w-full">
-                        <span
-                          className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shadow-xs inline-flex items-center gap-1.5 max-w-full sm:max-w-xl"
-                          title={rawPricing}
-                        >
-                          <Tag className="w-3 h-3 text-emerald-400 shrink-0" />
-                          <span className="truncate">{corePrice}</span>
-                        </span>
-                        {expTitle && (
-                          <span
-                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-purple-300 bg-purple-500/10 border border-purple-500/25 shadow-xs inline-flex items-center gap-1.5 shrink-0"
-                            title={`Pricing adjusted via AI Experiment: ${expTitle}`}
-                          >
-                            <Sparkles className="w-3 h-3 text-purple-400 shrink-0" />
-                            <span>AI Experiment: {expTitle}</span>
+                      <button
+                        key={p}
+                        onClick={() => setSelectedPhaseTab(p)}
+                        className={`relative w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
+                          currentPhase === p
+                            ? p === 2
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : p === 3
+                              ? isLiveLaunch
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'bg-purple-600 text-white shadow-xs'
+                              : 'bg-emerald-600 text-white shadow-xs'
+                            : isDone
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                            : 'bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200/80'
+                        }`}
+                        title={`Switch to Phase ${p}${isDone ? ' (Completed)' : ''}`}
+                      >
+                        <span>P{p}</span>
+                        {isDone && (
+                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] font-black shadow-2xs">
+                            <Check className="w-2 h-2 stroke-[3]" />
                           </span>
                         )}
-                      </div>
+                      </button>
                     )
-                  })()}
+                  })}
+                </div>
+                <span className="hidden md:flex text-[11px] font-black text-slate-900 items-center justify-center gap-1.5 pt-0.5">
+                  {isLiveLaunch ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="text-emerald-700">Live Launch Verified</span>
+                    </>
+                  ) : currentPhase === 1 ? (
+                    'Phase 1: Validate'
+                  ) : currentPhase === 2 ? (
+                    'Phase 2: Build MVP'
+                  ) : (
+                    'Phase 3: Launch'
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
 
-                  <div className="flex items-center gap-2 flex-wrap max-w-full">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 shadow-2xs">
-                      <Target className="w-3 h-3 text-emerald-400" />
-                      <span>Step 5 Chosen Concept: {chosenConcept?.name || cleanProductName}</span>
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-white/[0.04] text-slate-400 border border-white/[0.08]">
-                      {archetypeLabel}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-300 line-clamp-2 max-w-2xl leading-relaxed">
-                    {cleanTagline}
-                  </p>
+          {/* Main Command Center Inner Area (S2 - WIDE & EXPANDED) */}
+          <div className="flex-1 min-w-0 p-5 sm:p-7 lg:p-8 space-y-6 bg-white overflow-x-hidden">
+            {/* Header inside Command Center */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-200/90 pb-5">
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight flex items-center gap-2 flex-wrap">
+                    <span>{cleanProductName}</span>
+                    <span className="text-slate-400 font-normal">×</span>
+                    <span className="text-slate-700">{cleanCreatorName}</span>
+                  </h2>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 self-start sm:pt-0.5">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-xs flex items-center gap-1.5 ${
-                    isLiveLaunch
-                      ? 'text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 shadow-emerald-950/50'
-                      : currentPhase === 2
-                      ? 'text-blue-400 bg-blue-500/10 border border-blue-500/20'
-                      : currentPhase === 3
-                      ? 'text-purple-400 bg-purple-500/10 border border-purple-500/20'
-                      : 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
-                  }`}>
-                    {isLiveLaunch ? (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span>🚀 Live Launch</span>
-                      </>
-                    ) : currentPhase === 1 ? (
-                      'Phase 1: Validate'
-                    ) : currentPhase === 2 ? (
-                      'Phase 2: Build MVP'
-                    ) : (
-                      'Phase 3: Launch'
-                    )}
+                {/* Pricing and active AI experiment badges */}
+                {(() => {
+                  if (!project?.pricing) return null
+                  const rawPricing = String(project.pricing).trim()
+                  const match = rawPricing.match(/^(.*?)(?:\s*\((?:Pricing adjusted via )?AI Experiment:\s*(.*?)\))?$/i)
+                  const corePrice = match && match[1] ? match[1].trim() : rawPricing
+                  const expTitle = match && match[2] ? match[2].trim() : null
+
+                  return (
+                    <div className="flex items-center gap-2 flex-wrap max-w-full">
+                      <span
+                        className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 shadow-2xs inline-flex items-center gap-1.5 max-w-full sm:max-w-xl"
+                        title={rawPricing}
+                      >
+                        <Tag className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span className="truncate">{corePrice}</span>
+                      </span>
+                      {expTitle && (
+                        <span
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-purple-800 bg-purple-50 border border-purple-200 shadow-2xs inline-flex items-center gap-1.5 shrink-0"
+                          title={`Pricing adjusted via AI Experiment: ${expTitle}`}
+                        >
+                          <Sparkles className="w-3 h-3 text-purple-600 shrink-0" />
+                          <span>AI Experiment: {expTitle}</span>
+                        </span>
+                      )}
+                    </div>
+                  )
+                })()}
+
+                <div className="flex items-center gap-2 flex-wrap max-w-full">
+                  <span className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
+                    <Target className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Chosen Concept: {chosenConcept?.name || cleanProductName}</span>
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                    {archetypeLabel}
                   </span>
                 </div>
+
+                <p className="text-xs sm:text-sm text-slate-600 max-w-3xl leading-relaxed">
+                  {cleanTagline}
+                </p>
               </div>
+
+              {/* Action buttons on right of Command Center Header */}
+              <div className="flex items-center gap-2 shrink-0 self-start sm:pt-0.5 flex-wrap">
+                <span className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap shadow-2xs flex items-center gap-1.5 ${
+                  isLiveLaunch
+                    ? 'text-emerald-800 bg-emerald-50 border border-emerald-300'
+                    : currentPhase === 2
+                    ? 'text-blue-800 bg-blue-50 border border-blue-300'
+                    : currentPhase === 3
+                    ? 'text-purple-800 bg-purple-50 border border-purple-300'
+                    : 'text-emerald-800 bg-emerald-50 border border-emerald-300'
+                }`}>
+                  {isLiveLaunch ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Live Launch</span>
+                    </>
+                  ) : currentPhase === 1 ? (
+                    'Phase 1: Validate'
+                  ) : currentPhase === 2 ? (
+                    'Phase 2: Build MVP'
+                  ) : (
+                    'Phase 3: Launch'
+                  )}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPhaseExecutionModal(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+                >
+                  <span>Open Phase Workspace</span>
+                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                </button>
+              </div>
+            </div>
 
               {/* OVERVIEW TAB CONTENT */}
               {sidebarTab === 'overview' && (
                 <div className="space-y-5 animate-fade-in">
-                  {/* 🎯 STEP 5 CHOSEN CONCEPT BLUEPRINT MODULE */}
-                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-950 to-slate-900 border border-emerald-500/30 shadow-xl space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                          <Target className="w-4 h-4" />
+                  {/* STEP 5 CHOSEN CONCEPT BLUEPRINT (HERO CARD - THE MAIN IDEA) */}
+                  <div className="relative rounded-2xl bg-gradient-to-br from-white via-slate-50/70 to-emerald-50/30 border-2 border-emerald-500/80 p-6 sm:p-7 shadow-sm space-y-5 overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600" />
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shrink-0 shadow-2xs">
+                          <Target className="w-5 h-5 text-emerald-700" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                            <span className="text-[10px] font-mono font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-md border border-emerald-300">
                               Step 5 Chosen Concept Blueprint
                             </span>
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-white/[0.06] text-slate-300 border border-white/[0.1]">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
                               {archetypeLabel}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                              ✓ Creator Selected &amp; Promoted
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <span>Creator Selected & Promoted</span>
                             </span>
                           </div>
-                          <h3 className="text-base font-extrabold text-white mt-0.5">
+                          <h3 className="text-xl sm:text-2xl font-black text-slate-950 mt-1">
                             {chosenConcept.name || cleanProductName}
                           </h3>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 self-start sm:self-center">
+                      <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
                         <button
                           type="button"
                           onClick={() => openPhaseStep('plan')}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95"
                         >
                           <span>Review Phase 1 Spec</span>
                           <ArrowRight className="w-3.5 h-3.5" />
@@ -964,28 +983,30 @@ partnerships@creatorforge.com`
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                       {/* Left: Problem, Audience, and Built-In Features */}
-                      <div className="lg:col-span-7 space-y-3 text-xs">
-                        <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                      <div className="lg:col-span-7 space-y-4 text-xs">
+                        <p className="text-sm text-slate-700 font-medium leading-relaxed">
                           {chosenConcept.tagline || cleanTagline}
                         </p>
 
                         {/* Problem & Audience Callouts */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-1">
-                            <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
-                              🎯 Problem Solved
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                          <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-1.5">
+                            <span className="text-[11px] font-mono uppercase text-rose-600 font-bold flex items-center gap-1.5">
+                              <Target className="w-3.5 h-3.5 text-rose-500" />
+                              <span>Problem Solved</span>
                             </span>
-                            <p className="text-[11px] text-slate-200 line-clamp-3">
+                            <p className="text-xs text-slate-800 font-medium leading-relaxed">
                               {chosenConcept.problem || project?.problem || "Manual fragmented workflows solved with unified automation."}
                             </p>
                           </div>
-                          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-1">
-                            <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
-                              👥 Target Audience
+                          <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-1.5">
+                            <span className="text-[11px] font-mono uppercase text-blue-600 font-bold flex items-center gap-1.5">
+                              <Users className="w-3.5 h-3.5 text-blue-500" />
+                              <span>Target Audience</span>
                             </span>
-                            <p className="text-[11px] text-slate-200 line-clamp-3">
+                            <p className="text-xs text-slate-800 font-medium leading-relaxed">
                               {chosenConcept.customer || chosenConcept.demographicAlignment || project?.targetAudience || `${cleanCreatorName}'s community & active builders`}
                             </p>
                           </div>
@@ -993,14 +1014,15 @@ partnerships@creatorforge.com`
 
                         {/* Key Features List */}
                         {Array.isArray(chosenConcept.keyFeatures || chosenConcept.features) && (chosenConcept.keyFeatures || chosenConcept.features).length > 0 && (
-                          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-2">
-                            <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
-                              ⚡ Core Software Features (Customized in Step 5):
+                          <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200/90 shadow-2xs space-y-2.5">
+                            <span className="text-[11px] font-mono uppercase text-emerald-900 font-bold flex items-center gap-1.5">
+                              <Cpu className="w-3.5 h-3.5 text-emerald-700" />
+                              <span>Core Software Features (Step 5 Customized)</span>
                             </span>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {(chosenConcept.keyFeatures || chosenConcept.features).slice(0, 4).map((feat, idx) => (
-                                <div key={idx} className="flex items-start gap-1.5 text-[11px] text-slate-300">
-                                  <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                                <div key={idx} className="flex items-center gap-2 text-xs text-slate-800 font-semibold bg-white/80 px-2.5 py-1.5 rounded-lg border border-emerald-100">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                                   <span className="truncate">{typeof feat === 'string' ? feat : (feat.title || feat.name || 'Core feature')}</span>
                                 </div>
                               ))}
@@ -1009,15 +1031,20 @@ partnerships@creatorforge.com`
                         )}
                       </div>
 
-                      {/* Right: Mockup Preview Mini-Card */}
-                      <div className="lg:col-span-5 rounded-xl overflow-hidden border border-white/[0.1] bg-[#0c0e14] shadow-lg">
-                        <div className="px-3 py-2 bg-white/[0.04] border-b border-white/[0.06] flex items-center justify-between">
-                          <span className="text-[10px] font-mono text-slate-400">
-                            Live Simulated Architecture ({chosenConcept.mockupType || 'saas_os'})
-                          </span>
+                      {/* Right: Mockup Preview Card */}
+                      <div className="lg:col-span-5 rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 shadow-md">
+                        <div className="px-3.5 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                            <span className="text-[10px] font-mono text-slate-400 ml-2">
+                              Simulated Architecture ({chosenConcept.mockupType || 'saas_os'})
+                            </span>
+                          </div>
                           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                         </div>
-                        <div className="p-2 sm:p-3">
+                        <div className="p-3 sm:p-4">
                           <DynamicConceptMockup
                             concept={chosenConcept}
                             creator={{
@@ -1035,62 +1062,62 @@ partnerships@creatorforge.com`
                   </div>
 
                   {/* Top 4 KPI Cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 text-xs">
                     {/* 1. Presales / Live Revenue */}
-                    <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    <div className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100/70 border border-slate-200 space-y-1.5 shadow-2xs transition-all">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                         {currentPhase === 3 ? 'Live Revenue' : 'Presales'}
                       </span>
-                      <div className="text-lg sm:text-xl font-extrabold text-white">
+                      <div className="text-xl sm:text-2xl font-black text-slate-950 font-mono tracking-tight">
                         ${presalesRevenue.toLocaleString()}
                       </div>
-                      <span className="text-[10px] text-slate-400 block">
+                      <span className="text-[11px] text-slate-500 block">
                         {currentPhase === 3 ? 'Total processed revenue' : `of $${presaleTarget.toLocaleString()} goal`}
                       </span>
-                      <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden mt-1">
+                      <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden mt-1">
                         <div
-                          className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                          className="bg-emerald-600 h-full rounded-full transition-all duration-500"
                           style={{ width: `${presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 100}%` }}
                         />
                       </div>
                     </div>
 
                     {/* 2. Unique Visitors */}
-                    <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-1">
-                      <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Unique Visitors</span>
-                      <div className="text-lg sm:text-xl font-extrabold text-white">
+                    <div className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100/70 border border-slate-200 space-y-1.5 shadow-2xs transition-all">
+                      <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wider block">Unique Visitors</span>
+                      <div className="text-xl sm:text-2xl font-black text-slate-950 font-mono tracking-tight">
                         {visitorsCount.toLocaleString()}
                       </div>
-                      <span className="text-[10px] text-slate-400">Tracked unique devices</span>
+                      <span className="text-[11px] text-slate-500">Tracked unique devices</span>
                     </div>
 
                     {/* 3. Conversion */}
-                    <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    <div className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100/70 border border-slate-200 space-y-1.5 shadow-2xs transition-all">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                         {currentPhase === 3 ? 'Paid Conversion' : 'Conversion'}
                       </span>
-                      <div className="text-lg sm:text-xl font-extrabold text-white">
+                      <div className="text-xl sm:text-2xl font-black text-slate-950 font-mono tracking-tight">
                         {conversionRate.toFixed(1)}%
                       </div>
-                      <span className="text-[10px] text-slate-500">Tracked rate</span>
+                      <span className="text-[11px] text-slate-500">Tracked conversion rate</span>
                     </div>
 
                     {/* 4. Days Left / Production Status */}
-                    <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    <div className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100/70 border border-slate-200 space-y-1.5 shadow-2xs transition-all">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                         {isLiveLaunch ? 'Production Status' : 'Days Left'}
                       </span>
-                      <div className="text-lg sm:text-xl font-extrabold text-white flex items-center gap-1.5">
+                      <div className="text-xl sm:text-2xl font-black text-slate-950 font-mono tracking-tight flex items-center gap-1.5">
                         {isLiveLaunch ? (
                           <>
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                            <span className="text-emerald-400">Live</span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                            <span className="text-emerald-700">Live</span>
                           </>
                         ) : (
                           daysLeft
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[11px] text-slate-500">
                         {isLiveLaunch ? '99.98% Uptime • Live Funnel' : 'Validation window'}
                       </span>
                     </div>
@@ -1099,35 +1126,39 @@ partnerships@creatorforge.com`
                   {/* Two Columns: Tasks & AI Activity */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     {/* Tasks Card */}
-                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-3 flex flex-col justify-between hover:border-white/15 transition-all">
+                    <div className="p-5 rounded-xl bg-slate-50/70 hover:bg-slate-100/50 border border-slate-200 space-y-3 flex flex-col justify-between shadow-2xs transition-all">
                       <div>
-                        <div className="flex items-center justify-between border-b border-white/[0.06] pb-2 mb-2.5">
-                          <span className="font-bold text-white text-xs flex items-center gap-1.5">
-                            <CheckSquare className="w-3.5 h-3.5 text-purple-400" />
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-3">
+                          <span className="font-bold text-slate-950 text-xs flex items-center gap-1.5">
+                            <CheckSquare className="w-4 h-4 text-purple-600" />
                             <span>
                               {currentPhase === 3 ? 'Launch & Growth Tasks' : currentPhase === 2 ? 'MVP Engineering Tasks' : 'Validation Sprint Tasks'}
                             </span>
                           </span>
-                          <span className="text-[10px] text-slate-400 font-mono font-bold bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.06]">
+                          <span className="text-[10px] text-slate-600 font-mono font-bold bg-white px-2 py-0.5 rounded border border-slate-200">
                             {activePhaseTasks.length} total
                           </span>
                         </div>
                         {activePhaseTasks.length === 0 ? (
-                          <div className="py-3 text-center text-slate-400 text-xs space-y-1">
-                            <p className="text-slate-300 font-medium">No tasks logged yet</p>
+                          <div className="py-4 text-center text-slate-500 text-xs space-y-1">
+                            <p className="text-slate-700 font-medium">No tasks logged yet</p>
                             <p className="text-[10px] text-slate-500">Tasks generate automatically during this phase.</p>
                           </div>
                         ) : (
                           <div className="space-y-2">
                             {activePhaseTasks.slice(0, 3).map((task, idx) => (
-                              <div key={idx} className="flex items-center justify-between text-slate-200">
+                              <div key={idx} className="flex items-center justify-between text-slate-800 py-1 border-b border-slate-100 last:border-0">
                                 <span className="flex items-center gap-2 truncate">
-                                  <span>{task.done || task.completed || task.status === 'Completed' ? '✅' : '📍'}</span>
-                                  <span className={`font-medium truncate ${task.done || task.completed || task.status === 'Completed' ? 'line-through text-slate-400' : ''}`}>
+                                  {task.done || task.completed || task.status === 'Completed' ? (
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                  ) : (
+                                    <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  )}
+                                  <span className={`font-medium truncate ${task.done || task.completed || task.status === 'Completed' ? 'line-through text-slate-400' : 'text-slate-800'}`}>
                                     {task.title || task.name || task.text}
                                   </span>
                                 </span>
-                                <span className="text-[11px] text-slate-400 shrink-0 ml-2">
+                                <span className="text-[11px] text-slate-500 shrink-0 ml-2">
                                   {task.due || (task.done || task.completed || task.status === 'Completed' ? 'Done' : 'Pending')}
                                 </span>
                               </div>
@@ -1137,7 +1168,7 @@ partnerships@creatorforge.com`
                       </div>
                       <button
                         onClick={() => setSidebarTab('tasks')}
-                        className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 mt-2 text-left cursor-pointer"
+                        className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 mt-2 text-left cursor-pointer transition-colors"
                       >
                         <span>View all tasks</span>
                         <span>→</span>
@@ -1145,34 +1176,34 @@ partnerships@creatorforge.com`
                     </div>
 
                     {/* AI Activity Card */}
-                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-3 flex flex-col justify-between hover:border-white/15 transition-all">
+                    <div className="p-5 rounded-xl bg-slate-50/70 hover:bg-slate-100/50 border border-slate-200 space-y-3 flex flex-col justify-between shadow-2xs transition-all">
                       <div>
-                        <div className="flex items-center justify-between border-b border-white/[0.06] pb-2 mb-2.5">
-                          <span className="font-bold text-white text-xs flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-3">
+                          <span className="font-bold text-slate-950 text-xs flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 text-emerald-600" />
                             <span>AI Activity Stream</span>
                           </span>
-                          <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="text-[10px] text-emerald-800 font-mono font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             <span>Autonomous</span>
                           </span>
                         </div>
                         {aiActivityList.length === 0 ? (
-                          <div className="py-3 text-center text-slate-400 text-xs space-y-1">
-                            <p className="text-slate-300 font-medium">Autonomous agent standing by</p>
+                          <div className="py-4 text-center text-slate-500 text-xs space-y-1">
+                            <p className="text-slate-700 font-medium">Autonomous agent standing by</p>
                             <p className="text-[10px] text-slate-500">Actions log automatically during validation & campaign execution.</p>
                           </div>
                         ) : (
-                          <div className="space-y-1.5 text-slate-300 text-[11px]">
+                          <div className="space-y-1.5 text-slate-700 text-xs">
                             {aiActivityList.slice(0, 4).map((act, idx) => {
                               const title = typeof act === 'string' ? act : (act.action || act.message || 'System Action')
                               const details = typeof act === 'object' ? (act.details || '') : ''
                               return (
                                 <div key={idx} className="flex items-start gap-2 py-0.5">
-                                  <span className="text-purple-400 font-bold shrink-0">•</span>
+                                  <span className="text-purple-600 font-bold shrink-0">•</span>
                                   <div className="min-w-0">
-                                    <span className="font-medium text-slate-200 block truncate">{title}</span>
-                                    {details && <span className="text-[10px] text-slate-400 block truncate">{details}</span>}
+                                    <span className="font-medium text-slate-900 block truncate">{title}</span>
+                                    {details && <span className="text-[10px] text-slate-500 block truncate">{details}</span>}
                                   </div>
                                 </div>
                               )
@@ -1182,7 +1213,7 @@ partnerships@creatorforge.com`
                       </div>
                       <button
                         onClick={() => setSidebarTab('decisions')}
-                        className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 mt-2 text-left cursor-pointer"
+                        className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 mt-2 text-left cursor-pointer transition-colors"
                       >
                         <span>View all activity</span>
                         <span>→</span>
@@ -1194,22 +1225,22 @@ partnerships@creatorforge.com`
 
               {/* TASKS TAB */}
               {sidebarTab === 'tasks' && (
-                <div className="space-y-3 animate-fade-in text-xs">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                    <span className="font-bold text-white">Work: AI Tasks, Creator Tasks & Co-Launch Sprint</span>
+                <div className="space-y-4 animate-fade-in text-xs">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <span className="font-black text-slate-950 text-sm">Work: AI Tasks, Creator Tasks & Co-Launch Sprint</span>
                     <button
                       onClick={() => openPhaseStep('campaign')}
-                      className="text-purple-400 hover:underline font-bold text-[11px]"
+                      className="text-purple-700 hover:text-purple-900 font-bold text-xs"
                     >
                       Open Creator Campaign Kit →
                     </button>
                   </div>
                   {checklistTasks.length === 0 ? (
-                    <div className="py-8 text-center text-slate-500 text-xs border border-dashed border-white/[0.08] rounded-xl">
+                    <div className="py-8 text-center text-slate-500 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                       No tasks in pipeline. Use Phase 1 validation tools to populate sprint checklist.
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       {checklistTasks.map((task, idx) => {
                         const isDone = Boolean(task.done || task.completed)
                         const isToday = Boolean(task.isToday || (!isDone && task.day === 2))
@@ -1217,46 +1248,48 @@ partnerships@creatorforge.com`
                           <div
                             key={task.id || idx}
                             onClick={() => openPhaseStep('campaign')}
-                            className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-3 cursor-pointer group ${
+                            className={`p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 cursor-pointer group ${
                               isDone
-                                ? 'bg-[#0e1117] border-white/[0.04] opacity-80'
+                                ? 'bg-slate-50 border-slate-200 opacity-80'
                                 : isToday
-                                ? 'bg-[#151926] border-purple-500/40 shadow-sm shadow-purple-950/40'
-                                : 'bg-[#141720] border-white/[0.06] hover:border-white/15'
+                                ? 'bg-purple-50/80 border-purple-300 shadow-xs'
+                                : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                             }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <div className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-colors ${
                                 isDone
-                                  ? 'bg-emerald-500 border-emerald-400 text-slate-950'
+                                  ? 'bg-emerald-600 border-emerald-600 text-white'
                                   : isToday
-                                  ? 'border-purple-400 bg-purple-500/20 text-purple-300'
-                                  : 'border-white/20 bg-white/[0.02]'
+                                  ? 'border-purple-400 bg-purple-100 text-purple-700'
+                                  : 'border-slate-300 bg-slate-50'
                               }`}>
-                                {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : isToday ? <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" /> : null}
+                                {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : isToday ? <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" /> : null}
                               </div>
                               <div className="min-w-0">
-                                <div className={`font-semibold text-xs truncate ${isDone ? 'line-through text-slate-400' : 'text-white'}`}>
+                                <div className={`font-semibold text-xs truncate ${isDone ? 'line-through text-slate-400' : 'text-slate-900'}`}>
                                   {task.title || task.text}
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] text-purple-300/80 font-mono">{task.channel || task.role || 'Sprint Task'}</span>
-                                  <span className="text-[10px] text-slate-500">•</span>
-                                  <span className="text-[10px] text-slate-400 font-mono">Day {task.day || idx + 1}</span>
+                                  <span className="text-[10px] text-purple-700 font-mono font-medium">{task.channel || task.role || 'Sprint Task'}</span>
+                                  <span className="text-[10px] text-slate-300">•</span>
+                                  <span className="text-[10px] text-slate-500 font-mono">Day {task.day || idx + 1}</span>
                                 </div>
                               </div>
                             </div>
                             <div className="shrink-0">
                               {isDone ? (
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                                  ✓ Done
+                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  <span>Done</span>
                                 </span>
                               ) : isToday ? (
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">
-                                  🔥 Today's Mission
+                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-purple-100 text-purple-800 border border-purple-300 flex items-center gap-1">
+                                  <Flame className="w-3 h-3 text-purple-600" />
+                                  <span>Today's Mission</span>
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-slate-400 bg-white/[0.04] border border-white/[0.08]">
+                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono text-slate-600 bg-slate-100 border border-slate-200">
                                   Queued
                                 </span>
                               )}
@@ -1272,23 +1305,23 @@ partnerships@creatorforge.com`
               {/* METRICS TAB */}
               {sidebarTab === 'metrics' && (
                 <div className="space-y-4 animate-fade-in text-xs">
-                  <span className="font-bold text-white block">Performance Telemetry & Attribution</span>
+                  <span className="font-black text-slate-950 text-sm block">Performance Telemetry & Attribution</span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                      <span className="text-emerald-400 font-bold block uppercase text-[10px]">Presales Revenue</span>
-                      <span className="text-base font-extrabold text-white mt-1 block">${presalesRevenue.toLocaleString()}</span>
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                      <span className="text-emerald-800 font-bold block uppercase text-[10px]">Presales Revenue</span>
+                      <span className="text-lg font-black text-slate-950 mt-1 block">${presalesRevenue.toLocaleString()}</span>
                     </div>
-                    <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.08]">
-                      <span className="text-slate-400 font-bold block uppercase text-[10px]">Unique Visitors</span>
-                      <span className="text-base font-bold text-white mt-1 block">{visitorsCount.toLocaleString()}</span>
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <span className="text-slate-600 font-bold block uppercase text-[10px]">Unique Visitors</span>
+                      <span className="text-lg font-black text-slate-950 mt-1 block">{visitorsCount.toLocaleString()}</span>
                     </div>
-                    <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.08]">
-                      <span className="text-slate-400 font-bold block uppercase text-[10px]">Conversion Rate</span>
-                      <span className="text-base font-bold text-white mt-1 block">{conversionRate.toFixed(1)}%</span>
+                    <div className="p-4 rounded-xl bg-purple-50 border border-purple-200">
+                      <span className="text-purple-800 font-bold block uppercase text-[10px]">Conversion Rate</span>
+                      <span className="text-lg font-black text-slate-950 mt-1 block">{conversionRate.toFixed(1)}%</span>
                     </div>
-                    <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.08]">
-                      <span className="text-slate-400 font-bold block uppercase text-[10px]">Refund Rate</span>
-                      <span className="text-base font-bold text-white mt-1 block">{Number(project.refundRate || 0)}%</span>
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <span className="text-slate-600 font-bold block uppercase text-[10px]">Refund Rate</span>
+                      <span className="text-lg font-black text-slate-950 mt-1 block">{Number(project.refundRate || 0)}%</span>
                     </div>
                   </div>
                 </div>
@@ -1337,107 +1370,110 @@ partnerships@creatorforge.com`
                     return (
                       <>
                         {/* Executive Header */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-purple-950/20 via-white/[0.02] to-transparent p-4 rounded-2xl border border-white/[0.08]">
+                        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-2xs">
                           <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 shadow-lg shadow-purple-950/40">
+                            <div className="w-9 h-9 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0 shadow-2xs">
                               <ShieldCheck className="w-4.5 h-4.5" />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="font-extrabold text-white text-sm tracking-tight">
+                                <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">
                                   Decisions Requiring Human Approval
                                 </h3>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 shrink-0">
                                   {decisionViewPhase === 3 ? 'Phase 3 Milestone' : decisionViewPhase === 2 ? 'Phase 2 Milestone' : 'Phase 1 Milestone'}
                                 </span>
                               </div>
-                              <p className="text-[11px] text-slate-400 mt-0.5">
+                              <p className="text-[11px] text-slate-500 mt-0.5">
                                 Executive gate reviews, scaling trajectory & co-founder milestone decisions.
                               </p>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/[0.08] shrink-0">
+                          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">
                             <button
                               type="button"
                               onClick={() => setDecisionViewPhase(3)}
-                              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                 decisionViewPhase === 3
-                                  ? 'bg-purple-600 text-white shadow-sm shadow-purple-900/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-purple-600 text-white shadow-xs'
+                                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                               }`}
                             >
-                              🚀 Phase 3 Launch
+                              <Rocket className="w-3.5 h-3.5" />
+                              <span>Phase 3 Launch</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => setDecisionViewPhase(2)}
-                              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                 decisionViewPhase === 2
-                                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-blue-600 text-white shadow-xs'
+                                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                               }`}
                             >
-                              ⚙️ Phase 2 MVP
+                              <Cpu className="w-3.5 h-3.5" />
+                              <span>Phase 2 MVP</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => setDecisionViewPhase(1)}
-                              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                 decisionViewPhase === 1
-                                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-900/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-emerald-600 text-white shadow-xs'
+                                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                               }`}
                             >
-                              📊 Phase 1 Validate
+                              <BarChart2 className="w-3.5 h-3.5" />
+                              <span>Phase 1 Validate</span>
                             </button>
                           </div>
                         </div>
 
                         {/* ── PHASE 3 COMMERCIAL DECISION GATE ── */}
                         {decisionViewPhase === 3 && (
-                          <div className="relative rounded-2xl bg-gradient-to-b from-[#121624] via-[#0d101a] to-[#080a0f] border border-purple-500/30 p-4 sm:p-5 space-y-4 shadow-2xl shadow-purple-950/30 overflow-hidden">
-                            <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-purple-500 via-indigo-500 to-emerald-400" />
+                          <div className="relative rounded-2xl bg-white border border-purple-200 p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
+                            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-indigo-500 to-emerald-500" />
 
-                            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-b border-white/[0.06] pb-3.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-b border-slate-100 pb-3.5">
                               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0">
                                   <Rocket className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <h4 className="font-extrabold text-white text-sm tracking-tight">
+                                    <h4 className="font-extrabold text-slate-900 text-sm tracking-tight">
                                       Phase 3: Launch Report & Scaling Decision Gate
                                     </h4>
-                                    <span className="text-[9px] font-mono font-bold text-purple-300 uppercase px-2 py-0.5 rounded-md bg-purple-500/15 border border-purple-500/30 shrink-0">
+                                    <span className="text-[9px] font-mono font-bold text-purple-700 uppercase px-2 py-0.5 rounded-md bg-purple-100 border border-purple-200 shrink-0">
                                       Commercial Gate
                                     </span>
                                   </div>
-                                  <p className="text-[11px] text-slate-400 mt-0.5">
+                                  <p className="text-[11px] text-slate-500 mt-0.5">
                                     Autonomous Telemetry Evaluation & Post-Launch Human Decision (Scale / Iterate / Maintain / Kill)
                                   </p>
                                 </div>
                               </div>
                               <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 ${
                                 project?.decisionNotice
-                                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                                   : isLiveLaunch
-                                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/40'
-                                  : 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+                                  ? 'bg-purple-100 text-purple-800 border-purple-300'
+                                  : 'bg-amber-100 text-amber-800 border-amber-300'
                               }`}>
                                 {project?.decisionNotice ? (
                                   <>
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                                     <span>Decision Recorded</span>
                                   </>
                                 ) : isLiveLaunch ? (
                                   <>
-                                    <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
+                                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
                                     <span>Production Live</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                    <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                                     <span>Pre-Launch Prep</span>
                                   </>
                                 )}
@@ -1446,23 +1482,23 @@ partnerships@creatorforge.com`
 
                             {/* Active Decision Trajectory Notice */}
                             {project?.decisionNotice ? (
-                              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-teal-500/15 border border-emerald-500/30 space-y-1.5 text-xs">
+                              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1.5 text-xs">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span className="text-[10px] font-mono font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                                     <span>Active Human Strategic Decision</span>
                                   </span>
-                                  <span className="text-[10px] text-emerald-300/80 font-mono">Recorded in Launch OS</span>
+                                  <span className="text-[10px] text-emerald-700/80 font-mono">Recorded in Launch OS</span>
                                 </div>
-                                <p className="text-xs font-bold text-white leading-relaxed">{project.decisionNotice}</p>
+                                <p className="text-xs font-bold text-slate-900 leading-relaxed">{project.decisionNotice}</p>
                               </div>
                             ) : (
-                              <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 space-y-1 text-xs">
-                                <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider">
-                                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                              <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 space-y-1 text-xs">
+                                <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-purple-800 uppercase tracking-wider">
+                                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                                   <span>Executive Co-Founder Choice Required</span>
                                 </div>
-                                <p className="text-[11px] text-purple-200 leading-relaxed">
+                                <p className="text-[11px] text-slate-700 leading-relaxed">
                                   Review launch performance below and choose an operating path: <strong>Scale</strong>, <strong>Iterate</strong>, <strong>Maintain</strong>, or <strong>Kill</strong>.
                                 </p>
                               </div>
@@ -1470,49 +1506,49 @@ partnerships@creatorforge.com`
 
                             {/* Telemetry 4-Cards Grid */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
-                              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-white/15 transition-all flex flex-col justify-between">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Live Revenue</span>
-                                <div className="text-base font-black text-emerald-400 my-1">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-300 transition-all flex flex-col justify-between shadow-2xs">
+                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Live Revenue</span>
+                                <div className="text-base font-black text-emerald-700 my-1 font-mono">
                                   ${(Number(project.telemetry?.revenue || presalesRevenue || 0)).toLocaleString()}
                                 </div>
                                 <span className="text-[9px] text-slate-500 block">Total processed</span>
                               </div>
-                              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-purple-500/30 transition-all flex flex-col justify-between">
-                                <span className="text-[9px] font-bold text-purple-300 uppercase tracking-wider block">Paying Backers</span>
-                                <div className="text-base font-black text-purple-300 my-1">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-300 transition-all flex flex-col justify-between shadow-2xs">
+                                <span className="text-[9px] font-bold text-purple-700 uppercase tracking-wider block">Paying Backers</span>
+                                <div className="text-base font-black text-purple-700 my-1 font-mono">
                                   {project.telemetry?.customers || backersCount || 0}
                                 </div>
-                                <span className="text-[9px] text-purple-400/80 block">Active customers</span>
+                                <span className="text-[9px] text-purple-600/80 block">Active customers</span>
                               </div>
-                              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-blue-500/30 transition-all flex flex-col justify-between">
-                                <span className="text-[9px] font-bold text-blue-300 uppercase tracking-wider block">Conversion Rate</span>
-                                <div className="text-base font-black text-blue-300 my-1">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 transition-all flex flex-col justify-between shadow-2xs">
+                                <span className="text-[9px] font-bold text-blue-700 uppercase tracking-wider block">Conversion Rate</span>
+                                <div className="text-base font-black text-blue-700 my-1 font-mono">
                                   {conversionRate.toFixed(1)}%
                                 </div>
-                                <span className="text-[9px] text-blue-400/80 block">Visitor-to-paid</span>
+                                <span className="text-[9px] text-blue-600/80 block">Visitor-to-paid</span>
                               </div>
-                              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-emerald-500/30 transition-all flex flex-col justify-between">
-                                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider block">Technical Health</span>
-                                <div className="text-base font-black text-emerald-300 my-1">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-300 transition-all flex flex-col justify-between shadow-2xs">
+                                <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider block">Technical Health</span>
+                                <div className="text-base font-black text-emerald-700 my-1 font-mono">
                                   99.98%
                                 </div>
-                                <span className="text-[9px] text-emerald-400/80 block">&lt;150ms latency</span>
+                                <span className="text-[9px] text-emerald-600/80 block">&lt;150ms latency</span>
                               </div>
                             </div>
 
                             {/* AI Executive Assessment */}
-                            <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/30 via-indigo-950/20 to-purple-950/10 border border-purple-500/30 space-y-1.5 text-slate-200">
+                            <div className="p-3.5 rounded-xl bg-purple-50/80 border border-purple-200 space-y-1.5 text-slate-700 shadow-2xs">
                               <div className="flex flex-wrap items-center justify-between gap-1.5">
-                                <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
-                                  <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
+                                  <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                                   <span>AI Launch Report Milestone Assessment</span>
                                 </div>
-                                <span className="text-[9px] font-mono text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 shrink-0">
+                                <span className="text-[9px] font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 font-bold shrink-0">
                                   Recommended: SCALE (Score 96/100)
                                 </span>
                               </div>
-                              <p className="text-[11px] leading-relaxed text-slate-300">
-                                Instagram Stories is currently the top-performing acquisition channel at <strong>8.2% paid conversion</strong> (3.9x higher than email newsletter at <strong>2.1%</strong>). With zero critical technical exceptions and sub-150ms latency, the venture has demonstrated product-market fit and is primed for accelerated scaling.
+                              <p className="text-[11px] leading-relaxed text-slate-700">
+                                Instagram Stories is currently the top-performing acquisition channel at <strong className="text-slate-900">8.2% paid conversion</strong> (3.9x higher than email newsletter at <strong className="text-slate-900">2.1%</strong>). With zero critical technical exceptions and sub-150ms latency, the venture has demonstrated product-market fit and is primed for accelerated scaling.
                               </p>
                             </div>
                           </div>
@@ -1520,35 +1556,35 @@ partnerships@creatorforge.com`
 
                         {/* ── PHASE 2 MVP LAUNCH GATE ── */}
                         {decisionViewPhase === 2 && (
-                          <div className="relative rounded-2xl bg-gradient-to-b from-[#121624] via-[#0d101a] to-[#080a0f] border border-blue-500/30 p-4 sm:p-5 space-y-4 shadow-2xl shadow-blue-950/30 overflow-hidden">
-                            <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400" />
+                          <div className="relative rounded-2xl bg-white border border-blue-200 p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
+                            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500" />
 
-                            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-b border-white/[0.06] pb-3.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-b border-slate-100 pb-3.5">
                               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-300 shrink-0">
-                                  <Zap className="w-4 h-4" />
+                                <div className="w-8 h-8 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0">
+                                  <Cpu className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <h4 className="font-extrabold text-white text-sm tracking-tight">
+                                    <h4 className="font-extrabold text-slate-900 text-sm tracking-tight">
                                       Phase 2: MVP Launch Gate & Readiness Checkpoint
                                     </h4>
-                                    <span className="text-[9px] font-mono font-bold text-blue-300 uppercase px-2 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 shrink-0">
+                                    <span className="text-[9px] font-mono font-bold text-blue-700 uppercase px-2 py-0.5 rounded-md bg-blue-100 border border-blue-200 shrink-0">
                                       Engineering Gate
                                     </span>
                                   </div>
-                                  <p className="text-[11px] text-slate-400 mt-0.5">
+                                  <p className="text-[11px] text-slate-500 mt-0.5">
                                     Code Build Verification, QA Test Suite Execution & Production Deployment Clearance
                                   </p>
                                 </div>
                               </div>
-                              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 bg-blue-500/15 text-blue-300 border-blue-500/40">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 bg-blue-100 text-blue-800 border-blue-300">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                                 <span>MVP Built & Verified</span>
                               </span>
                             </div>
 
-                            <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-200 leading-relaxed">
+                            <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-slate-700 leading-relaxed shadow-2xs">
                               Engineering tasks and QA testing have confirmed readiness. Commercial launch clearance verified for Phase 3.
                             </div>
                           </div>
@@ -1556,50 +1592,50 @@ partnerships@creatorforge.com`
 
                         {/* ── PHASE 1 VALIDATION GATE CHECKPOINT ── */}
                         {decisionViewPhase === 1 && (
-                          <div className="relative rounded-2xl bg-gradient-to-b from-[#121624] via-[#0d101a] to-[#080a0f] border border-white/[0.12] p-4 sm:p-5 space-y-4 shadow-2xl shadow-purple-950/30 overflow-hidden">
+                          <div className="relative rounded-2xl bg-white border border-purple-200 p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
                             {/* Top Accent Gradient Bar */}
-                            <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-purple-500 via-indigo-500 to-emerald-400" />
+                            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-indigo-500 to-emerald-500" />
 
                             {/* Card Title & Checkpoint Badge */}
-                            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-b border-white/[0.06] pb-3.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-b border-slate-100 pb-3.5">
                               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0">
                                   <Flag className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <h4 className="font-extrabold text-white text-sm tracking-tight">
+                                    <h4 className="font-extrabold text-slate-900 text-sm tracking-tight">
                                       5. Validation Gate Checkpoint
                                     </h4>
-                                    <span className="text-[9px] font-mono font-bold text-purple-300 uppercase px-2 py-0.5 rounded-md bg-purple-500/15 border border-purple-500/30 shrink-0">
+                                    <span className="text-[9px] font-mono font-bold text-purple-700 uppercase px-2 py-0.5 rounded-md bg-purple-100 border border-purple-200 shrink-0">
                                       Executive Gate
                                     </span>
                                   </div>
-                                  <p className="text-[11px] text-slate-400 mt-0.5">
+                                  <p className="text-[11px] text-slate-500 mt-0.5">
                                     Pre-Order Demand & Willingness-to-Pay Threshold
                                   </p>
                                 </div>
                               </div>
                               <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 ${
                                 isRevenueGoalMet
-                                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                                   : isFounderApproved
-                                  ? 'bg-blue-500/15 text-blue-300 border-blue-500/40'
-                                  : 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+                                  ? 'bg-blue-100 text-blue-800 border-blue-300'
+                                  : 'bg-amber-100 text-amber-800 border-amber-300'
                               }`}>
                                 {isRevenueGoalMet ? (
                                   <>
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                                     <span>Validated</span>
                                   </>
                                 ) : isFounderApproved ? (
                                   <>
-                                    <Zap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                    <Zap className="w-3.5 h-3.5 text-blue-600" />
                                     <span>Sprint Active</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                    <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                                     <span>Validating</span>
                                   </>
                                 )}
@@ -1607,59 +1643,59 @@ partnerships@creatorforge.com`
                             </div>
 
                             {/* Telemetry 4-Cards Cohesive Grid */}
-                            <div className="grid grid-cols-2 gap-2.5 text-center">
-                              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-white/15 transition-all flex flex-col justify-between">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Target Goal</span>
-                                <div className="text-base font-black text-white my-1">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between shadow-2xs">
+                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Target Goal</span>
+                                <div className="text-base font-black text-slate-900 my-1 font-mono">
                                   ${presaleGoal.toLocaleString()}
                                 </div>
                                 <span className="text-[9px] text-slate-500 block">Presale threshold</span>
                               </div>
-                              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-emerald-500/30 transition-all flex flex-col justify-between">
-                                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider block">Actual Revenue</span>
-                                <div className="text-base font-black text-emerald-300 my-1">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-300 transition-all flex flex-col justify-between shadow-2xs">
+                                <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider block">Actual Revenue</span>
+                                <div className="text-base font-black text-emerald-700 my-1 font-mono">
                                   ${currentPresales.toLocaleString()}
                                 </div>
-                                <span className="text-[9px] text-emerald-400/80 font-medium block">
+                                <span className="text-[9px] text-emerald-600 font-medium block">
                                   {backersCount} paying backer{backersCount === 1 ? '' : 's'}
                                 </span>
                               </div>
-                              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-purple-500/30 transition-all flex flex-col justify-between">
-                                <span className="text-[9px] font-bold text-purple-300 uppercase tracking-wider block">Conversion Rate</span>
-                                <div className="text-base font-black text-purple-300 my-1">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-300 transition-all flex flex-col justify-between shadow-2xs">
+                                <span className="text-[9px] font-bold text-purple-700 uppercase tracking-wider block">Conversion Rate</span>
+                                <div className="text-base font-black text-purple-700 my-1 font-mono">
                                   {conversionRate.toFixed(1)}%
                                 </div>
-                                <span className="text-[9px] text-purple-400/70 block">Traffic-to-order</span>
+                                <span className="text-[9px] text-purple-600 block">Traffic-to-order</span>
                               </div>
-                              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:border-white/15 transition-all flex flex-col justify-between">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Gate Status</span>
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between shadow-2xs">
+                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Gate Status</span>
                                 <div className={`text-base font-black my-1 ${
-                                  isRevenueGoalMet ? 'text-emerald-400' : isFounderApproved ? 'text-blue-400' : 'text-amber-400'
+                                  isRevenueGoalMet ? 'text-emerald-700' : isFounderApproved ? 'text-blue-700' : 'text-amber-700'
                                 }`}>
                                   {isRevenueGoalMet ? 'PASSED' : isFounderApproved ? 'APPROVED' : 'IN PROGRESS'}
                                 </div>
-                                <span className="text-[9px] text-slate-400 block">
+                                <span className="text-[9px] text-slate-500 block">
                                   {isRevenueGoalMet ? 'Threshold Met' : isFounderApproved ? 'Phase 2 Sprint' : 'Testing Demand'}
                                 </span>
                               </div>
                             </div>
 
                             {/* Sleek Progress Bar */}
-                            <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 shadow-2xs">
                               <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
-                                <span className="text-slate-300 font-semibold">Progress Toward Gate</span>
-                                <span className="font-mono font-bold text-[11px] text-white bg-white/[0.05] px-2 py-0.5 rounded-md border border-white/[0.08]">
+                                <span className="text-slate-700 font-semibold">Progress Toward Gate</span>
+                                <span className="font-mono font-bold text-[11px] text-slate-900 bg-white px-2 py-0.5 rounded-md border border-slate-200">
                                   ${currentPresales.toLocaleString()} / ${presaleGoal.toLocaleString()} • {presaleGoal > 0 ? Math.min(100, Math.round((currentPresales / presaleGoal) * 100)) : 0}%
                                 </span>
                               </div>
-                              <div className="w-full bg-[#06080d] rounded-full h-2.5 overflow-hidden p-0.5 border border-white/[0.08]">
+                              <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden p-0.5 border border-slate-300">
                                 <div
                                   className={`h-full rounded-full transition-all duration-500 ${
                                     isRevenueGoalMet
-                                      ? 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-sm shadow-emerald-500/50'
+                                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-xs'
                                       : isFounderApproved
-                                      ? 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-sm shadow-blue-500/50'
-                                      : 'bg-gradient-to-r from-purple-500 via-indigo-500 to-amber-500'
+                                      ? 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-xs'
+                                      : 'bg-gradient-to-r from-purple-500 via-indigo-500 to-emerald-500'
                                   }`}
                                   style={{ width: `${presaleGoal > 0 ? Math.min(100, Math.max(currentPresales > 0 ? 3 : 0, Math.round((currentPresales / presaleGoal) * 100))) : 0}%` }}
                                 />
@@ -1667,31 +1703,40 @@ partnerships@creatorforge.com`
                             </div>
 
                             {/* AI Validation Co-Pilot Assessment */}
-                            <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/30 via-indigo-950/20 to-purple-950/10 border border-purple-500/30 space-y-2 text-slate-200">
+                            <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 space-y-2 text-slate-700 shadow-2xs">
                               <div className="flex flex-wrap items-center justify-between gap-1.5">
-                                <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
-                                  <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
+                                  <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                                   <span>AI Executive Assessment</span>
                                 </div>
-                                <span className="text-[9px] font-mono text-purple-300/80 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 shrink-0">
+                                <span className="text-[9px] font-mono text-purple-800 bg-purple-100 px-1.5 py-0.5 rounded border border-purple-200 shrink-0 font-bold">
                                   Verified
                                 </span>
                               </div>
-                              <p className="text-[11px] leading-relaxed text-slate-300">
+                              <div className="text-[11px] leading-relaxed text-slate-700">
                                 {isRevenueGoalMet ? (
-                                  <span>
-                                    🔥 <strong className="text-white">Target Reached:</strong> Presale target (<strong className="text-emerald-300">${presaleGoal.toLocaleString()}</strong>) validated with <strong className="text-emerald-300">${currentPresales.toLocaleString()}</strong> across <strong className="text-white">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-300">{conversionRate.toFixed(1)}%</strong> conv.). Recommending <strong className="text-emerald-300">Build MVP</strong> for Phase 2.
-                                  </span>
+                                  <div className="flex items-start gap-1.5">
+                                    <Flame className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                    <span>
+                                      <strong className="text-slate-900 font-bold">Target Reached:</strong> Presale target (<strong className="text-emerald-700">${presaleGoal.toLocaleString()}</strong>) validated with <strong className="text-emerald-700">${currentPresales.toLocaleString()}</strong> across <strong className="text-slate-900">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-700 font-bold">{conversionRate.toFixed(1)}%</strong> conv.). Recommending <strong className="text-emerald-700 font-bold">Build MVP</strong> for Phase 2.
+                                    </span>
+                                  </div>
                                 ) : isFounderApproved ? (
-                                  <span>
-                                    🚀 <strong className="text-white">Founder Greenlit:</strong> Approved for <strong className="text-blue-300">Phase 2: Build MVP</strong> with <strong className="text-emerald-300">${currentPresales.toLocaleString()}</strong> presale revenue, <strong className="text-white">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-300">{conversionRate.toFixed(1)}%</strong> conv.). Pre-orders remain open during development.
-                                  </span>
+                                  <div className="flex items-start gap-1.5">
+                                    <Rocket className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                                    <span>
+                                      <strong className="text-slate-900 font-bold">Founder Greenlit:</strong> Approved for <strong className="text-blue-700 font-bold">Phase 2: Build MVP</strong> with <strong className="text-emerald-700">${currentPresales.toLocaleString()}</strong> presale revenue, <strong className="text-slate-900">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-700 font-bold">{conversionRate.toFixed(1)}%</strong> conv.). Pre-orders remain open during development.
+                                    </span>
+                                  </div>
                                 ) : (
-                                  <span>
-                                    📊 <strong className="text-white">Validation Underway:</strong> <strong className="text-emerald-300">${currentPresales.toLocaleString()}</strong> in pre-orders, <strong className="text-white">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-300">{conversionRate.toFixed(1)}%</strong> conv.) toward <strong className="text-white">${presaleGoal.toLocaleString()}</strong> target ({presaleGoal > 0 ? Math.min(100, Math.round((currentPresales / presaleGoal) * 100)) : 0}%). Continue campaigns or execute a gate decision below.
-                                  </span>
+                                  <div className="flex items-start gap-1.5">
+                                    <BarChart2 className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
+                                    <span>
+                                      <strong className="text-slate-900 font-bold">Validation Underway:</strong> <strong className="text-emerald-700">${currentPresales.toLocaleString()}</strong> in pre-orders, <strong className="text-slate-900">{backersCount}</strong> backer{backersCount === 1 ? '' : 's'} (<strong className="text-purple-700 font-bold">{conversionRate.toFixed(1)}%</strong> conv.) toward <strong className="text-slate-900 font-bold">${presaleGoal.toLocaleString()}</strong> target ({presaleGoal > 0 ? Math.min(100, Math.round((currentPresales / presaleGoal) * 100)) : 0}%). Continue campaigns or execute a gate decision below.
+                                    </span>
+                                  </div>
                                 )}
-                              </p>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -1700,21 +1745,21 @@ partnerships@creatorforge.com`
                   })()}
 
                   {/* RECORDED DECISION LOGS & AUDIT TRAIL */}
-                  <div className="space-y-2.5 pt-2 border-t border-white/[0.08]">
+                  <div className="space-y-2.5 pt-2 border-t border-slate-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
                           Decision History & Gate Audit Trail
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-slate-500 bg-white/[0.03] px-2 py-0.5 rounded border border-white/[0.06]">
+                      <span className="text-[10px] font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                         {decisionsList.length} recorded
                       </span>
                     </div>
 
                     {decisionsList.length === 0 ? (
-                      <div className="p-4 rounded-xl bg-[#141720]/60 border border-white/[0.06] text-center text-slate-400 text-xs">
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center text-slate-500 text-xs">
                         No decisions logged yet. Executive gate actions recorded above will appear here.
                       </div>
                     ) : (
@@ -1726,27 +1771,27 @@ partnerships@creatorforge.com`
                           const isKilled = d.decision === 'kill' || d.decision === 'kill_project' || d.gateStatus === 'killed'
                           const isPassed = d.decision === 'pass_to_phase2' || d.gateStatus === 'passed' || isScale || isMaintain
                           return (
-                            <div key={d.id || i} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.08] space-y-1.5 hover:border-white/15 transition-colors">
+                            <div key={d.id || i} className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1.5 hover:border-slate-300 hover:shadow-xs transition-all shadow-2xs">
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <span className={`w-2 h-2 rounded-full shrink-0 ${isScale ? 'bg-purple-400' : isPassed ? 'bg-emerald-400' : isIterate ? 'bg-amber-400' : 'bg-rose-400'}`} />
-                                  <span className="font-bold text-white text-xs truncate">
+                                  <span className={`w-2 h-2 rounded-full shrink-0 ${isScale ? 'bg-purple-500' : isPassed ? 'bg-emerald-500' : isIterate ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                                  <span className="font-bold text-slate-900 text-xs truncate">
                                     {formatDecisionTitle(d)}
                                   </span>
                                 </div>
                                 <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 ${
                                   isScale
-                                    ? 'text-purple-300 bg-purple-500/15 border-purple-500/30'
+                                    ? 'text-purple-800 bg-purple-100 border-purple-200'
                                     : isPassed
-                                    ? 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
+                                    ? 'text-emerald-800 bg-emerald-100 border-emerald-200'
                                     : isIterate
-                                    ? 'text-amber-300 bg-amber-500/15 border-amber-500/30'
-                                    : 'text-rose-300 bg-rose-500/15 border-rose-500/30'
+                                    ? 'text-amber-800 bg-amber-100 border-amber-200'
+                                    : 'text-rose-800 bg-rose-100 border-rose-200'
                                 }`}>
                                   {isScale
-                                    ? '🚀 Scale Mode Active'
+                                    ? 'Scale Mode Active'
                                     : isMaintain
-                                    ? '🛡️ Steady-State'
+                                    ? 'Steady-State'
                                     : isPassed
                                     ? 'Approved & Passed'
                                     : isIterate
@@ -1756,11 +1801,11 @@ partnerships@creatorforge.com`
                                     : d.status || 'Decided'}
                                 </span>
                               </div>
-                              <p className="text-[11px] text-slate-300 leading-relaxed">{d.notes || d.description || 'Executive co-founder decision recorded.'}</p>
-                              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/[0.04] text-[10px] text-slate-500 font-mono">
+                              <p className="text-[11px] text-slate-600 leading-relaxed">{d.notes || d.description || 'Executive co-founder decision recorded.'}</p>
+                              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 text-[10px] text-slate-400 font-mono">
                                 <span>{formatDecisionDate(d.decidedAt || d.timestamp || d.date)}</span>
                                 {(d.achievedRevenue !== undefined || d.targetRevenue !== undefined) && (
-                                  <span className="text-slate-400 font-sans">
+                                  <span className="text-slate-600 font-sans font-medium">
                                     ${(Number(d.achievedRevenue) || 0).toLocaleString()} / ${(Number(d.targetRevenue) || presaleGoal).toLocaleString()} Presales
                                   </span>
                                 )}
@@ -1776,40 +1821,40 @@ partnerships@creatorforge.com`
             </div>
           </div>
 
-          {/* BOTTOM WORKFLOW BANNER */}
-          <div className="p-4 rounded-2xl bg-[#0e1117] border border-white/[0.08] shadow-sm">
+          {/* BOTTOM WORKFLOW BANNER (CLEAN LIGHT THEME) */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 shadow-2xs">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0 shadow-2xs">
                   <Bot className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="font-bold text-white block">AI Project Manager</span>
-                  <span className="text-[11px] text-slate-400 leading-tight block">
+                  <span className="font-bold text-slate-900 block">AI Project Manager</span>
+                  <span className="text-[11px] text-slate-500 leading-tight block mt-0.5">
                     Creates tasks, tracks progress, unblocks, and adapts the plan.
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 shrink-0 shadow-2xs">
                   <User className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="font-bold text-white block">Creator Portal</span>
-                  <span className="text-[11px] text-slate-400 leading-tight block">
+                  <span className="font-bold text-slate-900 block">Creator Portal</span>
+                  <span className="text-[11px] text-slate-500 leading-tight block mt-0.5">
                     Simple daily tasks with ready-to-use content.
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0 shadow-2xs">
                   <UserCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="font-bold text-white block">Human Decisions</span>
-                  <span className="text-[11px] text-slate-400 leading-tight block">
+                  <span className="font-bold text-slate-900 block">Human Decisions</span>
+                  <span className="text-[11px] text-slate-500 leading-tight block mt-0.5">
                     Important decisions come to your inbox.
                   </span>
                 </div>
@@ -1817,430 +1862,6 @@ partnerships@creatorforge.com`
             </div>
           </div>
         </div>
-
-        {/* RIGHT PANEL: PHASE 1 / PHASE 2 / PHASE 3 WORKSPACE (STICKY) */}
-        <div className="w-full lg:w-[310px] xl:w-[330px] shrink-0 rounded-2xl bg-[#0e1117] border border-white/[0.1] p-4 sm:p-4.5 space-y-3.5 shadow-xl lg:sticky lg:top-20 lg:self-start">
-          {currentPhase === 2 ? (
-            /* PHASE 2: BUILD MVP */
-            <>
-              <div className="flex items-start justify-between border-b border-white/[0.08] pb-4">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400 block">
-                    PHASE 2
-                  </span>
-                  <h2 className="text-xl font-extrabold text-white tracking-tight mt-0.5">
-                    BUILD MVP
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Smallest usable version.
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 shadow-lg shadow-blue-950/40">
-                  <Code className="w-6 h-6" />
-                </div>
-              </div>
-
-              {/* 4 Step Cards for Phase 2 */}
-              <div className="space-y-2.5">
-                {[
-                  {
-                    id: 'plan',
-                    num: '1. Product + Build Plan',
-                    desc: 'Product spec, user flows, tech stack, schema, acceptance criteria & scope boundaries',
-                    icon: FileText,
-                    isDone: p2Guards.isStep1Done,
-                    canAccess: p2Guards.canAccessStep1
-                  },
-                  {
-                    id: 'build',
-                    num: '2. Engineering Build',
-                    desc: 'FastAPI backend, React frontend, database migrations, and async AI worker pipeline',
-                    icon: Terminal,
-                    isDone: p2Guards.isStep2Done,
-                    canAccess: p2Guards.canAccessStep2
-                  },
-                  {
-                    id: 'beta',
-                    num: '3. Beta Testing',
-                    desc: `Invite ${Array.isArray(project?.reservations) ? project.reservations.length : 0} founding pre-order backers for private beta QA`,
-                    icon: Laptop,
-                    isDone: p2Guards.isStep3Done,
-                    canAccess: p2Guards.canAccessStep3
-                  },
-                  {
-                    id: 'gate',
-                    num: '4. MVP Launch Gate',
-                    desc: 'Verify acceptance criteria, zero critical errors, approve & advance to Phase 3',
-                    icon: ShieldCheck,
-                    isDone: p2Guards.isP2Done,
-                    canAccess: p2Guards.canAccessStep4
-                  },
-                ].map(step => {
-                  const Icon = step.icon
-                  const isDone = step.isDone
-                  const isLocked = !step.canAccess
-                  return (
-                    <div
-                      key={step.id}
-                      onClick={() => openPhaseStep(step.id)}
-                      className={`p-3.5 rounded-xl border transition-all space-y-1 ${
-                        isLocked
-                          ? 'bg-[#141720]/40 border-white/[0.04] opacity-50 cursor-not-allowed'
-                          : isDone
-                          ? 'bg-emerald-950/15 border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-950/25 cursor-pointer group'
-                          : 'bg-[#141720] hover:bg-[#1b202c] border-white/[0.06] hover:border-blue-500/40 cursor-pointer group'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5 text-xs font-bold transition-colors">
-                          {isLocked ? (
-                            <Lock className="w-4 h-4 text-slate-500 shrink-0" />
-                          ) : isDone ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                          ) : (
-                            <Icon className="w-4 h-4 text-blue-400 shrink-0" />
-                          )}
-                          <span className={isLocked ? 'text-slate-500' : isDone ? 'text-slate-200 font-bold' : 'text-white group-hover:text-blue-300'}>
-                            {step.num}
-                          </span>
-                        </div>
-                        {isLocked ? (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-800 text-slate-500 border border-slate-700/60">
-                            🔒 Locked
-                          </span>
-                        ) : (
-                          <span className={`text-[10px] font-bold flex items-center gap-1 ${
-                            isDone ? 'text-emerald-400' : 'text-slate-400 group-hover:text-white'
-                          }`}>
-                            {isDone ? (
-                              <>
-                                <span>✓ Done</span>
-                                <ChevronRight className="w-3 h-3" />
-                              </>
-                            ) : (
-                              <>
-                                <span>Open</span>
-                                <ChevronRight className="w-3 h-3" />
-                              </>
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      <p className={`text-[11px] leading-relaxed pl-6 ${isLocked ? 'text-slate-600' : 'text-slate-400'}`}>
-                        {step.desc}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <button
-                onClick={() => {
-                  if (p2Guards.isP2Done || currentPhase >= 3) {
-                    handleAdvancePhase(3)
-                    setShowPhaseExecutionModal(true)
-                  } else {
-                    openPhaseStep('plan')
-                  }
-                }}
-                className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg active:scale-95 ${
-                  p2Guards.isP2Done || currentPhase >= 3
-                    ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-950/40'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-950/40'
-                }`}
-              >
-                <span>
-                  {p2Guards.isP2Done || currentPhase >= 3
-                    ? 'Advance to Phase 3: Launch & Scale'
-                    : 'Open Phase 2 MVP Workspace'}
-                </span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </>
-          ) : currentPhase === 3 ? (
-            /* PHASE 3: LAUNCH */
-            <>
-              <div className="flex items-start justify-between border-b border-white/[0.08] pb-4">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-purple-400 block">
-                    PHASE 3
-                  </span>
-                  <h2 className="text-xl font-extrabold text-white tracking-tight mt-0.5">
-                    LAUNCH
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Acquire, activate & scale.
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 shadow-lg shadow-purple-950/40">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-              </div>
-
-              {/* 4 Step Cards for Phase 3 */}
-              <div className="space-y-2.5">
-                {[
-                  {
-                    id: 'prep',
-                    num: '1. Prepare Launch',
-                    desc: 'Strategy, channels, offers, creator marketing assets, production infra & verified checklists',
-                    icon: Calendar,
-                    isDone: p3Guards.isStep1Done,
-                    canAccess: p3Guards.canAccessStep1
-                  },
-                  {
-                    id: 'monitor',
-                    num: '2. Launch + Monitor',
-                    desc: 'Live production telemetry, customer conversion funnel, and channel attribution breakdown',
-                    icon: TrendingUp,
-                    isDone: p3Guards.isStep2Done,
-                    canAccess: p3Guards.canAccessStep2
-                  },
-                  {
-                    id: 'manager',
-                    num: '3. AI Launch Manager',
-                    desc: 'Autonomous telemetry sweep, growth optimization engine, and real-time CRO interventions',
-                    icon: Sparkles,
-                    isDone: p3Guards.isStep3Done,
-                    canAccess: p3Guards.canAccessStep3
-                  },
-                  {
-                    id: 'report',
-                    num: '4. Launch Report + Decision',
-                    desc: 'Commercial score, CAC economics, executive milestone verdict, and scale/pivot decision gate',
-                    icon: ShieldCheck,
-                    isDone: p3Guards.isStep4Done,
-                    canAccess: p3Guards.canAccessStep4
-                  },
-                ].map(step => {
-                  const Icon = step.icon
-                  const isDone = step.isDone
-                  const isLocked = !step.canAccess
-                  return (
-                    <div
-                      key={step.id}
-                      onClick={() => openPhaseStep(step.id)}
-                      className={`p-3.5 rounded-xl border transition-all space-y-1 ${
-                        isLocked
-                          ? 'bg-[#141720]/40 border-white/[0.04] opacity-50 cursor-not-allowed'
-                          : isDone
-                          ? 'bg-[#141720] hover:bg-[#1b202c] border-emerald-500/30 cursor-pointer group'
-                          : 'bg-[#141720] hover:bg-[#1b202c] border-white/[0.06] hover:border-purple-500/40 cursor-pointer group'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5 text-xs font-bold transition-colors">
-                          {isLocked ? (
-                            <Lock className="w-4 h-4 text-slate-500 shrink-0" />
-                          ) : isDone ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                          ) : (
-                            <Icon className="w-4 h-4 text-purple-400 shrink-0" />
-                          )}
-                          <span className={isLocked ? 'text-slate-500' : isDone ? 'text-slate-200 font-bold' : 'text-white group-hover:text-purple-300'}>
-                            {step.num}
-                          </span>
-                        </div>
-                        {isLocked ? (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-800 text-slate-500 border border-slate-700/60">
-                            🔒 Locked
-                          </span>
-                        ) : (
-                          <div className="flex items-center gap-1.5">
-                            {isDone && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-normal">
-                                Done
-                              </span>
-                            )}
-                            <span className="text-[10px] font-bold text-slate-400 group-hover:text-white flex items-center gap-0.5">
-                              <span>Open</span>
-                              <ChevronRight className="w-3 h-3" />
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <p className={`text-[11px] leading-relaxed pl-6 ${isLocked ? 'text-slate-600' : 'text-slate-400'}`}>
-                        {step.desc}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <button
-                onClick={() => {
-                  openPhaseStep('prep')
-                }}
-                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-purple-950/40 active:scale-95 cursor-pointer"
-              >
-                <span>Open Phase 3 Launch Workspace</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </>
-          ) : (
-            /* PHASE 1: VALIDATE */
-            <>
-              <div className="flex items-start justify-between border-b border-white/[0.08] pb-4">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400 block">
-                    PHASE 1
-                  </span>
-                  <h2 className="text-xl font-extrabold text-white tracking-tight mt-0.5">
-                    VALIDATE
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Prove people will pay.
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-lg shadow-emerald-950/40">
-                  <Target className="w-6 h-6" />
-                </div>
-              </div>
-
-              {/* 5 Step Cards */}
-              <div className="space-y-2.5">
-                {[
-                  {
-                    id: 'plan',
-                    num: '1. Validation Plan',
-                    desc: 'Define customer, problem, offer, price, test method, success threshold',
-                    icon: FileText,
-                    isDone: isStep1Done,
-                    canAccess: p1Guards.canAccessStep1,
-                    borderDone: 'bg-emerald-500/[0.05] border-emerald-500/35 hover:border-emerald-400/60 shadow-sm shadow-emerald-950/20',
-                    badgeDone: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-                    iconDoneColor: 'text-emerald-400',
-                    badgeText: '✓ Spec & Target Locked'
-                  },
-                  {
-                    id: 'assets',
-                    num: '2. Build Validation Assets',
-                    desc: 'Landing page, presales, checkout, analytics, emails, discovery surveys',
-                    icon: Layout,
-                    isDone: isStep2Done,
-                    canAccess: p1Guards.canAccessStep2,
-                    borderDone: 'bg-purple-500/[0.05] border-purple-500/35 hover:border-purple-400/60 shadow-sm shadow-purple-950/20',
-                    badgeDone: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
-                    iconDoneColor: 'text-purple-400',
-                    badgeText: '⚡ Funnel & Prototype Live'
-                  },
-                  {
-                    id: 'campaign',
-                    num: '3. Creator Campaign',
-                    desc: 'Posts, stories, newsletter, videos, polls, CTAs, images, scripts',
-                    icon: Megaphone,
-                    isDone: isStep3Done,
-                    canAccess: p1Guards.canAccessStep3,
-                    borderDone: 'bg-blue-500/[0.05] border-blue-500/35 hover:border-blue-400/60 shadow-sm shadow-blue-950/20',
-                    badgeDone: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-                    iconDoneColor: 'text-blue-400',
-                    badgeText: '📣 7-Day Sprint Active'
-                  },
-                  {
-                    id: 'optimize',
-                    num: '4. Run & Optimize',
-                    desc: 'Track traffic, presales, revenue, conversion, feedback. AI suggests experiments',
-                    icon: TrendingUp,
-                    isDone: isStep4Done,
-                    canAccess: p1Guards.canAccessStep4,
-                    borderDone: 'bg-amber-500/[0.05] border-amber-500/35 hover:border-amber-400/60 shadow-sm shadow-amber-950/20',
-                    badgeDone: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-                    iconDoneColor: 'text-amber-400',
-                    badgeText: `💰 $${presalesRevenue.toLocaleString()} Presales (${(project.reservations || []).length} Backers)`
-                  },
-                  {
-                    id: 'gate',
-                    num: '5. Validation Gate',
-                    desc: 'PASS → Build MVP | TEST AGAIN → Iterate | FAIL → Kill',
-                    icon: Flag,
-                    isDone: isStep5Done,
-                    canAccess: p1Guards.canAccessStep5,
-                    borderDone: isStep5Done
-                      ? 'bg-emerald-500/[0.08] border-emerald-500/50 hover:border-emerald-400/80 shadow-md shadow-emerald-950/30'
-                      : 'bg-[#141720] hover:bg-[#1b202c] border border-white/[0.08] hover:border-emerald-500/40',
-                    badgeDone: isStep5Done ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : '',
-                    iconDoneColor: isStep5Done ? 'text-emerald-400' : 'text-slate-400',
-                    badgeText: isStep5Done ? '🚀 Gate Passed → Build MVP' : 'Open Milestone'
-                  },
-                ].map(step => {
-                  const Icon = step.icon
-                  const isLocked = !step.canAccess
-                  return (
-                    <div
-                      key={step.id}
-                      onClick={() => openPhaseStep(step.id)}
-                      className={`p-3 rounded-xl transition-all space-y-1 ${
-                        isLocked
-                          ? 'bg-[#141720]/40 border border-white/[0.04] opacity-50 cursor-not-allowed'
-                          : step.isDone
-                          ? `${step.borderDone} cursor-pointer group`
-                          : 'bg-[#141720] hover:bg-[#1b202c] border border-white/[0.06] hover:border-emerald-500/40 cursor-pointer group'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {isLocked ? (
-                            <Lock className="w-4 h-4 text-slate-500 shrink-0" />
-                          ) : step.isDone ? (
-                            <CheckCircle2 className={`w-4 h-4 shrink-0 ${step.iconDoneColor}`} />
-                          ) : (
-                            <Icon className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 shrink-0 transition-colors" />
-                          )}
-                          <span className={`text-xs font-bold truncate ${isLocked ? 'text-slate-500' : step.isDone ? 'text-slate-200' : 'text-white'}`}>
-                            {step.num}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {isLocked ? (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-800 text-slate-500 border border-slate-700/60">
-                              🔒 Locked
-                            </span>
-                          ) : step.isDone ? (
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${step.badgeDone}`}>
-                              {step.badgeText}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold text-slate-400 group-hover:text-emerald-300 flex items-center gap-0.5 transition-colors">
-                              <span>Open</span>
-                              <ChevronRight className="w-3 h-3" />
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <p className={`text-[11px] leading-relaxed pl-6 line-clamp-2 ${isLocked ? 'text-slate-600' : 'text-slate-400'}`}>
-                        {step.desc}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <button
-                onClick={() => {
-                  if (isStep5Done || currentPhase >= 2) {
-                    handleAdvancePhase(2)
-                    setShowPhaseExecutionModal(true)
-                  } else {
-                    openPhaseStep('plan')
-                  }
-                }}
-                className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg active:scale-95 ${
-                  isStep5Done || currentPhase >= 2
-                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-950/40'
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40'
-                }`}
-              >
-                <span>
-                  {isStep5Done || currentPhase >= 2
-                    ? 'Advance to Phase 2: Build MVP'
-                    : 'Open Phase 1 Workspace'}
-                </span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
 
       {/* Step Guard Warning Toast */}
       {toastNotice && (
@@ -2456,7 +2077,7 @@ partnerships@creatorforge.com`
                       ) : (
                         <>
                           <Send className="w-3.5 h-3.5" />
-                          <span>Send Portal Invite Email 🚀</span>
+                          <span>Send Portal Invite Email</span>
                         </>
                       )}
                     </button>
