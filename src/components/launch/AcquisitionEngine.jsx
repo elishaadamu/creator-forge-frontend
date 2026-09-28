@@ -4264,12 +4264,15 @@ export default function AcquisitionEngine({
       );
 
       const effectivePrompt = (typeof customPromptText === "string" ? customPromptText : step5PromptInput || "").trim();
+      const effectiveNiche = Array.isArray(creator.niche)
+        ? creator.niche.join(", ")
+        : (creator.niche || "");
 
       const fetchPromise = generateAudienceAndConcepts({
         creator_id: creator.id,
         creator_name: creator.name || creator.display_name,
         creator_handle: creator.handle,
-        niche: creator.niche,
+        niche: effectiveNiche || undefined,
         platform: creator.platform,
         followers: creator.followerStr || `${creator.follower_count}`,
         bio: creator.bio,
@@ -4310,7 +4313,13 @@ export default function AcquisitionEngine({
       }
     } catch (err) {
       console.warn("AI synthesis failed/delayed:", err);
-      const errMsg = err?.response?.data?.detail || err?.message || "AI audience research & concept synthesis delayed or failed.";
+      let errMsg = err?.response?.data?.detail || err?.message || "AI audience research & concept synthesis delayed or failed.";
+      if (Array.isArray(errMsg)) {
+        errMsg = errMsg.map(e => (typeof e === "object" ? e.msg || JSON.stringify(e) : String(e))).join(", ");
+      } else if (typeof errMsg === "object" && errMsg !== null) {
+        errMsg = JSON.stringify(errMsg);
+      }
+      errMsg = String(errMsg).replace(/^500:\s*/, "").replace(/^Error:\s*/, "").trim();
       setStep5Error(errMsg);
       notify(
         "error",

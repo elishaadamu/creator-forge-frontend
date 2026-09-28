@@ -59,13 +59,22 @@ async function req(method, path, body, customSignal = null) {
         const errText = await res.text()
         try {
           const parsed = JSON.parse(errText)
-          errMsg = parsed.detail || parsed.message || errText
+          if (Array.isArray(parsed.detail)) {
+            errMsg = parsed.detail.map(d => (typeof d === 'object' ? d.msg || JSON.stringify(d) : String(d))).join(', ')
+          } else {
+            errMsg = parsed.detail || parsed.message || errText
+          }
         } catch {
           errMsg = errText
         }
       } catch (readErr) {}
 
-      errMsg = (errMsg || '').trim()
+      if (Array.isArray(errMsg)) {
+        errMsg = errMsg.map(e => (typeof e === 'object' ? e.msg || JSON.stringify(e) : String(e))).join(', ')
+      } else if (typeof errMsg === 'object' && errMsg !== null) {
+        errMsg = JSON.stringify(errMsg)
+      }
+      errMsg = (typeof errMsg === 'string' ? errMsg : String(errMsg || '')).trim()
       if (!errMsg) {
         if (res.status === 500) errMsg = 'Backend server temporarily unavailable (HTTP 500). Service is ready for retry.'
         else if (res.status === 502 || res.status === 504) errMsg = 'Gateway timeout. Please retry with a smaller batch size.'
