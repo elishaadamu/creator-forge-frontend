@@ -653,9 +653,9 @@ partnerships@creatorforge.com`
 
           <button
             onClick={() => setShowShareModal(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer whitespace-nowrap active:scale-95"
+            className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer"
           >
-            <Share2 className="w-3.5 h-3.5" />
+            <Share2 className="w-3.5 h-3.5 text-slate-700" />
             <span>Share Portal</span>
           </button>
 
@@ -1800,20 +1800,20 @@ partnerships@creatorforge.com`
         </div>
       )}
 
-      {/* PHASE EXECUTION MODAL (PHASE 1 / PHASE 2 / PHASE 3) */}
+      {/* PHASE EXECUTION MODAL (PHASE 1 / PHASE 2 / PHASE 3) - CLEAN WHITE THEME */}
       {showPhaseExecutionModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
-          <div className="max-w-5xl w-full max-h-[92vh] overflow-y-auto rounded-3xl bg-[#090b0e] border border-white/[0.1] p-6 space-y-6 shadow-2xl overscroll-contain">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
+          <div className="max-w-5xl w-full max-h-[92vh] overflow-y-auto rounded-3xl bg-white border border-slate-200 p-6 space-y-6 shadow-2xl overscroll-contain text-slate-900 phase-modal-white-theme">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#0F172A] border border-white/15 flex items-center justify-center shrink-0 shadow-md">
-                  <CreatorForgeLogo size={20} showText={false} theme="dark" />
+                <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center shrink-0 shadow-2xs">
+                  <CreatorForgeLogo size={20} showText={false} theme="light" />
                 </div>
                 <div>
-                  <h2 className="text-base sm:text-lg font-extrabold text-white">
+                  <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
                     Phase {currentPhase}: {currentPhase === 2 ? 'Build MVP Execution Workspace' : currentPhase === 3 ? 'Launch Execution Workspace' : 'Validation Execution Workspace'}
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     {project.productName} × {project.creatorName}
                   </p>
                 </div>
@@ -1821,7 +1821,7 @@ partnerships@creatorforge.com`
 
               <button
                 onClick={closePhaseModal}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08]"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1872,283 +1872,346 @@ partnerships@creatorforge.com`
 
       {/* SHARE CREATOR PORTAL MODAL */}
       {showShareModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
-          <div className="max-w-2xl w-full p-5 sm:p-6 rounded-2xl bg-[#0e1117] border border-purple-500/40 space-y-4 shadow-2xl max-h-[92vh] flex flex-col overscroll-contain">
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
+          <div className="max-w-2xl w-full p-5 sm:p-6 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-2xl max-h-[92vh] flex flex-col overscroll-contain text-slate-900">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 shrink-0">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                <div className="p-2 rounded-xl bg-purple-50 text-purple-700 border border-purple-200">
                   <Share2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Creator Co-Founder Portal & Email Dispatch</h3>
-                  <p className="text-[11px] text-slate-400">Passwordless access link & luxury email invite for {project.creatorName || 'Creator'}</p>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    {userRole === 'creator' ? 'Share Your Co-Founder Portal' : 'Creator Co-Founder Portal & Email Dispatch'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {userRole === 'creator'
+                      ? 'Private access link to your active venture workbench'
+                      : `Passwordless access link & luxury email invite for ${project.creatorName || 'Creator'}`}
+                  </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowShareModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Modal Navigation Tabs */}
-            <div className="flex items-center gap-1.5 p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl shrink-0">
-              <button
-                type="button"
-                onClick={() => setShareTab('email')}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  shareTab === 'email'
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Mail className="w-3.5 h-3.5" />
-                <span>Email Dispatch (SMTP)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShareTab('preview')}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  shareTab === 'preview'
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>Visual Email Preview</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShareTab('link')}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  shareTab === 'link'
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Magic Link & DM</span>
-              </button>
-            </div>
-
-            {/* Modal Tab Content */}
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-              {/* TAB 1: EMAIL DISPATCH */}
-              {shareTab === 'email' && (
-                <div className="space-y-3.5 animate-fade-in">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
-                      Recipient Email (Creator)
-                    </label>
-                    <input
-                      type="email"
-                      value={portalRecipientEmail}
-                      onChange={(e) => setPortalRecipientEmail(e.target.value)}
-                      placeholder="creator@example.com"
-                      className="w-full px-3 py-2 rounded-xl bg-[#161a23] border border-white/[0.1] text-xs font-mono text-white outline-none focus:border-purple-500/50"
-                    />
+            {/* CREATOR VIEW: CARRY ONLY CREATOR URL */}
+            {userRole === 'creator' ? (
+              <div className="space-y-4 py-2">
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                      Your Co-Founder Portal URL
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-800 font-bold bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                      Private Token Active
+                    </span>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
-                      Subject Line
-                    </label>
+                  <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      value={portalEmailSubject}
-                      onChange={(e) => setPortalEmailSubject(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#161a23] border border-white/[0.1] text-xs text-white outline-none focus:border-purple-500/50"
+                      readOnly
+                      value={portalUrl}
+                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-mono text-slate-900 outline-none select-all shadow-2xs focus:border-purple-500"
                     />
+                    <button
+                      onClick={() => handleCopy(portalUrl, 'portal_url')}
+                      className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+                    >
+                      {copiedKey === 'portal_url' ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'portal_url' ? 'Copied Link' : 'Copy Link'}</span>
+                    </button>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
-                      Personalized Message Body
-                    </label>
-                    <textarea
-                      rows={5}
-                      value={portalEmailBody}
-                      onChange={(e) => setPortalEmailBody(e.target.value)}
-                      className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.1] text-xs text-slate-200 outline-none leading-relaxed font-sans resize-none focus:border-purple-500/50"
-                    />
-                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Bookmark this private link to access your live workbench, real-time telemetry, and partner sprint progress anytime without needing a password.
+                  </p>
+                </div>
 
-                  {portalEmailStatus && (
-                    <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
-                      portalEmailSuccess
-                        ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
-                        : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
-                    }`}>
-                      {portalEmailSuccess ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />}
-                      <span>{portalEmailStatus}</span>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                  <a
+                    href={portalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 transition-colors"
+                  >
+                    <span>Open in new tab</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                  <button
+                    onClick={() => setShowShareModal(false)}
+                    className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-xs cursor-pointer active:scale-95"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ADMIN DASH VIEW: FULL SUITE IN CLEAN WHITE BG */
+              <>
+                {/* Modal Navigation Tabs */}
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100 border border-slate-200 rounded-xl shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShareTab('email')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      shareTab === 'email'
+                        ? 'bg-white text-slate-900 shadow-2xs border border-slate-200'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Email Dispatch (SMTP)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShareTab('preview')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      shareTab === 'preview'
+                        ? 'bg-white text-slate-900 shadow-2xs border border-slate-200'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Visual Email Preview</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShareTab('link')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      shareTab === 'link'
+                        ? 'bg-white text-slate-900 shadow-2xs border border-slate-200'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Magic Link & DM</span>
+                  </button>
+                </div>
+
+                {/* Modal Tab Content */}
+                <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                  {/* TAB 1: EMAIL DISPATCH */}
+                  {shareTab === 'email' && (
+                    <div className="space-y-3.5 animate-fade-in">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                          Recipient Email (Creator)
+                        </label>
+                        <input
+                          type="email"
+                          value={portalRecipientEmail}
+                          onChange={(e) => setPortalRecipientEmail(e.target.value)}
+                          placeholder="creator@example.com"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 outline-none focus:border-purple-500 focus:bg-white"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                          Subject Line
+                        </label>
+                        <input
+                          type="text"
+                          value={portalEmailSubject}
+                          onChange={(e) => setPortalEmailSubject(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-none focus:border-purple-500 focus:bg-white"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                          Personalized Message Body
+                        </label>
+                        <textarea
+                          rows={5}
+                          value={portalEmailBody}
+                          onChange={(e) => setPortalEmailBody(e.target.value)}
+                          className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 outline-none leading-relaxed font-sans resize-none focus:border-purple-500 focus:bg-white"
+                        />
+                      </div>
+
+                      {portalEmailStatus && (
+                        <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                          portalEmailSuccess
+                            ? 'bg-emerald-50 border border-emerald-300 text-emerald-800'
+                            : 'bg-rose-50 border border-rose-300 text-rose-800'
+                        }`}>
+                          {portalEmailSuccess ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
+                          <span>{portalEmailStatus}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-end pt-1">
+                        <button
+                          type="button"
+                          onClick={handleSendPortalEmail}
+                          disabled={isSendingPortalEmail}
+                          className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+                        >
+                          {isSendingPortalEmail ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Dispatching...</span>
+                            </>
+                          ) : portalEmailSuccess ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-200" />
+                              <span>Sent Successfully!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Send Portal Invite Email</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={handleSendPortalEmail}
-                      disabled={isSendingPortalEmail}
-                      className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
+                  {/* TAB 2: LUXURY VISUAL EMAIL PREVIEW */}
+                  {shareTab === 'preview' && (
+                    <div className="space-y-3 animate-fade-in">
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 shadow-2xs">
+                        {/* Simulated Email Client Bar */}
+                        <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-[11px] space-y-1 font-mono text-slate-600">
+                          <div><strong className="text-slate-900">From:</strong> Creator Forge Venture Studio &lt;partnerships@creatorforge.com&gt;</div>
+                          <div><strong className="text-slate-900">To:</strong> {portalRecipientEmail || 'creator@example.com'}</div>
+                          <div><strong className="text-slate-900">Subject:</strong> {portalEmailSubject}</div>
+                        </div>
+
+                        {/* Email Card Preview */}
+                        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden text-xs shadow-2xs">
+                          <div className="p-4 bg-gradient-to-r from-purple-100/60 via-indigo-100/40 to-purple-100/60 border-b border-slate-200 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Rocket className="w-4 h-4 text-purple-600" />
+                              <span className="font-extrabold text-slate-950 text-sm">CREATOR FORGE</span>
+                            </div>
+                            <span className="text-[10px] uppercase font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                              Verified Invite
+                            </span>
+                          </div>
+
+                          <div className="p-5 space-y-3 text-slate-700 leading-relaxed font-sans">
+                            <p className="whitespace-pre-line text-slate-800 font-medium">
+                              {portalEmailBody}
+                            </p>
+
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-purple-200 space-y-2">
+                              <div className="font-bold text-slate-900 text-xs">Co-Launch Venture Snapshot</div>
+                              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                <div><span className="text-slate-500">Software:</span> <strong className="text-purple-700">{project.productName || 'Custom App'}</strong></div>
+                                <div><span className="text-slate-500">Revenue Split:</span> <strong className="text-emerald-700">50% Net Creator Share</strong></div>
+                                <div><span className="text-slate-500">Initial Pricing:</span> <strong className="text-slate-900">{project.pricing || '$49/mo'}</strong></div>
+                                <div><span className="text-slate-500">Validation Goal:</span> <strong className="text-emerald-700">${presaleTarget.toLocaleString()}</strong></div>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 text-center">
+                              <a
+                                href={magicPortalUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs shadow-md shadow-purple-900/20 hover:brightness-110 transition-all"
+                              >
+                                <span>Open Co-Founder Portal (Passwordless Access)</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          </div>
+
+                          {/* Email Footer */}
+                          <div className="p-4 bg-slate-50 border-t border-slate-200 text-center text-[10px] text-slate-500 space-y-0.5">
+                            <div className="font-bold text-slate-700">Creator Forge Venture Studio</div>
+                            <div>Co-launching software empires with leading digital creators.</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 3: MAGIC LINK & DM */}
+                  {shareTab === 'link' && (
+                    <div className="space-y-3.5 animate-fade-in">
+                      {/* Portal Magic URL Box */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                          Secure Magic Link (No Password Required)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            readOnly
+                            value={magicPortalUrl}
+                            className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-purple-700 outline-none select-all"
+                          />
+                          <button
+                            onClick={() => handleCopy(magicPortalUrl, 'link')}
+                            className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            {copiedKey === 'link' ? <Check className="w-3.5 h-3.5 text-emerald-200" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedKey === 'link' ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Kickoff DM Message */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                            Social DM / WhatsApp Invite Message
+                          </label>
+                          <button
+                            onClick={() => handleCopy(kickoffMessage, 'msg')}
+                            className="text-xs text-purple-600 hover:text-purple-700 font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedKey === 'msg' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedKey === 'msg' ? 'Copied Message' : 'Copy Message'}</span>
+                          </button>
+                        </div>
+                        <textarea
+                          readOnly
+                          rows={6}
+                          value={kickoffMessage}
+                          className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 outline-none leading-relaxed font-sans resize-none select-all"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Actions Footer */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200 shrink-0">
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-bold">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>{shareNotice || 'Magic token active & verified'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={magicPortalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold flex items-center gap-1.5 transition-colors"
                     >
-                      {isSendingPortalEmail ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Dispatching...</span>
-                        </>
-                      ) : portalEmailSuccess ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-300" />
-                          <span>Sent Successfully!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-3.5 h-3.5" />
-                          <span>Send Portal Invite Email</span>
-                        </>
-                      )}
+                      <span>Preview Live Portal</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      onClick={() => setShowShareModal(false)}
+                      className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      Done
                     </button>
                   </div>
                 </div>
-              )}
-
-              {/* TAB 2: LUXURY VISUAL EMAIL PREVIEW */}
-              {shareTab === 'preview' && (
-                <div className="space-y-3 animate-fade-in">
-                  <div className="p-4 rounded-xl bg-[#07090e] border border-white/[0.1] space-y-3 shadow-inner">
-                    {/* Simulated Email Client Bar */}
-                    <div className="p-2.5 rounded-lg bg-black/60 border border-white/[0.06] text-[11px] space-y-1 font-mono text-slate-400">
-                      <div><strong className="text-slate-200">From:</strong> Creator Forge Venture Studio &lt;partnerships@creatorforge.com&gt;</div>
-                      <div><strong className="text-slate-200">To:</strong> {portalRecipientEmail || 'creator@example.com'}</div>
-                      <div><strong className="text-slate-200">Subject:</strong> {portalEmailSubject}</div>
-                    </div>
-
-                    {/* Email Card Preview */}
-                    <div className="rounded-xl border border-white/[0.08] bg-[#0c1017] overflow-hidden text-xs">
-                      <div className="p-4 bg-gradient-to-r from-purple-900/40 via-indigo-900/30 to-purple-950/40 border-b border-white/[0.06] flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Rocket className="w-4 h-4 text-purple-400" />
-                          <span className="font-extrabold text-white text-sm">CREATOR FORGE</span>
-                        </div>
-                        <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                          Verified Invite
-                        </span>
-                      </div>
-
-                      <div className="p-5 space-y-3 text-slate-300 leading-relaxed font-sans">
-                        <p className="whitespace-pre-line text-slate-200 font-medium">
-                          {portalEmailBody}
-                        </p>
-
-                        <div className="p-3.5 rounded-xl bg-[#141824] border border-purple-500/30 space-y-2">
-                          <div className="font-bold text-white text-xs">Co-Launch Venture Snapshot</div>
-                          <div className="grid grid-cols-2 gap-2 text-[11px]">
-                            <div><span className="text-slate-400">Software:</span> <strong className="text-purple-300">{project.productName || 'Custom App'}</strong></div>
-                            <div><span className="text-slate-400">Revenue Split:</span> <strong className="text-emerald-400">50% Net Creator Share</strong></div>
-                            <div><span className="text-slate-400">Initial Pricing:</span> <strong className="text-slate-200">{project.pricing || '$49/mo'}</strong></div>
-                            <div><span className="text-slate-400">Validation Goal:</span> <strong className="text-emerald-400">${presaleTarget.toLocaleString()}</strong></div>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 text-center">
-                          <a
-                            href={magicPortalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-purple-950/50 hover:brightness-110 transition-all"
-                          >
-                            <span>Open Co-Founder Portal (Passwordless Access)</span>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
-                      </div>
-
-                      {/* Email Footer */}
-                      <div className="p-4 bg-[#090d16] border-t border-[#1e293b] text-center text-[10px] text-slate-500 space-y-0.5">
-                        <div className="font-bold text-slate-400">Creator Forge Venture Studio</div>
-                        <div>Co-launching software empires with leading digital creators.</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: MAGIC LINK & DM */}
-              {shareTab === 'link' && (
-                <div className="space-y-3.5 animate-fade-in">
-                  {/* Portal Magic URL Box */}
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
-                      Secure Magic Link (No Password Required)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        readOnly
-                        value={magicPortalUrl}
-                        className="flex-1 px-3 py-2 rounded-xl bg-[#161a23] border border-white/[0.1] text-xs font-mono text-purple-300 outline-none select-all"
-                      />
-                      <button
-                        onClick={() => handleCopy(magicPortalUrl, 'link')}
-                        className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        {copiedKey === 'link' ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedKey === 'link' ? 'Copied' : 'Copy'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Kickoff DM Message */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                        Social DM / WhatsApp Invite Message
-                      </label>
-                      <button
-                        onClick={() => handleCopy(kickoffMessage, 'msg')}
-                        className="text-xs text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        {copiedKey === 'msg' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedKey === 'msg' ? 'Copied Message' : 'Copy Message'}</span>
-                      </button>
-                    </div>
-                    <textarea
-                      readOnly
-                      rows={6}
-                      value={kickoffMessage}
-                      className="w-full p-3.5 rounded-xl bg-[#161a23] border border-white/[0.08] text-xs text-slate-200 outline-none leading-relaxed font-sans resize-none select-all"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Actions Footer */}
-            <div className="flex items-center justify-between pt-3 border-t border-white/[0.08] shrink-0">
-              <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
-                <ShieldCheck className="w-4 h-4" />
-                <span>{shareNotice || 'Magic token active & verified'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <a
-                  href={magicPortalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 hover:text-white border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 transition-colors"
-                >
-                  <span>Preview Live Portal</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-                <button
-                  onClick={() => setShowShareModal(false)}
-                  className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-bold transition-colors cursor-pointer"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </div>,
         document.body
@@ -2156,52 +2219,52 @@ partnerships@creatorforge.com`
 
       {/* VENTURE FILE PREVIEW MODAL */}
       {previewingFile && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
-          <div className="max-w-3xl w-full max-h-[85vh] flex flex-col rounded-3xl bg-[#090b0e] border border-white/[0.12] p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 shrink-0">
+        <div className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
+          <div className="max-w-3xl w-full max-h-[85vh] flex flex-col rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl space-y-4 text-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <span>{previewingFile.title}</span>
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
                       {previewingFile.badge || 'Venture Asset'}
                     </span>
                   </h3>
-                  <p className="text-[11px] font-mono text-slate-400">{previewingFile.name} • {previewingFile.size}</p>
+                  <p className="text-[11px] font-mono text-slate-500">{previewingFile.name} • {previewingFile.size}</p>
                 </div>
               </div>
               <button
                 onClick={() => setPreviewingFile(null)}
-                className="w-8 h-8 rounded-full bg-white/[0.06] hover:bg-white/[0.12] flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto rounded-xl bg-[#0e1117] border border-white/[0.06] p-4 text-xs font-mono text-slate-200 whitespace-pre-wrap leading-relaxed shadow-inner">
+            <div className="flex-1 overflow-y-auto rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed shadow-inner">
               {previewingFile.content}
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-white/[0.08] shrink-0">
-              <div className="text-[11px] text-slate-400 font-mono">
+            <div className="flex items-center justify-between pt-2 border-t border-slate-200 shrink-0">
+              <div className="text-[11px] text-slate-500 font-mono">
                 Stored in Project Vault • Ready for export
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => handleCopy(previewingFile.content, previewingFile.id)}
-                  className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  {copiedKey === previewingFile.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedKey === previewingFile.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedKey === previewingFile.id ? 'Copied' : 'Copy Text'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDownloadFile(previewingFile)}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-950/40 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                 >
                   <ArrowRight className="w-3.5 h-3.5 rotate-90" />
                   <span>Download Asset</span>

@@ -503,4 +503,62 @@
   animation: path-dash 8s linear infinite;
 }
 
+/* Phase Execution Modal White Theme Overrides */
+.phase-modal-white-theme {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.phase-modal-white-theme [class*="bg-[#0e1117]"],
+.phase-modal-white-theme [class*="bg-[#090b0e]"],
+.phase-modal-white-theme [class*="bg-[#0c0e14]"],
+.phase-modal-white-theme [class*="bg-[#0c1017]"],
+.phase-modal-white-theme [class*="bg-[#080A0C]"],
+.phase-modal-white-theme [class*="bg-[#07090e]"],
+.phase-modal-white-theme [class*="bg-[#101419]"],
+.phase-modal-white-theme [class*="bg-[#11141c]"],
+.phase-modal-white-theme [class*="bg-[#141720]"],
+.phase-modal-white-theme [class*="bg-[#141824]"],
+.phase-modal-white-theme [class*="bg-[#161a23]"],
+.phase-modal-white-theme [class*="bg-[#171C22]"],
+.phase-modal-white-theme [class*="bg-[#1a1f2c]"],
+.phase-modal-white-theme [class*="bg-[#1b202c]"] {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.phase-modal-white-theme [class*="bg-black/"],
+.phase-modal-white-theme [class*="bg-[#06080d]"] {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.phase-modal-white-theme [class*="border-white/"] {
+  border-color: #e2e8f0 !important;
+}
+
+.phase-modal-white-theme [class*="text-white"] {
+  color: #0f172a !important;
+}
+
+.phase-modal-white-theme [class*="text-slate-200"],
+.phase-modal-white-theme [class*="text-slate-300"] {
+  color: #334155 !important;
+}
+
+.phase-modal-white-theme [class*="text-slate-400"] {
+  color: #64748b !important;
+}
+
+.phase-modal-white-theme input,
+.phase-modal-white-theme textarea,
+.phase-modal-white-theme select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+
 

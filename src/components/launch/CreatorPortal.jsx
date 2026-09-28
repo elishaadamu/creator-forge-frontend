@@ -1262,7 +1262,7 @@ export default function CreatorPortal({ portalId }) {
           /* ── PROJECTOS WORKSPACE VIEW ────────────────────────────────────────── */
           <div className="space-y-6">
             {isDiyActive ? (
-              <ProjectOS project={project} onUpdateProject={handleUpdateProject} />
+              <ProjectOS project={project} onUpdateProject={handleUpdateProject} userRole="creator" isDIY={isDiyActive} />
             ) : (
               /* Studio Managed Status Dashboard */
               <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
