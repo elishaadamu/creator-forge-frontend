@@ -791,53 +791,105 @@ export default function CreatorParticipationManager() {
                     </div>
 
                     {/* Middle: Participation Status Card */}
-                    <div className={`w-full lg:w-64 shrink-0 p-3 rounded-lg ${isLight ? 'bg-slate-50/90 border-slate-200/90' : 'bg-black/40 border-white/[0.08]'} border space-y-1.5`}>
-                      <div className="flex items-center justify-between">
-                        <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider`}>
+                    <div className={`w-full lg:w-80 xl:w-[340px] shrink-0 p-3.5 rounded-xl border transition-all space-y-2.5 ${
+                      isLight
+                        ? isCoBuilder
+                          ? 'bg-amber-50/40 border-amber-200/90 shadow-2xs'
+                          : isDeclined
+                            ? 'bg-purple-50/40 border-purple-200/80 shadow-2xs'
+                            : 'bg-slate-50/80 border-slate-200/80 shadow-2xs'
+                        : isCoBuilder
+                          ? 'bg-amber-950/20 border-amber-500/20'
+                          : isDeclined
+                            ? 'bg-purple-950/20 border-purple-500/20'
+                            : 'bg-black/30 border-white/[0.08]'
+                    }`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
+                          isLight ? 'text-slate-500' : 'text-slate-400'
+                        }`}>
                           Participation Track
                         </span>
                         {isCoBuilder ? (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-xs">
-                            <Zap className="w-2.5 h-2.5" />
-                            Co-Builder ($50 Paid)
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-xs whitespace-nowrap shrink-0">
+                            <Zap className="w-3 h-3 fill-slate-950 text-slate-950 shrink-0" />
+                            <span>Co-Builder ($50 Paid)</span>
                           </span>
                         ) : isDeclined ? (
-                          <span className={`px-2 py-0.5 rounded-full ${isLight ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-purple-500/20 text-purple-300 border-purple-500/30'} border font-bold text-[9px] uppercase tracking-wider`}>
-                            Studio-Managed
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 ${
+                            isLight ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                          }`}>
+                            <ShieldCheck className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" />
+                            <span>Studio-Managed</span>
                           </span>
                         ) : (
-                          <span className={`px-2 py-0.5 rounded-full ${isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'} border font-bold text-[9px] uppercase tracking-wider`}>
-                            Choice Pending
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 ${
+                            isLight ? 'bg-slate-200/80 text-slate-700 border border-slate-300/80' : 'bg-white/[0.08] text-slate-300 border border-white/[0.1]'
+                          }`}>
+                            <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+                            <span>Choice Pending</span>
                           </span>
                         )}
                       </div>
 
                       {/* Status Details */}
                       {isCoBuilder ? (
-                        <div className="space-y-1 text-[11px]">
-                          <p className={`${isLight ? 'text-amber-800' : 'text-amber-200/90'} font-medium`}>
-                            Phases 1-3 Interactive Execution Unlocked
-                          </p>
-                          <div className={`flex items-center justify-between ${isLight ? 'text-slate-500' : 'text-slate-400'} text-[10px]`}>
-                            <span>License:</span>
-                            <span className={`font-mono ${isLight ? 'text-slate-900 font-bold' : 'text-white/80'}`}>{sub.licenseKey || 'FORGE-ACTIVE'}</span>
+                        <div className="space-y-2 pt-0.5">
+                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${
+                            isLight
+                              ? 'bg-white border border-amber-200/90 text-amber-950 shadow-2xs'
+                              : 'bg-black/40 border border-amber-500/30 text-amber-300'
+                          }`}>
+                            <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <span className="truncate">Phases 1–3 Interactive Execution Unlocked</span>
                           </div>
-                          <div className={`flex items-center justify-between ${isLight ? 'text-slate-500' : 'text-slate-400'} text-[10px]`}>
-                            <span>Payment:</span>
-                            <span className={`${isLight ? 'text-emerald-700' : 'text-emerald-400'} font-bold`}>$50.00 USD</span>
+                          <div className={`space-y-1.5 pt-1.5 border-t ${isLight ? 'border-slate-200/70' : 'border-white/[0.06]'} text-xs`}>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>License:</span>
+                              <span className={`font-mono text-[10.5px] font-semibold px-2 py-0.5 rounded tracking-wide border ${
+                                isLight
+                                  ? 'bg-white text-slate-800 border-slate-200 shadow-2xs'
+                                  : 'bg-white/[0.06] text-slate-200 border-white/[0.08]'
+                              }`}>
+                                {sub.licenseKey || 'FORGE-ACTIVE'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Payment:</span>
+                              <span className={`font-bold text-xs flex items-center gap-1.5 ${
+                                isLight ? 'text-emerald-700' : 'text-emerald-400'
+                              }`}>
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shadow-xs"></span>
+                                $50.00 USD
+                              </span>
+                            </div>
                           </div>
                         </div>
                       ) : isDeclined ? (
-                        <div className={`space-y-0.5 text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
-                          <p className={`font-medium ${isLight ? 'text-purple-800' : 'text-purple-300'}`}>Managed Track</p>
-                          <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <div className="space-y-2 pt-0.5">
+                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${
+                            isLight
+                              ? 'bg-white border border-purple-200/80 text-purple-950 shadow-2xs'
+                              : 'bg-black/40 border border-purple-500/30 text-purple-300'
+                          }`}>
+                            <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                            <span className="truncate">Studio-Managed Engineering Track</span>
+                          </div>
+                          <p className={`text-[11px] leading-relaxed pt-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                             Studio engineering builds MVP; Creator monitors milestone sprints.
                           </p>
                         </div>
                       ) : (
-                        <div className={`space-y-1 text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
-                          <p className={`${isLight ? 'text-amber-800' : 'text-amber-300/80'} font-medium`}>Awaiting Track Selection</p>
-                          <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <div className="space-y-2 pt-0.5">
+                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${
+                            isLight
+                              ? 'bg-white border border-slate-200 text-slate-700 shadow-2xs'
+                              : 'bg-black/40 border border-white/[0.1] text-slate-300'
+                          }`}>
+                            <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span className="truncate">Awaiting Track Selection</span>
+                          </div>
+                          <p className={`text-[11px] leading-relaxed pt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                             {proj.diyOfferSentAt
                               ? `Offer dispatched: ${new Date(proj.diyOfferSentAt).toLocaleDateString()}`
                               : 'Offer pending creator review'}
