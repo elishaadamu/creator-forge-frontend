@@ -436,6 +436,36 @@ export default function AcquisitionEngine({
     "Fintech",
     "Productivity",
   ]);
+  const [loadingNiches, setLoadingNiches] = useState(true);
+  const [dbNichesList, setDbNichesList] = useState([]);
+
+  // Load target niches directly from database on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadNichesFromDb() {
+      try {
+        setLoadingNiches(true);
+        const { getNiches } = await import("../../services/opsApi");
+        const res = await getNiches();
+        if (isMounted && res) {
+          if (Array.isArray(res.active_niches) && res.active_niches.length > 0) {
+            setNiches(res.active_niches);
+          }
+          if (Array.isArray(res.all_niches)) {
+            setDbNichesList(res.all_niches);
+          }
+        }
+      } catch (err) {
+        console.warn("[AcquisitionEngine] Could not load niches from DB:", err);
+      } finally {
+        if (isMounted) setLoadingNiches(false);
+      }
+    }
+    loadNichesFromDb();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   const [customNicheInput, setCustomNicheInput] = useState("");
   const [activeNicheCategory, setActiveNicheCategory] = useState("all");
   const [nicheSearchQuery, setNicheSearchQuery] = useState("");
@@ -1195,36 +1225,64 @@ export default function AcquisitionEngine({
     }
   };
 
-  // Comprehensive curated list of popular creator niches
+  // Comprehensive curated list of popular creator niches (clean, typography-driven without icons)
   const ALL_AVAILABLE_NICHES = [
-    { id: "tech", label: "Tech", category: "tech", count: "14.2k", icon: Laptop },
-    { id: "software", label: "Software", category: "tech", count: "9.8k", icon: Code },
-    { id: "saas", label: "SaaS", category: "tech", count: "6.4k", icon: Cloud },
-    { id: "fintech", label: "Fintech", category: "business", count: "5.1k", icon: DollarSign },
-    { id: "productivity", label: "Productivity", category: "business", count: "11.3k", icon: Zap },
-    { id: "ai-tools", label: "AI Tools", category: "tech", count: "8.7k", icon: Lightbulb },
-    { id: "creator-economy", label: "Creator Economy", category: "creative", count: "7.5k", icon: Video },
-    { id: "gaming", label: "Gaming", category: "creative", count: "22.1k", icon: Gamepad2 },
-    { id: "fitness-health", label: "Fitness & Health", category: "lifestyle", count: "13.9k", icon: Heart },
-    { id: "e-commerce", label: "E-Commerce", category: "business", count: "8.2k", icon: ShoppingBag },
-    { id: "finance", label: "Finance", category: "business", count: "6.9k", icon: BarChart3 },
-    { id: "crypto-web3", label: "Crypto & Web3", category: "business", count: "4.8k", icon: Box },
-    { id: "design-creative", label: "Design & Creative", category: "creative", count: "9.1k", icon: Palette },
-    { id: "education", label: "Education", category: "lifestyle", count: "10.5k", icon: GraduationCap },
-    { id: "beauty-lifestyle", label: "Beauty & Lifestyle", category: "lifestyle", count: "16.7k", icon: Sparkles },
-    { id: "marketing", label: "Marketing", category: "business", count: "8.4k", icon: Megaphone },
+    { id: "tech", label: "Tech", category: "tech", count: "14.2k" },
+    { id: "software", label: "Software", category: "tech", count: "9.8k" },
+    { id: "saas", label: "SaaS", category: "tech", count: "6.4k" },
+    { id: "fintech", label: "Fintech", category: "business", count: "5.1k" },
+    { id: "productivity", label: "Productivity", category: "business", count: "11.3k" },
+    { id: "ai-tools", label: "AI Tools", category: "tech", count: "8.7k" },
+    { id: "creator-economy", label: "Creator Economy", category: "creative", count: "7.5k" },
+    { id: "gaming", label: "Gaming", category: "creative", count: "22.1k" },
+    { id: "fitness-health", label: "Fitness & Health", category: "lifestyle", count: "13.9k" },
+    { id: "e-commerce", label: "E-Commerce", category: "business", count: "8.2k" },
+    { id: "finance", label: "Finance", category: "business", count: "6.9k" },
+    { id: "crypto-web3", label: "Crypto & Web3", category: "business", count: "4.8k" },
+    { id: "design-creative", label: "Design & Creative", category: "creative", count: "9.1k" },
+    { id: "education", label: "Education", category: "lifestyle", count: "10.5k" },
+    { id: "beauty-lifestyle", label: "Beauty & Lifestyle", category: "lifestyle", count: "16.7k" },
+    { id: "marketing", label: "Marketing", category: "business", count: "8.4k" },
   ];
 
-  const popularNiches = ALL_AVAILABLE_NICHES.map((n) => n.label);
+  // Merge static defaults with dynamically added niches from the database
+  const combinedNichesList = useMemo(() => {
+    if (!loadingNiches && Array.isArray(dbNichesList)) {
+      return dbNichesList.map((dbN) => ({
+        id: dbN.id || (dbN.name || "").toLowerCase().replace(/ /g, "-"),
+        label: dbN.name || dbN.label,
+        category: dbN.category || "custom",
+        count: dbN.count || "5.0k",
+      }));
+    }
+    const list = [...ALL_AVAILABLE_NICHES];
+    const seen = new Set(list.map((n) => n.label.toLowerCase()));
+    for (const dbN of dbNichesList) {
+      if (dbN && dbN.name && !seen.has(dbN.name.toLowerCase())) {
+        list.push({
+          id: dbN.id || dbN.name.toLowerCase().replace(/ /g, "-"),
+          label: dbN.name,
+          category: dbN.category || "custom",
+          count: dbN.count || "5.0k",
+        });
+        seen.add(dbN.name.toLowerCase());
+      }
+    }
+    return list;
+  }, [dbNichesList, loadingNiches]);
 
-  const filteredAvailableNiches = ALL_AVAILABLE_NICHES.filter((item) => {
-    const matchesCategory =
-      activeNicheCategory === "all" || item.category === activeNicheCategory;
-    const matchesSearch =
-      !nicheSearchQuery ||
-      item.label.toLowerCase().includes(nicheSearchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const popularNiches = useMemo(() => combinedNichesList.map((n) => n.label), [combinedNichesList]);
+
+  const filteredAvailableNiches = useMemo(() => {
+    return combinedNichesList.filter((item) => {
+      const matchesCategory =
+        activeNicheCategory === "all" || item.category === activeNicheCategory;
+      const matchesSearch =
+        !nicheSearchQuery ||
+        item.label.toLowerCase().includes(nicheSearchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [combinedNichesList, activeNicheCategory, nicheSearchQuery]);
 
   // Merge popular niches with any active/custom niches so every niche is in the list with equal width
   const allNicheOptions = Array.from(
@@ -1234,21 +1292,66 @@ export default function AcquisitionEngine({
     ])
   );
 
-  const removeNiche = (tagToRemove) => {
-    setNiches((prev) =>
-      prev.filter((t) => t.toLowerCase() !== tagToRemove.toLowerCase()),
-    );
+  const removeNiche = async (tagToRemove) => {
+    const nextNiches = niches.filter((t) => t.toLowerCase() !== tagToRemove.toLowerCase());
+    setNiches(nextNiches);
+    try {
+      const { toggleNicheActiveInDb } = await import("../../services/opsApi");
+      await toggleNicheActiveInDb(tagToRemove, false);
+      setDbNichesList((prev) =>
+        prev.map((n) => n.name.toLowerCase() === tagToRemove.toLowerCase() ? { ...n, is_active: false } : n)
+      );
+    } catch (err) {
+      console.warn("[AcquisitionEngine] Could not persist unselected niche in DB:", err);
+    }
   };
 
-  const addNiche = (tagToAdd) => {
-    const trimmed = tagToAdd.trim().replace(/^,+|,+$/g, "");
-    if (
-      trimmed &&
-      !niches.some((t) => t.toLowerCase() === trimmed.toLowerCase())
-    ) {
-      setNiches((prev) => [...prev, trimmed]);
+  const deleteNiche = async (e, tagToDelete) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const nextNiches = niches.filter((t) => t.toLowerCase() !== tagToDelete.toLowerCase());
+    setNiches(nextNiches);
+    setDbNichesList((prev) =>
+      prev.filter((n) => (n.name || n.label || "").toLowerCase() !== tagToDelete.toLowerCase())
+    );
+    notify("info", "Niche Deleted", `"${tagToDelete}" was removed`);
+    try {
+      const { removeNicheFromDb } = await import("../../services/opsApi");
+      await removeNicheFromDb(tagToDelete, true);
+    } catch (err) {
+      console.warn("[AcquisitionEngine] Could not delete niche from DB:", err);
     }
+  };
+
+  const addNiche = async (tagToAdd) => {
+    const trimmed = tagToAdd.trim().replace(/^,+|,+$/g, "");
+    if (!trimmed) return;
     setCustomNicheInput("");
+    if (!niches.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
+      const nextNiches = [...niches, trimmed];
+      setNiches(nextNiches);
+      try {
+        const { addNicheToDb } = await import("../../services/opsApi");
+        await addNicheToDb({ name: trimmed, is_active: true, category: "custom" });
+        setDbNichesList((prev) => {
+          if (prev.some((n) => n.name.toLowerCase() === trimmed.toLowerCase())) {
+            return prev.map((n) => n.name.toLowerCase() === trimmed.toLowerCase() ? { ...n, is_active: true } : n);
+          }
+          return [...prev, { id: trimmed.toLowerCase().replace(/ /g, "-"), name: trimmed, label: trimmed, category: "custom", is_active: true, count: "5.0k" }];
+        });
+      } catch (err) {
+        console.warn("[AcquisitionEngine] Could not persist added niche to DB:", err);
+      }
+    }
+  };
+
+  const handleBulkSyncNiches = async (nextNiches) => {
+    setNiches(nextNiches);
+    try {
+      const { saveActiveNichesToDb } = await import("../../services/opsApi");
+      await saveActiveNichesToDb(nextNiches);
+    } catch (err) {
+      console.warn("[AcquisitionEngine] Could not sync active niches in DB:", err);
+    }
   };
 
   const togglePlatform = (p) => {
@@ -1719,6 +1822,7 @@ export default function AcquisitionEngine({
         target_count: targetCount,
         platforms: selectedPlatforms,
         geography: selectedGeography,
+        exclude_handles: creators.map((c) => c.handle).filter(Boolean),
       }, controller.signal);
 
       if (controller.signal.aborted) {
@@ -1747,7 +1851,7 @@ export default function AcquisitionEngine({
           (c.email || c.email_public || "").includes("@"),
         ).length;
         setDiscoveryLog(
-          `[Discovery Complete] Identified & enriched ${enrichedCreators.length} creators (${emailsFound} verified business contacts). Review profiles before autonomous dispatch.`,
+          `[Discovery Complete] Identified & enriched ${enrichedCreators.length} new distinct creators (${emailsFound} verified business contacts). Review profiles before autonomous dispatch.`,
         );
       } else if (res?.status === "stopped") {
         setDiscoveryLog(
@@ -1755,7 +1859,7 @@ export default function AcquisitionEngine({
         );
       } else {
         setDiscoveryLog(
-          `[Discovery] No qualifying creators returned matching criteria. Checked candidate pool.`,
+          `[Discovery Notice] All known candidate pool profiles in ${activeNiches.join(", ")} within this follower tier have been scouted. Try selecting additional niches or adjusting criteria.`,
         );
       }
     } catch (e) {
@@ -1769,31 +1873,6 @@ export default function AcquisitionEngine({
       setDiscoveryLog(
         `[Discovery Notice] ${cleanMsg}`,
       );
-
-      // Graceful fallback: If current creators list is empty, load existing database creators matching criteria
-      try {
-        const { getCreators } = await import("../../services/opsApi");
-        const existing = await getCreators({ limit: targetCount * 2 });
-        if (Array.isArray(existing) && existing.length > 0) {
-          const validExisting = existing
-            .filter((c) => {
-              const f = c.follower_count || c.followerCount || 0;
-              return (!parsedMinFollowers || f >= parsedMinFollowers * 0.7) && (!parsedMaxFollowers || f <= parsedMaxFollowers);
-            })
-            .slice(0, targetCount)
-            .map((c) => ({
-              ...c,
-              handle: (c.handle || "").replace(/^@+/, ""),
-            }));
-          if (validExisting.length > 0) {
-            setCreators(validExisting);
-            setSelectedCreatorId(validExisting[0].id);
-            setDiscoveryLog((prev) => `${prev}\n[Auto-Recovery] Loaded ${validExisting.length} verified creators from pipeline database.`);
-          }
-        }
-      } catch (recoverErr) {
-        console.debug("Recovery fallback silent:", recoverErr);
-      }
     } finally {
       if (discoveryAbortRef.current === controller) {
         discoveryAbortRef.current = null;
@@ -6887,10 +6966,10 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         {niches.length > 0 ? `${niches.length} selected` : "0 selected (Required)"}
                       </span>
                     </div>
-                    {niches.length > 0 && (
+                    {niches.length > 0 && !loadingNiches && (
                       <button
                         type="button"
-                        onClick={() => setNiches([])}
+                        onClick={() => handleBulkSyncNiches([])}
                         className="text-xs font-medium text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                       >
                         Clear all
@@ -6898,53 +6977,63 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     )}
                   </div>
 
-                  {/* Active tags container + Add input */}
-                  <div className={`p-3 rounded-xl border flex flex-wrap items-center gap-2 min-h-[50px] transition-colors ${
-                    niches.length === 0
-                      ? "bg-rose-50/40 border-rose-200"
-                      : "bg-slate-50/80 border-slate-200/80"
-                  }`}>
-                    {niches.length === 0 && (
-                      <span className="text-xs text-rose-600 font-medium flex items-center gap-1.5 py-0.5 px-1">
-                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
-                        <span>No niche selected. Choose from the available niches below or type a custom niche:</span>
-                      </span>
-                    )}
-                    {niches.map((niche) => (
-                      <div
-                        key={niche}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300/80 shadow-xs transition hover:bg-emerald-100"
-                      >
-                        <span>{niche}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeNiche(niche)}
-                          title="Remove"
-                          className="text-emerald-500 hover:text-emerald-800 transition-colors p-0.5 rounded-full hover:bg-emerald-200/50 cursor-pointer"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                    <div className="inline-flex items-center">
-                      <input
-                        type="text"
-                        value={customNicheInput}
-                        onChange={(e) => setCustomNicheInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === ",") {
-                            e.preventDefault();
-                            addNiche(customNicheInput);
-                          }
-                        }}
-                        placeholder="+ Add custom..."
-                        className="text-xs bg-white border border-dashed border-slate-300 rounded-lg px-2.5 py-1 focus:outline-none focus:border-emerald-500 text-slate-700 placeholder-slate-400"
-                      />
+                  {/* Active tags container + Add input with skeleton loader */}
+                  {loadingNiches ? (
+                    <div className="p-3 rounded-xl border bg-slate-50/80 border-slate-200/80 flex items-center gap-2 min-h-[50px] animate-pulse">
+                      <div className="h-6 w-20 bg-slate-200/90 rounded-lg" />
+                      <div className="h-6 w-24 bg-slate-200/90 rounded-lg" />
+                      <div className="h-6 w-16 bg-slate-200/90 rounded-lg" />
+                      <div className="h-6 w-22 bg-slate-200/90 rounded-lg" />
+                      <div className="h-6 w-28 bg-slate-200/90 rounded-lg" />
                     </div>
-                  </div>
+                  ) : (
+                    <div className={`p-3 rounded-xl border flex flex-wrap items-center gap-2 min-h-[50px] transition-colors ${
+                      niches.length === 0
+                        ? "bg-rose-50/40 border-rose-200"
+                        : "bg-slate-50/80 border-slate-200/80"
+                    }`}>
+                      {niches.length === 0 && (
+                        <span className="text-xs text-rose-600 font-medium flex items-center gap-1.5 py-0.5 px-1">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                          <span>No niche selected. Choose from the available niches below or type a custom niche:</span>
+                        </span>
+                      )}
+                      {niches.map((niche) => (
+                        <div
+                          key={niche}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300/80 shadow-xs transition hover:bg-emerald-100"
+                        >
+                          <span>{niche}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeNiche(niche)}
+                            title="Remove"
+                            className="text-emerald-500 hover:text-emerald-800 transition-colors p-0.5 rounded-full hover:bg-emerald-200/50 cursor-pointer"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="inline-flex items-center">
+                        <input
+                          type="text"
+                          value={customNicheInput}
+                          onChange={(e) => setCustomNicheInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === ",") {
+                              e.preventDefault();
+                              addNiche(customNicheInput);
+                            }
+                          }}
+                          placeholder="+ Add custom..."
+                          className="text-xs bg-white border border-dashed border-slate-300 rounded-lg px-2.5 py-1 focus:outline-none focus:border-emerald-500 text-slate-700 placeholder-slate-400"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* SECTION: Available Niches Interactive Grid (Redesigned) */}
+                {/* SECTION: Available Niches Interactive Grid (Redesigned - No Icons) */}
                 <div className="pt-6 border-t border-slate-100 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
@@ -6983,7 +7072,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       {[
-                        { id: "all", label: "All (16)" },
+                        { id: "all", label: "All" },
                         { id: "tech", label: "Tech & Dev" },
                         { id: "business", label: "Business & Web3" },
                         { id: "creative", label: "Creative & Media" },
@@ -7013,7 +7102,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         type="button"
                         onClick={() => {
                           const toAdd = filteredAvailableNiches.map((n) => n.label);
-                          setNiches((prev) => Array.from(new Set([...prev, ...toAdd])));
+                          handleBulkSyncNiches(Array.from(new Set([...niches, ...toAdd])));
                         }}
                         className="text-xs font-semibold text-emerald-600 hover:underline cursor-pointer"
                       >
@@ -7024,7 +7113,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         type="button"
                         onClick={() => {
                           const toRemove = new Set(filteredAvailableNiches.map((n) => n.label.toLowerCase()));
-                          setNiches((prev) => prev.filter((t) => !toRemove.has(t.toLowerCase())));
+                          handleBulkSyncNiches(niches.filter((t) => !toRemove.has(t.toLowerCase())));
                         }}
                         className="text-xs font-medium text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
@@ -7033,66 +7122,95 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     </div>
                   </div>
 
-                  {/* Niches 4-Column Card Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
-                    {filteredAvailableNiches.length === 0 ? (
-                      <div className="col-span-full py-8 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                        <p className="text-xs text-slate-400">No niches matched your search criteria.</p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNicheSearchQuery("");
-                            setActiveNicheCategory("all");
-                          }}
-                          className="text-xs font-semibold text-emerald-600 hover:underline mt-1 cursor-pointer"
-                        >
-                          Clear search query
-                        </button>
-                      </div>
-                    ) : (
-                      filteredAvailableNiches.map((item) => {
-                        const Icon = item.icon;
-                        const isAdded = niches.some((n) => n.toLowerCase() === item.label.toLowerCase());
-                        return isAdded ? (
-                          <div
-                            key={item.id}
-                            onClick={() => removeNiche(item.label)}
-                            className="group relative cursor-pointer select-none p-3 rounded-xl border border-emerald-500/80 bg-gradient-to-br from-emerald-50/90 to-teal-50/40 shadow-xs transition-all duration-200 hover:shadow-md hover:border-emerald-500"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
-                                  <Icon className="w-3.5 h-3.5" />
-                                </div>
-                                <span className="text-xs font-bold text-slate-900 truncate block">{item.label}</span>
-                              </div>
-                              <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
-                                <Check className="w-3 h-3 stroke-[2.5]" />
-                              </div>
+                  {/* Niches Grid with Skeleton Loading (Clean Typography, No Icons) */}
+                  {loadingNiches ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                        <div key={i} className="p-3 rounded-xl border border-slate-200/80 bg-white/70 animate-pulse shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <div className="h-3.5 w-24 bg-slate-200 rounded" />
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-5 h-5 rounded-md bg-slate-200" />
+                              <div className="w-5 h-5 rounded-full bg-slate-200" />
                             </div>
                           </div>
-                        ) : (
-                          <div
-                            key={item.id}
-                            onClick={() => addNiche(item.label)}
-                            className="group relative cursor-pointer select-none p-3 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 hover:border-slate-300 shadow-xs transition-all duration-200"
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                      {filteredAvailableNiches.length === 0 ? (
+                        <div className="col-span-full py-8 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                          <p className="text-xs text-slate-400">No niches matched your search criteria.</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNicheSearchQuery("");
+                              setActiveNicheCategory("all");
+                            }}
+                            className="text-xs font-semibold text-emerald-600 hover:underline mt-1 cursor-pointer"
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 group-hover:text-slate-700 flex items-center justify-center flex-shrink-0 transition-colors">
-                                  <Icon className="w-3.5 h-3.5" />
+                            Clear search query
+                          </button>
+                        </div>
+                      ) : (
+                        filteredAvailableNiches.map((item) => {
+                          const isAdded = niches.some((n) => n.toLowerCase() === item.label.toLowerCase());
+                          return isAdded ? (
+                            <div
+                              key={item.id}
+                              onClick={() => removeNiche(item.label)}
+                              className="group relative cursor-pointer select-none p-3 rounded-xl border border-emerald-500/80 bg-gradient-to-br from-emerald-50/90 to-teal-50/40 shadow-xs transition-all duration-200 hover:shadow-md hover:border-emerald-500"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex flex-col min-w-0 pr-1">
+                                  <span className="text-xs font-bold text-slate-900 truncate block">{item.label}</span>
                                 </div>
-                                <span className="text-xs font-medium text-slate-700 truncate block group-hover:text-slate-900">{item.label}</span>
-                              </div>
-                              <div className="w-5 h-5 rounded-full border border-slate-300 group-hover:border-slate-400 flex items-center justify-center flex-shrink-0 text-slate-400 group-hover:text-slate-600 transition-colors">
-                                <Plus className="w-3 h-3" />
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <button
+                                    type="button"
+                                    title={`Delete ${item.label} niche`}
+                                    onClick={(e) => deleteNiche(e, item.label)}
+                                    className="w-5 h-5 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-100/80 transition-all duration-150 cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                                    <Check className="w-3 h-3 stroke-[2.5]" />
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                          ) : (
+                            <div
+                              key={item.id}
+                              onClick={() => addNiche(item.label)}
+                              className="group relative cursor-pointer select-none p-3 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 hover:border-slate-300 shadow-xs transition-all duration-200"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex flex-col min-w-0 pr-1">
+                                  <span className="text-xs font-semibold text-slate-700 truncate block group-hover:text-slate-900">{item.label}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <button
+                                    type="button"
+                                    title={`Delete ${item.label} niche`}
+                                    onClick={(e) => deleteNiche(e, item.label)}
+                                    className="w-5 h-5 rounded-md flex items-center justify-center text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-all duration-150 cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <div className="w-5 h-5 rounded-full border border-slate-300 group-hover:border-slate-400 flex items-center justify-center flex-shrink-0 text-slate-400 group-hover:text-slate-600 transition-colors">
+                                    <Plus className="w-3 h-3" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* SECTION: Target Platforms */}

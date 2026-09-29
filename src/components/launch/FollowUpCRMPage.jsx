@@ -44,7 +44,7 @@ export default function FollowUpCRMPage() {
     if (!isSilent) setLoading(true);
     try {
       const [creatorsRes, threadsRes, workflowRes, projectsRes] = await Promise.allSettled([
-        getCreators({ limit: 50 }),
+        getCreators({ limit: 1000 }),
         getThreads(),
         getWorkflowState(),
         getCoLaunchProjects(),

@@ -13,6 +13,7 @@ import {
   Download,
   ExternalLink,
   ChevronRight,
+  ChevronLeft,
   Filter,
   Copy,
   Check,
@@ -1022,6 +1023,62 @@ export default function CreatorFollowUpCRM({
     });
   }, [enrichedCreators, statusFilter, platformFilter, searchQuery]);
 
+  // Sorting state (Followers, Name, Score, Date)
+  const [sortBy, setSortBy] = useState("followers_desc");
+  // Pagination state (10, 25, 50, 100, "all")
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset to first page when filtering or sorting changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, platformFilter, sortBy, pageSize]);
+
+  // Sort filtered creators
+  const sortedCreators = useMemo(() => {
+    const list = [...filteredCreators];
+    list.sort((a, b) => {
+      const fA = Number(a.follower_count || a.followers || 0);
+      const fB = Number(b.follower_count || b.followers || 0);
+      const nA = (a.display_name || a.name || a.handle || "").toLowerCase();
+      const nB = (b.display_name || b.name || b.handle || "").toLowerCase();
+      const sA = Number(a.creatorScore || a.score || a.engagement_score || 0);
+      const sB = Number(b.creatorScore || b.score || b.engagement_score || 0);
+      const tA = new Date(a.created_at || a.createdAt || 0).getTime();
+      const tB = new Date(b.created_at || b.createdAt || 0).getTime();
+
+      switch (sortBy) {
+        case "followers_desc": return fB - fA;
+        case "followers_asc": return fA - fB;
+        case "name_asc": return nA.localeCompare(nB);
+        case "name_desc": return nB.localeCompare(nA);
+        case "score_desc": return sB - sA;
+        case "date_desc": return tB - tA;
+        case "date_asc": return tA - tB;
+        default: return fB - fA;
+      }
+    });
+    return list;
+  }, [filteredCreators, sortBy]);
+
+  const totalItems = sortedCreators.length;
+  const isAll = pageSize === "all";
+  const numPageSize = isAll ? Math.max(1, totalItems) : Number(pageSize) || 25;
+  const totalPages = isAll ? 1 : Math.max(1, Math.ceil(totalItems / numPageSize));
+
+  const paginatedCreators = useMemo(() => {
+    if (isAll) return sortedCreators;
+    const start = (currentPage - 1) * numPageSize;
+    return sortedCreators.slice(start, start + numPageSize);
+  }, [sortedCreators, currentPage, numPageSize, isAll]);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+
   // Active creator selected for the detailed in-modal studio
   const detailCreator = useMemo(() => {
     if (!selectedDetailCreatorId) return null;
@@ -1422,16 +1479,110 @@ export default function CreatorFollowUpCRM({
           </div>
         </div>
 
+        {/* Sort, Page Size & Top Pagination Toolbar */}
+        <div className="px-4 sm:px-6 py-2.5 bg-white border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-3 text-xs">
+          <div className="flex items-center flex-wrap gap-4">
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Sort by:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs"
+              >
+                <option value="followers_desc">Followers: High to Low</option>
+                <option value="followers_asc">Followers: Low to High</option>
+                <option value="name_asc">Name: A to Z</option>
+                <option value="name_desc">Name: Z to A</option>
+                <option value="score_desc">Creator Score: High to Low</option>
+                <option value="date_desc">Date Added: Newest First</option>
+                <option value="date_asc">Date Added: Oldest First</option>
+              </select>
+            </div>
+
+            {/* Page Size Selector (10, 25, 50, 100, All) */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Show:</span>
+              <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50 shadow-2xs">
+                {[
+                  { value: 10, label: "10" },
+                  { value: 25, label: "25" },
+                  { value: 50, label: "50" },
+                  { value: 100, label: "100" },
+                  { value: "all", label: "All" },
+                ].map((sizeOpt) => {
+                  const isSelected = String(pageSize) === String(sizeOpt.value);
+                  return (
+                    <button
+                      key={String(sizeOpt.value)}
+                      type="button"
+                      onClick={() => {
+                        setPageSize(sizeOpt.value);
+                        setCurrentPage(1);
+                      }}
+                      className={`px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-white text-slate-900 shadow-2xs border border-slate-200 font-bold"
+                          : "text-slate-500 hover:text-slate-900"
+                      }`}
+                    >
+                      {sizeOpt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Page Info & Controls */}
+          {totalItems > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-slate-500 font-mono">
+                Showing <strong className="text-slate-800">{isAll ? 1 : Math.min(totalItems, (currentPage - 1) * numPageSize + 1)}</strong> - <strong className="text-slate-800">{isAll ? totalItems : Math.min(totalItems, currentPage * numPageSize)}</strong> of <strong className="text-slate-800">{totalItems}</strong>
+              </span>
+
+              {!isAll && totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="p-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    title="Previous page"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-xs font-semibold px-2 text-slate-700">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="p-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    title="Next page"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Directory Leads Table / Grid */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
-          {filteredCreators.length === 0 ? (
+          {totalItems === 0 ? (
             <div className="text-center py-16 text-slate-500 text-xs space-y-2">
               <Users className="w-8 h-8 text-slate-400 mx-auto" />
               <p className="font-semibold text-slate-600">No creators found matching your filter criteria.</p>
               <p className="text-[11px] text-slate-400">Try adjusting your search terms or reply status filter.</p>
             </div>
           ) : (
-            filteredCreators.map((c) => {
+            paginatedCreators.map((c) => {
               const reply = c.replyInfo;
               const stage = c.stageInfo;
               const email = c.email || c.email_public;
@@ -1762,6 +1913,55 @@ export default function CreatorFollowUpCRM({
             })
           )}
         </div>
+
+        {/* Bottom Pagination Bar */}
+        {!isAll && totalPages > 1 && (
+          <div className="p-3.5 sm:px-6 border-t border-slate-200/80 bg-white flex items-center justify-between flex-wrap gap-3">
+            <span className="text-xs text-slate-500 font-mono">
+              Showing {(currentPage - 1) * numPageSize + 1} to {Math.min(totalItems, currentPage * numPageSize)} of {totalItems} creators
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                .map((p, idx, arr) => {
+                  const prevP = arr[idx - 1];
+                  const hasGap = prevP && p - prevP > 1;
+                  return (
+                    <React.Fragment key={p}>
+                      {hasGap && <span className="px-1 text-slate-400 font-mono text-xs">...</span>}
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage(p)}
+                        className={`w-7 h-7 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                          currentPage === p
+                            ? "bg-slate-900 text-white shadow-2xs"
+                            : "border border-slate-200 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    </React.Fragment>
+                  );
+                })}
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Selected Creator Detail & Chat History Modal */}
         {detailCreator && typeof document !== "undefined" && createPortal(
@@ -2169,7 +2369,7 @@ export default function CreatorFollowUpCRM({
           <div className="flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
             <span>
-              {detailCreator ? `Viewing conversation details & admin activities for ${detailCreator.name || detailCreator.display_name}` : `Showing ${filteredCreators.length} of ${enrichedCreators.length} leads in Creator Forge CRM`}
+              {detailCreator ? `Viewing conversation details & admin activities for ${detailCreator.name || detailCreator.display_name}` : `Showing ${isAll ? totalItems : Math.min(totalItems, (currentPage - 1) * numPageSize + 1)} - ${isAll ? totalItems : Math.min(totalItems, currentPage * numPageSize)} of ${totalItems} leads (Total in CRM: ${enrichedCreators.length})`}
             </span>
           </div>
           {!isPage && onClose && (

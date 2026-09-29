@@ -372,3 +372,12 @@ export const getFrontendUrl = () => {
   }
   return 'https://creator-forge-frontend.vercel.app'
 }
+
+// ── Target Niches Database Operations ─────────────────────────────────────────
+export const getNiches = () => req('GET', '/niches')
+export const addNicheToDb = (data) => req('POST', '/niches', data)
+export const removeNicheFromDb = (name, permanent = false) =>
+  req('DELETE', `/niches/${encodeURIComponent(name)}${permanent ? '?permanent=true' : ''}`)
+export const saveActiveNichesToDb = (niches) => req('PUT', '/niches/active', { niches })
+export const toggleNicheActiveInDb = (name, is_active) => req('PUT', '/niches/toggle', { name, is_active })
+
