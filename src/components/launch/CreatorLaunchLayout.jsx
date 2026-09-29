@@ -119,7 +119,7 @@ export default function CreatorLaunchLayout({
     try {
       const { getCreators, getThreads } = await import('../../services/opsApi')
       const [creatorsRes, threadsRes] = await Promise.allSettled([
-        getCreators({ limit: 50 }),
+        getCreators({ limit: 100 }),
         getThreads(),
       ])
       if (creatorsRes.status === 'fulfilled' && creatorsRes.value) {

@@ -529,26 +529,133 @@ export default function AcquisitionEngine({
   // Discovered Creators State (Dynamic AI + Apify Pipeline)
   const [isLaunchingProject, setIsLaunchingProject] = useState(false);
   const [launchStepIndex, setLaunchStepIndex] = useState(1);
+  const [discovering, setDiscovering] = useState(false);
+  const discoveryAbortRef = useRef(null);
+  const [discoveryLog, setDiscoveryLog] = useState("");
+  const [loadingCreatorsFromDb, setLoadingCreatorsFromDb] = useState(
+    !(initialCreators && Array.isArray(initialCreators) && initialCreators.length > 0)
+  );
   const [creators, setCreators] = useState(() => {
-    return initialCreators || [];
+    // Strictly prefer DB data (initialCreators) as the source of truth, NEVER stale localStorage
+    if (initialCreators && Array.isArray(initialCreators) && initialCreators.length > 0) {
+      return initialCreators;
+    }
+    return [];
   });
 
-  // Sync incoming initialCreators from parent layout / database sync
+  // Direct DB fetch on mount — ensures all DB creators load immediately
   useEffect(() => {
+    let cancelled = false;
+    setLoadingCreatorsFromDb(true);
+    import("../../services/opsApi").then(({ getCreators }) => {
+      getCreators({ limit: 100 }).then((res) => {
+        if (cancelled) return;
+        const dbList = Array.isArray(res) ? res : res?.creators || [];
+        if (dbList.length > 0) {
+          setCreators((prev) => {
+            // DB is authoritative source of truth
+            const localById = new Map();
+            const localByHandle = new Map();
+            for (const p of (prev || [])) {
+              if (p.id) localById.set(String(p.id), p);
+              if (p.handle) localByHandle.set(p.handle.replace(/^@/, '').toLowerCase(), p);
+            }
+            const merged = dbList.map((dbC) => {
+              const localMatch =
+                (dbC.id && localById.get(String(dbC.id))) ||
+                (dbC.handle && localByHandle.get(dbC.handle.replace(/^@/, '').toLowerCase()));
+              if (!localMatch) return dbC;
+              const localEmail = localMatch.email || localMatch.email_public || "";
+              const dbEmail = dbC.email || dbC.email_public || "";
+              const preserveLocalEmail = localEmail && localEmail !== dbEmail;
+              return {
+                ...localMatch,
+                ...dbC,
+                ...(preserveLocalEmail ? { email: localMatch.email, email_public: localMatch.email_public, email_verified: localMatch.email_verified } : {}),
+              };
+            });
+            // Append any local-only creators not yet in DB
+            const dbHandles = new Set(dbList.map(c => (c.handle || '').replace(/^@/, '').toLowerCase()).filter(Boolean));
+            const dbIds = new Set(dbList.map(c => String(c.id || '')).filter(Boolean));
+            for (const p of (prev || [])) {
+              const pHandle = (p.handle || '').replace(/^@/, '').toLowerCase();
+              const pId = String(p.id || '');
+              if (!(pId && dbIds.has(pId)) && !(pHandle && dbHandles.has(pHandle))) {
+                merged.push(p);
+              }
+            }
+            return merged;
+          });
+        }
+        setLoadingCreatorsFromDb(false);
+      }).catch(() => {
+        if (!cancelled) setLoadingCreatorsFromDb(false);
+      });
+    }).catch(() => {
+      if (!cancelled) setLoadingCreatorsFromDb(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Sync incoming initialCreators from parent layout / database sync
+  // DB is the authoritative source — always adopt DB creators, preserving local-only edits
+  useEffect(() => {
+    if (discovering) return;
     if (initialCreators && Array.isArray(initialCreators) && initialCreators.length > 0) {
+      setLoadingCreatorsFromDb(false);
       setCreators((prev) => {
-        if (!prev || prev.length === 0) return initialCreators;
-        // Never append foreign creators into an active cohort. Only update matching creators.
-        return prev.map((p) => {
-          const matched = initialCreators.find(
-            (c) => (c.id && (String(c.id) === String(p.id) || String(c.id) === String(p._id))) ||
-                   (c.handle && p.handle && c.handle.replace(/^@/, '').toLowerCase() === p.handle.replace(/^@/, '').toLowerCase())
-          );
-          return matched ? { ...p, ...matched } : p;
+        if (!prev || prev.length === 0) {
+          return initialCreators;
+        }
+
+        // Build a lookup of local creators by normalized handle for fast matching
+        const localByHandle = new Map();
+        const localById = new Map();
+        for (const p of prev) {
+          if (p.id) localById.set(String(p.id), p);
+          if (p.handle) localByHandle.set(p.handle.replace(/^@/, '').toLowerCase(), p);
+        }
+
+        // Start from DB creators as the base, overlaying any locally-edited fields
+        const merged = initialCreators.map((dbCreator) => {
+          const localMatch =
+            (dbCreator.id && localById.get(String(dbCreator.id))) ||
+            (dbCreator.handle && localByHandle.get(dbCreator.handle.replace(/^@/, '').toLowerCase()));
+
+          if (!localMatch) return dbCreator;
+
+          // Protect locally-modified email: if local has a different email, keep it
+          const localEmail = localMatch.email || localMatch.email_public || "";
+          const dbEmail = dbCreator.email || dbCreator.email_public || "";
+          const preserveLocalEmail = localEmail && localEmail !== dbEmail;
+
+          return {
+            ...localMatch,
+            ...dbCreator,
+            ...(preserveLocalEmail ? {
+              email: localMatch.email,
+              email_public: localMatch.email_public,
+              email_verified: localMatch.email_verified,
+            } : {}),
+          };
         });
+
+        // Append any local-only creators not yet in DB (e.g. from a recent discovery not yet persisted)
+        const dbHandles = new Set(initialCreators.map(c => (c.handle || '').replace(/^@/, '').toLowerCase()).filter(Boolean));
+        const dbIds = new Set(initialCreators.map(c => String(c.id || '')).filter(Boolean));
+        for (const p of prev) {
+          const pHandle = (p.handle || '').replace(/^@/, '').toLowerCase();
+          const pId = String(p.id || '');
+          const alreadyInDb = (pId && dbIds.has(pId)) || (pHandle && dbHandles.has(pHandle));
+          if (!alreadyInDb) {
+            merged.push(p);
+          }
+        }
+
+        return merged;
       });
     }
-  }, [initialCreators]);
+  }, [initialCreators, discovering]);
 
   // Enforce platform requirement: strictly 100k-1M followers, max 50 creators
   useEffect(() => {
@@ -599,9 +706,6 @@ export default function AcquisitionEngine({
     }
   });
   const [step5Error, setStep5Error] = useState(null);
-  const [discovering, setDiscovering] = useState(false);
-  const discoveryAbortRef = useRef(null);
-  const [discoveryLog, setDiscoveryLog] = useState("");
   const [copiedEmail, setCopiedEmail] = useState(null);
   const [replyFilter, setReplyFilter] = useState("all");
   const [showFollowUpCRM, setShowFollowUpCRM] = useState(false);
@@ -1014,6 +1118,14 @@ export default function AcquisitionEngine({
     setEditingEmailCreatorId(null);
     setTempEmailValue("");
 
+    // 1b. Also persist updated creators list to localStorage so sync effects don't overwrite
+    setCreators((latest) => {
+      try {
+        localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(latest));
+      } catch (e) { }
+      return latest;
+    });
+
     // 2. Persist to DB if creator exists on backend
     if (newEmail) {
       try {
@@ -1408,7 +1520,7 @@ export default function AcquisitionEngine({
         }
 
         // 3. Sync creator cohort
-        const res = await getCreators({ limit: 50 }).catch(() => null);
+        const res = await getCreators({ limit: 100 }).catch(() => null);
         const rawList = Array.isArray(res) ? res : res?.creators || [];
         const deletedIds = getDeletedCreatorIds();
         const deletedSet = new Set(deletedIds.map(String));
@@ -1419,6 +1531,7 @@ export default function AcquisitionEngine({
             setCreators([]);
             setSelectedCreatorId(null);
             setAiDetectedChoiceMap({});
+            setLoadingCreatorsFromDb(false);
             try {
               localStorage.removeItem("forge_launch_discovered_creators");
               localStorage.removeItem("forge_launch_ai_choice_map");
@@ -1435,6 +1548,7 @@ export default function AcquisitionEngine({
               } catch (e) { }
             }
 
+            setLoadingCreatorsFromDb(false);
             setCreators((prev) => {
               const formattedDbCreators = rawList
                 .filter((dbItem) => {
@@ -1499,64 +1613,53 @@ export default function AcquisitionEngine({
                   };
                 });
 
-              const currentBatchLimit = (() => {
-                try {
-                  const saved = localStorage.getItem("forge_launch_creators_batch_count");
-                  if (saved && Number(saved) !== 3) {
-                    return Math.max(1, Number(saved));
-                  }
-                  return creatorsBatchCount || 25;
-                } catch {
-                  return creatorsBatchCount || 25;
-                }
-              })();
-
-              const finalLimit = Math.max(currentBatchLimit, formattedDbCreators.length);
-
-              if (!prev || prev.length === 0) {
-                return formattedDbCreators.slice(0, currentBatchLimit);
+              // DB is authoritative source of truth.
+              // Start from formattedDbCreators as base, preserving local email edits.
+              const localById = new Map();
+              const localByHandle = new Map();
+              for (const p of (prev || [])) {
+                if (p.id) localById.set(String(p.id), p);
+                if (p.handle) localByHandle.set((p.handle || "").toLowerCase().replace(/^@/, ""), p);
               }
 
-              // When prev already has creators, PRESERVE THE ACTIVE COHORT!
-              // Only update statuses, replies, and verified contact info from DB for creators in this cohort.
-              // NEVER add foreign creators from the database to an active cohort,
-              // and NEVER match by email (only match by ID or unique handle).
-              const updatedList = prev
-                .filter((p) => {
-                  const cleanHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
-                  return !deletedSet.has(String(p.id)) && !deletedSet.has(cleanHandle) && !deletedSet.has(String(p.handle));
-                })
-                .map((p) => {
-                  const pHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
-                  const dbMatch = formattedDbCreators.find((dbC) => {
-                    const cleanHandle = (dbC.handle || "").toLowerCase().replace(/^@/, "");
-                    return (
-                      (dbC.id && (String(dbC.id) === String(p.id) || String(dbC.id) === String(p._id))) ||
-                      (cleanHandle && pHandle && cleanHandle === pHandle)
-                    );
-                  });
+              const merged = formattedDbCreators.map((dbC) => {
+                const cleanHandle = (dbC.handle || "").toLowerCase().replace(/^@/, "");
+                const localMatch =
+                  (dbC.id && localById.get(String(dbC.id))) ||
+                  (cleanHandle && localByHandle.get(cleanHandle));
 
-                  if (!dbMatch) {
-                    return p;
+                if (!localMatch) return dbC;
+
+                const userEmail = (localMatch.email || localMatch.email_public || "").trim();
+                const dbEmail = (dbC.email || dbC.email_public || "").trim();
+                const preserveLocalEmail = userEmail && userEmail !== dbEmail;
+
+                return {
+                  ...localMatch,
+                  ...dbC,
+                  ...(preserveLocalEmail ? {
+                    email: userEmail,
+                    email_public: userEmail,
+                    email_verified: Boolean(userEmail && userEmail.includes("@")),
+                  } : {}),
+                  productConcepts: (localMatch.productConcepts && localMatch.productConcepts.length > 0) ? localMatch.productConcepts : dbC.productConcepts,
+                };
+              });
+
+              // Append any local-only creators not yet in DB
+              const dbHandles = new Set(formattedDbCreators.map(c => (c.handle || "").toLowerCase().replace(/^@/, "")).filter(Boolean));
+              const dbIds = new Set(formattedDbCreators.map(c => String(c.id || "")).filter(Boolean));
+              for (const p of (prev || [])) {
+                const pHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
+                const pId = String(p.id || "");
+                if (!deletedSet.has(pId) && !deletedSet.has(pHandle)) {
+                  if (!(pId && dbIds.has(pId)) && !(pHandle && dbHandles.has(pHandle))) {
+                    merged.push(p);
                   }
+                }
+              }
 
-                  // Preserve local user edits if available, else take updated DB values
-                  const userEmail = (p.email || p.email_public || "").trim();
-                  const dbEmail = (dbMatch.email || dbMatch.email_public || "").trim();
-                  const resolvedEmail = userEmail || dbEmail;
-
-                  return {
-                    ...p,
-                    ...dbMatch,
-                    email: resolvedEmail,
-                    email_public: resolvedEmail,
-                    email_verified: Boolean(resolvedEmail && resolvedEmail.includes("@")),
-                    // Preserve any concepts generated for this creator
-                    productConcepts: (p.productConcepts && p.productConcepts.length > 0) ? p.productConcepts : dbMatch.productConcepts,
-                  };
-                });
-
-              return updatedList;
+              return merged;
             });
 
             setSelectedCreatorId((prevId) => {
@@ -1782,6 +1885,12 @@ export default function AcquisitionEngine({
     const controller = new AbortController();
     discoveryAbortRef.current = controller;
 
+    // Capture all currently known handles to guarantee deduplication
+    const existingHandles = Array.from(new Set([
+      ...(creators || []).map((c) => (c.handle || "").replace(/^@/, "").toLowerCase()),
+      ...(initialCreators || []).map((c) => (c.handle || "").replace(/^@/, "").toLowerCase()),
+    ])).filter(Boolean);
+
     // 1. Reset discovery batch UI state so Step 2 renders a fresh incoming cohort
     setCreators([]);
     setSelectedCreatorId(null);
@@ -1822,7 +1931,7 @@ export default function AcquisitionEngine({
         target_count: targetCount,
         platforms: selectedPlatforms,
         geography: selectedGeography,
-        exclude_handles: creators.map((c) => c.handle).filter(Boolean),
+        exclude_handles: existingHandles,
       }, controller.signal);
 
       if (controller.signal.aborted) {
@@ -5578,7 +5687,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     if (sendingBulk) return;
     setSendingBulk(true);
 
-    let activeList = Array.isArray(creators) ? creators.slice(0, creatorsBatchCount || 25) : [];
+    let activeList = Array.isArray(unlaunchedCreators) && unlaunchedCreators.length > 0 ? unlaunchedCreators : (Array.isArray(creators) ? creators : []);
     if (editingEmailCreatorId && tempEmailValue.trim()) {
       const draftEmail = tempEmailValue.trim();
       const targetId = editingEmailCreatorId;
@@ -6807,8 +6916,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
             ) : (
               <span className="text-xs text-slate-600 font-medium flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                Collective Cohort View ({unlaunchedCreators.length} active leads)
+                <span className={`w-2 h-2 rounded-full ${loadingCreatorsFromDb ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
+                Collective Cohort View ({loadingCreatorsFromDb ? (
+                  <span className="inline-flex items-center gap-1.5 text-slate-500 font-normal">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                    <span>Syncing from DB...</span>
+                  </span>
+                ) : (
+                  <span className="font-semibold text-slate-800">
+                    {unlaunchedCreators.length !== creators.length 
+                      ? `${unlaunchedCreators.length} active leads (${creators.length} in DB)`
+                      : `${creators.length} active leads`}
+                  </span>
+                )})
               </span>
             )}
           </div>
@@ -6934,12 +7054,21 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <button
                       type="button"
                       onClick={handleDeleteAllCreators}
-                      disabled={isDeletingAll}
+                      disabled={isDeletingAll || loadingCreatorsFromDb}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition cursor-pointer disabled:opacity-50 shadow-2xs active:scale-95"
                       title="Permanently wipe all discovered creators from database and reset pipeline"
                     >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                      <span>{isDeletingAll ? "Deleting..." : `Delete All Creators${creators.length > 0 ? ` (${creators.length})` : ""}`}</span>
+                      {loadingCreatorsFromDb ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 text-rose-500 animate-spin" />
+                          <span>Loading creators...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                          <span>{isDeletingAll ? "Deleting..." : `Delete All Creators (${creators.length})`}</span>
+                        </>
+                      )}
                     </button>
                     <button
                       type="button"
@@ -8091,7 +8220,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   )}
                 </button>
 
-                {creators.length > 0 && (
+                {loadingCreatorsFromDb ? (
+                  <div className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200/90 shadow-2xs">
+                    <Loader2 className="w-3.5 h-3.5 text-slate-400 animate-spin" />
+                    <span>Loading creators from database...</span>
+                  </div>
+                ) : creators.length > 0 ? (
                   <button
                     type="button"
                     onClick={handleDeleteAllCreators}
@@ -8102,7 +8236,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                     <span>Delete All Creators ({creators.length})</span>
                   </button>
-                )}
+                ) : null}
 
                 {niches.length === 0 ? (
                   <p className="text-[11px] text-center text-rose-600 font-medium leading-relaxed px-2 flex items-center justify-center gap-1.5 bg-rose-50 border border-rose-200/80 py-2 rounded-xl animate-in fade-in">
@@ -8268,23 +8402,33 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
           {/* Discovered Creators Grid / Empty State */}
           {!discovering && creators.length === 0 ? (
-            <div className="text-center py-16 text-slate-500 text-xs space-y-4">
-              <p>
-                No creators discovered yet. Click Start Discovery to find matching creators.
-              </p>
-              <button
-                onClick={handleStartEngine}
-                disabled={discovering}
-                className="relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
-              >
-                <Search className="w-4 h-4 text-emerald-400" />
-                <span>
-                  Start Lead Discovery ({creatorsBatchCount} Creators)
-                </span>
-              </button>
-            </div>
+            loadingCreatorsFromDb ? (
+              <div className="text-center py-16 text-slate-500 text-xs space-y-4 animate-in fade-in">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+                  <p className="text-sm font-medium text-slate-600">Loading creators from database…</p>
+                  <p className="text-[11px] text-slate-400">Syncing your pipeline from the server</p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-16 text-slate-500 text-xs space-y-4">
+                <p>
+                  No creators discovered yet. Click Start Discovery to find matching creators.
+                </p>
+                <button
+                  onClick={handleStartEngine}
+                  disabled={discovering}
+                  className="relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <Search className="w-4 h-4 text-emerald-400" />
+                  <span>
+                    Start Lead Discovery ({creatorsBatchCount} Creators)
+                  </span>
+                </button>
+              </div>
+            )
           ) : unlaunchedCreators.length > 0 ? (() => {
-            const validCreators = Array.isArray(unlaunchedCreators) ? unlaunchedCreators.slice(0, creatorsBatchCount || 25) : [];
+            const validCreators = Array.isArray(unlaunchedCreators) ? (discovering ? unlaunchedCreators.slice(0, creatorsBatchCount || 25) : unlaunchedCreators) : [];
             const advanceableCount = validCreators.filter((c) => (c.creatorScore || 85) >= minScoreThreshold).length;
             const verifiedEmailCount = validCreators.filter((c) => {
               const bioMatch = (c.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
@@ -9081,7 +9225,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           {/* Queue preview table */}
           <div className="space-y-3 pt-2">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-display">
-              Active Outreach Queue ({Math.min(creators.length, creatorsBatchCount || 25)})
+              Active Outreach Queue ({unlaunchedCreators.length})
             </h3>
             <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-2xs">
               <table className="w-full text-left text-xs">
@@ -9095,7 +9239,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {unlaunchedCreators.slice(0, creatorsBatchCount || 25).map((c) => {
+                  {unlaunchedCreators.map((c) => {
                     const emailVal = c.email || c.email_public || "";
                     const isEditing = editingEmailCreatorId === c.id;
 
