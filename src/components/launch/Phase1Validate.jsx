@@ -285,9 +285,7 @@ export default function Phase1Validate({
   // Creator Launch Pacing & Customizable Strategy Guidance Prompt
   const [campaignPacing, setCampaignPacing] = useState(() => project?.campaignKit?.pacingMode || 'low_burden')
   const [postingFrequency, setPostingFrequency] = useState('1 video per week (Standard YouTube)')
-  const [campaignStrategyPrompt, setCampaignStrategyPrompt] = useState(
-    "Based on creator's normal posting frequency, channel description, and recent video topics: generate launch assets that hit the Phase 1 validation goal ($1,000 / 50 presales) with minimal creator burden. Space milestones realistically (avoiding daily promotional spam), keep scripts organic to their natural voice, and directly connect to problems discussed in their recent videos."
-  )
+  const [campaignStrategyPrompt, setCampaignStrategyPrompt] = useState('')
 
   // Check if Campaign Kit has been generated or populated
   const hasCampaignGenerated = Boolean(
@@ -723,7 +721,7 @@ export default function Phase1Validate({
       const generated = await generateValidationCampaignKitAI(projectForGen, {
         pacing: campaignPacing,
         postingFrequency,
-        customPrompt: campaignStrategyPrompt
+        customPrompt: campaignStrategyPrompt?.trim() || "based on creator's normal posting frequency, what you think will hit the next phase goal, what will be enough but not burden the creator..."
       })
       if (generated) {
         setCampaignKit(generated)
@@ -2444,8 +2442,8 @@ export default function Phase1Validate({
                     <span>Audience Data Grounded</span>
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 truncate mt-0.5">
-                  Verified channel telemetry sourced directly from {project?.creatorName || 'creator'}'s uploads, channel description, and audience discussions.
+                <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                  Sourced from recent channel uploads & community discussions.
                 </p>
               </div>
             </div>
@@ -2477,135 +2475,105 @@ export default function Phase1Validate({
             </div>
           </div>
 
-          {/* CREATOR LAUNCH STRATEGY & PACING ENGINE CUSTOMIZER */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-indigo-600" />
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Creator Launch Strategy & Pacing Engine
-                  </h4>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    Non-Burdensome Cadence
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  Customized around {project?.creatorName || 'the creator'}'s normal rhythm — avoiding daily promotional spam while ensuring enough touchpoints to hit Phase 1 validation.
-                </p>
+          {/* CAMPAIGN CADENCE & PACING */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3.5">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-slate-700" />
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Campaign Cadence
+                </h4>
               </div>
 
-              {/* Target Phase 1 Metric Pill */}
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono shrink-0">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono shrink-0">
                 <Target className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-slate-500">Phase 1 Target:</span>
-                <span className="font-bold text-slate-900">50 Presales / $1,000+</span>
+                <span className="text-slate-500">Goal:</span>
+                <span className="font-bold text-slate-900">50 Presales ($1,000+)</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Cadence Mode Selector */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-700 block">
-                  Launch Pacing Mode (Prevents Creator Burnout & Unfollow Spikes)
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700 block">
+                  Cadence
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'low_burden', label: 'Low-Burden', desc: '4 Spaced Milestones', badge: 'Recommended' },
-                    { id: 'balanced', label: 'Balanced', desc: '5 Spaced Milestones', badge: '10-14 days' },
-                    { id: 'intensive', label: 'Sprint', desc: '6-7 Milestones', badge: 'High-Volume' }
+                    { id: 'low_burden', label: 'Low-Burden', desc: '4 posts' },
+                    { id: 'balanced', label: 'Balanced', desc: '5 posts' },
+                    { id: 'intensive', label: 'Sprint', desc: '7 posts' }
                   ].map(p => (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => setCampaignPacing(p.id)}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      className={`py-2 px-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                         campaignPacing === p.id
-                          ? 'bg-slate-900 border-slate-900 text-white shadow-xs'
-                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
+                          ? 'bg-slate-900 border-slate-900 text-white shadow-2xs'
+                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold truncate">{p.label}</span>
-                        <span className={`text-[9px] font-mono px-1 rounded ${
-                          campaignPacing === p.id ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
-                        }`}>{p.badge}</span>
-                      </div>
-                      <p className={`text-[10px] mt-0.5 truncate ${
-                        campaignPacing === p.id ? 'text-slate-300' : 'text-slate-500'
-                      }`}>
+                      <div className="text-xs font-bold">{p.label}</div>
+                      <div className={`text-[10px] ${campaignPacing === p.id ? 'text-slate-300' : 'text-slate-500'}`}>
                         {p.desc}
-                      </p>
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Normal Posting Rhythm Selector */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-700 block">
-                  Creator's Normal Posting Rhythm
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700 block">
+                  Creator Posting Frequency
                 </label>
                 <select
                   value={postingFrequency}
                   onChange={e => setPostingFrequency(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 outline-none focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 transition-all cursor-pointer"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 outline-none focus:bg-white focus:border-slate-400 transition-all cursor-pointer"
                 >
-                  <option value="1 video per week (Standard YouTube)">1 video / week (Standard YouTube upload cycle)</option>
-                  <option value="2-3 posts per week (Multi-channel)">2–3 posts / week (Active Multi-channel)</option>
-                  <option value="Bi-weekly or monthly (Long-form deep dives)">Bi-weekly or monthly (Long-form deep dives)</option>
-                  <option value="High-frequency short-form (Daily TikTok/Reels)">High-frequency short-form (Daily TikTok/Reels)</option>
+                  <option value="1 video per week (Standard YouTube)">1 video / week (Standard YouTube)</option>
+                  <option value="2-3 posts per week (Multi-channel)">2–3 posts / week (Multi-channel)</option>
+                  <option value="Bi-weekly or monthly (Long-form deep dives)">Bi-weekly or monthly</option>
+                  <option value="High-frequency short-form (Daily TikTok/Reels)">Daily short-form (Reels/TikTok)</option>
                 </select>
-                <p className="text-[10px] text-slate-500">
-                  Touchpoints space across Days 1, 4, 8, and 12 so promo feels 100% organic to their viewers.
-                </p>
               </div>
             </div>
 
-            {/* Editable Strategy & Pacing Guidance Prompt */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2.5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <label className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Customized Strategy & Pacing Prompt (AI Steering)</span>
+            {/* Optional Custom Instructions */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Custom Instructions (Optional)</span>
                 </label>
-                <span className="text-[10px] text-slate-500 font-mono">
-                  Grounded in {project?.creatorName || 'creator'}'s upload rhythm & community topics
-                </span>
+                {campaignStrategyPrompt && (
+                  <button
+                    type="button"
+                    onClick={() => setCampaignStrategyPrompt('')}
+                    className="text-[10px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
 
-              <textarea
+              <input
+                type="text"
                 value={campaignStrategyPrompt}
                 onChange={e => setCampaignStrategyPrompt(e.target.value)}
-                rows={2}
-                className="w-full p-3 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all resize-y shadow-2xs"
-                placeholder="Based on creator's normal posting frequency, what you think will hit the next phase goal, what will be enough but not burden the creator..."
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:bg-white focus:border-slate-400 transition-all"
+                placeholder="e.g. Focus on YouTube mid-roll, avoid Twitter spam, keep effort under 30 mins..."
               />
 
-              {/* Quick Guidance Steering Pills */}
-              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quick Steering:</span>
+              {/* Compact Quick Preset Chips */}
+              <div className="flex items-center gap-1.5 flex-wrap">
                 {[
-                  {
-                    label: '⚡ Low Burden (~1 post/wk, 4 milestones)',
-                    prompt: "Based on creator's normal posting frequency, design a low-burden roadmap of 4 spaced milestones (Day 1, 4, 8, 12). Avoid daily spam. Sourced from recent videos to hit 50 Founding Members without creator burnout.",
-                    pacing: 'low_burden'
-                  },
-                  {
-                    label: '🎯 Balanced (~2 actions/wk, 5 milestones)',
-                    prompt: "Based on creator's normal cadence, what will hit the Phase 1 target (50 pre-orders / $1,000) with 5 spaced touchpoints including a behind-the-scenes engineering story and mid-roll demo.",
-                    pacing: 'balanced'
-                  },
-                  {
-                    label: '🎬 YouTube Mid-Roll Only (Zero public feed spam)',
-                    prompt: "Focus promotional effort exclusively on an organic 60-second mid-roll in their next scheduled YouTube video plus 1:1 founder email. Zero separate social feed spam.",
-                    pacing: 'low_burden'
-                  },
-                  {
-                    label: '💌 1:1 Email + IG Stories (Under 30 mins effort)',
-                    prompt: "What will hit the next phase goal using only 1:1 founder email and Instagram story polls? Zero video filming required, total creator effort under 30 minutes.",
-                    pacing: 'low_burden'
-                  }
+                  { label: '⚡ Low-Burden (4 posts)', prompt: 'Design a low-burden roadmap of 4 spaced milestones. Avoid daily spam.', pacing: 'low_burden' },
+                  { label: '🎯 Balanced (5 posts)', prompt: 'Create 5 spaced touchpoints including a behind-the-scenes engineering story and mid-roll demo.', pacing: 'balanced' },
+                  { label: '🎬 Video Mid-Roll Only', prompt: 'Focus promotional effort on an organic 60s mid-roll in their next YouTube video plus 1:1 email.', pacing: 'low_burden' },
+                  { label: '💌 Email + Stories Only', prompt: 'Hit the goal using only 1:1 founder email and Instagram story polls. Zero video filming required.', pacing: 'low_burden' }
                 ].map(chip => (
                   <button
                     key={chip.label}
@@ -2614,7 +2582,11 @@ export default function Phase1Validate({
                       setCampaignStrategyPrompt(chip.prompt)
                       if (chip.pacing) setCampaignPacing(chip.pacing)
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50 hover:border-indigo-200 border border-slate-200 text-[10.5px] font-medium text-slate-700 hover:text-indigo-800 transition-all cursor-pointer shadow-2xs active:scale-95"
+                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all cursor-pointer ${
+                      campaignStrategyPrompt === chip.prompt
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
+                    }`}
                   >
                     {chip.label}
                   </button>
@@ -2622,32 +2594,29 @@ export default function Phase1Validate({
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-slate-100">
-              <div className="flex items-center gap-2 text-[11px] text-slate-600">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span>
-                  {campaignPacing === 'low_burden' 
-                    ? '4 Spaced Milestones (Day 1, 4, 8, 12) · ~40 mins total effort · 0% Burnout' 
-                    : campaignPacing === 'balanced' 
-                    ? '5 Milestones (Day 1, 3, 6, 9, 12) · ~55 mins total effort' 
-                    : 'Sprint Cadence (6-7 Milestones)'}
-                </span>
-              </div>
+            <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500 font-medium">
+                {campaignPacing === 'low_burden' 
+                  ? '4 spaced milestones · ~40 mins creator effort' 
+                  : campaignPacing === 'balanced' 
+                  ? '5 spaced milestones · ~55 mins creator effort' 
+                  : '7 milestones · Sprint pace'}
+              </span>
 
               <button
                 onClick={generateCampaign}
                 disabled={isGeneratingCampaign}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
               >
                 {isGeneratingCampaign ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                    <span>Generating Tailored Kit & Mockups...</span>
+                    <span>Generating Campaign...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3.5 h-3.5 text-white" />
-                    <span>{hasCampaignGenerated ? '✨ Steer AI Roadmap & Mockups' : 'Generate Tailored Campaign Kit'}</span>
+                    <span>{hasCampaignGenerated ? 'Update Campaign' : 'Generate Campaign'}</span>
                   </>
                 )}
               </button>
