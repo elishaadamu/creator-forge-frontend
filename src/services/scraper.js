@@ -736,6 +736,7 @@ export async function fetchCreatorYouTubeVideos(handleOrUrl, limit = 8) {
 
 /**
  * Fetch real audience comments for a specific YouTube video from backend Innertube endpoint.
+ * Gracefully handles creator handles by routing to channel comments.
  */
 export async function fetchYouTubeVideoComments(videoIdOrUrl, limit = 8) {
   if (!videoIdOrUrl) return []
@@ -746,7 +747,10 @@ export async function fetchYouTubeVideoComments(videoIdOrUrl, limit = 8) {
     cleanVid = cleanVid.split('youtu.be/')[1]?.split('?')[0]?.split('#')[0] || cleanVid
   }
 
-  const cacheKey = `forge_video_comments_${cleanVid}`
+  const isHandle = cleanVid.startsWith('@') || (!cleanVid.includes('v=') && !cleanVid.includes('youtu.be') && (cleanVid.length !== 11 || cleanVid.includes(' ')))
+  const cleanTarget = cleanVid.replace(/^@/, '')
+  const cacheKey = isHandle ? `forge_creator_comments_${cleanTarget}` : `forge_video_comments_${cleanTarget}`
+
   try {
     const cached = sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey)
     if (cached) {
@@ -756,7 +760,8 @@ export async function fetchYouTubeVideoComments(videoIdOrUrl, limit = 8) {
   } catch (e) {}
 
   try {
-    const res = await fetch(`/api/creators/youtube-comments?video_id=${encodeURIComponent(cleanVid)}&limit=${limit}`)
+    const queryParam = isHandle ? `handle=${encodeURIComponent(cleanTarget)}` : `video_id=${encodeURIComponent(cleanTarget)}`
+    const res = await fetch(`/api/creators/youtube-comments?${queryParam}&limit=${limit}`)
     if (res.ok) {
       const data = await res.json()
       if (Array.isArray(data.comments) && data.comments.length > 0) {
@@ -768,9 +773,46 @@ export async function fetchYouTubeVideoComments(videoIdOrUrl, limit = 8) {
       }
     }
   } catch (e) {
-    console.warn('[Scraper] Failed to fetch comments for', cleanVid, e)
+    console.warn('[Scraper] Failed to fetch comments for', cleanTarget, e)
   }
 
   return []
 }
+
+/**
+ * Fetch real audience comments for a creator's channel uploads across platforms.
+ * Can take a creator handle, channel URL, or creator ID.
+ */
+export async function fetchCreatorComments(handleOrId, platform = 'youtube', limit = 8) {
+  if (!handleOrId) return []
+  const clean = String(handleOrId).replace(/^@/, '').trim()
+  const cacheKey = `forge_creator_comments_${clean}`
+
+  try {
+    const cached = sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey)
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch (e) {}
+
+  try {
+    const res = await fetch(`/api/creators/youtube-comments?handle=${encodeURIComponent(clean)}&limit=${limit}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (Array.isArray(data.comments) && data.comments.length > 0) {
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(data.comments))
+          localStorage.setItem(cacheKey, JSON.stringify(data.comments))
+        } catch (e) {}
+        return data.comments
+      }
+    }
+  } catch (e) {
+    console.warn('[Scraper] Failed to fetch channel comments for', clean, e)
+  }
+
+  return []
+}
+
 

@@ -321,7 +321,7 @@ ${(concept.keyFeatures || []).map((f) => `  - ${f}`).join("\n")}
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed italic">
                     "{concept.audienceEvidence || audienceIntelligence?.recurringQuestions?.quote ||
-                      "How can I automate my workflow without paying thousands for fragmented tools?"}"
+                      `Direct feedback and workflow hurdles discussed across ${creatorName}'s channel uploads.`}"
                   </p>
                   <p className="text-[11px] text-slate-400">
                     {concept.problem || audienceIntelligence?.painPoints?.description}

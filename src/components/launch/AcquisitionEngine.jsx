@@ -91,6 +91,7 @@ import {
   ReplyInboxSkeleton,
 } from "./Section2Skeletons";
 import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from "../../utils/expiringStorage";
+import { fetchCreatorComments } from "../../services/scraper";
 
 export const PARTNERSHIP_EMAIL = import.meta.env.VITE_PARTNERSHIP_EMAIL || "creatorforgeweb@12019303.brevosend.com";
 
@@ -2801,6 +2802,45 @@ export default function AcquisitionEngine({
       category = "podcast_audio";
     }
 
+    const cleanHandle = String(creator.handle || creator.cleanHandle || "").replace(/^@/, "").trim();
+    let realComments = [];
+    if (Array.isArray(creator.comments) && creator.comments.length > 0) {
+      realComments = creator.comments;
+    } else if (Array.isArray(creator.audienceComments) && creator.audienceComments.length > 0) {
+      realComments = creator.audienceComments;
+    } else if (Array.isArray(creator.recent_comments) && creator.recent_comments.length > 0) {
+      realComments = creator.recent_comments;
+    } else if (typeof window !== "undefined" && cleanHandle) {
+      try {
+        const c = sessionStorage.getItem(`forge_creator_comments_${cleanHandle}`) || localStorage.getItem(`forge_creator_comments_${cleanHandle}`);
+        if (c) {
+          const parsed = JSON.parse(c);
+          if (Array.isArray(parsed) && parsed.length > 0) realComments = parsed;
+        }
+      } catch (e) {}
+    }
+
+    const firstValidComment = realComments.find((c) => {
+      const q = c.quote || c.text;
+      return q && String(q).trim().length > 5;
+    });
+
+    const recurringQuestionsData = firstValidComment
+      ? {
+          badge: "Verified Inquiry",
+          quote: `"${String(firstValidComment.quote || firstValidComment.text).trim()}"`,
+          author: firstValidComment.author || "@viewer",
+          metricLabel: `${realComments.length} verified audience comments extracted from channel`,
+          hasRealComment: true,
+        }
+      : {
+          badge: "Pending Ingestion",
+          quote: null,
+          author: null,
+          metricLabel: "No public comments extracted yet from channel uploads",
+          hasRealComment: false,
+        };
+
     switch (category) {
       case "finance":
         return {
@@ -2811,11 +2851,7 @@ export default function AcquisitionEngine({
             metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
             multiplier: "5.2x higher engagement on allocation breakdowns",
           },
-          recurringQuestions: {
-            badge: "High Intent",
-            quote: `"What spreadsheet or tracker do you use to rebalance portfolios and track dividend yields?"`,
-            metricLabel: `~${commentsEstimate}+ questions across recent breakdowns`,
-          },
+          recurringQuestions: recurringQuestionsData,
           painPoints: {
             badge: "Capital Risk",
             description:
@@ -2853,11 +2889,7 @@ export default function AcquisitionEngine({
             metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
             multiplier: "4.6x higher bookmark rate on asset guides",
           },
-          recurringQuestions: {
-            badge: "Asset Demand",
-            quote: `"Where can I download your sound design pack, LUTs, and export presets used in this edit?"`,
-            metricLabel: `~${commentsEstimate}+ asset requests on top uploads`,
-          },
+          recurringQuestions: recurringQuestionsData,
           painPoints: {
             badge: "Time Sink",
             description:
@@ -2894,11 +2926,7 @@ export default function AcquisitionEngine({
             metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
             multiplier: "6.1x longer average watch duration",
           },
-          recurringQuestions: {
-            badge: "Mechanics Inquiry",
-            quote: `"How did you handle the state machine logic and save-state serialization for this mechanic?"`,
-            metricLabel: `~${commentsEstimate}+ requests for reusable asset templates`,
-          },
+          recurringQuestions: recurringQuestionsData,
           painPoints: {
             badge: "Engine Friction",
             description:
@@ -2934,11 +2962,7 @@ export default function AcquisitionEngine({
             metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
             multiplier: "5.4x higher GitHub repository stars",
           },
-          recurringQuestions: {
-            badge: "Code Access",
-            quote: `"Where can I find the Jupyter notebook and cleaned dataset pipeline used for this demonstration?"`,
-            metricLabel: `~${commentsEstimate}+ notebook requests per video`,
-          },
+          recurringQuestions: recurringQuestionsData,
           painPoints: {
             badge: "Infra Headaches",
             description:
@@ -2975,11 +2999,7 @@ export default function AcquisitionEngine({
             metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
             multiplier: "4.9x higher repeat re-watches",
           },
-          recurringQuestions: {
-            badge: "Lab Access",
-            quote: `"Which lab environment and automated scanning script did you use to simulate this vulnerability?"`,
-            metricLabel: `~${commentsEstimate}+ lab setup inquiries`,
-          },
+          recurringQuestions: recurringQuestionsData,
           painPoints: {
             badge: "Lab Setup Friction",
             description:
@@ -3016,11 +3036,7 @@ export default function AcquisitionEngine({
             metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
             multiplier: "5.8x higher viral external shares",
           },
-          recurringQuestions: {
-            badge: "Template Pull",
-            quote: `"Can you share the exact dashboard template and daily tracking system you use in this video?"`,
-            metricLabel: `~${commentsEstimate}+ template requests on every vlog`,
-          },
+          recurringQuestions: recurringQuestionsData,
           painPoints: {
             badge: "Disjointed Tools",
             description:
@@ -3057,11 +3073,7 @@ export default function AcquisitionEngine({
             metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
             multiplier: "6.5x higher save and bookmark rate",
           },
-          recurringQuestions: {
-            badge: "Execution Details",
-            quote: `"What tech stack and customer acquisition funnel did this founder use to reach initial profitability?"`,
-            metricLabel: `~${commentsEstimate}+ founder teardown questions`,
-          },
+          recurringQuestions: recurringQuestionsData,
           painPoints: {
             badge: "Execution Void",
             description:
@@ -3098,11 +3110,7 @@ export default function AcquisitionEngine({
             metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
             multiplier: "4.7x higher retention on sound treatment tests",
           },
-          recurringQuestions: {
-            badge: "Audio Chain",
-            quote: `"What VST plugin chain or compression settings do you apply to clean up room reverb?"`,
-            metricLabel: `~${commentsEstimate}+ audio chain inquiries`,
-          },
+          recurringQuestions: recurringQuestionsData,
           painPoints: {
             badge: "Post-Production Hell",
             description:
@@ -3139,11 +3147,7 @@ export default function AcquisitionEngine({
             metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
             multiplier: "4.8x higher retention on build tutorials",
           },
-          recurringQuestions: {
-            badge: "High Demand",
-            quote: `"Where can I download the exact starter template and automated scripts used in this ${nicheRaw || "project"}?"`,
-            metricLabel: `~${commentsEstimate}+ comments across top 5 tutorials`,
-          },
+          recurringQuestions: recurringQuestionsData,
           painPoints: {
             badge: "Unmet Need",
             description: `Subscribers struggle with manual environment configurations, dependency mismatches, and fragmented toolchains in ${nicheRaw || "development"}.`,
@@ -4249,6 +4253,31 @@ export default function AcquisitionEngine({
       }
     }
   }, [activeStep, selectedCreator?.id, selectedCreator?.productConcepts?.length]);
+
+  // Automatic Channel Comments Fetcher for Selected Creator
+  useEffect(() => {
+    if (!selectedCreator) return;
+    const cleanH = String(selectedCreator.handle || selectedCreator.cleanHandle || selectedCreator.display_name || "").replace(/^@/, "").trim();
+    if (!cleanH || /^[0-9a-f-]{15,}$/i.test(cleanH)) return;
+
+    const existingComments =
+      (Array.isArray(selectedCreator.comments) && selectedCreator.comments.length > 0) ||
+      (Array.isArray(selectedCreator.audienceComments) && selectedCreator.audienceComments.length > 0);
+
+    if (!existingComments) {
+      fetchCreatorComments(cleanH)
+        .then((cmts) => {
+          if (cmts && cmts.length > 0) {
+            setCreators((prev) =>
+              prev.map((c) =>
+                c.id === selectedCreator.id ? { ...c, comments: cmts, audienceComments: cmts } : c
+              )
+            );
+          }
+        })
+        .catch(() => {});
+    }
+  }, [selectedCreator?.id, selectedCreator?.handle]);
 
   useEffect(() => {
     if (!isInitialLoadDone.current) return;
@@ -10631,9 +10660,22 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             {audIntel.recurringQuestions.badge}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-600 leading-relaxed italic">
-                          {audIntel.recurringQuestions.quote}
-                        </p>
+                        {audIntel.recurringQuestions.quote ? (
+                          <div className="space-y-1">
+                            <p className="text-[11px] text-slate-700 leading-relaxed italic bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                              {audIntel.recurringQuestions.quote}
+                            </p>
+                            {audIntel.recurringQuestions.author && (
+                              <div className="text-[10px] text-slate-500 font-mono text-right">
+                                — {audIntel.recurringQuestions.author}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-slate-400 italic">
+                            No public audience comments found on channel yet.
+                          </p>
+                        )}
                         <div className="text-[10px] text-slate-500 font-mono pt-1.5 border-t border-slate-100">
                           {audIntel.recurringQuestions.metricLabel}
                         </div>

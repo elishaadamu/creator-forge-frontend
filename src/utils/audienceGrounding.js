@@ -85,12 +85,21 @@ export function getProjectAudienceGrounding(project, customComments = null) {
 
     const primaryVideoId = transcripts[0]?.videoId || transcripts[0]?.id
     let cachedComments = []
-    if (primaryVideoId && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try {
-        const c = sessionStorage.getItem(`forge_video_comments_${primaryVideoId}`) || localStorage.getItem(`forge_video_comments_${primaryVideoId}`)
-        if (c) {
-          const parsed = JSON.parse(c)
-          if (Array.isArray(parsed) && parsed.length > 0) cachedComments = parsed
+        if (primaryVideoId) {
+          const c = sessionStorage.getItem(`forge_video_comments_${primaryVideoId}`) || localStorage.getItem(`forge_video_comments_${primaryVideoId}`)
+          if (c) {
+            const parsed = JSON.parse(c)
+            if (Array.isArray(parsed) && parsed.length > 0) cachedComments = parsed
+          }
+        }
+        if ((!cachedComments || cachedComments.length === 0) && cleanHandle) {
+          const ch = sessionStorage.getItem(`forge_creator_comments_${cleanHandle}`) || localStorage.getItem(`forge_creator_comments_${cleanHandle}`)
+          if (ch) {
+            const parsed = JSON.parse(ch)
+            if (Array.isArray(parsed) && parsed.length > 0) cachedComments = parsed
+          }
         }
       } catch (e) {}
     }
@@ -112,10 +121,11 @@ export function getProjectAudienceGrounding(project, customComments = null) {
         return {
           id: c.id || `real-comm-${idx}`,
           author: author.startsWith('@') ? author : `@${author}`,
-          source: 'YouTube Comments (Channel Uploads)',
+          source: c.source || 'YouTube Comments (Channel Uploads)',
           likes,
           verified: true,
           videoTitle: vTitle,
+          videoUrl: c.videoUrl || '',
           quote: text,
           published: c.published || '',
           addressedBy: idx === 0
@@ -131,30 +141,7 @@ export function getProjectAudienceGrounding(project, customComments = null) {
         }
       })
     } else {
-      audienceComments = [
-        {
-          id: 'comm-1',
-          author: '@community_member',
-          source: 'YouTube Comments (Channel Uploads)',
-          likes: 310,
-          verified: true,
-          videoTitle: transcripts[0]?.title || 'Channel Video',
-          quote: `I've been following your breakdowns on this topic. Having a dedicated tool to automate this exact workflow would save hours every single week!`,
-          addressedBy: 'Milestone 1: Discovery Poll & Milestone 2: Video Integration',
-          actionTaken: 'Validates core problem resonance and establishes immediate organic interest without hard sales.'
-        },
-        {
-          id: 'comm-2',
-          author: '@active_builder',
-          source: 'Community Discussion',
-          likes: 184,
-          verified: true,
-          videoTitle: transcripts[1]?.title || transcripts[0]?.title || 'Channel Video',
-          quote: `Would love to test this early if you ever release a beta or private founding member group.`,
-          addressedBy: 'Milestone 3: 1:1 Plain-Text VIP Letter',
-          actionTaken: 'Sets the 50 Founding Member beta slots at 50% lifetime discount to capture this high-intent demand.'
-        }
-      ]
+      audienceComments = []
     }
   } else {
     // 2. Fallback strictly grounded in the creator's verified channel metadata — NEVER artificial placeholder titles
@@ -183,9 +170,21 @@ export function getProjectAudienceGrounding(project, customComments = null) {
       }
     ]
 
+    let fallbackCachedComments = []
+    if (typeof window !== 'undefined' && cleanHandle) {
+      try {
+        const ch = sessionStorage.getItem(`forge_creator_comments_${cleanHandle}`) || localStorage.getItem(`forge_creator_comments_${cleanHandle}`)
+        if (ch) {
+          const parsed = JSON.parse(ch)
+          if (Array.isArray(parsed) && parsed.length > 0) fallbackCachedComments = parsed
+        }
+      } catch (e) {}
+    }
+
     const fallbackRawComments = customComments ||
       (Array.isArray(project?.audienceComments) && project.audienceComments.length > 0 ? project.audienceComments : null) ||
-      (Array.isArray(project?.comments) && project.comments.length > 0 ? project.comments : null)
+      (Array.isArray(project?.comments) && project.comments.length > 0 ? project.comments : null) ||
+      (Array.isArray(fallbackCachedComments) && fallbackCachedComments.length > 0 ? fallbackCachedComments : null)
 
     if (fallbackRawComments && fallbackRawComments.length > 0) {
       audienceComments = fallbackRawComments.slice(0, 6).map((c, idx) => {
@@ -196,10 +195,11 @@ export function getProjectAudienceGrounding(project, customComments = null) {
         return {
           id: c.id || `real-comm-${idx}`,
           author: author.startsWith('@') ? author : `@${author}`,
-          source: 'YouTube Comments (Channel Uploads)',
+          source: c.source || 'YouTube Comments (Channel Uploads)',
           likes,
           verified: true,
-          videoTitle: `${creator}'s Verified Uploads`,
+          videoTitle: c.videoTitle || `${creator}'s Verified Uploads`,
+          videoUrl: c.videoUrl || '',
           quote: text,
           published: c.published || '',
           addressedBy: idx === 0
@@ -215,30 +215,7 @@ export function getProjectAudienceGrounding(project, customComments = null) {
         }
       })
     } else {
-      audienceComments = [
-        {
-          id: 'comm-1',
-          author: '@community_member',
-          source: 'YouTube Comments (Channel Uploads)',
-          likes: 310,
-          verified: true,
-          videoTitle: `${creator}'s Channel Uploads`,
-          quote: channelBio ? `Been following your content on ${niche}. Having a dedicated tool built specifically for this workflow would save so many hours!` : `I've been following your breakdowns on this topic. Having a dedicated tool to automate this exact workflow would save hours every single week!`,
-          addressedBy: 'Milestone 1: Discovery Poll & Milestone 2: Video Integration',
-          actionTaken: 'Validates core problem resonance and establishes immediate organic interest without hard sales.'
-        },
-        {
-          id: 'comm-2',
-          author: '@active_builder',
-          source: 'Community Discussion',
-          likes: 184,
-          verified: true,
-          videoTitle: `${creator}'s Channel Uploads`,
-          quote: `Would love to test this early if you ever release a beta or private founding member group.`,
-          addressedBy: 'Milestone 3: 1:1 Plain-Text VIP Letter',
-          actionTaken: 'Sets the 50 Founding Member beta slots at 50% lifetime discount to capture this high-intent demand.'
-        }
-      ]
+      audienceComments = []
     }
   }
 
@@ -306,7 +283,7 @@ export function getProjectAudienceGrounding(project, customComments = null) {
     deliverabilityGuards,
     stats: {
       transcriptsAnalyzed: transcripts.length,
-      commentsIngested: isAIMentor ? 184 : (rawPosts.length > 0 ? 160 : 142),
+      commentsIngested: audienceComments.length,
       socialMentions: isAIMentor ? 68 : 52,
       antiSlopScore: '99.4%'
     }
@@ -357,7 +334,7 @@ export function enrichTasksWithGrounding(tasks, project) {
         groundingType: 'audience_comment',
         groundingBadge: '💬 Top Audience Demand Signal',
         groundingSummary: 'Low-friction discovery poll testing audience resonance',
-        sourceCitation: grounding.audienceComments[0]?.quote || 'Based on top community inquiries.',
+        sourceCitation: grounding.audienceComments[0]?.quote ? `"${grounding.audienceComments[0].quote}"` : 'Direct community inquiries and channel insights.',
         provenanceDetails: `Hooks the exact frustration from top community comments. The interactive poll tests viewer resonance before any sales pitch.`,
         antiSlopNote: 'Uses natural peer language instead of aggressive sales copy.',
         effortEstimate: '~10 mins effort',

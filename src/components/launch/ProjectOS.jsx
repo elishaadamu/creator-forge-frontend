@@ -1213,7 +1213,7 @@ partnerships@creatorforge.com`
                     </div>
 
                     <p className="text-[11px] text-slate-700 leading-relaxed">
-                      All co-launch sprint actions, scripts, and stories are derived directly from <strong>{cleanCreatorName}'s verified uploads</strong> — extracted from <strong>{audienceGroundingData.stats.transcriptsAnalyzed} channel videos</strong>, channel description, <strong>{audienceGroundingData.stats.commentsIngested}+ fan comments</strong>, and custom voice guidelines. Not generic AI slop. Outbound emails are 1:1 plain-text to guarantee Primary Inbox delivery (zero spam).
+                      All co-launch sprint actions, scripts, and stories are derived directly from <strong>{cleanCreatorName}'s verified uploads</strong> — extracted from <strong>{audienceGroundingData.stats.transcriptsAnalyzed} channel videos</strong>, channel description, <strong>{audienceGroundingData.stats.commentsIngested > 0 ? `${audienceGroundingData.stats.commentsIngested} fan comments` : 'channel discussions'}</strong>, and custom voice guidelines. Not generic AI slop. Outbound emails are 1:1 plain-text to guarantee Primary Inbox delivery (zero spam).
                     </p>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5 text-[10px]">
@@ -1242,8 +1242,14 @@ partnerships@creatorforge.com`
                       >
                         <MessageSquare className="w-3.5 h-3.5 text-cyan-600 shrink-0 group-hover:scale-110 transition-transform" />
                         <div className="min-w-0">
-                          <span className="font-bold text-slate-900 block truncate">180+ Comments</span>
-                          <span className="text-slate-500 font-mono truncate block">Real Inquiries</span>
+                          <span className="font-bold text-slate-900 block truncate">
+                            {audienceGroundingData.audienceComments?.length > 0 
+                              ? `${audienceGroundingData.audienceComments.length} Comments` 
+                              : 'Comments'}
+                          </span>
+                          <span className="text-slate-500 font-mono truncate block">
+                            {audienceGroundingData.audienceComments?.length > 0 ? 'Verified Feedback' : 'Channel Inquiries'}
+                          </span>
                         </div>
                       </button>
 

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
   X, ShieldCheck, Youtube, MessageSquare, Bot, Shield, Check, Copy,
-  ExternalLink, Sparkles, AlertCircle, ArrowRight, CheckCircle2, Clock
+  ExternalLink, Sparkles, AlertCircle, ArrowRight, CheckCircle2, Clock, RotateCw
 } from 'lucide-react'
 import { getProjectAudienceGrounding } from '../../utils/audienceGrounding'
-import { fetchCreatorYouTubeVideos, fetchYouTubeVideoComments } from '../../services/scraper'
+import { fetchCreatorYouTubeVideos, fetchYouTubeVideoComments, fetchCreatorComments } from '../../services/scraper'
 
 export default function AudienceGroundingModal({
   isOpen,
@@ -62,17 +62,22 @@ export default function AudienceGroundingModal({
     }
   }, [isOpen, project, liveVideos, isFetchingLive])
 
-  // 2. Fetch real YouTube audience comments for the primary source video
+  // 2. Fetch real YouTube audience comments directly from uploads or channel handle
   useEffect(() => {
     if (!isOpen) return
+    if (liveComments || isFetchingComments) return
+
     const posts = (Array.isArray(liveVideos) && liveVideos.length > 0 ? liveVideos : null) ||
       (Array.isArray(project?.recentPosts) && project.recentPosts.length > 0 ? project.recentPosts : null) ||
       (Array.isArray(project?.videos) && project.videos.length > 0 ? project.videos : null)
 
     const targetVid = posts?.[0]?.videoId || posts?.[0]?.id
-    if (targetVid && !liveComments && !isFetchingComments) {
+    const cleanH = String(project?.creatorHandle || project?.creator_handle || project?.handle || project?.creatorName || '').replace(/^@/, '').trim()
+    const target = targetVid || (cleanH && !/^[0-9a-f-]{15,}$/i.test(cleanH) ? cleanH : null)
+
+    if (target) {
       setIsFetchingComments(true)
-      fetchYouTubeVideoComments(targetVid)
+      fetchCreatorComments(target)
         .then(cmts => {
           if (cmts && cmts.length > 0) {
             setLiveComments(cmts)
@@ -351,72 +356,111 @@ export default function AudienceGroundingModal({
               </div>
 
               {/* Comments List */}
-              <div className="space-y-3">
-                {grounding.audienceComments.map((c, idx) => {
-                  const commentVideoUrl = getVideoUrlForComment(c, idx)
-                  const matchedVideoTitle = c.videoTitle || primaryVideo?.title || 'YouTube Devlog Upload'
+              {grounding.audienceComments.length > 0 ? (
+                <div className="space-y-3">
+                  {grounding.audienceComments.map((c, idx) => {
+                    const commentVideoUrl = getVideoUrlForComment(c, idx)
+                    const matchedVideoTitle = c.videoTitle || primaryVideo?.title || 'YouTube Devlog Upload'
 
-                  return (
-                    <div
-                      key={c.id || idx}
-                      className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs space-y-3"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-b border-slate-100 pb-2.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-slate-900">{c.author}</span>
-                          <span className="text-[10px] text-slate-500 font-mono">• {c.source}</span>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                            👍 {c.likes} {c.likes === 1 || c.likes === '1' ? 'Upvote' : 'Upvotes'}
-                          </span>
-                          {c.published && (
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              {c.published}
-                            </span>
-                          )}
-                          <a
-                            href={commentVideoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-[10px] font-bold transition-all shadow-2xs cursor-pointer group"
-                            title={`Read this comment and thread on YouTube: "${matchedVideoTitle}"`}
-                          >
-                            <Youtube className="w-3 h-3 text-red-600 shrink-0" />
-                            <span>Read on YouTube</span>
-                            <ExternalLink className="w-2.5 h-2.5 text-red-500 group-hover:translate-x-0.5 transition-transform" />
-                          </a>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-slate-800 leading-relaxed font-sans italic bg-slate-50 p-3 rounded-lg border border-slate-100">
-                        "{c.quote}"
-                      </p>
-
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-[11px] border-t border-slate-100">
-                        <div>
-                          <span className="text-slate-500 font-mono">Answers Pain: </span>
-                          <span className="font-bold text-slate-900">{c.addressedBy}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-emerald-700 font-medium">
-                            ✓ {c.actionTaken}
+                    return (
+                      <div
+                        key={c.id || idx}
+                        className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs space-y-3"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-b border-slate-100 pb-2.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-slate-900">{c.author}</span>
+                            <span className="text-[10px] text-slate-500 font-mono">• {c.source}</span>
                           </div>
-                          <a
-                            href={commentVideoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-red-700 hover:text-red-900 font-bold flex items-center gap-1 hover:underline text-[10px]"
-                          >
-                            <span>Open Source Video</span>
-                            <ExternalLink className="w-2.5 h-2.5 text-red-600" />
-                          </a>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                              👍 {c.likes} {c.likes === 1 || c.likes === '1' ? 'Upvote' : 'Upvotes'}
+                            </span>
+                            {c.published && (
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {c.published}
+                              </span>
+                            )}
+                            <a
+                              href={commentVideoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-[10px] font-bold transition-all shadow-2xs cursor-pointer group"
+                              title={`Read this comment and thread on YouTube: "${matchedVideoTitle}"`}
+                            >
+                              <Youtube className="w-3 h-3 text-red-600 shrink-0" />
+                              <span>Read on YouTube</span>
+                              <ExternalLink className="w-2.5 h-2.5 text-red-500 group-hover:translate-x-0.5 transition-transform" />
+                            </a>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-800 leading-relaxed font-sans italic bg-slate-50 p-3 rounded-lg border border-slate-100">
+                          "{c.quote}"
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-[11px] border-t border-slate-100">
+                          <div>
+                            <span className="text-slate-500 font-mono">Answers Pain: </span>
+                            <span className="font-bold text-slate-900">{c.addressedBy}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-emerald-700 font-medium">
+                              ✓ {c.actionTaken}
+                            </div>
+                            <a
+                              href={commentVideoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-red-700 hover:text-red-900 font-bold flex items-center gap-1 hover:underline text-[10px]"
+                            >
+                              <span>Open Source Video</span>
+                              <ExternalLink className="w-2.5 h-2.5 text-red-600" />
+                            </a>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="p-8 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+                    <MessageSquare className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-slate-800">
+                      {isFetchingComments ? 'Extracting Audience Comments from Channel...' : 'No Public Comments Found for This Channel'}
+                    </h4>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                      {isFetchingComments
+                        ? 'Connecting to verified channel video uploads to grab authentic community questions and pain points...'
+                        : 'No public viewer comments were returned for the recent uploads on this channel, or comments may be disabled. Zero artificial placeholder comments are injected.'}
+                    </p>
+                  </div>
+                  {!isFetchingComments && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cleanH = String(project?.creatorHandle || project?.creator_handle || project?.handle || project?.creatorName || '').replace(/^@/, '').trim()
+                        if (cleanH) {
+                          setIsFetchingComments(true)
+                          fetchCreatorComments(cleanH)
+                            .then(cmts => {
+                              if (cmts && cmts.length > 0) setLiveComments(cmts)
+                            })
+                            .catch(() => {})
+                            .finally(() => setIsFetchingComments(false))
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-slate-400 text-xs font-semibold text-slate-700 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                    >
+                      <RotateCw className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Retry Fetching Comments</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

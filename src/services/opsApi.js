@@ -166,7 +166,14 @@ export const getCreatorVideos = (creatorIdOrHandle, limit = 8) => {
 
 export const getYouTubeVideoComments = (videoIdOrUrl, limit = 8) => {
   const clean = String(videoIdOrUrl || '').trim()
-  return req('GET', `/creators/youtube-comments?video_id=${encodeURIComponent(clean)}&limit=${limit}`)
+  const isHandle = clean.startsWith('@') || (!clean.includes('v=') && !clean.includes('youtu.be') && (clean.length !== 11 || clean.includes(' ')))
+  const q = isHandle ? `handle=${encodeURIComponent(clean.replace(/^@/, ''))}` : `video_id=${encodeURIComponent(clean)}`
+  return req('GET', `/creators/youtube-comments?${q}&limit=${limit}`)
+}
+
+export const getCreatorComments = (creatorIdOrHandle, limit = 8) => {
+  const clean = String(creatorIdOrHandle || '').replace(/^@/, '').trim()
+  return req('GET', `/creators/youtube-comments?handle=${encodeURIComponent(clean)}&limit=${limit}`)
 }
 
 export const addCreatorContact = (creatorId, contactType, value) =>
