@@ -117,7 +117,7 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
         } else if (rawRef.includes('tiktok') || rawRef.includes('reels') || rawRef.includes('shorts') || rawRef.includes('youtube') || rawRef.includes('yt')) {
           channel = 'TikTok / Shorts'
         } else if (rawRef.includes('twitter') || rawRef.includes('x_post') || rawRef.includes('tweet') || rawRef.includes('x')) {
-          channel = 'Twitter / X'
+          channel = 'X (Social Post)'
         } else if (rawRef.includes('newsletter') || rawRef.includes('email') || rawRef.includes('broadcast') || rawRef.includes('mail')) {
           channel = 'Email Newsletter'
         } else if (rawRef.includes('dm') || rawRef.includes('outreach')) {
@@ -129,7 +129,7 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
           rawRef = refUrl.hostname
           if (rawRef.includes('instagram')) channel = 'Instagram Stories'
           else if (rawRef.includes('tiktok')) channel = 'TikTok / Shorts'
-          else if (rawRef.includes('twitter') || rawRef.includes('t.co') || rawRef.includes('x.com')) channel = 'Twitter / X'
+          else if (rawRef.includes('twitter') || rawRef.includes('t.co') || rawRef.includes('x.com')) channel = 'X (Social Post)'
         } catch (e) {}
       }
     }

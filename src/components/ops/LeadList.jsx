@@ -1,18 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Search, Plus, RefreshCw, ChevronDown, ExternalLink,
-  Youtube, Instagram, Smartphone, Twitter, CheckCircle,
+  Youtube, Instagram, Smartphone, CheckCircle,
   XCircle, AlertCircle, Loader2, Zap, Mail, Eye, Trash2, MoreHorizontal,
   ArrowLeft, Calendar, Cpu, ShieldCheck, Activity, Copy, Check, ChevronUp,
   Grid, List, LayoutGrid
 } from 'lucide-react'
+import { XLogo } from '../launch/PostVisualMockup'
 import { getCreators, scrapeCreator, analyzeCreator, qualifyCreator, suppressCreator, deleteCreator, getCreatorAnalysis } from '../../services/opsApi'
 
 const PLATFORM_ICONS = {
   youtube:   { Icon: Youtube,    color: '#ff3b30' },
   instagram: { Icon: Instagram,  color: '#e1306c' },
   tiktok:    { Icon: Smartphone, color: '#00c8c8' },
-  twitter:   { Icon: Twitter,    color: '#60a5fa' },
+  twitter:   { Icon: XLogo,      color: '#e7e9ea' },
 }
 
 const STATUS_STYLES = {
@@ -1375,7 +1376,7 @@ export default function LeadList({ onCountChange }) {
                   <option value="youtube">YouTube</option>
                   <option value="instagram">Instagram</option>
                   <option value="tiktok">TikTok</option>
-                  <option value="twitter">Twitter</option>
+                  <option value="twitter">X</option>
                 </select>
               </div>
 

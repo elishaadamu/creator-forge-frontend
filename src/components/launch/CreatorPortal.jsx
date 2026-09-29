@@ -13,6 +13,7 @@ import { deduplicateAndSortMessages } from './CreatorWhatsAppChat'
 import ProjectOS from './ProjectOS'
 import DIYSubscriptionModal from './DIYSubscriptionModal'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
+import PostVisualMockup from './PostVisualMockup'
 import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards } from '../../utils/stepGuards'
 
 export default function CreatorPortal({ portalId }) {
@@ -24,6 +25,7 @@ export default function CreatorPortal({ portalId }) {
   const [copiedKey, setCopiedKey] = useState(null)
   const [showDiyModal, setShowDiyModal] = useState(false)
   const [viewDraftTask, setViewDraftTask] = useState(null)
+  const [portalDraftViewMode, setPortalDraftViewMode] = useState('visual') // 'visual' | 'text'
   const [showAgreementModal, setShowAgreementModal] = useState(false)
   const [creatorReplyText, setCreatorReplyText] = useState('')
   const [isSendingReply, setIsSendingReply] = useState(false)
@@ -546,7 +548,7 @@ export default function CreatorPortal({ portalId }) {
   const schedule = (campaignKit.postingSchedule && campaignKit.postingSchedule.length > 0)
     ? campaignKit.postingSchedule
     : (project.checklist && project.checklist.length > 0 ? project.checklist : [
-        { id: 'day-1', day: 1, title: 'Problem Teaser & Discovery Poll', channel: 'Twitter / X', isToday: false, done: true, draftKey: 'announcementPost', description: 'Post teaser and survey link to gather audience friction points.' },
+        { id: 'day-1', day: 1, title: 'Problem Teaser & Discovery Poll', channel: 'X Post', isToday: false, done: true, draftKey: 'announcementPost', description: 'Post teaser and survey link to gather audience friction points.' },
         { id: 'day-2', day: 2, title: 'Post Instagram Story #2 — Pain Point Poll & Announcement', channel: 'Instagram Stories', isToday: true, done: false, draftKey: 'storySequence', description: 'Post 3-story sequence with interactive poll sticker to drive warm audience to the pre-order page.' },
         { id: 'day-3', day: 3, title: 'Publish 60-Second Video Demo & Launch Hook', channel: 'TikTok / Reels / Shorts', isToday: false, done: false, draftKey: 'videoScript', description: 'Post 60s short-form demo demonstrating the core solution in action.' },
         { id: 'day-4', day: 4, title: 'Send Deep-Dive Email Newsletter Broadcast', channel: 'Email Newsletter', isToday: false, done: false, draftKey: 'newsletterDraft', description: 'Send dedicated email broadcast detailing feature architecture and founding member bonuses.' },
@@ -1616,7 +1618,7 @@ export default function CreatorPortal({ portalId }) {
                         <div className="flex items-center gap-2">
                           <h3 className="font-bold text-slate-900 text-sm">Copyable Promotional Assets</h3>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            Audience-Grounded · Anti-AI Slop
+                            Audience-Grounded · Authentic Voice
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
@@ -1669,38 +1671,89 @@ export default function CreatorPortal({ portalId }) {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-500 font-mono">Draft Preview</span>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        {/* Visual / Text Toggle */}
+                        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => setPortalDraftViewMode('visual')}
+                            className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                              portalDraftViewMode === 'visual'
+                                ? 'bg-white text-slate-900 shadow-2xs'
+                                : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            👁️ Visual Mockup Preview
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPortalDraftViewMode('text')}
+                            className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                              portalDraftViewMode === 'text'
+                                ? 'bg-white text-slate-900 shadow-2xs'
+                                : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            📝 Raw Text Script
+                          </button>
+                        </div>
+
                         <button
                           type="button"
                           onClick={() => {
                             const map = {
-                              post: campaignKit.announcementPost || 'Social announcement post',
-                              story: campaignKit.storySequence || 'Story sequence',
-                              video: campaignKit.videoScript || 'Video script',
-                              email: campaignKit.newsletterDraft || 'Newsletter draft',
-                              dm: campaignKit.directMessageScript || 'DM script'
+                              post: campaignKit.announcementPost || `🚨 Sourced from our recent channel discussions, we're officially co-founding ${productName} — ${project?.productTagline || 'the new workspace'}. Reserve your early founding pass here: ${preorderUrl}`,
+                              story: campaignKit.storySequence || `STORY 1:\n"Quick poll for everyone watching my channel..."\n\nSTORY 2:\n"We have been secretly engineering ${productName}..."\n\nSTORY 3:\n"Grab founding access here: ${preorderUrl}"`,
+                              video: campaignKit.videoScript || `HOOK (0-8s): "If you saw our recent channel breakdown, you know how painful manual bottlenecks are..."\nDEMO (8-40s): "Here is how ${productName} handles it automatically..."\nCTA (40-60s): "Founding pass link in bio: ${preorderUrl}"`,
+                              email: campaignKit.newsletterDraft || `Subject: Why I'm co-founding ${productName} (private invite)\n\nHey everyone,\n\nWe are officially partnering with Creator Forge Studio to engineer ${productName}...\n\nReserve your pass: ${preorderUrl}`,
+                              dm: campaignKit.directMessageScript || `Hey! Saw your thoughts on our channel earlier — we just launched early founding access for ${productName}: ${preorderUrl}`
                             }
                             copyToClipboard(map[activeScriptTab], activeScriptTab)
                           }}
                           className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
                         >
                           {copiedKey === activeScriptTab ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{copiedKey === activeScriptTab ? 'Copied!' : 'Copy Script'}</span>
+                          <span>{copiedKey === activeScriptTab ? 'Copied!' : 'Copy Script Text'}</span>
                         </button>
                       </div>
-                      <textarea
-                        readOnly
-                        rows={8}
-                        value={
-                          activeScriptTab === 'story' ? (campaignKit.storySequence || 'STORY 1:\n"Quick question for everyone..."\n\nSTORY 2:\n"We have been secretly engineering..."\n\nSTORY 3:\n"Grab founding access here: ' + preorderUrl + '"') :
-                          activeScriptTab === 'video' ? (campaignKit.videoScript || 'HOOK (0-3s): "If you struggle with..."\nDEMO (3-30s): "Here is how our new software handles it automatically..."\nCTA (30-60s): "Link in bio for pre-order access."') :
-                          activeScriptTab === 'email' ? (campaignKit.newsletterDraft || 'Subject: Exciting news — building our custom software tool!\n\nHey everyone,\n\nWe are officially partnering with Creator Forge Studio...') :
-                          activeScriptTab === 'dm' ? (campaignKit.directMessageScript || 'Hey! Saw you were asking about this earlier — we just launched early founding access: ' + preorderUrl) :
-                          (campaignKit.announcementPost || 'Excited to announce our new software platform built specifically for our community! Reserve your early pass now: ' + preorderUrl)
-                        }
-                        className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 outline-none font-mono leading-relaxed resize-none select-all"
-                      />
+
+                      {portalDraftViewMode === 'visual' ? (
+                        <div className="p-3 sm:p-5 rounded-xl bg-slate-50 border border-slate-200">
+                          <PostVisualMockup
+                            type={
+                              activeScriptTab === 'story'
+                                ? 'story'
+                                : activeScriptTab === 'video'
+                                ? 'video'
+                                : activeScriptTab === 'email'
+                                ? 'newsletter'
+                                : 'post'
+                            }
+                            project={project}
+                            copyText={
+                              activeScriptTab === 'story' ? (campaignKit.storySequence || '') :
+                              activeScriptTab === 'video' ? (campaignKit.videoScript || '') :
+                              activeScriptTab === 'email' ? (campaignKit.newsletterDraft || '') :
+                              activeScriptTab === 'dm' ? (campaignKit.directMessageScript || '') :
+                              (campaignKit.announcementPost || '')
+                            }
+                            preorderUrl={preorderUrl}
+                          />
+                        </div>
+                      ) : (
+                        <textarea
+                          readOnly
+                          rows={8}
+                          value={
+                            activeScriptTab === 'story' ? (campaignKit.storySequence || `STORY 1:\n"Quick question for everyone..."\n\nSTORY 2:\n"We have been secretly engineering ${productName}..."\n\nSTORY 3:\n"Grab founding access here: ${preorderUrl}"`) :
+                            activeScriptTab === 'video' ? (campaignKit.videoScript || `HOOK (0-8s): "If you saw our recent channel breakdown, you know how painful manual bottlenecks are..."\nDEMO (8-40s): "Here is how ${productName} handles it automatically..."\nCTA (40-60s): "Link in bio for pre-order access: ${preorderUrl}"`) :
+                            activeScriptTab === 'email' ? (campaignKit.newsletterDraft || `Subject: Why I'm co-founding ${productName} (private invite)\n\nHey everyone,\n\nWe are officially partnering with Creator Forge Studio to engineer ${productName}...\n\nReserve: ${preorderUrl}`) :
+                            activeScriptTab === 'dm' ? (campaignKit.directMessageScript || `Hey! Saw you were asking about this on our channel — we just launched early founding access for ${productName}: ${preorderUrl}`) :
+                            (campaignKit.announcementPost || `🚨 Big announcement! After hearing so many comments across our channel about the nightmare of manual workflows, we're officially building ${productName}.\n\nReserve your early pass now: ${preorderUrl}`)
+                          }
+                          className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 outline-none font-mono leading-relaxed resize-none select-all"
+                        />
+                      )}
                     </div>
                   </div>
                 )}

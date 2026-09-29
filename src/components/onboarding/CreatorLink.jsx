@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useForge } from '../../App'
-import { ArrowRight, Youtube, Instagram, Twitter, Globe, X, Settings, AlertCircle } from 'lucide-react'
+import { ArrowRight, Youtube, Instagram, Globe, X, Settings, AlertCircle } from 'lucide-react'
+import { XLogo } from '../launch/PostVisualMockup'
 import WingLogo from '../ui/WingLogo'
 import ApiKeysModal from '../ui/ApiKeysModal'
 import { startScrape, hasKey, loadKeys } from '../../services/scraper'
@@ -9,7 +10,7 @@ import { loadAiKeys } from '../../services/ai'
 const PLATFORMS = [
   { id: 'youtube',   label: 'YouTube',     icon: Youtube,   patterns: ['youtube.com','youtu.be'] },
   { id: 'instagram', label: 'Instagram',   icon: Instagram, patterns: ['instagram.com'] },
-  { id: 'twitter',   label: 'X / Twitter', icon: Twitter,   patterns: ['twitter.com','x.com'] },
+  { id: 'twitter',   label: 'X',           icon: XLogo,     patterns: ['x.com','twitter.com'] },
   { id: 'tiktok',    label: 'TikTok',      icon: Globe,     patterns: ['tiktok.com'] },
 ]
 

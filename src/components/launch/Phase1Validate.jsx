@@ -5,7 +5,7 @@ import {
   Loader2, AlertCircle, Copy, Video, MessageSquare, ExternalLink, Globe,
   CreditCard, Users, TrendingUp, RefreshCw, FileText, Megaphone, Target,
   Flag, ArrowRight, Layers, HelpCircle, BarChart3, Radio, ShieldCheck,
-  Palette, Smartphone, Send, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell, Lock, RotateCcw,
+  Palette, Smartphone, Send, Mail, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell, Lock, RotateCcw,
   Youtube, Shield, Sliders
 } from 'lucide-react'
 import {
@@ -42,6 +42,7 @@ import {
 import ProductMockupCanvas from './ProductMockupCanvas'
 import ProductMockupDisplay from './ProductMockupDisplay'
 import AudienceGroundingModal from './AudienceGroundingModal'
+import PostVisualMockup, { XLogo } from './PostVisualMockup'
 import { getProjectAudienceGrounding } from '../../utils/audienceGrounding'
 import { getPhase1StepGuards } from '../../utils/stepGuards'
 import { fetchCreatorYouTubeVideos } from '../../services/scraper'
@@ -58,6 +59,7 @@ export default function Phase1Validate({
   const [assetSubTab, setAssetSubTab] = useState('product_assets')
   const [campaignSubTab, setCampaignSubTab] = useState('schedule')
   const [viewDraftTask, setViewDraftTask] = useState(null)
+  const [draftModalView, setDraftModalView] = useState('visual') // 'visual' | 'text'
   const [isAnalyzingExperiments, setIsAnalyzingExperiments] = useState(false)
   const [isAdvancingPhase, setIsAdvancingPhase] = useState(false)
   const [isIteratingGate, setIsIteratingGate] = useState(false)
@@ -2561,21 +2563,63 @@ export default function Phase1Validate({
             </div>
 
             {/* Editable Strategy & Pacing Guidance Prompt */}
-            <div className="space-y-1.5 pt-1">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <label className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Strategy & Pacing Prompt (Customizable AI Guidance)</span>
+                  <span>Customized Strategy & Pacing Prompt (AI Steering)</span>
                 </label>
-                <span className="text-[10px] text-slate-500 font-mono">Tailors all copy, video scripts & roadmap</span>
+                <span className="text-[10px] text-slate-500 font-mono">
+                  Grounded in {project?.creatorName || 'creator'}'s upload rhythm & community topics
+                </span>
               </div>
+
               <textarea
                 value={campaignStrategyPrompt}
                 onChange={e => setCampaignStrategyPrompt(e.target.value)}
                 rows={2}
-                className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 transition-all resize-y"
-                placeholder="E.g., based on creator's normal posting frequency, what you think will hit the next phase goal, what will be enough but not burden the creator..."
+                className="w-full p-3 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all resize-y shadow-2xs"
+                placeholder="Based on creator's normal posting frequency, what you think will hit the next phase goal, what will be enough but not burden the creator..."
               />
+
+              {/* Quick Guidance Steering Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quick Steering:</span>
+                {[
+                  {
+                    label: '⚡ Low Burden (~1 post/wk, 4 milestones)',
+                    prompt: "Based on creator's normal posting frequency, design a low-burden roadmap of 4 spaced milestones (Day 1, 4, 8, 12). Avoid daily spam. Sourced from recent videos to hit 50 Founding Members without creator burnout.",
+                    pacing: 'low_burden'
+                  },
+                  {
+                    label: '🎯 Balanced (~2 actions/wk, 5 milestones)',
+                    prompt: "Based on creator's normal cadence, what will hit the Phase 1 target (50 pre-orders / $1,000) with 5 spaced touchpoints including a behind-the-scenes engineering story and mid-roll demo.",
+                    pacing: 'balanced'
+                  },
+                  {
+                    label: '🎬 YouTube Mid-Roll Only (Zero public feed spam)',
+                    prompt: "Focus promotional effort exclusively on an organic 60-second mid-roll in their next scheduled YouTube video plus 1:1 founder email. Zero separate social feed spam.",
+                    pacing: 'low_burden'
+                  },
+                  {
+                    label: '💌 1:1 Email + IG Stories (Under 30 mins effort)',
+                    prompt: "What will hit the next phase goal using only 1:1 founder email and Instagram story polls? Zero video filming required, total creator effort under 30 minutes.",
+                    pacing: 'low_burden'
+                  }
+                ].map(chip => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => {
+                      setCampaignStrategyPrompt(chip.prompt)
+                      if (chip.pacing) setCampaignPacing(chip.pacing)
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50 hover:border-indigo-200 border border-slate-200 text-[10.5px] font-medium text-slate-700 hover:text-indigo-800 transition-all cursor-pointer shadow-2xs active:scale-95"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-slate-100">
@@ -2598,12 +2642,12 @@ export default function Phase1Validate({
                 {isGeneratingCampaign ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                    <span>Generating Tailored Kit...</span>
+                    <span>Generating Tailored Kit & Mockups...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3.5 h-3.5 text-white" />
-                    <span>{hasCampaignGenerated ? 'Regenerate with Custom Pacing' : 'Generate Tailored Campaign Kit'}</span>
+                    <span>{hasCampaignGenerated ? '✨ Steer AI Roadmap & Mockups' : 'Generate Tailored Campaign Kit'}</span>
                   </>
                 )}
               </button>
@@ -2735,7 +2779,7 @@ export default function Phase1Validate({
                       <span>Grounded in Real Creator Content & Audience Data</span>
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white text-emerald-800 border border-emerald-300 shadow-2xs">
-                      Anti-AI Slop · 99.4% Voice Match
+                      Verified Creator Voice · 99.4% Match
                     </span>
                   </div>
                   <button
@@ -2758,7 +2802,7 @@ export default function Phase1Validate({
               <div className="flex items-center gap-1.5 border-b border-slate-200 pb-3 overflow-x-auto no-scrollbar scrollbar-none">
                 {[
                   { id: 'schedule', label: '1. Schedule & Roadmap', icon: Calendar },
-                  { id: 'post', label: '2. Social Posts', icon: MessageSquare },
+                  { id: 'post', label: '2. X Announcement Post', icon: MessageSquare },
                   { id: 'story', label: '3. Stories & Polls', icon: Smartphone },
                   { id: 'video', label: '4. Video Script', icon: Video },
                   { id: 'newsletter', label: '5. Newsletter', icon: Send },
@@ -2934,135 +2978,230 @@ export default function Phase1Validate({
 
               {/* SUBTAB 2: POST */}
               {campaignSubTab === 'post' && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Social Announcement Post Copy</span>
-                    <button
-                      onClick={() => copyToClipboard(campaignKit?.announcementPost, 'post')}
-                      disabled={!campaignKit?.announcementPost}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
-                    >
-                      {copiedKey === 'post' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedKey === 'post' ? 'Copied!' : 'Copy Post'}</span>
-                    </button>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                  {/* Left: High-Fidelity Social Media Card Mockup */}
+                  <div className="lg:col-span-7 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <XLogo className="w-3.5 h-3.5 text-slate-900" />
+                        <span>Visual Post Mockup (Official X Post Preview)</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">Dark mode feed preview with live media card</span>
+                    </div>
+                    <PostVisualMockup
+                      type="post"
+                      project={project}
+                      copyText={campaignKit?.announcementPost}
+                      preorderUrl={`${origin}/preorder/${productSlug}`}
+                    />
                   </div>
-                  <textarea
-                    value={campaignKit?.announcementPost || ''}
-                    onChange={e => updateCampaignKit('announcementPost', e.target.value)}
-                    placeholder="Click 'Generate AI Content' or write custom announcement post..."
-                    rows={8}
-                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 resize-y transition-all"
-                  />
+
+                  {/* Right: Copy & Caption Editor */}
+                  <div className="lg:col-span-5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Social Announcement Post Copy</span>
+                      <button
+                        onClick={() => copyToClipboard(campaignKit?.announcementPost, 'post')}
+                        disabled={!campaignKit?.announcementPost}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                      >
+                        {copiedKey === 'post' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedKey === 'post' ? 'Copied!' : 'Copy Post'}</span>
+                      </button>
+                    </div>
+                    <textarea
+                      value={campaignKit?.announcementPost || ''}
+                      onChange={e => updateCampaignKit('announcementPost', e.target.value)}
+                      placeholder="Click 'Generate AI Content' or write custom announcement post..."
+                      rows={12}
+                      className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 resize-y transition-all"
+                    />
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-600 space-y-1">
+                      <div className="flex items-center justify-between text-slate-500 font-mono text-[10px]">
+                        <span>Length: {(campaignKit?.announcementPost || '').length} chars</span>
+                        <span>Pre-Order URL: /preorder/{productSlug}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-relaxed">
+                        Anchored in channel topics. Backers click through to pre-order and reserve Founding Cohort spots.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* SUBTAB 3: STORIES & POLLS */}
               {campaignSubTab === 'story' && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Instagram / TikTok 3-Story Sequence & Polls</span>
-                    <button
-                      onClick={() => copyToClipboard(campaignKit?.storySequence, 'story')}
-                      disabled={!campaignKit?.storySequence}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
-                    >
-                      {copiedKey === 'story' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedKey === 'story' ? 'Copied!' : 'Copy Stories'}</span>
-                    </button>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                  {/* Left: Interactive 9:16 Story Frame Mockup */}
+                  <div className="lg:col-span-5 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <Smartphone className="w-3.5 h-3.5 text-pink-500" />
+                        <span>Interactive 9:16 Story Frame Mockup</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">Instagram / TikTok</span>
+                    </div>
+                    <PostVisualMockup
+                      type="story"
+                      project={project}
+                      copyText={campaignKit?.storySequence}
+                      preorderUrl={`${origin}/preorder/${productSlug}`}
+                    />
                   </div>
-                  <textarea
-                    value={campaignKit?.storySequence || ''}
-                    onChange={e => updateCampaignKit('storySequence', e.target.value)}
-                    placeholder="Story 1: Pain point poll&#10;Story 2: Product announcement&#10;Story 3: Link sticker CTA"
-                    rows={9}
-                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 resize-y transition-all"
-                  />
+
+                  {/* Right: 3-Story Sequence Editor */}
+                  <div className="lg:col-span-7 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Instagram / TikTok 3-Story Sequence & Polls</span>
+                      <button
+                        onClick={() => copyToClipboard(campaignKit?.storySequence, 'story')}
+                        disabled={!campaignKit?.storySequence}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                      >
+                        {copiedKey === 'story' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedKey === 'story' ? 'Copied!' : 'Copy Stories'}</span>
+                      </button>
+                    </div>
+                    <textarea
+                      value={campaignKit?.storySequence || ''}
+                      onChange={e => updateCampaignKit('storySequence', e.target.value)}
+                      placeholder="Story 1: Pain point poll&#10;Story 2: Product announcement&#10;Story 3: Link sticker CTA"
+                      rows={14}
+                      className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 resize-y transition-all"
+                    />
+                    <div className="p-3.5 rounded-xl bg-pink-50/60 border border-pink-200/80 text-[11px] text-pink-950 space-y-1">
+                      <span className="font-bold block text-xs">3-Step Non-Burdensome Conversion Arc:</span>
+                      <p className="text-[10px] text-pink-900/80 leading-relaxed">
+                        Story 1 tests organic pain point friction via poll sticker (zero selling) → Story 2 reveals the co-founded software → Story 3 adds the pre-order link sticker to capture the 50 Founding Members.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* SUBTAB 4: VIDEO SCRIPT */}
               {campaignSubTab === 'video' && (
-                <div className="space-y-2.5">
-                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between gap-2 text-xs shadow-2xs">
-                    <div className="flex items-center gap-2">
-                      <Youtube className="w-4 h-4 text-red-600 shrink-0" />
-                      <span className="text-red-950 text-[11px]">
-                        <strong>Native Video Segment:</strong> Seamless mid-roll hook connecting the problems discussed in "{audienceGroundingData.transcripts[0]?.title || 'Recent Channel Upload'}" to this software.
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                  {/* Left: 60-Second Video Player Mockup with Teleprompter */}
+                  <div className="lg:col-span-7 space-y-2.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <Video className="w-3.5 h-3.5 text-red-500" />
+                        <span>60-Second Video Player & Teleprompter Mockup</span>
                       </span>
+                      <span className="text-[10px] text-slate-500 font-mono">Shorts / Reels / Mid-Roll</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAudienceIntelModalTab('transcripts')
-                        setShowAudienceIntelModal(true)
-                      }}
-                      className="text-[10px] font-bold text-red-700 hover:text-red-900 underline cursor-pointer shrink-0"
-                    >
-                      View Citation ↗
-                    </button>
+                    <PostVisualMockup
+                      type="video"
+                      project={project}
+                      copyText={campaignKit?.videoScript}
+                      preorderUrl={`${origin}/preorder/${productSlug}`}
+                    />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">60-Second Short Form Script</span>
-                    <button
-                      onClick={() => copyToClipboard(campaignKit?.videoScript, 'video')}
-                      disabled={!campaignKit?.videoScript}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
-                    >
-                      {copiedKey === 'video' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedKey === 'video' ? 'Copied!' : 'Copy Script'}</span>
-                    </button>
+                  {/* Right: Teleprompter Script Editor & Citation */}
+                  <div className="lg:col-span-5 space-y-2.5">
+                    <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between gap-2 text-xs shadow-2xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Youtube className="w-4 h-4 text-red-600 shrink-0" />
+                        <span className="text-red-950 text-[11px] truncate">
+                          <strong>Mid-Roll Anchor:</strong> "{audienceGroundingData.transcripts[0]?.title || 'Recent Channel Upload'}"
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAudienceIntelModalTab('transcripts')
+                          setShowAudienceIntelModal(true)
+                        }}
+                        className="text-[10px] font-bold text-red-700 hover:text-red-900 underline cursor-pointer shrink-0"
+                      >
+                        View Citation ↗
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">60-Second Short Form Script</span>
+                      <button
+                        onClick={() => copyToClipboard(campaignKit?.videoScript, 'video')}
+                        disabled={!campaignKit?.videoScript}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                      >
+                        {copiedKey === 'video' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedKey === 'video' ? 'Copied!' : 'Copy Script'}</span>
+                      </button>
+                    </div>
+                    <textarea
+                      value={campaignKit?.videoScript || ''}
+                      onChange={e => updateCampaignKit('videoScript', e.target.value)}
+                      placeholder="Click 'Generate AI Content' or write 60-second video script..."
+                      rows={12}
+                      className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-mono focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 resize-y transition-all"
+                    />
                   </div>
-                  <textarea
-                    value={campaignKit?.videoScript || ''}
-                    onChange={e => updateCampaignKit('videoScript', e.target.value)}
-                    placeholder="Click 'Generate AI Content' or write 60-second video script..."
-                    rows={10}
-                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-mono focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 resize-y transition-all"
-                  />
                 </div>
               )}
 
               {/* SUBTAB 5: NEWSLETTER */}
               {campaignSubTab === 'newsletter' && (
-                <div className="space-y-2.5">
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-2 text-xs shadow-2xs">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-amber-600 shrink-0" />
-                      <span className="text-amber-950 text-[11px]">
-                        <strong>Comment #13 Deliverability Guard:</strong> Formatted as 1:1 founder plain-text from {project?.creatorName || 'creator'}. 0% marketing spam tags, Primary Inbox delivery guaranteed (bypasses Promotions tab).
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                  {/* Left: 1:1 Founder Email Inbox Mockup */}
+                  <div className="lg:col-span-7 space-y-2.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-slate-600" />
+                        <span>1:1 Founder Email Inbox Mockup</span>
                       </span>
+                      <span className="text-[10px] text-slate-500 font-mono">Gmail / Superhuman preview</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAudienceIntelModalTab('comments')
-                        setShowAudienceIntelModal(true)
-                      }}
-                      className="text-[10px] font-bold text-amber-800 hover:text-amber-950 underline cursor-pointer shrink-0"
-                    >
-                      View Audience Evidence ↗
-                    </button>
+                    <PostVisualMockup
+                      type="newsletter"
+                      project={project}
+                      copyText={campaignKit?.newsletterDraft}
+                      preorderUrl={`${origin}/preorder/${productSlug}`}
+                    />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Creator Email Newsletter Copy</span>
-                    <button
-                      onClick={() => copyToClipboard(campaignKit?.newsletterDraft, 'newsletter')}
-                      disabled={!campaignKit?.newsletterDraft}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
-                    >
-                      {copiedKey === 'newsletter' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedKey === 'newsletter' ? 'Copied!' : 'Copy Newsletter'}</span>
-                    </button>
+                  {/* Right: Newsletter Copy Editor */}
+                  <div className="lg:col-span-5 space-y-2.5">
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-2 text-xs shadow-2xs">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span className="text-amber-950 text-[11px]">
+                          <strong>Deliverability Guard:</strong> 1:1 founder plain-text from {project?.creatorName || 'creator'}. 0% spam triggers, Primary Inbox delivery guaranteed.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAudienceIntelModalTab('comments')
+                          setShowAudienceIntelModal(true)
+                        }}
+                        className="text-[10px] font-bold text-amber-800 hover:text-amber-950 underline cursor-pointer shrink-0"
+                      >
+                        View Evidence ↗
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Creator Email Newsletter Copy</span>
+                      <button
+                        onClick={() => copyToClipboard(campaignKit?.newsletterDraft, 'newsletter')}
+                        disabled={!campaignKit?.newsletterDraft}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                      >
+                        {copiedKey === 'newsletter' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedKey === 'newsletter' ? 'Copied!' : 'Copy Newsletter'}</span>
+                      </button>
+                    </div>
+                    <textarea
+                      rows={12}
+                      value={campaignKit?.newsletterDraft || ''}
+                      onChange={e => updateCampaignKit('newsletterDraft', e.target.value)}
+                      placeholder="Click 'Generate AI Content' or write newsletter copy..."
+                      className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 transition-all"
+                    />
                   </div>
-                  <textarea
-                    rows={9}
-                    value={campaignKit?.newsletterDraft || ''}
-                    onChange={e => updateCampaignKit('newsletterDraft', e.target.value)}
-                    placeholder="Click 'Generate AI Content' or write newsletter copy..."
-                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 transition-all"
-                  />
                 </div>
               )}
 
@@ -3104,7 +3243,7 @@ export default function Phase1Validate({
                     {[
                       { channel: 'Instagram Stories', ref: 'instagram_story' },
                       { channel: 'TikTok / Shorts', ref: 'tiktok_video' },
-                      { channel: 'Twitter / X', ref: 'twitter_post' },
+                      { channel: 'X (Social Post)', ref: 'x_post' },
                       { channel: 'Email Newsletter', ref: 'newsletter' },
                       { channel: '1-on-1 DM Outreach', ref: 'dm_outreach' },
                     ].map((item, i) => {
@@ -3132,30 +3271,78 @@ export default function Phase1Validate({
 
               {/* View Draft Modal */}
               {viewDraftTask && typeof document !== 'undefined' && createPortal(
-                <div className="fixed inset-0 z-[99999] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in overflow-hidden">
-                  <div className="w-full max-w-lg rounded-3xl bg-white border border-slate-200 shadow-2xl p-6 space-y-4 animate-scale-in text-slate-900">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <div className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto">
+                  <div className="w-full max-w-2xl rounded-3xl bg-white border border-slate-200 shadow-2xl p-5 sm:p-6 space-y-4 animate-scale-in text-slate-900 my-auto">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-3 gap-3">
                       <div>
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block font-mono">
                           Day {viewDraftTask.day} · {viewDraftTask.channel}
                         </span>
                         <h3 className="text-base font-extrabold text-slate-900">{viewDraftTask.title}</h3>
                       </div>
-                      <button
-                        onClick={() => setViewDraftTask(null)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {/* Visual / Text Toggle */}
+                        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => setDraftModalView('visual')}
+                            className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                              draftModalView === 'visual'
+                                ? 'bg-white text-slate-900 shadow-2xs'
+                                : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            👁️ Visual Mockup
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDraftModalView('text')}
+                            className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                              draftModalView === 'text'
+                                ? 'bg-white text-slate-900 shadow-2xs'
+                                : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            📝 Raw Text
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => setViewDraftTask(null)}
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 max-h-72 overflow-y-auto font-sans leading-relaxed text-xs text-slate-800">
-                      <pre className="text-xs text-slate-800 font-sans whitespace-pre-wrap leading-relaxed">
-                        {getTaskDraftContent(viewDraftTask)}
-                      </pre>
-                    </div>
+                    {/* Modal Body: Visual Mockup or Raw Text */}
+                    {draftModalView === 'visual' ? (
+                      <div className="py-1 max-h-[68vh] overflow-y-auto pr-1">
+                        <PostVisualMockup
+                          type={
+                            viewDraftTask.draftKey === 'storySequence'
+                              ? 'story'
+                              : viewDraftTask.draftKey === 'videoScript'
+                              ? 'video'
+                              : viewDraftTask.draftKey === 'newsletterDraft'
+                              ? 'newsletter'
+                              : 'post'
+                          }
+                          project={project}
+                          copyText={getTaskDraftContent(viewDraftTask)}
+                          preorderUrl={`${origin}/preorder/${productSlug}`}
+                        />
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 max-h-72 overflow-y-auto font-sans leading-relaxed text-xs text-slate-800">
+                        <pre className="text-xs text-slate-800 font-sans whitespace-pre-wrap leading-relaxed">
+                          {getTaskDraftContent(viewDraftTask)}
+                        </pre>
+                      </div>
+                    )}
 
-                    <div className="flex items-center justify-between gap-3 pt-2">
+                    <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
                       <button
                         onClick={() => {
                           copyToClipboard(getTaskDraftContent(viewDraftTask), 'draft-modal')
@@ -3164,7 +3351,7 @@ export default function Phase1Validate({
                         className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                       >
                         <Copy className="w-3.5 h-3.5" />
-                        <span>{copiedKey === 'draft-modal' ? 'Copied!' : 'Copy Draft'}</span>
+                        <span>{copiedKey === 'draft-modal' ? 'Copied!' : 'Copy Draft Text'}</span>
                       </button>
 
                       <div className="flex items-center gap-2">
@@ -3344,7 +3531,7 @@ export default function Phase1Validate({
                     conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('tiktok') || (r.channel || '').toLowerCase().includes('shorts')).length
                   },
                   {
-                    name: 'Twitter / X',
+                    name: 'X (Social Post)',
                     traffic: Math.max(
                       (project?.uniqueVisitors || []).filter(v => {
                         const ch = (v.channel || '').toLowerCase()

@@ -369,7 +369,7 @@ export function enrichTasksWithGrounding(tasks, project) {
         groundingSummary: 'Tailored milestone action',
         sourceCitation: 'Grounded in audience insights & channel discussions.',
         provenanceDetails: 'Custom tailored sprint milestone.',
-        antiSlopNote: 'Verified anti-AI slop.',
+        antiSlopNote: 'Verified authentic voice.',
         effortEstimate: '~10 mins effort',
         pacingRationale: 'Low-burden milestone spaced to protect creator momentum.'
       }

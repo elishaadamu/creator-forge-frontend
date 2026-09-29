@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  X, ShieldCheck, Youtube, MessageSquare, Bot, Shield, Check, Copy,
+  X, ShieldCheck, Youtube, MessageSquare, Shield, Check, Copy,
   ExternalLink, Sparkles, AlertCircle, ArrowRight, CheckCircle2, Clock, RotateCw
 } from 'lucide-react'
 import { getProjectAudienceGrounding } from '../../utils/audienceGrounding'
@@ -13,13 +13,13 @@ export default function AudienceGroundingModal({
   project,
   initialTab = 'transcripts'
 }) {
-  const resolvedInitialTab = initialTab === 'deliverability' ? 'transcripts' : initialTab
+  const resolvedInitialTab = (initialTab === 'deliverability' || initialTab === 'voice') ? 'transcripts' : initialTab
   const [activeTab, setActiveTab] = useState(resolvedInitialTab)
   const [copiedId, setCopiedId] = useState(null)
 
   useEffect(() => {
     if (initialTab) {
-      setActiveTab(initialTab === 'deliverability' ? 'transcripts' : initialTab)
+      setActiveTab((initialTab === 'deliverability' || initialTab === 'voice') ? 'transcripts' : initialTab)
     }
   }, [initialTab])
 
@@ -164,7 +164,7 @@ export default function AudienceGroundingModal({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Verified Anti-AI Slop · 99.4% Voice Match</span>
+                <span>Verified Creator Voice · 99.4% Match</span>
               </span>
               <span className="text-[11px] text-slate-500 font-mono">
                 {product} × {creator}
@@ -203,7 +203,6 @@ export default function AudienceGroundingModal({
           {[
             { id: 'transcripts', label: `YouTube Transcripts (${grounding.transcripts.length})`, icon: Youtube },
             { id: 'comments', label: `Audience Comments (${grounding.audienceComments.length})`, icon: MessageSquare },
-            { id: 'voice', label: 'Creator Voice vs. AI Slop', icon: Bot },
           ].map(tab => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -464,74 +463,13 @@ export default function AudienceGroundingModal({
             </div>
           )}
 
-          {/* TAB 3: CREATOR VOICE VS AI SLOP */}
-          {activeTab === 'voice' && (
-            <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-purple-50/60 border border-purple-200/80 text-xs text-purple-950 flex items-start gap-3">
-                <Bot className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <div className="font-bold">Anti-AI Slop Verification Protocol</div>
-                  <div className="text-purple-900/90 text-[11px] leading-relaxed">
-                    We strictly forbid generic LLM buzzwords and hollow marketing filler. All generated drafts are scored against {creator}’s actual vocabulary, authentic sentence length, and technical peer style.
-                  </div>
-                </div>
-              </div>
-
-              {/* Side-by-Side Comparison */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-rose-50/50 border border-rose-200 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-bold text-rose-900 border-b border-rose-200/80 pb-2">
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-rose-500" />
-                      <span>❌ Generic AI Slop (Strictly Rejected)</span>
-                    </span>
-                    <span className="text-[10px] font-mono uppercase bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded">0% Used</span>
-                  </div>
-                  <div className="text-[11px] text-rose-950 italic bg-white/80 p-3 rounded-lg border border-rose-200/60 leading-relaxed font-serif">
-                    "Are you ready to unleash your true potential with our revolutionary, game-changing AI platform? In today's fast-paced digital era, delve into endless possibilities and take your career to the next level!"
-                  </div>
-                  <div className="text-[10px] text-rose-800 space-y-1 pt-1 font-mono">
-                    <div className="font-bold">Banned Corporate Cliches:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {grounding.antiSlopAudit.rejectedCliches.map((word, i) => (
-                        <span key={i} className="line-through bg-rose-100/80 px-1.5 py-0.5 rounded text-rose-700">
-                          {word}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-bold text-emerald-900 border-b border-emerald-200/80 pb-2">
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span>✅ Creator Forge Tailored Copy ({creator})</span>
-                    </span>
-                    <span className="text-[10px] font-mono uppercase bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">99.4% Match</span>
-                  </div>
-                  <div className="text-[11px] text-emerald-950 bg-white/80 p-3 rounded-lg border border-emerald-200/60 leading-relaxed font-sans">
-                    "I spent 4 hours this weekend testing latency on our model server. If you’ve ever frozen up when an interviewer asks 'what breaks at 10,000 req/sec?', here is the exact system architecture setup we engineered..."
-                  </div>
-                  <div className="text-[10px] text-emerald-800 space-y-1 pt-1">
-                    <span className="font-bold block">Tone Profile & Grounding Rules:</span>
-                    <ul className="list-disc list-inside space-y-0.5 font-medium text-emerald-900">
-                      {grounding.antiSlopAudit.tailoredPhrasingRules.map((rule, i) => (
-                        <li key={i}>{rule}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs shrink-0">
           <div className="text-slate-500 text-[11px] font-mono flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Audience Grounding & Anti-AI Slop Engine Active</span>
+            <span>Audience Grounding & Provenance Engine Active</span>
           </div>
           <button
             type="button"

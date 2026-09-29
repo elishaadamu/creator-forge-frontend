@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
-import { ArrowRight, Globe, Smartphone, ShoppingBag, Users, Youtube, Instagram, Twitter, CheckCircle, Play } from 'lucide-react'
+import { ArrowRight, Globe, Smartphone, ShoppingBag, Users, Youtube, Instagram, CheckCircle, Play } from 'lucide-react'
+import { XLogo } from '../launch/PostVisualMockup'
 import WingLogo from '../ui/WingLogo'
 import { getScrapePromise, isScrapePending } from '../../services/scraper'
 import { generateRecommendationsAI } from '../../services/ai'
@@ -18,14 +19,14 @@ function fmt(n) {
 const PLATFORM_ICONS = {
   youtube:   Youtube,
   instagram: Instagram,
-  twitter:   Twitter,
+  twitter:   XLogo,
   tiktok:    Globe,
 }
 
 const PLATFORM_LABELS = {
   youtube:   'YouTube',
   instagram: 'Instagram',
-  twitter:   'X / Twitter',
+  twitter:   'X',
   tiktok:    'TikTok',
 }
 

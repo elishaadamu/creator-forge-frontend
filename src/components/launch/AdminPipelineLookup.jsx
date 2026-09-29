@@ -438,7 +438,7 @@ export default function AdminPipelineLookup({
   const getPlatformBadge = (platform = '') => {
     const p = (platform || '').toLowerCase().trim()
     if (p.includes('youtube') || p.includes('yt')) return { name: 'YouTube', color: 'bg-red-500/15 text-red-400 border-red-500/30' }
-    if (p.includes('twitter') || p.includes('x') || p.includes('tweet')) return { name: 'X / Twitter', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' }
+    if (p.includes('twitter') || p.includes('x') || p.includes('tweet')) return { name: 'X', color: 'bg-white/10 text-white border-white/20' }
     if (p.includes('instagram') || p.includes('ig') || p.includes('insta')) return { name: 'Instagram', color: 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30' }
     if (p.includes('tiktok') || p.includes('tt')) return { name: 'TikTok', color: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' }
     return { name: platform || 'Social', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }

@@ -536,7 +536,7 @@ partnerships@creatorforge.com`
   const audienceGroundingData = getProjectAudienceGrounding(project)
 
   const defaultScheduleTasks = [
-    { id: 'milestone-1', day: 1, milestoneNumber: 1, title: 'Problem Teaser & Community Discovery Poll', channel: 'Twitter / Community / Stories', done: true, role: 'Creator Task', effort: '~10 mins' },
+    { id: 'milestone-1', day: 1, milestoneNumber: 1, title: 'Problem Teaser & Community Discovery Poll', channel: 'X / Community / Stories', done: true, role: 'Creator Task', effort: '~10 mins' },
     { id: 'milestone-2', day: 4, milestoneNumber: 2, title: 'Native 60s Video Integration / Demo', channel: 'YouTube / Video', isToday: true, done: false, role: 'Creator Task', effort: '~15 mins' },
     { id: 'milestone-3', day: 8, milestoneNumber: 3, title: '1:1 Plain-Text VIP Letter to Core Supporters', channel: 'Email Newsletter', done: false, role: 'Creator Task', effort: '~10 mins' },
     { id: 'milestone-4', day: 12, milestoneNumber: 4, title: 'Founding Cohort Cap Lock & Final Wrap-Up', channel: 'All Channels', done: false, role: 'Creator Task', effort: '~5 mins' }
@@ -1196,7 +1196,7 @@ partnerships@creatorforge.com`
                           <span>Grounded in Creator Audience Data</span>
                         </span>
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                          Anti-AI Slop Verified · 99.4% Match
+                          Verified Creator Voice · 99.4% Match
                         </span>
                       </div>
                       <button
@@ -1213,10 +1213,10 @@ partnerships@creatorforge.com`
                     </div>
 
                     <p className="text-[11px] text-slate-700 leading-relaxed">
-                      All co-launch sprint actions, scripts, and stories are derived directly from <strong>{cleanCreatorName}'s verified uploads</strong> — extracted from <strong>{audienceGroundingData.stats.transcriptsAnalyzed} channel videos</strong>, channel description, <strong>{audienceGroundingData.stats.commentsIngested > 0 ? `${audienceGroundingData.stats.commentsIngested} fan comments` : 'channel discussions'}</strong>, and custom voice guidelines. Not generic AI slop. Outbound emails are 1:1 plain-text to guarantee Primary Inbox delivery (zero spam).
+                      All co-launch sprint actions, scripts, and stories are derived directly from <strong>{cleanCreatorName}'s verified uploads</strong> — extracted from <strong>{audienceGroundingData.stats.transcriptsAnalyzed} channel videos</strong>, channel description, <strong>{audienceGroundingData.stats.commentsIngested > 0 ? `${audienceGroundingData.stats.commentsIngested} fan comments` : 'channel discussions'}</strong>, and custom voice guidelines. Authentic creator tone. Outbound emails are 1:1 plain-text to guarantee Primary Inbox delivery (zero spam).
                     </p>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5 text-[10px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5 text-[10px]">
                       <button
                         type="button"
                         onClick={() => {
@@ -1256,22 +1256,7 @@ partnerships@creatorforge.com`
                       <button
                         type="button"
                         onClick={() => {
-                          setAudienceIntelModalTab('voice')
-                          setShowAudienceIntelModal(true)
-                        }}
-                        className="p-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 flex items-center gap-2 transition-all cursor-pointer text-left shadow-2xs group"
-                      >
-                        <Bot className="w-3.5 h-3.5 text-purple-600 shrink-0 group-hover:scale-110 transition-transform" />
-                        <div className="min-w-0">
-                          <span className="font-bold text-slate-900 block truncate">Voice Profile</span>
-                          <span className="text-slate-500 font-mono truncate block">Anti-AI Slop Filter</span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAudienceIntelModalTab('comments')
+                          setAudienceIntelModalTab('transcripts')
                           setShowAudienceIntelModal(true)
                         }}
                         className="p-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 flex items-center gap-2 transition-all cursor-pointer text-left shadow-2xs group"
@@ -1401,7 +1386,7 @@ partnerships@creatorforge.com`
                                       <span>Audience Grounding & Provenance</span>
                                     </span>
                                     <span className="text-[10px] font-mono text-slate-500">
-                                      {task.antiSlopNote || 'Verified Anti-AI Slop'}
+                                      {task.antiSlopNote ? String(task.antiSlopNote).replace(/anti-ai slop/gi, 'authentic voice') : 'Authentic Creator Voice'}
                                     </span>
                                   </div>
 

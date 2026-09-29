@@ -181,7 +181,7 @@ export default function PreorderLandingPage({ slug }) {
       } else if (refQuery.includes('tiktok') || refQuery.includes('reels') || refQuery.includes('shorts') || refQuery.includes('youtube') || refQuery.includes('yt')) {
         attributedChannel = 'TikTok / Shorts'
       } else if (refQuery.includes('twitter') || refQuery.includes('x_post') || refQuery.includes('tweet') || refQuery.includes('x')) {
-        attributedChannel = 'Twitter / X'
+        attributedChannel = 'X Post'
       } else if (refQuery.includes('newsletter') || refQuery.includes('email') || refQuery.includes('broadcast') || refQuery.includes('mail')) {
         attributedChannel = 'Email Newsletter'
       } else if (refQuery.includes('dm') || refQuery.includes('outreach')) {

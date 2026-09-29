@@ -510,36 +510,36 @@
 }
 
 /* Base Light Container Conversion (Excludes explicitly dark components like Code Studios, Terminals & Mockups) */
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#0e1117]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#090b0e]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#0c0e14]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#0c1017]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#080A0C]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#07090e]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#101419]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#11141c]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#141720]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#141824]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#161a23]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#171C22]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#1a1f2c]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#1b202c]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="from-[#141824]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="to-[#0d0f17]"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#0e1117]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#090b0e]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#0c0e14]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#0c1017]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#080A0C]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#07090e]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#101419]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#11141c]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#141720]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#141824]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#161a23]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#171C22]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#1a1f2c]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#1b202c]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="from-[#141824]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="to-[#0d0f17]"] {
   background-image: none !important;
   background-color: #f8fafc !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
 }
 
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-black/"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="bg-[#06080d]"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-black/"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#06080d]"] {
   background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
 }
 
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *)[class*="border-white/"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="border-white/"] {
   border-color: #e2e8f0 !important;
 }
 
@@ -761,37 +761,45 @@
 }
 
 /* Headings and labels outside buttons and dark containers */
-.phase-modal-white-theme h1:not(button *):not(.keep-dark *):not(.product-mockup-display *),
-.phase-modal-white-theme h2:not(button *):not(.keep-dark *):not(.product-mockup-display *),
-.phase-modal-white-theme h3:not(button *):not(.keep-dark *):not(.product-mockup-display *),
-.phase-modal-white-theme h4:not(button *):not(.keep-dark *):not(.product-mockup-display *),
-.phase-modal-white-theme h5:not(button *):not(.keep-dark *):not(.product-mockup-display *),
-.phase-modal-white-theme p:not(button *):not(.keep-dark *):not(.product-mockup-display *),
-.phase-modal-white-theme label:not(button *):not(.keep-dark *):not(.product-mockup-display *) {
+.phase-modal-white-theme h1:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme h2:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme h3:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme h4:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme h5:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme p:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme label:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *) {
   color: #0f172a !important;
 }
 
-.phase-modal-white-theme div:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-emerald-"]):not(.keep-dark *):not(.product-mockup-display *)[class*="text-white"],
-.phase-modal-white-theme span:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-emerald-"]):not(.keep-dark *):not(.product-mockup-display *)[class*="text-white"] {
+.phase-modal-white-theme div:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-emerald-"]):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-white"],
+.phase-modal-white-theme span:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-emerald-"]):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-white"] {
   color: #0f172a !important;
 }
 
-.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *)[class*="text-slate-200"],
-.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *)[class*="text-slate-300"],
-.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *)[class*="text-slate-200"],
-.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *)[class*="text-slate-300"] {
+.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-200"],
+.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-300"],
+.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-200"],
+.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-300"] {
   color: #334155 !important;
 }
 
-.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *)[class*="text-slate-400"],
-.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *)[class*="text-slate-400"] {
+.phase-modal-white-theme .post-visual-mockup h1,
+.phase-modal-white-theme .post-visual-mockup h2,
+.phase-modal-white-theme .post-visual-mockup h3,
+.phase-modal-white-theme .post-visual-mockup h4,
+.phase-modal-white-theme .post-visual-mockup h5 {
+  color: #ffffff !important;
+}
+
+.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-400"],
+.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-400"] {
   color: #64748b !important;
 }
 
-.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *)[class*="text-emerald-200"],
-.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *)[class*="text-emerald-300"],
-.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *)[class*="text-emerald-200"],
-.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *)[class*="text-emerald-300"] {
+.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-200"],
+.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-300"],
+.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-200"],
+.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-300"] {
   color: #065f46 !important;
 }
 
@@ -804,39 +812,39 @@
 }
 
 /* Remove AI-centric generic purple inside modal */
-.phase-modal-white-theme [class*="bg-purple-"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-purple-"] {
   background-color: #f1f5f9 !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
 }
 
-.phase-modal-white-theme [class*="bg-purple-600"],
-.phase-modal-white-theme [class*="bg-purple-700"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-purple-600"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-purple-700"] {
   background-color: #0f172a !important;
   color: #ffffff !important;
   border-color: #0f172a !important;
 }
 
-.phase-modal-white-theme [class*="hover:bg-purple-500"]:hover,
-.phase-modal-white-theme [class*="hover:bg-purple-600"]:hover {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="hover:bg-purple-500"]:hover,
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="hover:bg-purple-600"]:hover {
   background-color: #1e293b !important;
   color: #ffffff !important;
 }
 
-.phase-modal-white-theme [class*="text-purple-"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="text-purple-"] {
   color: #334155 !important;
 }
 
-.phase-modal-white-theme [class*="border-purple-"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="border-purple-"] {
   border-color: #cbd5e1 !important;
 }
 
-.phase-modal-white-theme [class*="shadow-purple-"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="shadow-purple-"] {
   box-shadow: none !important;
 }
 
-.phase-modal-white-theme [class*="from-purple-"],
-.phase-modal-white-theme [class*="to-purple-"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="from-purple-"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="to-purple-"] {
   background-image: none !important;
   background-color: #f8fafc !important;
 }
