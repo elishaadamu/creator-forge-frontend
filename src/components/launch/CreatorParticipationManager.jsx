@@ -88,6 +88,130 @@ export default function CreatorParticipationManager() {
   // Actions menu modal state (Ellipsis action menu that floats over table without clipping)
   const [actionModalProject, setActionModalProject] = useState(null)
 
+  // Dynamic Co-Builder Pass Price States
+  const [defaultPassPrice, setDefaultPassPrice] = useState(() => {
+    try {
+      const saved = localStorage.getItem('forge_cobuilder_pass_price')
+      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
+    } catch {
+      return 50
+    }
+  })
+
+  // Global Pass Price Modal
+  const [showGlobalPriceModal, setShowGlobalPriceModal] = useState(false)
+  const [globalPriceInput, setGlobalPriceInput] = useState(50)
+  const [updatePendingWithGlobal, setUpdatePendingWithGlobal] = useState(true)
+  const [isSavingGlobalPrice, setIsSavingGlobalPrice] = useState(false)
+
+  // Per-Creator Custom Price Modal
+  const [customPriceModalProject, setCustomPriceModalProject] = useState(null)
+  const [customPriceInput, setCustomPriceInput] = useState(50)
+  const [isSavingCustomPrice, setIsSavingCustomPrice] = useState(false)
+
+  // Helper to resolve pass price for any project (custom or default)
+  const getProjectPassPrice = useCallback((proj) => {
+    if (!proj) return defaultPassPrice
+    if (proj.diySubscription?.amount && !isNaN(Number(proj.diySubscription.amount))) {
+      return Number(proj.diySubscription.amount)
+    }
+    if (proj.diyFee !== undefined && proj.diyFee !== null && !isNaN(Number(proj.diyFee))) {
+      return Number(proj.diyFee)
+    }
+    if (proj.diyPassPrice !== undefined && proj.diyPassPrice !== null && !isNaN(Number(proj.diyPassPrice))) {
+      return Number(proj.diyPassPrice)
+    }
+    return defaultPassPrice
+  }, [defaultPassPrice])
+
+  // Open custom price modal for a project
+  const handleOpenCustomPriceModal = (proj) => {
+    if (!proj) return
+    setCustomPriceModalProject(proj)
+    setCustomPriceInput(getProjectPassPrice(proj))
+  }
+
+  // Save custom price for a project
+  const handleSaveCustomPrice = async () => {
+    if (!customPriceModalProject?.id) return
+    const numericFee = Math.max(0, Number(customPriceInput) || 0)
+    setIsSavingCustomPrice(true)
+
+    try {
+      await updateCoLaunchProject(customPriceModalProject.id, {
+        diyFee: numericFee,
+        diyPassPrice: numericFee
+      })
+
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === customPriceModalProject.id
+            ? { ...p, diyFee: numericFee, diyPassPrice: numericFee }
+            : p
+        )
+      )
+
+      showToast(
+        'success',
+        'Pass Fee Updated',
+        `Co-Builder pass fee for ${customPriceModalProject.creatorName || 'creator'} set to $${numericFee} USD`
+      )
+      setCustomPriceModalProject(null)
+    } catch (err) {
+      console.error('[CreatorParticipationManager] Failed to update creator fee:', err)
+      showToast('error', 'Update Failed', err.message || 'Could not update creator pass fee')
+    } finally {
+      setIsSavingCustomPrice(false)
+    }
+  }
+
+  // Save global default price
+  const handleSaveGlobalPrice = async () => {
+    const numericFee = Math.max(0, Number(globalPriceInput) || 0)
+    setIsSavingGlobalPrice(true)
+
+    try {
+      try {
+        localStorage.setItem('forge_cobuilder_pass_price', String(numericFee))
+      } catch (e) {}
+      setDefaultPassPrice(numericFee)
+
+      if (updatePendingWithGlobal) {
+        const pendingProjects = projects.filter(
+          (p) => !(p.isDIY || p.diySubscription?.active || p.diyOfferStatus === 'paid' || p.diyOfferStatus === 'accepted')
+        )
+
+        await Promise.allSettled(
+          pendingProjects.map((p) =>
+            updateCoLaunchProject(p.id, { diyFee: numericFee, diyPassPrice: numericFee })
+          )
+        )
+
+        setProjects((prev) =>
+          prev.map((p) => {
+            const isPaid = p.isDIY || p.diySubscription?.active || p.diyOfferStatus === 'paid' || p.diyOfferStatus === 'accepted'
+            if (!isPaid) {
+              return { ...p, diyFee: numericFee, diyPassPrice: numericFee }
+            }
+            return p
+          })
+        )
+      }
+
+      showToast(
+        'success',
+        'Global Fee Updated',
+        `Standard Co-Builder Pass fee updated to $${numericFee} USD${updatePendingWithGlobal ? ' & synced to pending ventures' : ''}.`
+      )
+      setShowGlobalPriceModal(false)
+    } catch (err) {
+      console.error('[CreatorParticipationManager] Failed to update global fee:', err)
+      showToast('error', 'Update Failed', err.message || 'Could not update global pass fee')
+    } finally {
+      setIsSavingGlobalPrice(false)
+    }
+  }
+
   // Preview modal
   const [previewUrl, setPreviewUrl] = useState(null)
 
@@ -103,7 +227,7 @@ export default function CreatorParticipationManager() {
   useEffect(() => {
     updatePageSEO({
       title: 'Creator Co-Builder & Participation Manager | Creator Forge',
-      description: 'Dedicated real-time operator console for tracking creator participation tracks, $50 Co-Builder passes, payments, and follow-ups.',
+      description: 'Dedicated real-time operator console for tracking creator participation tracks, Co-Builder passes, dynamic pricing, and follow-ups.',
       image: '/og-image.svg'
     })
   }, [])
@@ -187,11 +311,12 @@ export default function CreatorParticipationManager() {
     setTimeout(() => setCopiedId(null), 2500)
   }
 
-  // Mark Paid as Co-Builder ($50 USD Flat)
+  // Mark Paid as Co-Builder (Dynamic Fee)
   const handleMarkAsPaidCoBuilder = async (proj) => {
     if (!proj?.id) return
+    const passFee = getProjectPassPrice(proj)
     const confirmed = window.confirm(
-      `Mark $50 Co-Builder Pass as PAID for ${proj.creatorName || proj.creatorHandle}?\n\nThis gives the creator interactive Phase 1-3 access to ideate and run AI MVP tasks directly (with 50/50 Co-Founder Equity).`
+      `Mark $${passFee} Co-Builder Pass as PAID for ${proj.creatorName || proj.creatorHandle}?\n\nThis gives the creator interactive Phase 1-3 access to ideate and run AI MVP tasks directly (with 50/50 Co-Founder Equity).`
     )
     if (!confirmed) return
 
@@ -206,9 +331,9 @@ export default function CreatorParticipationManager() {
 
       const subscriptionRecord = {
         active: true,
-        plan: 'diy_full_50',
-        planName: 'Interactive Co-Builder ProjectOS Pass ($50 USD)',
-        amount: 50,
+        plan: `diy_full_${passFee}`,
+        planName: `Interactive Co-Builder ProjectOS Pass ($${passFee} USD)`,
+        amount: passFee,
         billingCycle: 'one_time',
         paymentMethod: 'Manual Admin Unlock (Direct / Wire / Stripe)',
         transactionId: `tx_admin_manual_${Date.now()}`,
@@ -222,10 +347,12 @@ export default function CreatorParticipationManager() {
       await updateCoLaunchProject(proj.id, {
         isDIY: true,
         diySubscription: subscriptionRecord,
-        diyOfferStatus: 'paid'
+        diyOfferStatus: 'paid',
+        diyFee: passFee,
+        diyPassPrice: passFee
       })
 
-      showToast('success', 'Co-Builder Pass Activated', `$50 Pass marked paid for ${proj.creatorName}. Creator now has interactive execution access!`)
+      showToast('success', 'Co-Builder Pass Activated', `$${passFee} Pass marked paid for ${proj.creatorName}. Creator now has interactive execution access!`)
       loadData(true)
     } catch (err) {
       console.error('[CreatorParticipationManager] Failed to mark paid:', err)
@@ -262,12 +389,13 @@ export default function CreatorParticipationManager() {
     const creatorName = proj.creatorName || proj.creatorHandle || 'there'
     const productName = proj.productName || 'our co-launch venture'
     const workspaceUrl = getCreatorWorkspaceUrl(proj)
+    const passFee = getProjectPassPrice(proj)
 
     if (templateType === 'invoice') {
-      setEmailSubject(`Your Co-Builder Pass Invoice & Setup ($50 USD) — ${productName}`)
+      setEmailSubject(`Your Co-Builder Pass Invoice & Setup ($${passFee} USD) — ${productName}`)
       setEmailBody(
-        `Hi ${creatorName},\n\nHere is your official invite and payment invoice for the Interactive Co-Builder Pass ($50 USD flat fee) for ${productName}.\n\n` +
-        `As a reminder, our partnership is a 50/50 Co-Founder Equity Split. This $50 pass gives you full hands-on access inside Creator Forge ProjectOS to run AI MVP tasks, test features, and participate directly in every build phase instead of waiting for us to do it alone.\n\n` +
+        `Hi ${creatorName},\n\nHere is your official invite and payment invoice for the Interactive Co-Builder Pass ($${passFee} USD flat fee) for ${productName}.\n\n` +
+        `As a reminder, our partnership is a 50/50 Co-Founder Equity Split. This $${passFee} pass gives you full hands-on access inside Creator Forge ProjectOS to run AI MVP tasks, test features, and participate directly in every build phase instead of waiting for us to do it alone.\n\n` +
         `👉 Access your Co-Builder Workspace here:\n${workspaceUrl}\n\n` +
         `Looking forward to building this together!\n\nBest,\nCreator Forge Studio Operations`
       )
@@ -285,7 +413,7 @@ export default function CreatorParticipationManager() {
       setEmailBody(
         `Hi ${creatorName},\n\nI wanted to follow up on our co-launch roadmap for ${productName}.\n\n` +
         `As agreed, our partnership is a 50/50 Co-Founder Equity Split. You have two options for how we execute the development:\n\n` +
-        `1. Interactive Co-Builder Pass ($50 USD flat fee):\n` +
+        `1. Interactive Co-Builder Pass ($${passFee} USD flat fee):\n` +
         `Get hands-on participation inside our ProjectOS suite so you can run AI MVP tasks, ideate, test, and co-execute every phase directly with us.\n\n` +
         `2. Studio-Managed Track ($0 upfront):\n` +
         `Our studio engineering team completes all technical phases and hosting for you while you monitor progress in real-time.\n\n` +
@@ -413,7 +541,9 @@ export default function CreatorParticipationManager() {
   const coBuildersCount = projects.filter((p) => p.isDIY || p.diySubscription?.active).length
   const managedCount = projects.filter((p) => p.diyOfferStatus === 'declined').length
   const pendingCount = projects.filter((p) => !p.isDIY && !p.diySubscription?.active && p.diyOfferStatus !== 'declined').length
-  const totalRevenue = coBuildersCount * 50
+  const totalRevenue = projects
+    .filter((p) => p.isDIY || p.diySubscription?.active || p.diyOfferStatus === 'paid' || p.diyOfferStatus === 'accepted')
+    .reduce((sum, p) => sum + (Number(p.diySubscription?.amount) || getProjectPassPrice(p)), 0)
 
   return (
     <div className={`min-h-screen ${isLight ? 'bg-[#f0f2f5] text-slate-900 selection:bg-amber-500/20 selection:text-amber-900' : 'bg-[#07090e] text-white selection:bg-amber-500/30 selection:text-amber-200'} flex flex-col font-sans transition-colors duration-200`}>
@@ -447,13 +577,32 @@ export default function CreatorParticipationManager() {
                   </span>
                 </div>
                 <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'} hidden sm:block`}>
-                  Real-time operational control for $50 Co-Builder passes, participation follow-ups, and 50/50 partnership governance.
+                  Co-Builder pass fees, tracking, and partnership governance.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5 ml-auto">
+            {/* Dynamic Pass Fee Quick-Edit Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setGlobalPriceInput(defaultPassPrice)
+                setShowGlobalPriceModal(true)
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 ${
+                isLight
+                  ? 'bg-amber-50 hover:bg-amber-100/90 border-amber-300 text-amber-950'
+                  : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300'
+              }`}
+              title="Click to change the default Co-Builder Pass fee anytime"
+            >
+              <DollarSign className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>Pass Fee: <strong className="font-extrabold font-mono">${defaultPassPrice} USD</strong></span>
+              <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-200/70 text-amber-900 border border-amber-300/80 ml-0.5">Edit</span>
+            </button>
+
             {/* Real-time status indicator */}
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${isLight ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'} border text-[11px] font-medium`}>
               <span className="relative flex h-2 w-2">
@@ -526,7 +675,7 @@ export default function CreatorParticipationManager() {
                 </span>
               </div>
               <p className={`text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-300'} mt-0.5 leading-relaxed`}>
-                Creators always retain <strong>50% co-founder equity</strong> on both tracks. The $50 USD fee is strictly for the <strong>Interactive Co-Builder Pass</strong>, giving creators hands-on access to build, ideate, and run AI MVP tasks directly instead of the studio completing phases alone.
+                Creators always retain <strong>50% co-founder equity</strong> on both tracks. The Co-Builder Pass fee (<strong>${defaultPassPrice} USD</strong> base, customizable per creator) gives hands-on access to build and run AI MVP tasks directly.
               </p>
             </div>
           </div>
@@ -550,7 +699,7 @@ export default function CreatorParticipationManager() {
             <p className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Active co-launch projects</p>
           </div>
 
-          {/* Card 2: Co-Builders Active ($50 Paid) */}
+          {/* Card 2: Co-Builders Active */}
           <div className={`p-3 rounded-xl ${isLight ? 'bg-gradient-to-b from-amber-50/80 to-white border-amber-200 shadow-2xs' : 'bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/30 shadow-sm'} border space-y-0.5`}>
             <div className="flex items-center justify-between">
               <span className={`text-[10px] font-bold ${isLight ? 'text-amber-800' : 'text-amber-300'} uppercase tracking-wider block`}>
@@ -559,7 +708,7 @@ export default function CreatorParticipationManager() {
               <Zap className={`w-3.5 h-3.5 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
             </div>
             <div className={`text-xl font-black ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>{coBuildersCount}</div>
-            <p className={`text-[10px] ${isLight ? 'text-amber-700/80' : 'text-amber-200/70'}`}>$50 Pass Paid · Interactive</p>
+            <p className={`text-[10px] ${isLight ? 'text-amber-700/80' : 'text-amber-200/70'}`}>Active Interactive Passes</p>
           </div>
 
           {/* Card 3: Studio Managed Track */}
@@ -595,7 +744,7 @@ export default function CreatorParticipationManager() {
               <DollarSign className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
             </div>
             <div className={`text-xl font-black ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>${totalRevenue.toLocaleString()}</div>
-            <p className={`text-[10px] ${isLight ? 'text-emerald-700/80' : 'text-emerald-200/70'}`}>from $50 Co-Builder passes</p>
+            <p className={`text-[10px] ${isLight ? 'text-emerald-700/80' : 'text-emerald-200/70'}`}>from Co-Builder passes</p>
           </div>
         </div>
 
@@ -701,6 +850,7 @@ export default function CreatorParticipationManager() {
               const isPending = !isCoBuilder && !isDeclined
               const sub = proj.diySubscription || {}
               const workspaceUrl = getCreatorWorkspaceUrl(proj)
+              const projPrice = getProjectPassPrice(proj)
 
               return (
                 <div
@@ -813,7 +963,7 @@ export default function CreatorParticipationManager() {
                         {isCoBuilder ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-xs whitespace-nowrap shrink-0">
                             <Zap className="w-3 h-3 fill-slate-950 text-slate-950 shrink-0" />
-                            <span>Co-Builder ($50 Paid)</span>
+                            <span>Co-Builder (${projPrice} Paid)</span>
                           </span>
                         ) : isDeclined ? (
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 ${
@@ -860,7 +1010,7 @@ export default function CreatorParticipationManager() {
                                 isLight ? 'text-emerald-700' : 'text-emerald-400'
                               }`}>
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shadow-xs"></span>
-                                $50.00 USD
+                                ${projPrice.toFixed(2)} USD
                               </span>
                             </div>
                           </div>
@@ -875,9 +1025,22 @@ export default function CreatorParticipationManager() {
                             <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
                             <span className="truncate">Studio-Managed Engineering Track</span>
                           </div>
-                          <p className={`text-[11px] leading-relaxed pt-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                            Studio engineering builds MVP; Creator monitors milestone sprints.
-                          </p>
+                          <div className={`flex items-center justify-between text-xs pt-1 border-t ${isLight ? 'border-slate-200/60' : 'border-white/[0.06]'}`}>
+                            <span className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Pass Fee:</span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCustomPriceModal(proj)}
+                              className={`px-2 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                                isLight
+                                  ? 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-900'
+                                  : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300'
+                              }`}
+                              title="Click to change Co-Builder Pass fee for this creator"
+                            >
+                              <span>${projPrice} USD</span>
+                              <span className="text-[10px] opacity-70">Edit</span>
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-2 pt-0.5">
@@ -889,11 +1052,22 @@ export default function CreatorParticipationManager() {
                             <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                             <span className="truncate">Awaiting Track Selection</span>
                           </div>
-                          <p className={`text-[11px] leading-relaxed pt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                            {proj.diyOfferSentAt
-                              ? `Offer dispatched: ${new Date(proj.diyOfferSentAt).toLocaleDateString()}`
-                              : 'Offer pending creator review'}
-                          </p>
+                          <div className={`flex items-center justify-between text-xs pt-1 border-t ${isLight ? 'border-slate-200/60' : 'border-white/[0.06]'}`}>
+                            <span className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Pass Fee:</span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCustomPriceModal(proj)}
+                              className={`px-2 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                                isLight
+                                  ? 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-900'
+                                  : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300'
+                              }`}
+                              title="Click to change Co-Builder Pass fee for this creator"
+                            >
+                              <span>${projPrice} USD</span>
+                              <span className="text-[10px] opacity-70">Edit</span>
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1025,7 +1199,7 @@ export default function CreatorParticipationManager() {
               {(actionModalProject.isDIY || actionModalProject.diySubscription?.active) ? (
                 <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-xs">
                   <Zap className="w-3 h-3 fill-slate-950" />
-                  Track 1: Co-Builder ($50 Paid)
+                  Track 1: Co-Builder (${getProjectPassPrice(actionModalProject)} Paid)
                 </span>
               ) : actionModalProject.diyOfferStatus === 'declined' ? (
                 <span className={`px-2.5 py-1 rounded-full ${isLight ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-purple-500/20 text-purple-300'} border font-bold text-[10px] uppercase tracking-wider`}>
@@ -1040,6 +1214,90 @@ export default function CreatorParticipationManager() {
 
             {/* Action Buttons List */}
             <div className="space-y-2 pt-1">
+              {/* Dynamic Pass Fee Setting */}
+              <button
+                type="button"
+                onClick={() => {
+                  const p = actionModalProject
+                  setActionModalProject(null)
+                  handleOpenCustomPriceModal(p)
+                }}
+                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
+                  isLight ? 'bg-amber-50/70 hover:bg-amber-100/70 border-amber-200 text-slate-900' : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                    <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold flex items-center gap-1.5">
+                      <span>Change Pass Fee</span>
+                      <span className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 text-[10px] font-black">${getProjectPassPrice(actionModalProject)} USD</span>
+                    </div>
+                    <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Set a custom Co-Builder Pass price for this creator
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-amber-500" />
+              </button>
+
+              {/* Quick Mark Paid / Switch Track */}
+              {!(actionModalProject.isDIY || actionModalProject.diySubscription?.active || actionModalProject.diyOfferStatus === 'paid' || actionModalProject.diyOfferStatus === 'accepted') ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = actionModalProject
+                    setActionModalProject(null)
+                    handleMarkAsPaidCoBuilder(p)
+                  }}
+                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
+                    isLight ? 'bg-emerald-50/70 hover:bg-emerald-100/70 border-emerald-200 text-slate-900' : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                      <Zap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold flex items-center gap-1.5">
+                        <span>Mark Paid as Co-Builder</span>
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-950 text-[10px] font-black">${getProjectPassPrice(actionModalProject)} USD</span>
+                      </div>
+                      <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Unlock interactive workspace access immediately
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-emerald-500" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = actionModalProject
+                    setActionModalProject(null)
+                    handleSwitchToStudioManaged(p)
+                  }}
+                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
+                    isLight ? 'bg-purple-50/70 hover:bg-purple-100/70 border-purple-200 text-slate-900' : 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold">Switch to Studio-Managed</div>
+                      <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Studio engineering team completes MVP builds (50/50 Equity)
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-purple-500" />
+                </button>
+              )}
               {/* 1. Send Follow-Up Button: Only visible when creator has NOT paid yet. Once paid, it is automatically removed! */}
               {!(actionModalProject.isDIY || actionModalProject.diySubscription?.active || actionModalProject.diyOfferStatus === 'paid' || actionModalProject.diyOfferStatus === 'accepted') && (
                 <button
@@ -1188,7 +1446,7 @@ export default function CreatorParticipationManager() {
                 onClick={() => handleOpenEmailModal(emailModalProject, 'invoice')}
                 className={`px-2.5 py-1 rounded-lg ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300'} text-[11px] font-medium transition-colors cursor-pointer`}
               >
-                $50 Pass Invoice
+                ${getProjectPassPrice(emailModalProject)} Pass Invoice
               </button>
               <button
                 type="button"
@@ -1255,6 +1513,297 @@ export default function CreatorParticipationManager() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── GLOBAL CO-BUILDER PASS FEE MODAL ── */}
+      {showGlobalPriceModal && (
+        <div
+          className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isSavingGlobalPrice) setShowGlobalPriceModal(false)
+          }}
+        >
+          <div
+            className={`relative w-full max-w-md rounded-3xl ${
+              isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#0f131c] border-white/[0.12] text-white shadow-2xl'
+            } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0">
+                  <DollarSign className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h3 className={`text-base font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    Default Pass Fee
+                  </h3>
+                  <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Standard Co-Builder Pass price for invitations
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGlobalPriceModal(false)}
+                disabled={isSavingGlobalPrice}
+                className={`p-2 rounded-xl ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
+                } transition-colors cursor-pointer shrink-0`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="space-y-1.5">
+              <span className={`text-[10px] font-bold uppercase tracking-wider block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                Quick Presets
+              </span>
+              <div className="grid grid-cols-6 gap-1.5">
+                {[25, 50, 75, 99, 149, 199].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setGlobalPriceInput(amt)}
+                    className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      Number(globalPriceInput) === amt
+                        ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-xs'
+                        : isLight
+                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                        : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
+                    }`}
+                  >
+                    ${amt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Numeric Input */}
+            <div className="space-y-1.5">
+              <label className={`text-[11px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'} uppercase tracking-wider block`}>
+                Pass Fee Amount (USD)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={globalPriceInput}
+                  onChange={(e) => setGlobalPriceInput(e.target.value)}
+                  className={`w-full pl-8 pr-16 py-2.5 rounded-xl border text-sm font-bold font-mono outline-none transition-all ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white focus:border-amber-500'
+                      : 'bg-white/[0.04] border-white/[0.1] text-white focus:border-amber-400/50'
+                  }`}
+                  placeholder="50"
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-slate-400">USD</span>
+              </div>
+            </div>
+
+            {/* Sync Checkbox */}
+            <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none ${
+              isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/[0.02] border-white/[0.06] text-slate-300'
+            }`}>
+              <input
+                type="checkbox"
+                checked={updatePendingWithGlobal}
+                onChange={(e) => setUpdatePendingWithGlobal(e.target.checked)}
+                className="mt-0.5 rounded text-amber-500 focus:ring-amber-400"
+              />
+              <div className="text-xs">
+                <span className="font-semibold block">Update all pending ventures to this fee</span>
+                <span className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  Syncs this new fee across pending creator offers
+                </span>
+              </div>
+            </label>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowGlobalPriceModal(false)}
+                disabled={isSavingGlobalPrice}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveGlobalPrice}
+                disabled={isSavingGlobalPrice || !globalPriceInput || Number(globalPriceInput) < 0}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {isSavingGlobalPrice ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Pass Fee</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PER-CREATOR CUSTOM PASS FEE MODAL ── */}
+      {customPriceModalProject && (
+        <div
+          className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isSavingCustomPrice) setCustomPriceModalProject(null)
+          }}
+        >
+          <div
+            className={`relative w-full max-w-md rounded-3xl ${
+              isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#0f131c] border-white/[0.12] text-white shadow-2xl'
+            } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0">
+                  <DollarSign className="w-5 h-5 text-amber-500" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className={`text-base font-black ${isLight ? 'text-slate-900' : 'text-white'} truncate`}>
+                    Creator Pass Fee
+                  </h3>
+                  <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'} truncate`}>
+                    {customPriceModalProject.creatorName || customPriceModalProject.creatorHandle || 'Creator'} • {customPriceModalProject.productName || 'Venture'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCustomPriceModalProject(null)}
+                disabled={isSavingCustomPrice}
+                className={`p-2 rounded-xl ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
+                } transition-colors cursor-pointer shrink-0`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  Quick Presets
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCustomPriceInput(defaultPassPrice)}
+                  className="text-[10px] text-amber-600 hover:underline cursor-pointer font-bold"
+                >
+                  Reset to Default (${defaultPassPrice})
+                </button>
+              </div>
+              <div className="grid grid-cols-6 gap-1.5">
+                {[25, 50, 75, 99, 149, 199].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setCustomPriceInput(amt)}
+                    className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      Number(customPriceInput) === amt
+                        ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-xs'
+                        : isLight
+                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                        : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
+                    }`}
+                  >
+                    ${amt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Numeric Input */}
+            <div className="space-y-1.5">
+              <label className={`text-[11px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'} uppercase tracking-wider block`}>
+                Custom Fee For This Creator (USD)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={customPriceInput}
+                  onChange={(e) => setCustomPriceInput(e.target.value)}
+                  className={`w-full pl-8 pr-16 py-2.5 rounded-xl border text-sm font-bold font-mono outline-none transition-all ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white focus:border-amber-500'
+                      : 'bg-white/[0.04] border-white/[0.1] text-white focus:border-amber-400/50'
+                  }`}
+                  placeholder="50"
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-slate-400">USD</span>
+              </div>
+              <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'} pt-0.5`}>
+                Applied across this creator's invoice, emails, and unlock portal.
+              </p>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setCustomPriceModalProject(null)}
+                disabled={isSavingCustomPrice}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveCustomPrice}
+                disabled={isSavingCustomPrice || !customPriceInput || Number(customPriceInput) < 0}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {isSavingCustomPrice ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Apply Fee</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual / Operator Checkout Simulator Modal */}
+      {diyModalProject && (
+        <DIYSubscriptionModal
+          isOpen={Boolean(diyModalProject)}
+          project={diyModalProject}
+          onClose={() => setDiyModalProject(null)}
+          onUnlockSuccess={() => {
+            setDiyModalProject(null)
+            loadData(true)
+          }}
+        />
       )}
 
       {/* Global Toast */}

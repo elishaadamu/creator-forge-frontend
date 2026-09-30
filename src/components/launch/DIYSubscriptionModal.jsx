@@ -59,7 +59,22 @@ export default function DIYSubscriptionModal({
 
   if (!isOpen) return null
 
-  const amountToCharge = 50 // $50 USD flat fee as requested
+  const defaultPassPrice = (() => {
+    try {
+      const saved = localStorage.getItem('forge_cobuilder_pass_price')
+      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
+    } catch {
+      return 50
+    }
+  })()
+
+  const amountToCharge = Number(
+    project?.diyFee ??
+    project?.diyPassPrice ??
+    project?.diySubscription?.amount ??
+    defaultPassPrice ??
+    50
+  )
   const productName = project?.productName || 'Your Custom SaaS App'
 
   const handleProcessPayment = async (isTestBypass = false) => {
@@ -68,13 +83,13 @@ export default function DIYSubscriptionModal({
 
     try {
       if (isTestBypass) {
-        setProcessingStep('Instant test unlock verified ($50 USD bypass)...')
+        setProcessingStep(`Instant test unlock verified ($${amountToCharge} USD bypass)...`)
         await new Promise((r) => setTimeout(r, 600))
       } else {
         setProcessingStep(
           paymentMethod === 'stripe'
-            ? 'Contacting Stripe Checkout & verifying $50 charge...'
-            : 'Authorizing PayPal $50.00 payment...'
+            ? `Contacting Stripe Checkout & verifying $${amountToCharge} charge...`
+            : `Authorizing PayPal $${amountToCharge.toFixed(2)} payment...`
         )
         await new Promise((r) => setTimeout(r, 1100))
 
@@ -93,9 +108,9 @@ export default function DIYSubscriptionModal({
       const licenseKey = `FORGE-COBUILDER-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
       const newSub = {
         active: true,
-        plan: 'diy_full_50',
-        planName: 'Interactive Co-Builder ProjectOS Pass ($50 USD)',
-        amount: 50,
+        plan: `diy_full_${amountToCharge}`,
+        planName: `Interactive Co-Builder ProjectOS Pass ($${amountToCharge} USD)`,
+        amount: amountToCharge,
         billingCycle: 'one_time',
         paymentMethod: isTestBypass ? 'Test Mode (Instant Unlock)' : paymentMethod === 'stripe' ? 'Stripe (Card •••• 4242)' : 'PayPal Express',
         transactionId: `tx_${paymentMethod}_${Date.now()}`,
@@ -127,7 +142,7 @@ export default function DIYSubscriptionModal({
         setProcessingStep(`Dispatching dedicated URL to ${targetEmail}...`)
         try {
           const emailSubject = `🚀 Your Interactive Co-Builder ProjectOS URL: ${productName}`
-          const emailBody = `Hi ${project?.creatorName || 'there'},\n\nThank you for your $50 payment! Your Interactive Co-Builder ProjectOS Workspace for ${productName} has been officially unlocked.\n\nYou now have full authority to directly participate and build alongside the studio across all 3 phases:\n• Phase 1: Market Validation & Pre-order Campaign\n• Phase 2: AI MVP Sprints, Architecture & Database\n• Phase 3: Launch & Production Telemetry\n• 50/50 Co-Founder Equity Partnership\n\nClick the link below to access your interactive workspace:\n${generatedUrl}\n\nBest regards,\nThe Creator Forge Studio Team`
+          const emailBody = `Hi ${project?.creatorName || 'there'},\n\nThank you for your $${amountToCharge} payment! Your Interactive Co-Builder ProjectOS Workspace for ${productName} has been officially unlocked.\n\nYou now have full authority to directly participate and build alongside the studio across all 3 phases:\n• Phase 1: Market Validation & Pre-order Campaign\n• Phase 2: AI MVP Sprints, Architecture & Database\n• Phase 3: Launch & Production Telemetry\n• 50/50 Co-Founder Equity Partnership\n\nClick the link below to access your interactive workspace:\n${generatedUrl}\n\nBest regards,\nThe Creator Forge Studio Team`
 
           await sendDirectEmail(targetEmail, emailSubject, emailBody, project?.creatorId || project?.id)
           setEmailNotice(`Dedicated URL dispatched to ${targetEmail}`)
@@ -252,7 +267,7 @@ export default function DIYSubscriptionModal({
               <div className="space-y-1">
                 <h3 className="text-xl sm:text-2xl font-black text-slate-900">Interactive Co-Builder Access Unlocked!</h3>
                 <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto">
-                  Your $50 payment has been confirmed. You now have full execution authority to participate across all phases and build alongside the studio under our 50/50 co-founder partnership.
+                  Your ${amountToCharge} payment has been confirmed. You now have full execution authority to participate across all phases and build alongside the studio under our 50/50 co-founder partnership.
                 </p>
               </div>
 
@@ -319,7 +334,7 @@ export default function DIYSubscriptionModal({
                 </div>
                 <div className="flex justify-between items-center text-slate-500">
                   <span>Payment Amount:</span>
-                  <strong className="text-slate-900">$50.00 USD (One-Time Access)</strong>
+                  <strong className="text-slate-900">${amountToCharge.toFixed(2)} USD (One-Time Access)</strong>
                 </div>
                 <div className="flex justify-between items-center text-slate-500">
                   <span>Payment Gateway:</span>
@@ -372,7 +387,7 @@ export default function DIYSubscriptionModal({
                   {/* Price Tag Box */}
                   <div className="p-3.5 rounded-2xl bg-white border border-emerald-200/90 shadow-sm space-y-1">
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-black text-slate-950 tracking-tight">$50</span>
+                      <span className="text-3xl font-black text-slate-950 tracking-tight">${amountToCharge}</span>
                       <span className="text-xs font-bold text-slate-500">USD</span>
                       <span className="ml-auto text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-300">
                         One-Time Pass
@@ -585,7 +600,7 @@ export default function DIYSubscriptionModal({
                     <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-center space-y-2">
                       <div className="text-xl font-black italic text-amber-600">PayPal</div>
                       <p className="text-xs text-slate-700">
-                        Confirm your one-time payment of <strong className="text-slate-950">$50.00 USD</strong> for the Interactive ProjectOS Pass via PayPal.
+                        Confirm your one-time payment of <strong className="text-slate-950">${amountToCharge.toFixed(2)} USD</strong> for the Interactive ProjectOS Pass via PayPal.
                       </p>
                       <div className="text-[11px] text-slate-500">
                         Immediate redirect & instantaneous license activation to your email.

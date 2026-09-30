@@ -181,6 +181,23 @@ export default function CreatorPortal({ portalId }) {
     project?.diyOfferStatus === 'paid'
   )
 
+  const defaultPassPrice = (() => {
+    try {
+      const saved = localStorage.getItem('forge_cobuilder_pass_price')
+      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
+    } catch {
+      return 50
+    }
+  })()
+
+  const cobuilderPrice = Number(
+    project?.diyFee ??
+    project?.diyPassPrice ??
+    project?.diySubscription?.amount ??
+    defaultPassPrice ??
+    50
+  )
+
   // When creator has paid, projectOS is the default view (unless explicitly overridden by URL)
   const hasAutoSwitchedToProjectOS = useRef(false)
   useEffect(() => {
@@ -263,7 +280,7 @@ export default function CreatorPortal({ portalId }) {
     setTrackChoiceDismissed(true)
     setShowDiyModal(false)
     setActiveMainView('projectos')
-    showToast('Interactive Co-Builder Pass active ($50 USD)!')
+    showToast(`Interactive Co-Builder Pass active ($${cobuilderPrice} USD)!`)
   }
 
   // Load Section 1 outreach and threads
@@ -641,8 +658,8 @@ export default function CreatorPortal({ portalId }) {
           {isDiyActive ? (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] font-mono font-bold shadow-2xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="hidden sm:inline">Track 1: Co-Builder ($50 Paid)</span>
-              <span className="sm:hidden">Co-Builder ($50)</span>
+              <span className="hidden sm:inline">Track 1: Co-Builder (${cobuilderPrice} Paid)</span>
+              <span className="sm:hidden">Co-Builder (${cobuilderPrice})</span>
             </div>
           ) : isTrackChoicePending ? (
             <div className="flex items-center gap-1.5">
@@ -657,8 +674,8 @@ export default function CreatorPortal({ portalId }) {
                 className="h-7 sm:h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
               >
                 <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300" />
-                <span className="hidden sm:inline">Co-Builder Pass ($50)</span>
-                <span className="sm:hidden">$50 Pass</span>
+                <span className="hidden sm:inline">Co-Builder Pass (${cobuilderPrice})</span>
+                <span className="sm:hidden">${cobuilderPrice} Pass</span>
               </button>
             </div>
           ) : (
@@ -673,8 +690,8 @@ export default function CreatorPortal({ portalId }) {
                 className="h-7 sm:h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
               >
                 <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300" />
-                <span className="hidden sm:inline">Upgrade to Co-Builder ($50)</span>
-                <span className="sm:hidden">$50 Pass</span>
+                <span className="hidden sm:inline">Upgrade to Co-Builder (${cobuilderPrice})</span>
+                <span className="sm:hidden">${cobuilderPrice} Pass</span>
               </button>
             </div>
           )}
@@ -871,7 +888,7 @@ export default function CreatorPortal({ portalId }) {
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-extrabold text-slate-900 text-sm">Interactive Co-Builder Pass ($50 USD)</span>
+                  <span className="font-extrabold text-slate-900 text-sm">Interactive Co-Builder Pass (${cobuilderPrice} USD)</span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold border border-emerald-300">
                     50/50 Equity Maintained
                   </span>
@@ -887,7 +904,7 @@ export default function CreatorPortal({ portalId }) {
               className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] shrink-0 whitespace-nowrap"
             >
               <CreditCard className="w-3.5 h-3.5 text-white" />
-              <span>Unlock Interactive Pass ($50 USD) →</span>
+              <span>Unlock Interactive Pass (${cobuilderPrice} USD) →</span>
             </button>
           </div>
         )}
@@ -949,7 +966,7 @@ export default function CreatorPortal({ portalId }) {
                         </span>
                         <div className="text-right">
                           <div className="text-2xl font-black text-slate-900 font-mono">
-                            $50 <span className="text-xs font-normal text-slate-500 font-sans">USD</span>
+                            ${cobuilderPrice} <span className="text-xs font-normal text-slate-500 font-sans">USD</span>
                           </div>
                           <span className="text-[10px] text-slate-500 block font-mono">One-time toolset pass</span>
                         </div>
@@ -1004,7 +1021,7 @@ export default function CreatorPortal({ portalId }) {
                         }}
                         className="group w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-emerald-500"
                       >
-                        <span>{isDiyActive ? 'Open Co-Builder Workspace →' : 'Unlock Interactive Co-Builder Pass ($50 USD)'}</span>
+                        <span>{isDiyActive ? 'Open Co-Builder Workspace →' : `Unlock Interactive Co-Builder Pass ($${cobuilderPrice} USD)`}</span>
                         <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:translate-x-1 transition-transform" />
                       </button>
                       <p className="text-[10px] text-center text-slate-400 font-mono">
