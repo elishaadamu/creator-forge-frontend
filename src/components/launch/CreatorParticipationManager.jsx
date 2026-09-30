@@ -588,7 +588,7 @@ export default function CreatorParticipationManager() {
             <button
               type="button"
               onClick={() => {
-                setGlobalPriceInput(defaultPassPrice)
+                setGlobalPriceInput(defaultPassPrice || 50)
                 setShowGlobalPriceModal(true)
               }}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 ${
@@ -603,7 +603,9 @@ export default function CreatorParticipationManager() {
               }`}>
                 <DollarSign className="w-3.5 h-3.5" />
               </div>
-              <span>Pass Fee: <strong className="font-extrabold font-mono text-slate-900 dark:text-white">${defaultPassPrice} USD</strong></span>
+              <span className={isLight ? 'text-slate-700' : 'text-slate-300'}>
+                Pass Fee: <strong className={`font-black font-mono ${isLight ? 'text-slate-950' : 'text-white'}`}>${defaultPassPrice || 50} USD</strong>
+              </span>
               <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ml-0.5 ${
                 isLight
                   ? 'bg-slate-100 text-slate-600 border-slate-200/80'
@@ -670,7 +672,7 @@ export default function CreatorParticipationManager() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 space-y-3.5">
         {/* Equity Architecture Notice */}
-        <div className={`px-4 py-3 rounded-xl ${isLight ? 'bg-gradient-to-r from-emerald-50 via-teal-50/40 to-slate-50 border-emerald-200/90 text-slate-800 shadow-2xs' : 'bg-gradient-to-r from-emerald-950/30 via-slate-900/40 to-cyan-950/30 border-emerald-500/20 text-white shadow-lg'} border flex flex-col md:flex-row md:items-center justify-between gap-3`}>
+        <div className={`px-4 py-3 rounded-xl ${isLight ? 'bg-white border-slate-200/90 text-slate-800 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] text-white shadow-lg'} border flex flex-col md:flex-row md:items-center justify-between gap-3`}>
           <div className="flex items-start gap-3">
             <div className={`p-1.5 rounded-lg ${isLight ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'} border shrink-0`}>
               <ShieldCheck className="w-5 h-5" />
@@ -710,27 +712,27 @@ export default function CreatorParticipationManager() {
           </div>
 
           {/* Card 2: Co-Builders Active */}
-          <div className={`p-3 rounded-xl ${isLight ? 'bg-gradient-to-b from-amber-50/80 to-white border-amber-200 shadow-2xs' : 'bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/30 shadow-sm'} border space-y-0.5`}>
+          <div className={`p-3 rounded-xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] shadow-sm'} border space-y-0.5`}>
             <div className="flex items-center justify-between">
-              <span className={`text-[10px] font-bold ${isLight ? 'text-amber-800' : 'text-amber-300'} uppercase tracking-wider block`}>
+              <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider block`}>
                 Co-Builders Active
               </span>
-              <Zap className={`w-3.5 h-3.5 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
+              <Zap className={`w-3.5 h-3.5 ${isLight ? 'text-amber-500' : 'text-amber-400'}`} />
             </div>
-            <div className={`text-xl font-black ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>{coBuildersCount}</div>
-            <p className={`text-[10px] ${isLight ? 'text-amber-700/80' : 'text-amber-200/70'}`}>Active Interactive Passes</p>
+            <div className={`text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>{coBuildersCount}</div>
+            <p className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Active Interactive Passes</p>
           </div>
 
           {/* Card 3: Studio Managed Track */}
-          <div className={`p-3 rounded-xl ${isLight ? 'bg-gradient-to-b from-purple-50/80 to-white border-purple-200 shadow-2xs' : 'bg-gradient-to-b from-purple-500/10 to-transparent border-purple-500/30 shadow-sm'} border space-y-0.5`}>
+          <div className={`p-3 rounded-xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] shadow-sm'} border space-y-0.5`}>
             <div className="flex items-center justify-between">
-              <span className={`text-[10px] font-bold ${isLight ? 'text-purple-800' : 'text-purple-300'} uppercase tracking-wider block`}>
+              <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider block`}>
                 Studio-Managed
               </span>
-              <Rocket className={`w-3.5 h-3.5 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
+              <Rocket className={`w-3.5 h-3.5 ${isLight ? 'text-purple-500' : 'text-purple-400'}`} />
             </div>
-            <div className={`text-xl font-black ${isLight ? 'text-purple-600' : 'text-purple-400'}`}>{managedCount}</div>
-            <p className={`text-[10px] ${isLight ? 'text-purple-700/80' : 'text-purple-200/70'}`}>Studio team executing builds</p>
+            <div className={`text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>{managedCount}</div>
+            <p className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Studio team executing builds</p>
           </div>
 
           {/* Card 4: Decision Pending */}
@@ -746,15 +748,15 @@ export default function CreatorParticipationManager() {
           </div>
 
           {/* Card 5: Total Revenue */}
-          <div className={`p-3 rounded-xl ${isLight ? 'bg-gradient-to-b from-emerald-50/80 to-white border-emerald-200 shadow-2xs' : 'bg-gradient-to-b from-emerald-500/10 to-transparent border-emerald-500/30 shadow-sm'} border space-y-0.5 col-span-2 sm:col-span-1`}>
+          <div className={`p-3 rounded-xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] shadow-sm'} border space-y-0.5 col-span-2 sm:col-span-1`}>
             <div className="flex items-center justify-between">
-              <span className={`text-[10px] font-bold ${isLight ? 'text-emerald-800' : 'text-emerald-300'} uppercase tracking-wider block`}>
+              <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider block`}>
                 Toolset Revenue
               </span>
               <DollarSign className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
             </div>
             <div className={`text-xl font-black ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>${totalRevenue.toLocaleString()}</div>
-            <p className={`text-[10px] ${isLight ? 'text-emerald-700/80' : 'text-emerald-200/70'}`}>from Co-Builder passes</p>
+            <p className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>from Co-Builder passes</p>
           </div>
         </div>
 
@@ -865,24 +867,12 @@ export default function CreatorParticipationManager() {
               return (
                 <div
                   key={proj.id}
-                  className={`p-4 sm:p-5 rounded-xl border transition-all duration-200 relative overflow-hidden ${
+                  className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 relative overflow-hidden ${
                     isLight
-                      ? isCoBuilder
-                        ? 'bg-gradient-to-r from-amber-50/70 via-white to-white border-amber-300/90 shadow-2xs'
-                        : isDeclined
-                        ? 'bg-gradient-to-r from-purple-50/60 via-white to-white border-purple-300/90 shadow-2xs'
-                        : 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-sm'
-                      : isCoBuilder
-                        ? 'bg-gradient-to-r from-amber-950/20 via-[#0e121a] to-[#0d1017] border-amber-500/40 shadow-amber-950/20'
-                        : isDeclined
-                        ? 'bg-[#0e121a] border-purple-500/30'
-                        : 'bg-[#0d1017] border-white/[0.08] hover:border-white/[0.15]'
+                      ? 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-xs'
+                      : 'bg-[#0d1017] border-white/[0.08] hover:border-white/[0.15]'
                   }`}
                 >
-                  {/* Glowing ambient indicator for paid Co-Builders */}
-                  {isCoBuilder && (
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-                  )}
 
                   <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
                     {/* Left: Creator & Venture Profile */}
@@ -897,7 +887,7 @@ export default function CreatorParticipationManager() {
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className={`w-11 h-11 rounded-xl ${isLight ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-gradient-to-tr from-amber-500/20 to-purple-500/20 border-white/[0.1] text-white'} border flex items-center justify-center text-sm font-bold shrink-0`}>
+                          <div className={`w-11 h-11 rounded-xl ${isLight ? 'bg-slate-100 text-slate-800 border-slate-200' : 'bg-white/[0.08] text-white border-white/[0.1]'} border flex items-center justify-center text-sm font-bold shrink-0`}>
                             {(proj.creatorName || proj.creatorHandle || 'C').charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -953,16 +943,8 @@ export default function CreatorParticipationManager() {
                     {/* Middle: Participation Status Card */}
                     <div className={`w-full lg:w-80 xl:w-[340px] shrink-0 p-3.5 rounded-xl border transition-all space-y-2.5 ${
                       isLight
-                        ? isCoBuilder
-                          ? 'bg-amber-50/40 border-amber-200/90 shadow-2xs'
-                          : isDeclined
-                            ? 'bg-purple-50/40 border-purple-200/80 shadow-2xs'
-                            : 'bg-slate-50/80 border-slate-200/80 shadow-2xs'
-                        : isCoBuilder
-                          ? 'bg-amber-950/20 border-amber-500/20'
-                          : isDeclined
-                            ? 'bg-purple-950/20 border-purple-500/20'
-                            : 'bg-black/30 border-white/[0.08]'
+                        ? 'bg-slate-50/80 border-slate-200/80 shadow-2xs'
+                        : 'bg-white/[0.02] border-white/[0.08]'
                     }`}>
                       <div className="flex items-center justify-between gap-2">
                         <span className={`text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
@@ -971,19 +953,23 @@ export default function CreatorParticipationManager() {
                           Participation Track
                         </span>
                         {isCoBuilder ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-xs whitespace-nowrap shrink-0">
-                            <Zap className="w-3 h-3 fill-slate-950 text-slate-950 shrink-0" />
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 border ${
+                            isLight
+                              ? 'bg-slate-900 text-white border-slate-900'
+                              : 'bg-white text-slate-950 border-white'
+                          }`}>
+                            <Zap className={`w-3 h-3 shrink-0 ${isLight ? 'text-amber-400 fill-amber-400' : 'text-slate-950 fill-slate-950'}`} />
                             <span>Co-Builder (${projPrice} Paid)</span>
                           </span>
                         ) : isDeclined ? (
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 ${
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 border ${
                             isLight ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                           }`}>
                             <ShieldCheck className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" />
                             <span>Studio-Managed</span>
                           </span>
                         ) : (
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 ${
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 border ${
                             isLight ? 'bg-slate-200/80 text-slate-700 border border-slate-300/80' : 'bg-white/[0.08] text-slate-300 border border-white/[0.1]'
                           }`}>
                             <Clock className="w-3 h-3 text-slate-500 shrink-0" />
@@ -995,12 +981,12 @@ export default function CreatorParticipationManager() {
                       {/* Status Details */}
                       {isCoBuilder ? (
                         <div className="space-y-2 pt-0.5">
-                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${
+                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold border ${
                             isLight
-                              ? 'bg-white border border-amber-200/90 text-amber-950 shadow-2xs'
-                              : 'bg-black/40 border border-amber-500/30 text-amber-300'
+                              ? 'bg-white border-slate-200 text-slate-800 shadow-2xs'
+                              : 'bg-white/[0.04] border-white/[0.1] text-slate-200'
                           }`}>
-                            <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
                             <span className="truncate">Phases 1–3 Interactive Execution Unlocked</span>
                           </div>
                           <div className={`space-y-1.5 pt-1.5 border-t ${isLight ? 'border-slate-200/70' : 'border-white/[0.06]'} text-xs`}>
@@ -1510,7 +1496,11 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={handleSendEmail}
                 disabled={isSendingEmail || !emailSubject.trim() || !emailBody.trim()}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 shadow-lg shadow-amber-950/20"
+                className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 shadow-sm ${
+                  isLight
+                    ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10'
+                    : 'bg-white hover:bg-slate-100 text-slate-950 shadow-white/10'
+                }`}
               >
                 {isSendingEmail ? (
                   <>
