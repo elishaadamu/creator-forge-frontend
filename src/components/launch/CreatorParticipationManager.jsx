@@ -591,16 +591,26 @@ export default function CreatorParticipationManager() {
                 setGlobalPriceInput(defaultPassPrice)
                 setShowGlobalPriceModal(true)
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 ${
                 isLight
-                  ? 'bg-amber-50 hover:bg-amber-100/90 border-amber-300 text-amber-950'
-                  : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300'
+                  ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 hover:border-slate-300'
+                  : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.1] text-slate-200 hover:border-white/[0.2]'
               }`}
               title="Click to change the default Co-Builder Pass fee anytime"
             >
-              <DollarSign className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>Pass Fee: <strong className="font-extrabold font-mono">${defaultPassPrice} USD</strong></span>
-              <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-200/70 text-amber-900 border border-amber-300/80 ml-0.5">Edit</span>
+              <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${
+                isLight ? 'bg-slate-100 text-slate-700' : 'bg-white/[0.08] text-slate-300'
+              }`}>
+                <DollarSign className="w-3.5 h-3.5" />
+              </div>
+              <span>Pass Fee: <strong className="font-extrabold font-mono text-slate-900 dark:text-white">${defaultPassPrice} USD</strong></span>
+              <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ml-0.5 ${
+                isLight
+                  ? 'bg-slate-100 text-slate-600 border-slate-200/80'
+                  : 'bg-white/[0.08] text-slate-300 border-white/[0.1]'
+              }`}>
+                Edit
+              </span>
             </button>
 
             {/* Real-time status indicator */}
@@ -1032,13 +1042,13 @@ export default function CreatorParticipationManager() {
                               onClick={() => handleOpenCustomPriceModal(proj)}
                               className={`px-2 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
                                 isLight
-                                  ? 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-900'
-                                  : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300'
+                                  ? 'bg-slate-100/90 hover:bg-slate-200/90 border-slate-200 text-slate-800'
+                                  : 'bg-white/[0.06] hover:bg-white/[0.1] border-white/[0.1] text-slate-200'
                               }`}
                               title="Click to change Co-Builder Pass fee for this creator"
                             >
-                              <span>${projPrice} USD</span>
-                              <span className="text-[10px] opacity-70">Edit</span>
+                              <span className="font-mono">${projPrice} USD</span>
+                              <span className="text-[10px] opacity-60 underline decoration-slate-400">Edit</span>
                             </button>
                           </div>
                         </div>
@@ -1059,13 +1069,13 @@ export default function CreatorParticipationManager() {
                               onClick={() => handleOpenCustomPriceModal(proj)}
                               className={`px-2 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
                                 isLight
-                                  ? 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-900'
-                                  : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300'
+                                  ? 'bg-slate-100/90 hover:bg-slate-200/90 border-slate-200 text-slate-800'
+                                  : 'bg-white/[0.06] hover:bg-white/[0.1] border-white/[0.1] text-slate-200'
                               }`}
                               title="Click to change Co-Builder Pass fee for this creator"
                             >
-                              <span>${projPrice} USD</span>
-                              <span className="text-[10px] opacity-70">Edit</span>
+                              <span className="font-mono">${projPrice} USD</span>
+                              <span className="text-[10px] opacity-60 underline decoration-slate-400">Edit</span>
                             </button>
                           </div>
                         </div>
@@ -1223,24 +1233,28 @@ export default function CreatorParticipationManager() {
                   handleOpenCustomPriceModal(p)
                 }}
                 className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
-                  isLight ? 'bg-amber-50/70 hover:bg-amber-100/70 border-amber-200 text-slate-900' : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-white'
+                  isLight ? 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-900' : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.1] text-white'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
-                    <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    isLight ? 'bg-slate-200 text-slate-800' : 'bg-white/[0.08] text-white'
+                  }`}>
+                    <DollarSign className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="text-xs font-bold flex items-center gap-1.5">
                       <span>Change Pass Fee</span>
-                      <span className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 text-[10px] font-black">${getProjectPassPrice(actionModalProject)} USD</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                        isLight ? 'bg-slate-200 text-slate-800' : 'bg-white/[0.1] text-slate-200'
+                      }`}>${getProjectPassPrice(actionModalProject)} USD</span>
                     </div>
                     <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                       Set a custom Co-Builder Pass price for this creator
                     </div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-amber-500" />
+                <ChevronRight className="w-4 h-4 text-slate-400" />
               </button>
 
               {/* Quick Mark Paid / Switch Track */}
@@ -1529,10 +1543,14 @@ export default function CreatorParticipationManager() {
             } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0">
-                  <DollarSign className="w-5 h-5 text-amber-500" />
+            <div className={`flex items-start justify-between gap-3 border-b ${isLight ? 'border-slate-100' : 'border-white/[0.08]'} pb-3.5`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                  isLight
+                    ? 'bg-slate-900 text-white border-slate-800 shadow-xs'
+                    : 'bg-white/[0.08] text-white border-white/[0.12]'
+                }`}>
+                  <DollarSign className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className={`text-base font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
@@ -1548,7 +1566,7 @@ export default function CreatorParticipationManager() {
                 onClick={() => setShowGlobalPriceModal(false)}
                 disabled={isSavingGlobalPrice}
                 className={`p-2 rounded-xl ${
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
                 } transition-colors cursor-pointer shrink-0`}
               >
                 <X className="w-4 h-4" />
@@ -1557,7 +1575,7 @@ export default function CreatorParticipationManager() {
 
             {/* Quick Presets */}
             <div className="space-y-1.5">
-              <span className={`text-[10px] font-bold uppercase tracking-wider block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider block ${isLight ? 'text-slate-400' : 'text-slate-400'}`}>
                 Quick Presets
               </span>
               <div className="grid grid-cols-6 gap-1.5">
@@ -1566,11 +1584,13 @@ export default function CreatorParticipationManager() {
                     key={amt}
                     type="button"
                     onClick={() => setGlobalPriceInput(amt)}
-                    className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                       Number(globalPriceInput) === amt
-                        ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-xs'
+                        ? isLight
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                          : 'bg-white text-slate-950 border-white shadow-sm'
                         : isLight
-                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
                         : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
                     }`}
                   >
@@ -1585,51 +1605,80 @@ export default function CreatorParticipationManager() {
               <label className={`text-[11px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'} uppercase tracking-wider block`}>
                 Pass Fee Amount (USD)
               </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">$</span>
+              <div className={`relative flex items-center rounded-xl border transition-all ${
+                isLight
+                  ? 'bg-white border-slate-200 hover:border-slate-300 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-900/5'
+                  : 'bg-white/[0.03] border-white/[0.1] hover:border-white/[0.16] focus-within:border-white focus-within:ring-2 focus-within:ring-white/10'
+              }`}>
+                <span className={`pl-3.5 text-base font-bold select-none ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>$</span>
                 <input
                   type="number"
                   min="0"
                   step="1"
                   value={globalPriceInput}
                   onChange={(e) => setGlobalPriceInput(e.target.value)}
-                  className={`w-full pl-8 pr-16 py-2.5 rounded-xl border text-sm font-bold font-mono outline-none transition-all ${
-                    isLight
-                      ? 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white focus:border-amber-500'
-                      : 'bg-white/[0.04] border-white/[0.1] text-white focus:border-amber-400/50'
+                  className={`w-full py-2.5 px-2 bg-transparent text-base font-black font-mono outline-none ${
+                    isLight ? 'text-slate-900 placeholder:text-slate-400' : 'text-white placeholder:text-slate-500'
                   }`}
                   placeholder="50"
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-slate-400">USD</span>
+                <div className="pr-3 shrink-0">
+                  <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md ${
+                    isLight ? 'bg-slate-100 text-slate-600 border border-slate-200/80' : 'bg-white/[0.06] text-slate-300 border border-white/[0.08]'
+                  }`}>
+                    USD
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Sync Checkbox */}
-            <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none ${
-              isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/[0.02] border-white/[0.06] text-slate-300'
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer select-none transition-all ${
+              updatePendingWithGlobal
+                ? isLight
+                  ? 'bg-slate-50/90 border-slate-300/90'
+                  : 'bg-white/[0.04] border-white/[0.14]'
+                : isLight
+                ? 'bg-white border-slate-200/80 hover:bg-slate-50/60'
+                : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
             }`}>
               <input
                 type="checkbox"
                 checked={updatePendingWithGlobal}
                 onChange={(e) => setUpdatePendingWithGlobal(e.target.checked)}
-                className="mt-0.5 rounded text-amber-500 focus:ring-amber-400"
+                className="sr-only"
               />
-              <div className="text-xs">
-                <span className="font-semibold block">Update all pending ventures to this fee</span>
-                <span className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              <div className={`w-4 h-4 mt-0.5 rounded-md flex items-center justify-center shrink-0 border transition-all ${
+                updatePendingWithGlobal
+                  ? isLight
+                    ? 'bg-slate-900 border-slate-900 text-white shadow-2xs'
+                    : 'bg-white border-white text-slate-950 shadow-2xs'
+                  : isLight
+                  ? 'bg-white border-slate-300'
+                  : 'bg-white/[0.06] border-white/[0.2]'
+              }`}>
+                {updatePendingWithGlobal && <Check className="w-3 h-3 stroke-[3]" />}
+              </div>
+              <div className="text-xs space-y-0.5">
+                <span className={`font-bold block ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                  Update all pending ventures to this fee
+                </span>
+                <span className={`text-[11px] block leading-tight ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                   Syncs this new fee across pending creator offers
                 </span>
               </div>
             </label>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <div className={`flex items-center justify-end gap-2.5 pt-3 border-t ${isLight ? 'border-slate-100' : 'border-white/[0.08]'}`}>
               <button
                 type="button"
                 onClick={() => setShowGlobalPriceModal(false)}
                 disabled={isSavingGlobalPrice}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300'
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
+                  isLight
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    : 'bg-white/[0.06] hover:bg-white/[0.1] text-slate-300'
                 }`}
               >
                 Cancel
@@ -1638,7 +1687,11 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={handleSaveGlobalPrice}
                 disabled={isSavingGlobalPrice || !globalPriceInput || Number(globalPriceInput) < 0}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center gap-1.5"
+                className={`px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm hover:shadow flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isLight
+                    ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10'
+                    : 'bg-white hover:bg-slate-100 text-slate-950 shadow-white/10'
+                }`}
               >
                 {isSavingGlobalPrice ? (
                   <>
@@ -1647,7 +1700,7 @@ export default function CreatorParticipationManager() {
                   </>
                 ) : (
                   <>
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>Save Pass Fee</span>
                   </>
                 )}
@@ -1671,10 +1724,14 @@ export default function CreatorParticipationManager() {
             } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0">
-                  <DollarSign className="w-5 h-5 text-amber-500" />
+            <div className={`flex items-start justify-between gap-3 border-b ${isLight ? 'border-slate-100' : 'border-white/[0.08]'} pb-3.5`}>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                  isLight
+                    ? 'bg-slate-900 text-white border-slate-800 shadow-xs'
+                    : 'bg-white/[0.08] text-white border-white/[0.12]'
+                }`}>
+                  <DollarSign className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
                   <h3 className={`text-base font-black ${isLight ? 'text-slate-900' : 'text-white'} truncate`}>
@@ -1690,7 +1747,7 @@ export default function CreatorParticipationManager() {
                 onClick={() => setCustomPriceModalProject(null)}
                 disabled={isSavingCustomPrice}
                 className={`p-2 rounded-xl ${
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
                 } transition-colors cursor-pointer shrink-0`}
               >
                 <X className="w-4 h-4" />
@@ -1700,13 +1757,15 @@ export default function CreatorParticipationManager() {
             {/* Quick Presets */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-slate-400' : 'text-slate-400'}`}>
                   Quick Presets
                 </span>
                 <button
                   type="button"
                   onClick={() => setCustomPriceInput(defaultPassPrice)}
-                  className="text-[10px] text-amber-600 hover:underline cursor-pointer font-bold"
+                  className={`text-[10px] font-bold cursor-pointer transition-colors ${
+                    isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+                  } underline underline-offset-2`}
                 >
                   Reset to Default (${defaultPassPrice})
                 </button>
@@ -1717,11 +1776,13 @@ export default function CreatorParticipationManager() {
                     key={amt}
                     type="button"
                     onClick={() => setCustomPriceInput(amt)}
-                    className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                       Number(customPriceInput) === amt
-                        ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-xs'
+                        ? isLight
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                          : 'bg-white text-slate-950 border-white shadow-sm'
                         : isLight
-                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
                         : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
                     }`}
                   >
@@ -1736,22 +1797,30 @@ export default function CreatorParticipationManager() {
               <label className={`text-[11px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'} uppercase tracking-wider block`}>
                 Custom Fee For This Creator (USD)
               </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">$</span>
+              <div className={`relative flex items-center rounded-xl border transition-all ${
+                isLight
+                  ? 'bg-white border-slate-200 hover:border-slate-300 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-900/5'
+                  : 'bg-white/[0.03] border-white/[0.1] hover:border-white/[0.16] focus-within:border-white focus-within:ring-2 focus-within:ring-white/10'
+              }`}>
+                <span className={`pl-3.5 text-base font-bold select-none ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>$</span>
                 <input
                   type="number"
                   min="0"
                   step="1"
                   value={customPriceInput}
                   onChange={(e) => setCustomPriceInput(e.target.value)}
-                  className={`w-full pl-8 pr-16 py-2.5 rounded-xl border text-sm font-bold font-mono outline-none transition-all ${
-                    isLight
-                      ? 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white focus:border-amber-500'
-                      : 'bg-white/[0.04] border-white/[0.1] text-white focus:border-amber-400/50'
+                  className={`w-full py-2.5 px-2 bg-transparent text-base font-black font-mono outline-none ${
+                    isLight ? 'text-slate-900 placeholder:text-slate-400' : 'text-white placeholder:text-slate-500'
                   }`}
                   placeholder="50"
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-slate-400">USD</span>
+                <div className="pr-3 shrink-0">
+                  <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md ${
+                    isLight ? 'bg-slate-100 text-slate-600 border border-slate-200/80' : 'bg-white/[0.06] text-slate-300 border border-white/[0.08]'
+                  }`}>
+                    USD
+                  </span>
+                </div>
               </div>
               <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'} pt-0.5`}>
                 Applied across this creator's invoice, emails, and unlock portal.
@@ -1759,13 +1828,15 @@ export default function CreatorParticipationManager() {
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <div className={`flex items-center justify-end gap-2.5 pt-3 border-t ${isLight ? 'border-slate-100' : 'border-white/[0.08]'}`}>
               <button
                 type="button"
                 onClick={() => setCustomPriceModalProject(null)}
                 disabled={isSavingCustomPrice}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300'
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
+                  isLight
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    : 'bg-white/[0.06] hover:bg-white/[0.1] text-slate-300'
                 }`}
               >
                 Cancel
@@ -1774,7 +1845,11 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={handleSaveCustomPrice}
                 disabled={isSavingCustomPrice || !customPriceInput || Number(customPriceInput) < 0}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center gap-1.5"
+                className={`px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm hover:shadow flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isLight
+                    ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10'
+                    : 'bg-white hover:bg-slate-100 text-slate-950 shadow-white/10'
+                }`}
               >
                 {isSavingCustomPrice ? (
                   <>
@@ -1783,7 +1858,7 @@ export default function CreatorParticipationManager() {
                   </>
                 ) : (
                   <>
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>Apply Fee</span>
                   </>
                 )}
