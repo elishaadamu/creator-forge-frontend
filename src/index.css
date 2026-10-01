@@ -771,8 +771,8 @@
   color: #0f172a !important;
 }
 
-.phase-modal-white-theme div:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-emerald-"]):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-white"],
-.phase-modal-white-theme span:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-emerald-"]):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-white"] {
+.phase-modal-white-theme div:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-slate-9"] *):not([class*="bg-slate-8"]):not([class*="bg-slate-8"] *):not([class*="bg-emerald-"]):not([class*="bg-emerald-"] *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-white"],
+.phase-modal-white-theme span:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-slate-9"] *):not([class*="bg-slate-8"]):not([class*="bg-slate-8"] *):not([class*="bg-emerald-"]):not([class*="bg-emerald-"] *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-white"] {
   color: #0f172a !important;
 }
 

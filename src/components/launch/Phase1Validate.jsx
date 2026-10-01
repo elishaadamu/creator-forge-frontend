@@ -1527,12 +1527,18 @@ export default function Phase1Validate({
           </div>
 
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-mono font-bold shadow-xs ring-1 ring-emerald-400/30">
-              <span className="text-[10px] text-slate-400 uppercase font-mono hidden md:inline">Execution Progress</span>
-              <span className="text-emerald-400 font-extrabold">
+            <button
+              type="button"
+              className="execution-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-mono font-bold shadow-xs ring-1 ring-emerald-400/30 cursor-default select-none"
+              style={{ color: '#ffffff', backgroundColor: '#0f172a' }}
+            >
+              <span className="text-[10px] uppercase font-mono tracking-wider inline" style={{ color: '#ffffff' }}>
+                Execution Progress
+              </span>
+              <span className="font-extrabold text-xs inline" style={{ color: '#ffffff' }}>
                 {[isStep1Done, isStep2Done, isStep3Done, isStep4Done, isStep5Done].filter(Boolean).length} of 5 Done
               </span>
-            </div>
+            </button>
             <div className="flex items-center justify-between sm:justify-end gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 shrink-0 shadow-2xs">
               <span className="text-[10px] text-slate-500 uppercase font-mono hidden sm:inline">Target Goal:</span>
               <span className="flex items-center gap-1 font-mono font-extrabold text-slate-900">
@@ -3101,18 +3107,18 @@ export default function Phase1Validate({
                         type="button"
                         onClick={() => handleGeneratePostImage()}
                         disabled={isGeneratingImage}
-                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                         title="Generate realistic AI announcement graphic using Gemini 3.1 Flash Image"
                       >
                         {isGeneratingImage ? (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Generating Image...</span>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                            <span className="text-white">Generating Image...</span>
                           </>
                         ) : (
                           <>
-                            <Sparkles className="w-3.5 h-3.5 text-amber-950" />
-                            <span>{campaignKit?.postImageUrl ? 'Regenerate AI Image (Gemini 3.1)' : 'Generate AI Image (Gemini 3.1)'}</span>
+                            <Sparkles className="w-3.5 h-3.5 text-white" />
+                            <span className="text-white">{campaignKit?.postImageUrl ? 'Regenerate AI Image (Gemini 3.1)' : 'Generate AI Image (Gemini 3.1)'}</span>
                           </>
                         )}
                       </button>
@@ -3249,13 +3255,13 @@ export default function Phase1Validate({
                       >
                         {isGeneratingVideo ? (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Generating Video (Veo 3.1)...</span>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                            <span className="text-white">Generating Video (Veo 3.1)...</span>
                           </>
                         ) : (
                           <>
-                            <Sparkles className="w-3.5 h-3.5 text-rose-200" />
-                            <span>{campaignKit?.videoUrl ? 'Regenerate AI Video (Veo 3.1)' : 'Generate AI Video (Veo 3.1)'}</span>
+                            <Sparkles className="w-3.5 h-3.5 text-white" />
+                            <span className="text-white">{campaignKit?.videoUrl ? 'Regenerate AI Video (Veo 3.1)' : 'Generate AI Video (Veo 3.1)'}</span>
                           </>
                         )}
                       </button>
