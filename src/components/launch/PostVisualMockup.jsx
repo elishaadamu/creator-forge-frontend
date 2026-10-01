@@ -262,6 +262,19 @@ export default function PostVisualMockup({
   // 2. STORY SEQUENCE MOCKUP (Instagram / TikTok 9:16 Story Frame)
   // ─────────────────────────────────────────────────────────────
   if (type === 'story') {
+    // Parse dynamic copyText into individual story steps
+    const parseStoriesFromCopy = (text) => {
+      if (!text || typeof text !== 'string') return null
+      const storyBlocks = text.split(/(?:STORY\s*\d+|Story\s*\d+)[\s:—–-]+/i).map(s => s.trim()).filter(Boolean)
+      if (storyBlocks.length >= 2) return storyBlocks
+      const lines = text.split(/\n\s*\n/).map(l => l.trim()).filter(Boolean)
+      if (lines.length >= 2) return lines
+      return null
+    }
+
+    const storyParts = parseStoriesFromCopy(copyText)
+    const currentStoryRaw = storyParts && storyParts[activeStoryIdx] ? storyParts[activeStoryIdx] : null
+
     return (
       <div className="w-full max-w-sm mx-auto space-y-3 font-sans py-2">
         {/* Story Step Selector Controls */}
@@ -308,7 +321,7 @@ export default function PostVisualMockup({
             <div className="w-2 h-2 rounded-full bg-[#151515] border border-white/10" />
           </div>
 
-          {/* Ambient Background Gradient (Safe inline gradient, no purple classes) */}
+          {/* Ambient Background Gradient */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -385,7 +398,7 @@ export default function PostVisualMockup({
                     Quick Poll For Everyone
                   </div>
                   <h4 className="text-base sm:text-lg font-black px-2 leading-snug" style={{ color: '#ffffff' }}>
-                    How many hours do you waste weekly on manual {niche} tasks?
+                    {currentStoryRaw ? currentStoryRaw.replace(/^.*Text:\s*"?/i, '').replace(/"?.*$/i, '').slice(0, 90) : `How many hours do you waste weekly on manual ${niche} tasks?`}
                   </h4>
                 </div>
 
@@ -467,7 +480,7 @@ export default function PostVisualMockup({
                   Meet {productName}
                 </h4>
                 <p className="text-xs px-2 line-clamp-3 leading-relaxed" style={{ color: '#cbd5e1' }}>
-                  {productTagline}
+                  {currentStoryRaw ? currentStoryRaw.replace(/^.*Text:\s*"?/i, '').slice(0, 120) : productTagline}
                 </p>
 
                 {/* Floating Product Card */}
@@ -511,7 +524,7 @@ export default function PostVisualMockup({
                   50 VIP Spots Open
                 </h4>
                 <p className="text-xs px-3 leading-relaxed" style={{ color: '#cbd5e1' }}>
-                  Lock 50% lifetime pricing (${foundingPrice}/yr) + direct input with {creatorName} on product features.
+                  {currentStoryRaw ? currentStoryRaw.replace(/^.*Text:\s*"?/i, '').slice(0, 110) : `Lock 50% lifetime pricing ($${foundingPrice}/yr) + direct input with ${creatorName} on product features.`}
                 </p>
 
                 {/* Link Sticker Mockup */}
@@ -630,24 +643,24 @@ export default function PostVisualMockup({
             )}
           </button>
 
-          {/* Teleprompter Subtitle Overlay (Visual Cue of Script) */}
-          <div className="absolute bottom-6 inset-x-6 z-20 text-center space-y-2">
+          {/* Teleprompter Subtitle Overlay (Dynamic from AI copyText) */}
+          <div className="absolute bottom-4 inset-x-4 z-20 text-center space-y-2">
             <div
               className="inline-block px-3 py-1 rounded-full text-[11px] font-mono font-medium backdrop-blur-md"
               style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', border: '1px solid rgba(255, 255, 255, 0.2)', color: '#fde047' }}
             >
               {isPlaying ? '▶ Teleprompter Script Sync Active' : '⏸ Video Script Teleprompter Preview'}
             </div>
-            <p
-              className="text-sm sm:text-base font-extrabold leading-snug drop-shadow-md max-w-lg mx-auto backdrop-blur-sm p-3 rounded-xl"
+            <div
+              className="text-xs sm:text-[13px] font-medium leading-relaxed drop-shadow-md max-w-lg mx-auto backdrop-blur-md p-3 rounded-xl max-h-36 overflow-y-auto whitespace-pre-wrap text-left select-text"
               style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.65)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
+                backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
                 color: '#ffffff'
               }}
             >
-              "If you saw our recent breakdown on <span style={{ color: '#fde047' }}>"{recentVideoTitle}"</span>, you saw how painful manual workflows in {niche} really are. That's why we engineered <span style={{ color: '#34d399' }}>{productName}</span>..."
-            </p>
+              {copyText || `"If you saw our recent breakdown on "${recentVideoTitle}", you saw how painful manual workflows in ${niche} really are. That's why we engineered ${productName}..."`}
+            </div>
           </div>
 
           {/* Live Attribution Overlay Badge */}
@@ -723,6 +736,12 @@ export default function PostVisualMockup({
   // 4. 1:1 FOUNDER EMAIL NEWSLETTER MOCKUP
   // ─────────────────────────────────────────────────────────────
   if (type === 'newsletter') {
+    const subjectMatch = typeof copyText === 'string' ? copyText.match(/Subject:\s*(.*)/i) : null;
+    const emailSubject = subjectMatch ? subjectMatch[1].trim() : `Why I'm co-founding ${productName} (and an early invite for you)`;
+    const emailBodyText = typeof copyText === 'string'
+      ? copyText.replace(/^Subject:\s*.*(?:\r?\n)+/i, '').trim()
+      : '';
+
     return (
       <div className="w-full max-w-xl mx-auto rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden text-slate-900 font-sans">
         {/* Email Client Window Chrome */}
@@ -758,55 +777,140 @@ export default function PostVisualMockup({
           <div className="flex items-center justify-between">
             <span className="text-slate-500 font-mono">Subject:</span>
             <span className="font-bold text-slate-900 text-xs sm:text-sm">
-              Why I'm co-founding {productName} (and an early invite for you)
+              {emailSubject}
             </span>
           </div>
         </div>
 
-        {/* Email Body Preview */}
-        <div className="p-5 sm:p-6 space-y-3.5 text-xs sm:text-[13px] text-slate-800 leading-relaxed">
-          <p>Hey [First Name],</p>
-          <p>
-            If you've been following my channel and community discussions in {niche}, you know how much time we waste on manual bottlenecks.
-          </p>
-          <p className="bg-amber-50/70 border-l-2 border-amber-400 p-2.5 rounded-r-lg text-slate-700 italic">
-            "In our recent video <strong>"{recentVideoTitle}"</strong>, hundreds of you reached out asking for a better way to handle this without juggling 4 different tools."
-          </p>
-          <p>
-            Today, I'm thrilled to announce that we are officially co-founding <strong>{productName}</strong> — {productTagline}.
-          </p>
-          <p>
-            Rather than building in isolation, we are keeping this initial founding cohort to just <strong>50 members</strong> so we can architect this in close collaboration with you.
-          </p>
+        {/* Email Body Preview (Dynamic from AI copyText) */}
+        <div className="p-5 sm:p-6 space-y-3.5 text-xs sm:text-[13px] text-slate-800 leading-relaxed whitespace-pre-wrap">
+          {emailBodyText ? (
+            emailBodyText.split(/\n\s*\n/).map((para, pIdx) => {
+              if (para.includes('http') || para.includes('/preorder/')) {
+                return (
+                  <div key={pIdx} className="pt-2 text-center sm:text-left">
+                    <a
+                      href={targetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs transition-colors shadow-xs"
+                    >
+                      <span>👉 Claim Founding Pass (${depositPrice} Deposit)</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                )
+              }
+              return <p key={pIdx}>{para}</p>
+            })
+          ) : (
+            <>
+              <p>Hey [First Name],</p>
+              <p>
+                If you've been following my channel and community discussions in {niche}, you know how much time we waste on manual bottlenecks.
+              </p>
+              <p className="bg-amber-50/70 border-l-2 border-amber-400 p-2.5 rounded-r-lg text-slate-700 italic">
+                "In our recent video <strong>"{recentVideoTitle}"</strong>, hundreds of you reached out asking for a better way to handle this without juggling 4 different tools."
+              </p>
+              <p>
+                Today, I'm thrilled to announce that we are officially co-founding <strong>{productName}</strong> — {productTagline}.
+              </p>
+              <p>
+                Rather than building in isolation, we are keeping this initial founding cohort to just <strong>50 members</strong> so we can architect this in close collaboration with you.
+              </p>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-            <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider">
-              As a Founding Member, you get:
-            </span>
-            <ul className="space-y-1 text-slate-700 text-xs list-disc list-inside">
-              <li>50% Lifetime Price Lock (${foundingPrice}/year forever)</li>
-              <li>Direct Discord access with me & the engineering team</li>
-              <li>1-on-1 private alpha onboarding session</li>
-              <li>100% money-back guarantee if goals aren't reached</li>
-            </ul>
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider">
+                  As a Founding Member, you get:
+                </span>
+                <ul className="space-y-1 text-slate-700 text-xs list-disc list-inside">
+                  <li>50% Lifetime Price Lock (${foundingPrice}/year forever)</li>
+                  <li>Direct Discord access with me & the engineering team</li>
+                  <li>1-on-1 private alpha onboarding session</li>
+                  <li>100% money-back guarantee if goals aren't reached</li>
+                </ul>
+              </div>
+
+              <div className="pt-2 text-center sm:text-left">
+                <a
+                  href={targetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs transition-colors shadow-xs"
+                >
+                  <span>👉 Claim Founding Pass (${depositPrice} Deposit)</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
+
+              <p className="pt-2 text-slate-500 text-xs">
+                Can't wait to build this with you,<br />
+                <strong>{creatorName}</strong>
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 5. 1-ON-1 DM OUTREACH MOCKUP (X / Instagram Direct Message)
+  // ─────────────────────────────────────────────────────────────
+  if (type === 'dm') {
+    return (
+      <div className="w-full max-w-xl mx-auto rounded-2xl bg-black border border-[#2f3336] shadow-xl overflow-hidden text-white font-sans keep-dark product-mockup-display post-visual-mockup">
+        {/* DM Chat Header */}
+        <div className="px-4 py-3 bg-[#0c0f17] border-b border-[#2f3336] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            {creatorAvatar ? (
+              <img src={creatorAvatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-white">
+                {creatorName.charAt(0)}
+              </div>
+            )}
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-white">{creatorName}</span>
+                <span className="text-[10px] text-slate-400 font-mono">@{creatorHandle}</span>
+              </div>
+              <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Active Now · 1:1 VIP Outreach
+              </span>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+            Direct Message
+          </span>
+        </div>
+
+        {/* DM Chat Canvas */}
+        <div className="p-4 sm:p-5 space-y-3.5 bg-[#07090e] min-h-[220px] flex flex-col justify-end">
+          <div className="text-center text-[10px] text-slate-500 font-mono py-1">
+            Today · End-to-end encrypted
           </div>
 
-          <div className="pt-2 text-center sm:text-left">
-            <a
-              href={targetUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs transition-colors shadow-xs"
-            >
-              <span>👉 Claim Founding Pass (${depositPrice} Deposit)</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </a>
+          {/* Outgoing Message Bubble from Creator */}
+          <div className="flex items-start gap-2 max-w-[90%] self-end">
+            <div className="p-3.5 rounded-2xl rounded-tr-sm bg-slate-900 border border-slate-700 text-xs text-slate-100 leading-relaxed space-y-2 shadow-md">
+              <div className="whitespace-pre-wrap font-sans">
+                {copyText || `Hey! Saw your recent comments on our channel and loved your perspective. We're putting together a private founding group of 50 members for ${productName} (${productTagline}). Would love to give you early access + direct input!`}
+              </div>
+              <div className="pt-1 flex items-center justify-between text-[10px] text-slate-400 font-mono border-t border-slate-800">
+                <span>Direct 1:1 invite</span>
+                <span className="text-emerald-400">Sent · Delivered ✓</span>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <p className="pt-2 text-slate-500 text-xs">
-            Can't wait to build this with you,<br />
-            <strong>{creatorName}</strong>
-          </p>
+        {/* DM Input Bar */}
+        <div className="px-4 py-2.5 bg-[#0c0f17] border-t border-[#2f3336] flex items-center justify-between text-xs text-slate-500">
+          <span className="text-[11px] text-slate-500 font-mono truncate">
+            Press copy on the right to send to high-intent community followers
+          </span>
         </div>
       </div>
     )

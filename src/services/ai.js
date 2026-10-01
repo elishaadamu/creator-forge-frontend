@@ -1591,10 +1591,14 @@ export function buildSmartFallbackCampaignKit(source, options = {}) {
   }
 
   const pacing = options.pacing || source?.pacing || 'low_burden';
+  const postingFrequency = options.postingFrequency || source?.postingFrequency || '1 video per week (Standard YouTube)';
+  const customPrompt = options.customPrompt || options.prompt || '';
+  const customPromptLower = customPrompt.toLowerCase();
+  const isVideoMidRollOnly = customPromptLower.includes('mid-roll') || customPromptLower.includes('video mid-roll');
+  const isEmailStoriesOnly = customPromptLower.includes('email + stories') || customPromptLower.includes('stories only') || customPromptLower.includes('zero video');
 
   // NON-BURDENSOME SPACED MILESTONES:
-  // Instead of daily posting burnouts, we use 4 strategic milestones spaced across 12-14 days.
-  // Each action takes <15 mins, respects the creator's upload frequency, and hits the 50-backer goal.
+  // Respects creator's upload frequency, spaced across 12-14 days to hit the 50-backer goal.
   const lowBurdenSchedule = [
     {
       id: "milestone-1",
@@ -1604,7 +1608,7 @@ export function buildSmartFallbackCampaignKit(source, options = {}) {
       channel: "Twitter / Community / Stories",
       isToday: false,
       done: true,
-      draftKey: "announcementPost",
+      draftKey: "storySequence",
       effort: "~10 mins",
       spacingNotice: "Kickoff Milestone · Day 1",
       description:
@@ -1673,18 +1677,142 @@ export function buildSmartFallbackCampaignKit(source, options = {}) {
     lowBurdenSchedule[3]
   ];
 
-  const selectedSchedule = pacing === 'balanced' ? balancedSchedule : lowBurdenSchedule;
+  // 7-Milestone Sprint Roadmap for intensive campaigns
+  const intensiveSchedule = [
+    {
+      id: "milestone-1-int",
+      day: 1,
+      milestoneNumber: 1,
+      title: "Problem Teaser & Community Discovery Poll",
+      channel: "Twitter / Community / Stories",
+      isToday: false,
+      done: true,
+      draftKey: "storySequence",
+      effort: "~10 mins",
+      spacingNotice: "Kickoff Milestone · Day 1",
+      description:
+        "Post organic poll testing audience resonance with the core bottleneck discussed in recent videos. Zero sales pressure.",
+    },
+    {
+      id: "milestone-2-int",
+      day: 2,
+      milestoneNumber: 2,
+      title: "Architecture Breakdown & Co-Founding Reveal",
+      channel: "Threads / LinkedIn / X",
+      isToday: false,
+      done: false,
+      draftKey: "announcementPost",
+      effort: "~10 mins",
+      spacingNotice: "Sprint Momentum · Day 2",
+      description:
+        `Public announcement detailing why ${creator} is engineering ${product} to eliminate manual bottlenecks in ${niche}.`,
+    },
+    {
+      id: "milestone-3-int",
+      day: 4,
+      milestoneNumber: 3,
+      title: "Native 60-Second Video Demo & Launch Hook",
+      channel: "YouTube / Video Mid-Roll",
+      isToday: true,
+      done: false,
+      draftKey: "videoScript",
+      effort: "~15 mins",
+      spacingNotice: "Mid-Sprint Milestone · Day 4",
+      description:
+        `Seamless 60-second mid-roll or short demo solving the exact frustration covered in "${primaryVideoTitle}".`,
+    },
+    {
+      id: "milestone-4-int",
+      day: 6,
+      milestoneNumber: 4,
+      title: "1-on-1 VIP Outreach to High-Intent Community Members",
+      channel: "Direct Messages / Community",
+      isToday: false,
+      done: false,
+      draftKey: "directMessageScript",
+      effort: "~10 mins",
+      spacingNotice: "VIP Outreach · Day 6",
+      description:
+        `Personal 1-on-1 invites to active commenters and top community members with private beta founding access.`,
+    },
+    {
+      id: "milestone-5-int",
+      day: 8,
+      milestoneNumber: 5,
+      title: "1:1 Plain-Text VIP Letter to Core Followers",
+      channel: "Email Newsletter / VIP DMs",
+      isToday: false,
+      done: false,
+      draftKey: "newsletterDraft",
+      effort: "~10 mins",
+      spacingNotice: "Primary Inbox Broadcast · Day 8",
+      description:
+        `Send personal 1:1 founder letter explaining why ${creator} is co-founding ${product} with Creator Forge, inviting 50 Founding Members.`,
+    },
+    {
+      id: "milestone-6-int",
+      day: 10,
+      milestoneNumber: 6,
+      title: "Behind-The-Scenes Live Q&A / Story Poll Update",
+      channel: "Instagram Stories & Reels",
+      isToday: false,
+      done: false,
+      draftKey: "storySequence",
+      effort: "~10 mins",
+      spacingNotice: "Founding Cohort Urgency · Day 10",
+      description:
+        "Share progress toward the 50-member target, address top community questions, and highlight early access benefits.",
+    },
+    {
+      id: "milestone-7-int",
+      day: 12,
+      milestoneNumber: 7,
+      title: "Final Founding Cohort Cap Lock & Wrap-Up Note",
+      channel: "All Social Channels",
+      isToday: false,
+      done: false,
+      draftKey: "announcementPost",
+      effort: "~5 mins",
+      spacingNotice: "Final Cohort Cap · Day 12",
+      description:
+        "Celebrate validation progress, lock the 50% lifetime discount, and close Founding Member spots before Phase 2 MVP engineering begins.",
+    },
+  ];
+
+  const selectedSchedule =
+    pacing === 'intensive'
+      ? intensiveSchedule
+      : pacing === 'balanced'
+      ? balancedSchedule
+      : lowBurdenSchedule;
+
+  let fallbackAnnouncement = `🚨 Big announcement! After hearing so many comments across our channel about the nightmare of manual workflows in ${niche}, we're officially building ${product}.\n\n💡 ${tagline}.\n\n${rawPosts.length > 0 ? `In our recent upload "${primaryVideoTitle}", hundreds of you pointed out how broken current tools are.` : `We've spent weeks architecting a dedicated solution built specifically for our community's workflow.`}\n\nWe're accepting only 50 Founding Members for our private Beta at 50% off ($${unitPrice}/yr) + direct input on our product roadmap.\n\n👇 Claim a founding spot or reserve with a $${depositVal} refundable deposit:\n${origin}/preorder/${slug}?ref=twitter_post`;
+  if (isVideoMidRollOnly) {
+    fallbackAnnouncement = `🎬 Just dropped our latest breakdown! We included a special 60s demo previewing ${product} — ${tagline}.\n\nSolving the exact manual bottlenecks hundreds of you commented about on "${primaryVideoTitle}".\n\nOpening 50 private Founding Member spots for our community at 50% lifetime discount:\n👇 Reserve with a $${depositVal} refundable deposit:\n${origin}/preorder/${slug}?ref=video_midroll`;
+  } else if (isEmailStoriesOnly) {
+    fallbackAnnouncement = `✨ Major community project update: Rather than public spam, we're building ${product} privately with 50 core community members.\n\nCheck your email newsletter or our story sequence for the Founding Member reservation link ($${unitPrice}/yr · $${depositVal} hold):\n${origin}/preorder/${slug}?ref=community_update`;
+  }
+
+  let fallbackVideoScript = `60-SECOND NATIVE VIDEO INTEGRATION / SHORT DEMO\n\nHOOK (0:00 - 0:08):\n(Direct to camera, natural peer tone)\n"If you saw our recent breakdown on ${primaryVideoTitle}, you saw how painful the manual bottleneck really is in ${niche}."\n\nPROBLEM (0:08 - 0:22):\n(Screen recording showing the messy manual steps or spreadsheet chaos)\n"Most existing tools are built by corporate teams who don't actually do this work. We lose hours every single week just dealing with fragmented tools and manual errors."\n\nSOLUTION (0:22 - 0:42):\n(Previewing ${product} interface and smooth workflow)\n"That's why we teamed up with Creator Forge Studio to engineer ${product} — ${tagline}. It automates the entire workflow in one seamless workspace."\n\nCTA & FOUNDING PERK (0:42 - 0:60):\n(Showing Founding Pass badge & reservation link)\n"Before we finish building the MVP, we are opening just 50 Founding Member spots at 50% off ($${unitPrice}/yr) with a $${depositVal} refundable deposit. Link in bio/description to grab your spot!"`;
+  if (isEmailStoriesOnly) {
+    fallbackVideoScript = `(Strategy Note: Zero Video Filming Required per operator guidance. Optional backup short below):\n\nHOOK (0:00 - 0:10):\n"Hey everyone! Quick 30-second update on the software tool we're building for ${niche}."\n\nSOLUTION & CTA (0:10 - 0:30):\n"Head to the link in my bio or check my latest Instagram story to join our 50 Founding Members and lock your 50% lifetime discount (${origin}/preorder/${slug})."`;
+  }
+
+  let fallbackNewsletter = `Subject: Why I'm co-founding ${product} (and a private invite for you)\n\nHey [First Name],\n\nIf you've been following my channel uploads and community discussions in ${niche}, you know how much time we waste on manual bottlenecks.\n\n${rawPosts.length > 0 ? `In our recent video "${primaryVideoTitle}", hundreds of you reached out asking for a better way to handle this.` : `Across our channel discussions, this has consistently been the #1 pain point viewers message me about.`}\n\nToday, I'm thrilled to announce that we are officially co-founding ${product} — ${tagline}.\n\nRather than guessing what features you need, we are keeping this founding cohort to just 50 members so we can build this in close collaboration with you.\n\nAs a Founding Member, you get:\n• 50% Lifetime Price Lock ($${unitPrice}/year forever)\n• Direct Discord channel with me and the core engineering team to shape the roadmap\n• 1-on-1 private alpha onboarding\n• 100% money-back guarantee if validation goals aren't reached\n\n👉 Claim your founding member pass ($${unitPrice}) or reserve with a $${depositVal} refundable deposit here:\n${origin}/preorder/${slug}?ref=newsletter\n\nCan't wait to build this together,\n${creator}`;
 
   return {
+    pacingMode: pacing,
+    postingFrequency,
+    customPrompt,
     pricingConfig: {
       foundingPrice: unitPrice,
       depositPrice: depositVal,
       perks: `50% Lifetime Discount + Direct Input on MVP Engineering with ${creator}`,
     },
-    announcementPost: `🚨 Big announcement! After hearing so many comments across our channel about the nightmare of manual workflows in ${niche}, we're officially building ${product}.\n\n💡 ${tagline}.\n\n${rawPosts.length > 0 ? `In our recent upload "${primaryVideoTitle}", hundreds of you pointed out how broken current tools are.` : `We've spent weeks architecting a dedicated solution built specifically for our community's workflow.`}\n\nWe're accepting only 50 Founding Members for our private Beta at 50% off ($${unitPrice}/yr) + direct input on our product roadmap.\n\n👇 Claim a founding spot or reserve with a $${depositVal} refundable deposit:\n${origin}/preorder/${slug}?ref=twitter_post`,
+    announcementPost: fallbackAnnouncement,
     storySequence: `STORY 1 — ORGANIC PROBLEM POLL\nVisual: Selfie video or background screen recording showing workflow frustration.\nText: "Quick question for anyone watching my channel... How many hours do you waste weekly on manual ${niche} tasks?"\n[STICKER: Interactive Poll -> "1-3 Hours" / "5+ Hours (Too much!)"]\n\nSTORY 2 — THE CO-FOUNDING REVEAL\nVisual: Screen recording or clean UI preview of ${product}.\nText: "That's why @${creator} and our engineering studio are co-building ${product} — ${tagline}."\n\nSTORY 3 — FOUNDING COHORT ACCESS\nVisual: Founding Member badge preview.\nText: "Opening only 50 Founding Member spots with lifetime 50% discount ($${unitPrice}/yr) + direct input on the MVP build."\n[STICKER: Link -> "Claim Founding Pass ↗" -> ${origin}/preorder/${slug}?ref=instagram_story]`,
-    videoScript: `60-SECOND NATIVE VIDEO INTEGRATION / SHORT DEMO\n\nHOOK (0:00 - 0:08):\n(Direct to camera, natural peer tone)\n"If you saw our recent breakdown on ${primaryVideoTitle}, you saw how painful the manual bottleneck really is in ${niche}."\n\nPROBLEM (0:08 - 0:22):\n(Screen recording showing the messy manual steps or spreadsheet chaos)\n"Most existing tools are built by corporate teams who don't actually do this work. We lose hours every single week just dealing with fragmented tools and manual errors."\n\nSOLUTION (0:22 - 0:42):\n(Previewing ${product} interface and smooth workflow)\n"That's why we teamed up with Creator Forge Studio to engineer ${product} — ${tagline}. It automates the entire workflow in one seamless workspace."\n\nCTA & FOUNDING PERK (0:42 - 0:60):\n(Showing Founding Pass badge & reservation link)\n"Before we finish building the MVP, we are opening just 50 Founding Member spots at 50% off ($${unitPrice}/yr) with a $${depositVal} refundable deposit. Link in bio/description to grab your spot!"`,
-    newsletterDraft: `Subject: Why I'm co-founding ${product} (and a private invite for you)\n\nHey [First Name],\n\nIf you've been following my channel uploads and community discussions in ${niche}, you know how much time we waste on manual bottlenecks.\n\n${rawPosts.length > 0 ? `In our recent video "${primaryVideoTitle}", hundreds of you reached out asking for a better way to handle this.` : `Across our channel discussions, this has consistently been the #1 pain point viewers message me about.`}\n\nToday, I'm thrilled to announce that we are officially co-founding ${product} — ${tagline}.\n\nRather than guessing what features you need, we are keeping this founding cohort to just 50 members so we can build this in close collaboration with you.\n\nAs a Founding Member, you get:\n• 50% Lifetime Price Lock ($${unitPrice}/year forever)\n• Direct Discord channel with me and the core engineering team to shape the roadmap\n• 1-on-1 private alpha onboarding\n• 100% money-back guarantee if validation goals aren't reached\n\n👉 Claim your founding member pass ($${unitPrice}) or reserve with a $${depositVal} refundable deposit here:\n${origin}/preorder/${slug}?ref=newsletter\n\nCan't wait to build this together,\n${creator}`,
+    videoScript: fallbackVideoScript,
+    newsletterDraft: fallbackNewsletter,
     directMessageScript: `Hey [First Name]! Saw your recent thoughts on ${niche} and loved your perspective.\n\nWe're putting together a private founding group of 50 members for ${product} (${tagline}).\n\nSince you're active in our community, I'd love to give you early access + direct input on our engineering roadmap. Check out the founding pre-order ($${unitPrice}) here: ${origin}/preorder/${slug}?ref=dm_outreach — let me know what you think!`,
     postingSchedule: enrichTasksWithGrounding(selectedSchedule, source),
     audienceGrounding: getProjectAudienceGrounding(source),
@@ -1743,9 +1871,11 @@ export async function generateValidationCampaignKitAI(
   );
   const recentVideosSummary = rawPosts.slice(0, 4).map(p => `- "${p.title}" (${p.views || 'Verified upload'}): ${p.description ? p.description.slice(0, 100) : 'Channel content topic'}`).join('\n');
 
-  const pacing = options.pacing || projectData?.pacing || 'low_burden';
-  const postingFrequency = options.postingFrequency || projectData?.postingFrequency || '1 video per week (Standard YouTube)';
-  const customPrompt = options.customPrompt || options.prompt || "based on creator's normal posting frequency, what you think will hit the next phase goal, what will be enough but not burden the creator...";
+  const pacing = options.pacing || projectData?.pacing || projectData?.campaignKit?.pacingMode || 'low_burden';
+  const targetMilestoneCount = pacing === 'intensive' ? 7 : pacing === 'balanced' ? 5 : 4;
+  const pacingLabel = pacing === 'intensive' ? 'Sprint (7 posts)' : pacing === 'balanced' ? 'Balanced (5 posts)' : 'Low-Burden (4 posts)';
+  const postingFrequency = options.postingFrequency || projectData?.postingFrequency || projectData?.campaignKit?.postingFrequency || '1 video per week (Standard YouTube)';
+  const customPrompt = options.customPrompt || options.prompt || projectData?.campaignKit?.customPrompt || "based on creator's normal posting frequency, what you think will hit the next phase goal, what will be enough but not burden the creator...";
 
   const normalizeUrls = (text) => {
     if (!text || typeof text !== "string") return text;
@@ -1758,17 +1888,57 @@ export async function generateValidationCampaignKitAI(
       .replace(/https?:\/\/localhost:\d+/gi, origin);
   };
 
+  const normalizeDraftString = (val, fallbackVal) => {
+    if (!val) return fallbackVal || "";
+    if (typeof val === "string") return normalizeUrls(val.trim());
+    if (Array.isArray(val)) {
+      return normalizeUrls(
+        val
+          .map((item, idx) => {
+            if (typeof item === "string") {
+              return item.startsWith("STORY") || item.startsWith("Story")
+                ? item
+                : `STORY ${idx + 1}:\n${item}`;
+            }
+            if (typeof item === "object" && item !== null) {
+              const title = item.title || item.step || `STORY ${idx + 1}`;
+              const visual = item.visual ? `\nVisual: ${item.visual}` : "";
+              const text = item.text || item.copy || item.caption || item.description || "";
+              const sticker = item.sticker ? `\n[STICKER: ${item.sticker}]` : "";
+              return `${title}${visual}\nText: "${text}"${sticker}`;
+            }
+            return String(item);
+          })
+          .join("\n\n")
+      );
+    }
+    if (typeof val === "object" && val !== null) {
+      if (val.subject || val.body || val.content) {
+        const subj = val.subject ? `Subject: ${val.subject}\n\n` : "";
+        const body = val.body || val.content || val.message || val.text || "";
+        return normalizeUrls(`${subj}${body}`.trim());
+      }
+      return normalizeUrls(
+        Object.entries(val)
+          .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+          .join("\n")
+      );
+    }
+    return normalizeUrls(String(val));
+  };
+
   const system = `You are an elite creator launch strategist and direct-response copywriter.
 You write authentic, high-converting launch assets tailored specifically to the creator's real channel information, recent video topics, and community discussions.
 
 CRITICAL LAUNCH PRINCIPLES:
 1. CUSTOMIZED TO CREATOR: Ingest their channel bio and recent video topics. Directly cite their video themes and audience pain points in scripts and posts. NEVER write generic AI boilerplate.
-2. NON-BURDENSOME PACING: Posting every day is unacceptable and burns out creators! Use a spaced roadmap of ${pacing === 'balanced' ? '4 to 5' : pacing === 'intensive' ? '6 to 7' : '3 to 4'} high-impact milestones (e.g. Day 1, Day 4, Day 8, Day 12). Each action must require <15 minutes of creator effort.
+2. PACING REQUIREMENT: You MUST generate EXACTLY ${targetMilestoneCount} milestones in the "postingSchedule" array (Milestone 1 through Milestone ${targetMilestoneCount}) to match the ${pacingLabel} cadence. Each action must require <15 minutes of creator effort.
 3. ZERO FAKE TIMESTAMPS: Do not invent fake timestamps or fabricated drop-off claims. Use organic mid-roll integrations tied naturally to the topic of their videos.
 4. VALIDATION TARGET: Everything should drive toward the Phase 1 goal (acquiring the first 50 Founding Members / $1,000 revenue target) with 50% lifetime perks and a low deposit.
+5. FORMATTING: All copy fields (announcementPost, storySequence, videoScript, newsletterDraft, directMessageScript) must be full, rich formatted text strings.
 Return ONLY valid JSON.`;
 
-  const prompt = `Generate a fully customized, non-burdensome validation campaign kit and milestone roadmap for:
+  const prompt = `Generate a fully customized validation campaign kit and milestone roadmap for:
 Product: ${product}
 Creator: ${creator}
 Niche: ${niche}
@@ -1778,7 +1948,7 @@ Target Pre-Order URL: ${origin}/preorder/${slug}
 Creator Channel Profile:
 Channel Description / Bio: ${channelBio || 'Established niche creator with an engaged community.'}
 Normal Creator Posting Frequency: ${postingFrequency}
-Pacing Mode: ${pacing} (Non-burdensome spaced milestones)
+Pacing Mode: ${pacing} (${pacingLabel} — EXACTLY ${targetMilestoneCount} milestones required)
 Recent Channel Video Uploads / Topics:
 ${recentVideosSummary || '- Recent channel breakdowns addressing workflow friction and viewer questions'}
 
@@ -1799,49 +1969,13 @@ Return JSON with exact keys:
       "id": "milestone-1",
       "day": 1,
       "milestoneNumber": 1,
-      "title": "Problem Teaser & Community Discovery Poll",
-      "channel": "Twitter / Community / Stories",
+      "title": "Title for Milestone 1",
+      "channel": "Channel name (e.g. Twitter / Community / Stories)",
       "effort": "~10 mins",
       "isToday": true,
       "done": false,
       "draftKey": "storySequence",
-      "description": "Organic discovery poll testing resonance with core bottleneck without hard selling."
-    },
-    {
-      "id": "milestone-2",
-      "day": 4,
-      "milestoneNumber": 2,
-      "title": "Native 60-Second Video Demo & Launch Hook",
-      "channel": "YouTube / Short-Form Video",
-      "effort": "~15 mins",
-      "isToday": false,
-      "done": false,
-      "draftKey": "videoScript",
-      "description": "Natural mid-roll integration solving the exact frustration covered in recent channel uploads."
-    },
-    {
-      "id": "milestone-3",
-      "day": 8,
-      "milestoneNumber": 3,
-      "title": "1:1 Plain-Text VIP Letter to Core Followers",
-      "channel": "Email Newsletter",
-      "effort": "~10 mins",
-      "isToday": false,
-      "done": false,
-      "draftKey": "newsletterDraft",
-      "description": "Send personal 1:1 letter explaining why creator is co-founding this tool, inviting 50 Founding Members."
-    },
-    {
-      "id": "milestone-4",
-      "day": 12,
-      "milestoneNumber": 4,
-      "title": "Founding Cohort Price Lock & Wrap-Up Note",
-      "channel": "All Social Channels",
-      "effort": "~5 mins",
-      "isToday": false,
-      "done": false,
-      "draftKey": "announcementPost",
-      "description": "Transparent update celebrating validation progress and locking the 50% lifetime discount before MVP engineering."
+      "description": "Specific non-burdensome task description"
     }
   ],
   "landingPageCopy": {
@@ -1857,7 +1991,7 @@ Return JSON with exact keys:
     "guarantee": "100% money-back guarantee if validation goals are not met."
   }
 }
-`;
+NOTE: "postingSchedule" MUST contain EXACTLY ${targetMilestoneCount} milestone objects spaced across 12-14 days.`;
 
   try {
     const data = await aiTextCall(prompt, system, 4096, signal, true);
@@ -1875,34 +2009,47 @@ Return JSON with exact keys:
 
     if (
       resObj &&
-      (resObj.announcementPost || resObj.videoScript || resObj.landingPageCopy)
+      (resObj.announcementPost || resObj.videoScript || resObj.landingPageCopy || resObj.postingSchedule)
     ) {
-      const fallback = buildSmartFallbackCampaignKit(projectData, options);
+      const fallback = buildSmartFallbackCampaignKit(projectData, { ...options, pacing, postingFrequency, customPrompt });
+
+      let schedule = Array.isArray(resObj.postingSchedule) && resObj.postingSchedule.length > 0
+        ? resObj.postingSchedule
+        : fallback.postingSchedule;
+
+      if (schedule.length < targetMilestoneCount) {
+        const needed = targetMilestoneCount - schedule.length;
+        const extra = fallback.postingSchedule.slice(schedule.length, schedule.length + needed);
+        schedule = [...schedule, ...extra];
+      } else if (schedule.length > targetMilestoneCount && targetMilestoneCount > 0) {
+        schedule = schedule.slice(0, targetMilestoneCount);
+      }
+
+      schedule = schedule.map((item, idx) => ({
+        id: String(item.id || `milestone-${idx + 1}`),
+        day: Number(item.day || (idx === 0 ? 1 : idx * 2)),
+        milestoneNumber: Number(item.milestoneNumber || idx + 1),
+        title: String(item.title || item.name || `Milestone ${idx + 1}`),
+        channel: String(item.channel || "All Channels"),
+        effort: String(item.effort || "~10 mins"),
+        isToday: idx === 0,
+        done: Boolean(item.done),
+        draftKey: item.draftKey || (idx === 0 ? "storySequence" : idx === 1 ? "announcementPost" : idx === 2 ? "videoScript" : "newsletterDraft"),
+        description: String(item.description || item.summary || "")
+      }));
+
       return {
+        pacingMode: pacing,
+        postingFrequency,
+        customPrompt,
         pricingConfig: resObj.pricingConfig || fallback.pricingConfig,
-        announcementPost: normalizeUrls(
-          String(resObj.announcementPost || fallback.announcementPost),
-        ),
-        storySequence: normalizeUrls(
-          String(resObj.storySequence || fallback.storySequence),
-        ),
-        videoScript: normalizeUrls(
-          String(resObj.videoScript || fallback.videoScript),
-        ),
-        newsletterDraft: normalizeUrls(
-          String(resObj.newsletterDraft || fallback.newsletterDraft),
-        ),
-        directMessageScript: normalizeUrls(
-          String(resObj.directMessageScript || fallback.directMessageScript),
-        ),
+        announcementPost: normalizeDraftString(resObj.announcementPost, fallback.announcementPost),
+        storySequence: normalizeDraftString(resObj.storySequence, fallback.storySequence),
+        videoScript: normalizeDraftString(resObj.videoScript, fallback.videoScript),
+        newsletterDraft: normalizeDraftString(resObj.newsletterDraft, fallback.newsletterDraft),
+        directMessageScript: normalizeDraftString(resObj.directMessageScript, fallback.directMessageScript),
         landingPageCopy: resObj.landingPageCopy || fallback.landingPageCopy,
-        postingSchedule: enrichTasksWithGrounding(
-          Array.isArray(resObj.postingSchedule) &&
-          resObj.postingSchedule.length > 0
-            ? resObj.postingSchedule
-            : fallback.postingSchedule,
-          projectData
-        ),
+        postingSchedule: enrichTasksWithGrounding(schedule, projectData),
         audienceGrounding: resObj.audienceGrounding || getProjectAudienceGrounding(projectData),
       };
     }
@@ -1910,7 +2057,7 @@ Return JSON with exact keys:
   } catch (err) {
     if (err.name === "AbortError") throw err;
     console.warn("[Forge AI] AI campaign kit fallback triggered:", err);
-    return buildSmartFallbackCampaignKit(projectData, options);
+    return buildSmartFallbackCampaignKit(projectData, { ...options, pacing, postingFrequency, customPrompt });
   }
 }
 

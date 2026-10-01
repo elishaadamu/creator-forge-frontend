@@ -260,3 +260,28 @@ export function getPhase3StepGuards(project = {}, { strategy, telemetry, launchM
     canAccessStep4
   };
 }
+
+export function getProjectActiveStep(project = {}, phase) {
+  const currentPhase = Number(phase || project.currentPhase || project.current_phase || (project.status === 'building' ? 2 : project.status === 'launched' ? 3 : 1));
+  if (currentPhase === 3) {
+    const guards = getPhase3StepGuards(project);
+    if (!guards.isStep1Done) return 'prep';
+    if (!guards.isStep2Done) return 'launch';
+    if (!guards.isStep3Done) return 'review';
+    return 'scale';
+  }
+  if (currentPhase === 2) {
+    const guards = getPhase2StepGuards(project);
+    if (!guards.isStep1Done) return 'plan';
+    if (!guards.isStep2Done) return 'build';
+    if (!guards.isStep3Done) return 'beta';
+    return 'gate';
+  }
+  // Phase 1
+  const guards = getPhase1StepGuards(project);
+  if (!guards.isStep1Done) return 'plan';
+  if (!guards.isStep2Done) return 'assets';
+  if (!guards.isStep3Done) return 'campaign';
+  if (!guards.isStep4Done) return 'optimize';
+  return 'gate';
+}

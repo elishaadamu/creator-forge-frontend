@@ -6,7 +6,7 @@ import {
   CreditCard, Users, TrendingUp, RefreshCw, FileText, Megaphone, Target,
   Flag, ArrowRight, Layers, HelpCircle, BarChart3, Radio, ShieldCheck,
   Palette, Smartphone, Send, Mail, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell, Lock, RotateCcw,
-  Youtube, Shield, Sliders
+  Youtube, Shield, Sliders, Trophy, Flame, Coins, Award, Crown, Radar, MousePointerClick, Camera, ShoppingBag, Gauge, Rocket
 } from 'lucide-react'
 import {
   generateValidationPlanAI,
@@ -44,18 +44,22 @@ import ProductMockupDisplay from './ProductMockupDisplay'
 import AudienceGroundingModal from './AudienceGroundingModal'
 import PostVisualMockup, { XLogo } from './PostVisualMockup'
 import { getProjectAudienceGrounding } from '../../utils/audienceGrounding'
-import { getPhase1StepGuards } from '../../utils/stepGuards'
+import { getPhase1StepGuards, getProjectActiveStep } from '../../utils/stepGuards'
 import { fetchCreatorYouTubeVideos } from '../../services/scraper'
 
 export default function Phase1Validate({
   project,
   api,
-  activeStepId = 'plan',
+  activeStepId,
   onSelectStep,
   onUpdateProject,
   onAdvanceToPhase2
 }) {
-  const [activeStep, setActiveStep] = useState(activeStepId || 'plan')
+  const resolveInitialStep = () => {
+    if (activeStepId) return activeStepId
+    return getProjectActiveStep(project, 1)
+  }
+  const [activeStep, setActiveStep] = useState(resolveInitialStep)
   const [assetSubTab, setAssetSubTab] = useState('product_assets')
   const [campaignSubTab, setCampaignSubTab] = useState('schedule')
   const [viewDraftTask, setViewDraftTask] = useState(null)
@@ -257,6 +261,9 @@ export default function Phase1Validate({
       (project?.validationCampaign?.product_assets?.announcementPost ? project?.validationCampaign?.product_assets : null)
     if (fromProject && (fromProject.announcementPost || fromProject.storySequence || fromProject.videoScript || fromProject.newsletterDraft || fromProject.postingSchedule?.length > 0)) {
       setCampaignKit(fromProject)
+      if (fromProject.pacingMode) setCampaignPacing(fromProject.pacingMode)
+      if (fromProject.postingFrequency) setPostingFrequency(fromProject.postingFrequency)
+      if (fromProject.customPrompt !== undefined) setCampaignStrategyPrompt(fromProject.customPrompt)
     }
   }, [project?.id, project?.campaignKit, project?.validationCampaign?.campaignKit, project?.validationCampaign?.campaign_kit])
 
@@ -284,17 +291,17 @@ export default function Phase1Validate({
 
   // Creator Launch Pacing & Customizable Strategy Guidance Prompt
   const [campaignPacing, setCampaignPacing] = useState(() => project?.campaignKit?.pacingMode || 'low_burden')
-  const [postingFrequency, setPostingFrequency] = useState('1 video per week (Standard YouTube)')
-  const [campaignStrategyPrompt, setCampaignStrategyPrompt] = useState('')
+  const [postingFrequency, setPostingFrequency] = useState(() => project?.campaignKit?.postingFrequency || '1 video per week (Standard YouTube)')
+  const [campaignStrategyPrompt, setCampaignStrategyPrompt] = useState(() => project?.campaignKit?.customPrompt || '')
 
   // Check if Campaign Kit has been generated or populated
   const hasCampaignGenerated = Boolean(
     campaignKit && (
       (Array.isArray(campaignKit.postingSchedule) && campaignKit.postingSchedule.length > 0) ||
-      Boolean(campaignKit.announcementPost?.trim()) ||
-      Boolean(campaignKit.storySequence?.trim()) ||
-      Boolean(campaignKit.videoScript?.trim()) ||
-      Boolean(campaignKit.newsletterDraft?.trim())
+      Boolean(String(campaignKit.announcementPost || '').trim()) ||
+      Boolean(String(campaignKit.storySequence || '').trim()) ||
+      Boolean(String(campaignKit.videoScript || '').trim()) ||
+      Boolean(String(campaignKit.newsletterDraft || '').trim())
     )
   )
 
@@ -380,8 +387,11 @@ export default function Phase1Validate({
       project.validationCampaign?.campaign_kit ||
       (project.validationCampaign?.productAssets?.announcementPost ? project.validationCampaign?.productAssets : null) ||
       (project.validationCampaign?.product_assets?.announcementPost ? project.validationCampaign?.product_assets : null)
-    if (incomingKit && (incomingKit.announcementPost || incomingKit.videoScript || incomingKit.storySequence || incomingKit.newsletterDraft)) {
+    if (incomingKit && (incomingKit.announcementPost || incomingKit.videoScript || incomingKit.storySequence || incomingKit.newsletterDraft || incomingKit.postingSchedule?.length > 0)) {
       setCampaignKit(incomingKit)
+      if (incomingKit.pacingMode) setCampaignPacing(incomingKit.pacingMode)
+      if (incomingKit.postingFrequency) setPostingFrequency(incomingKit.postingFrequency)
+      if (incomingKit.customPrompt !== undefined) setCampaignStrategyPrompt(incomingKit.customPrompt)
     } else {
       setCampaignKit(null)
     }
@@ -567,12 +577,19 @@ export default function Phase1Validate({
 
   const saveAll = () => {
     setSaveStatus('saving')
+    const kitToSave = campaignKit ? {
+      ...campaignKit,
+      pacingMode: campaignPacing,
+      postingFrequency,
+      customPrompt: campaignStrategyPrompt
+    } : null
+
     const updated = {
       ...(project || {}),
       validationPlan: plan,
       presaleTarget: presaleTarget,
       targetRevenue: presaleTarget,
-      campaignKit: campaignKit,
+      campaignKit: kitToSave,
       surveyData: surveyData,
       reservations: reservations,
       experiments: experimentsData?.experiments || experiments || [],
@@ -612,9 +629,9 @@ export default function Phase1Validate({
       }
       updateValidationCampaign(project.id, {
         product_assets: step2Assets,
-        campaign_kit: campaignKit,
-        campaignKit: campaignKit,
-        creator_tasks: campaignKit?.postingSchedule || project?.creatorTasks || [],
+        campaign_kit: kitToSave,
+        campaignKit: kitToSave,
+        creator_tasks: kitToSave?.postingSchedule || project?.creatorTasks || [],
         campaign_launched: Boolean(project?.campaignLaunched || hasCampaignGenerated),
         infrastructure: {
           landingPageUrl: `/p/${productSlug}`,
@@ -627,14 +644,14 @@ export default function Phase1Validate({
       }).catch(e => console.warn('[Phase1] DB campaign sync warning:', e))
 
       updateCoLaunchProject(project.id, {
-        campaignKit: campaignKit,
-        campaign_kit: campaignKit,
+        campaignKit: kitToSave,
+        campaign_kit: kitToSave,
         campaignLaunched: Boolean(project?.campaignLaunched || hasCampaignGenerated),
         experimentsData: experimentsData,
         experiments: experimentsData?.experiments || experiments || [],
         metadataInfo: {
           ...(project?.metadataInfo || {}),
-          campaign_kit: campaignKit,
+          campaign_kit: kitToSave,
           campaign_launched: Boolean(project?.campaignLaunched || hasCampaignGenerated),
           experimentsData: experimentsData
         }
@@ -724,6 +741,9 @@ export default function Phase1Validate({
         customPrompt: campaignStrategyPrompt?.trim() || "based on creator's normal posting frequency, what you think will hit the next phase goal, what will be enough but not burden the creator..."
       })
       if (generated) {
+        generated.pacingMode = campaignPacing
+        generated.postingFrequency = postingFrequency
+        generated.customPrompt = campaignStrategyPrompt
         setCampaignKit(generated)
         const updated = {
           ...(project || {}),
@@ -1432,7 +1452,7 @@ export default function Phase1Validate({
                 title={isLocked ? getStepMissingPrerequisiteText(step.id) : step.label}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   isActive
-                    ? 'bg-slate-900 text-white shadow-xs border border-slate-900 cursor-pointer'
+                    ? 'bg-slate-900 text-white shadow-xs border border-slate-900 cursor-pointer ring-2 ring-emerald-400/40'
                     : step.isDone
                     ? 'bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100/80 cursor-pointer font-bold shadow-2xs'
                     : isLocked
@@ -1440,14 +1460,12 @@ export default function Phase1Validate({
                     : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-50 border border-slate-200 cursor-pointer shadow-2xs'
                 }`}
               >
-                {isActive ? (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                ) : isLocked ? (
+                {isLocked ? (
                   <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 ) : step.isDone ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-emerald-400' : 'text-emerald-600'}`} />
                 ) : (
-                  <Icon className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-slate-300' : 'text-slate-600'}`} />
                 )}
                 <span className={
                   isActive
@@ -1460,14 +1478,25 @@ export default function Phase1Validate({
                 }>
                   {step.label}
                 </span>
+                {isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0 ml-0.5" />
+                )}
               </button>
             )
           })}
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 shrink-0 shadow-2xs">
-          <span className="text-[10px] text-emerald-800 uppercase font-mono sm:hidden">Target Goal:</span>
-          <span className="flex items-center gap-1 font-mono font-extrabold"><DollarSign className="w-3.5 h-3.5 text-emerald-700 stroke-[2.5]" /> ${presalesRevenue.toLocaleString()} / ${presaleTarget.toLocaleString()}</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-mono font-bold shadow-xs ring-1 ring-emerald-400/30">
+            <span className="text-[10px] text-slate-400 uppercase font-mono hidden md:inline">Execution Progress</span>
+            <span className="text-emerald-400 font-extrabold">
+              {[isStep1Done, isStep2Done, isStep3Done, isStep4Done, isStep5Done].filter(Boolean).length} of 5 Done
+            </span>
+          </div>
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 shrink-0 shadow-2xs">
+            <span className="text-[10px] text-emerald-800 uppercase font-mono sm:hidden">Target Goal:</span>
+            <span className="flex items-center gap-1 font-mono font-extrabold"><DollarSign className="w-3.5 h-3.5 text-emerald-700 stroke-[2.5]" /> ${presalesRevenue.toLocaleString()} / ${presaleTarget.toLocaleString()}</span>
+          </div>
         </div>
       </div>
 
@@ -2572,8 +2601,9 @@ export default function Phase1Validate({
                 {[
                   { label: '⚡ Low-Burden (4 posts)', prompt: 'Design a low-burden roadmap of 4 spaced milestones. Avoid daily spam.', pacing: 'low_burden' },
                   { label: '🎯 Balanced (5 posts)', prompt: 'Create 5 spaced touchpoints including a behind-the-scenes engineering story and mid-roll demo.', pacing: 'balanced' },
-                  { label: '🎬 Video Mid-Roll Only', prompt: 'Focus promotional effort on an organic 60s mid-roll in their next YouTube video plus 1:1 email.', pacing: 'low_burden' },
-                  { label: '💌 Email + Stories Only', prompt: 'Hit the goal using only 1:1 founder email and Instagram story polls. Zero video filming required.', pacing: 'low_burden' }
+                  { label: '🚀 Sprint Pace (7 posts)', prompt: 'Execute a fast 7-milestone validation sprint across multiple channels to lock 50 Founding Members.', pacing: 'intensive' },
+                  { label: '🎬 Video Mid-Roll Only', prompt: 'Focus promotional effort on an organic 60s mid-roll in their next YouTube video plus 1:1 email.' },
+                  { label: '💌 Email + Stories Only', prompt: 'Hit the goal using only 1:1 founder email and Instagram story polls. Zero video filming required.' }
                 ].map(chip => (
                   <button
                     key={chip.label}
@@ -3176,25 +3206,50 @@ export default function Phase1Validate({
 
               {/* SUBTAB 6: DM OUTREACH */}
               {campaignSubTab === 'dm' && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">1-on-1 DM Script</span>
-                    <button
-                      onClick={() => copyToClipboard(campaignKit?.directMessageScript, 'dm')}
-                      disabled={!campaignKit?.directMessageScript}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
-                    >
-                      {copiedKey === 'dm' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedKey === 'dm' ? 'Copied!' : 'Copy DM'}</span>
-                    </button>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                  {/* Left: 1-on-1 Direct Message Mockup */}
+                  <div className="lg:col-span-7 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>1:1 Direct Message Mockup (High-Intent Supporter Outreach)</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">Encrypted chat preview</span>
+                    </div>
+                    <PostVisualMockup
+                      type="dm"
+                      project={project}
+                      copyText={campaignKit?.directMessageScript}
+                      preorderUrl={`${origin}/preorder/${productSlug}`}
+                    />
                   </div>
-                  <textarea
-                    value={campaignKit?.directMessageScript || ''}
-                    onChange={e => updateCampaignKit('directMessageScript', e.target.value)}
-                    placeholder="Click 'Generate AI Content' or write DM outreach template..."
-                    rows={7}
-                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 transition-all"
-                  />
+
+                  {/* Right: DM Script Editor */}
+                  <div className="lg:col-span-5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">1-on-1 DM Script</span>
+                      <button
+                        onClick={() => copyToClipboard(campaignKit?.directMessageScript, 'dm')}
+                        disabled={!campaignKit?.directMessageScript}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                      >
+                        {copiedKey === 'dm' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedKey === 'dm' ? 'Copied!' : 'Copy DM'}</span>
+                      </button>
+                    </div>
+                    <textarea
+                      value={campaignKit?.directMessageScript || ''}
+                      onChange={e => updateCampaignKit('directMessageScript', e.target.value)}
+                      placeholder="Click 'Generate AI Content' or write DM outreach template..."
+                      rows={10}
+                      className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none leading-relaxed font-sans focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 transition-all"
+                    />
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-600 space-y-1">
+                      <p className="text-[10px] text-slate-500 leading-relaxed">
+                        Personal outreach message sent directly from {project?.creatorName || 'creator'} to top commenters and community leaders.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -3380,162 +3435,418 @@ export default function Phase1Validate({
       )}
 
       {/* STEP 4: RUN & OPTIMIZE */}
-      {activeStep === 'optimize' && (
-        <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
-          <div className="border-b border-white/[0.07] pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <span>4. Run + Optimize Validation Engine</span>
-              </h3>
-              <p className="text-xs text-slate-400">
-                Track traffic, CTR, signups, presales, revenue, conversion, attribution & audience feedback. AI analyzes performance to run messaging, pricing, landing-page & content experiments.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={handleRunExperimentsAI}
-                disabled={isAnalyzingExperiments}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white border border-slate-900 text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
-              >
-                {isAnalyzingExperiments ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                    <span>Analyzing...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5 text-white" />
-                    <span>Run AI Optimization</span>
-                  </>
-                )}
-              </button>
+      {/* STEP 4: RUN & OPTIMIZE (VALIDATION ENGINE & COHORT TRACKING) */}
+      {activeStep === 'optimize' && (() => {
+        // Stage Progression System
+        const currentLevelData = (() => {
+          if (reservations.length >= 50 || presalesRevenue >= presaleTarget) {
+            return {
+              level: 5,
+              title: 'Cohort Validated',
+              subtitle: 'Phase 1 validation criteria achieved. 50 Founding Members secured for Phase 2 MVP Engineering.',
+              badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+              nextTarget: 'Target Reached (50 Backers)'
+            }
+          }
+          if (reservations.length >= 10 || presalesRevenue >= 500) {
+            return {
+              level: 4,
+              title: 'Scaling Momentum',
+              subtitle: `${reservations.length} / 50 Founding passes secured. Strong conversion velocity across channels.`,
+              badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+              nextTarget: '50 Backers Target'
+            }
+          }
+          if (reservations.length >= 1 || presalesRevenue >= 50) {
+            return {
+              level: 3,
+              title: 'Early Traction',
+              subtitle: `First paid pre-orders verified! ${50 - reservations.length} Founding passes remaining.`,
+              badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+              nextTarget: '10 Backers Milestone'
+            }
+          }
+          if (totalTraffic >= 10 || totalSignups >= 1) {
+            return {
+              level: 2,
+              title: 'Audience Signal',
+              subtitle: `${totalTraffic} unique visitors tracking funnel resonance. Awaiting first customer pre-order.`,
+              badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
+              nextTarget: 'First Customer Pre-Order'
+            }
+          }
+          return {
+            level: 1,
+            title: 'Funnel Initialized',
+            subtitle: 'Validation engine active. Direct creator audience to pre-order checkout to validate demand.',
+            badgeColor: 'bg-slate-100 text-slate-700 border-slate-200',
+            nextTarget: 'First 10 Visitors'
+          }
+        })()
 
-              <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Auto-Updating</span>
-              </span>
-            </div>
-          </div>
+        // Validation Milestones
+        const validationTrophies = [
+          {
+            id: 'launch_kit',
+            title: 'Mission Uplink',
+            desc: 'Launch roadmap & assets ready',
+            icon: Megaphone,
+            unlocked: Boolean(campaignKit?.announcementPost || (campaignKit?.postingSchedule || []).length > 0),
+            reward: 'Steps 1–3 Ready'
+          },
+          {
+            id: 'traffic_pulse',
+            title: 'Audience Radar',
+            desc: 'Traffic arriving from creator channels',
+            icon: Radar,
+            unlocked: totalTraffic > 0,
+            reward: 'Audience Active',
+            current: `${totalTraffic} / 10 visitors`
+          },
+          {
+            id: 'survey_voice',
+            title: 'Voice of Community',
+            desc: 'Discovery feedback recorded',
+            icon: MessageSquare,
+            unlocked: (surveyResponses?.length || 0) > 0,
+            reward: 'Demand Validated',
+            current: `${surveyResponses?.length || 0} responses`
+          },
+          {
+            id: 'genesis_backer',
+            title: 'Genesis Backer',
+            desc: 'First pre-order payment collected',
+            icon: Crown,
+            unlocked: reservations.length > 0,
+            reward: 'First Sale',
+            current: `${reservations.length} / 1 backer`
+          },
+          {
+            id: 'sovereign_gate',
+            title: 'Sovereign Validation',
+            desc: '50 Founding Members secured',
+            icon: Trophy,
+            unlocked: reservations.length >= 50 || presalesRevenue >= presaleTarget,
+            reward: 'Phase 2 Unlock',
+            current: `${reservations.length} / 50 backers`
+          }
+        ]
 
-          {/* SECTION 1: TELEMETRY & ATTRIBUTION */}
-          <div className="space-y-4">
-            {/* Telemetry Cards - Exactly Scoped */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-center text-xs">
-              {/* 1. Traffic */}
-              <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
-                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Traffic</span>
-                <span className="text-base font-extrabold text-white block">{totalTraffic.toLocaleString()}</span>
-                <span className="text-[9px] text-slate-400">Unique visitors</span>
-              </div>
+        // Attribution Channels with Real Icons and Ranked Ordering
+        const rawChannels = [
+          {
+            id: 'instagram',
+            name: 'Instagram Stories',
+            icon: Camera,
+            iconColor: 'text-pink-600 bg-pink-50 border-pink-200',
+            badge: 'Story Polls',
+            traffic: Math.max(
+              (project?.uniqueVisitors || []).filter(v => {
+                const ch = (v.channel || '').toLowerCase()
+                const p = (v.path || '').toLowerCase()
+                const r = (v.referrer || '').toLowerCase()
+                return ch.includes('instagram') || ch.includes('ig') || ch.includes('story') || p.includes('instagram') || p.includes('ig') || r.includes('instagram') || r.includes('ig')
+              }).length,
+              Number(project?.telemetry?.channelAttribution?.['Instagram Stories'] || project?.telemetry?.channelAttribution?.['instagram'] || 0)
+            ),
+            conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('instagram') || (r.channel || '').toLowerCase().includes('ig')).length
+          },
+          {
+            id: 'tiktok',
+            name: 'TikTok / Shorts',
+            icon: Video,
+            iconColor: 'text-cyan-700 bg-cyan-50 border-cyan-200',
+            badge: '60s Video Mid-Roll',
+            traffic: Math.max(
+              (project?.uniqueVisitors || []).filter(v => {
+                const ch = (v.channel || '').toLowerCase()
+                const p = (v.path || '').toLowerCase()
+                const r = (v.referrer || '').toLowerCase()
+                return ch.includes('tiktok') || ch.includes('shorts') || ch.includes('reels') || ch.includes('youtube') || ch.includes('yt') || p.includes('tiktok') || r.includes('tiktok')
+              }).length,
+              Number(project?.telemetry?.channelAttribution?.['TikTok / Shorts'] || project?.telemetry?.channelAttribution?.['tiktok'] || 0)
+            ),
+            conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('tiktok') || (r.channel || '').toLowerCase().includes('shorts')).length
+          },
+          {
+            id: 'x',
+            name: 'X (Social Post)',
+            isXLogo: true,
+            iconColor: 'text-slate-900 bg-slate-100 border-slate-300',
+            badge: 'Announcement Post',
+            traffic: Math.max(
+              (project?.uniqueVisitors || []).filter(v => {
+                const ch = (v.channel || '').toLowerCase()
+                const p = (v.path || '').toLowerCase()
+                const r = (v.referrer || '').toLowerCase()
+                return ch.includes('twitter') || ch.includes('x') || p.includes('twitter') || r.includes('twitter') || r.includes('t.co')
+              }).length,
+              Number(project?.telemetry?.channelAttribution?.['Twitter / X'] || project?.telemetry?.channelAttribution?.['twitter'] || 0)
+            ),
+            conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('twitter') || (r.channel || '').toLowerCase().includes('x')).length
+          },
+          {
+            id: 'newsletter',
+            name: 'Email Newsletter',
+            icon: Mail,
+            iconColor: 'text-amber-700 bg-amber-50 border-amber-200',
+            badge: '1:1 Founder Letter',
+            traffic: Math.max(
+              (project?.uniqueVisitors || []).filter(v => {
+                const ch = (v.channel || '').toLowerCase()
+                const p = (v.path || '').toLowerCase()
+                const r = (v.referrer || '').toLowerCase()
+                return ch.includes('newsletter') || ch.includes('email') || p.includes('newsletter') || r.includes('newsletter') || r.includes('email')
+              }).length,
+              Number(project?.telemetry?.channelAttribution?.['Email Newsletter'] || project?.telemetry?.channelAttribution?.['newsletter'] || 0)
+            ),
+            conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('newsletter') || (r.channel || '').toLowerCase().includes('email')).length
+          }
+        ]
 
-              {/* 2. CTR */}
-              <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
-                <span className="text-[9px] text-blue-400 font-bold uppercase tracking-wider block">CTR</span>
-                <span className="text-base font-extrabold text-white block">{dynamicCTR.toFixed(1)}%</span>
-                <span className="text-[9px] text-slate-400">Click-through rate</span>
-              </div>
+        // Rank sorted channels
+        const rankedChannels = [...rawChannels].sort((a, b) => (b.conversions * 10 + b.traffic) - (a.conversions * 10 + a.traffic))
+        const maxTraffic = Math.max(1, ...rawChannels.map(c => c.traffic))
 
-              {/* 3. Signups */}
-              <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
-                <span className="text-[9px] text-indigo-300 font-bold uppercase tracking-wider block">Signups</span>
-                <span className="text-base font-extrabold text-white block">{totalSignups.toLocaleString()}</span>
-                <span className="text-[9px] text-slate-400">Waitlist / Leads</span>
-              </div>
+        return (
+          <div className="space-y-3.5">
+            {/* CLEAN VALIDATION FUNNEL HERO */}
+            <div className="p-3 sm:p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                {/* Left: Icon Badge & Stage Details */}
+                <div className="flex items-center gap-3.5">
+                  <div className="relative shrink-0" data-testid="mission-level-crest">
+                    <div className="w-11 h-11 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-white shadow-xs">
+                      <Rocket className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-emerald-500 text-slate-950 shadow-2xs border border-white">
+                      LVL {currentLevelData.level}
+                    </div>
+                  </div>
 
-              {/* 4. Presales */}
-              <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
-                <span className="text-[9px] text-amber-300 font-bold uppercase tracking-wider block">Presales</span>
-                <span className="text-base font-extrabold text-white block">{reservations.length}</span>
-                <span className="text-[9px] text-slate-400">Paid orders</span>
-              </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold uppercase tracking-wider border shadow-2xs ${currentLevelData.badgeColor}`}>
+                        Stage {currentLevelData.level}: {currentLevelData.title}
+                      </span>
+                      <span className="text-[11px] font-medium text-emerald-700 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Validation Telemetry Active</span>
+                      </span>
+                    </div>
 
-              {/* 5. Revenue */}
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
-                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block">Revenue</span>
-                <span className="text-base font-extrabold text-emerald-300 block">${presalesRevenue.toLocaleString()}</span>
-                <span className="text-[9px] text-emerald-400/80">of ${presaleTarget.toLocaleString()} goal</span>
-              </div>
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+                      4. Run + Optimize Validation Engine
+                    </h3>
 
-              {/* 6. Conversion */}
-              <div className="p-3 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-1">
-                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block">Conversion</span>
-                <span className="text-base font-extrabold text-white block">{dynamicConversionRate.toFixed(1)}%</span>
-                <span className="text-[9px] text-slate-400">Visitor-to-paid</span>
-              </div>
-            </div>
+                    <p className="text-xs text-slate-500 max-w-xl leading-relaxed">
+                      {currentLevelData.subtitle}
+                    </p>
 
-            {/* Attribution Channel Matrix */}
-            <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white">Channel Attribution & Traffic Source CTR</span>
-                <span className="text-[10px] font-mono text-slate-400">Live Funnel Breakdown</span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                {[
-                  {
-                    name: 'Instagram Stories',
-                    traffic: Math.max(
-                      (project?.uniqueVisitors || []).filter(v => {
-                        const ch = (v.channel || '').toLowerCase()
-                        const p = (v.path || '').toLowerCase()
-                        const r = (v.referrer || '').toLowerCase()
-                        return ch.includes('instagram') || ch.includes('ig') || ch.includes('story') || p.includes('instagram') || p.includes('ig') || r.includes('instagram') || r.includes('ig')
-                      }).length,
-                      Number(project?.telemetry?.channelAttribution?.['Instagram Stories'] || project?.telemetry?.channelAttribution?.['instagram'] || 0)
-                    ),
-                    conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('instagram') || (r.channel || '').toLowerCase().includes('ig')).length
-                  },
-                  {
-                    name: 'TikTok / Shorts',
-                    traffic: Math.max(
-                      (project?.uniqueVisitors || []).filter(v => {
-                        const ch = (v.channel || '').toLowerCase()
-                        const p = (v.path || '').toLowerCase()
-                        const r = (v.referrer || '').toLowerCase()
-                        return ch.includes('tiktok') || ch.includes('shorts') || ch.includes('reels') || ch.includes('youtube') || ch.includes('yt') || p.includes('tiktok') || r.includes('tiktok')
-                      }).length,
-                      Number(project?.telemetry?.channelAttribution?.['TikTok / Shorts'] || project?.telemetry?.channelAttribution?.['tiktok'] || 0)
-                    ),
-                    conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('tiktok') || (r.channel || '').toLowerCase().includes('shorts')).length
-                  },
-                  {
-                    name: 'X (Social Post)',
-                    traffic: Math.max(
-                      (project?.uniqueVisitors || []).filter(v => {
-                        const ch = (v.channel || '').toLowerCase()
-                        const p = (v.path || '').toLowerCase()
-                        const r = (v.referrer || '').toLowerCase()
-                        return ch.includes('twitter') || ch.includes('x') || p.includes('twitter') || r.includes('twitter') || r.includes('t.co')
-                      }).length,
-                      Number(project?.telemetry?.channelAttribution?.['Twitter / X'] || project?.telemetry?.channelAttribution?.['twitter'] || 0)
-                    ),
-                    conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('twitter') || (r.channel || '').toLowerCase().includes('x')).length
-                  },
-                  {
-                    name: 'Email Newsletter',
-                    traffic: Math.max(
-                      (project?.uniqueVisitors || []).filter(v => {
-                        const ch = (v.channel || '').toLowerCase()
-                        const p = (v.path || '').toLowerCase()
-                        const r = (v.referrer || '').toLowerCase()
-                        return ch.includes('newsletter') || ch.includes('email') || p.includes('newsletter') || r.includes('newsletter') || r.includes('email')
-                      }).length,
-                      Number(project?.telemetry?.channelAttribution?.['Email Newsletter'] || project?.telemetry?.channelAttribution?.['newsletter'] || 0)
-                    ),
-                    conversions: reservations.filter(r => (r.channel || '').toLowerCase().includes('newsletter') || (r.channel || '').toLowerCase().includes('email')).length
-                  }
-                ].map((ch, idx) => {
-                  const ctr = ch.traffic > 0 ? `${((ch.conversions / ch.traffic) * 100).toFixed(1)}%` : '0.0%'
-                  return (
-                    <div key={idx} className="p-3 rounded-lg bg-[#0e1117] border border-white/[0.04] space-y-1">
-                      <span className="text-[11px] font-bold text-white block truncate">{ch.name}</span>
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
-                        <span>Traffic: <strong className="text-white font-mono">{ch.traffic}</strong></span>
-                        <span>CTR: <strong className="text-slate-300 font-mono">{ctr}</strong></span>
+                    {/* Compact Target Progress Bar */}
+                    <div className="pt-0.5 space-y-1 max-w-md">
+                      <div className="flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-slate-500">Cohort Progress: <strong className="text-slate-900">{reservations.length} / 50 Backers</strong></span>
+                        <span className="text-emerald-700 font-semibold">{currentLevelData.nextTarget}</span>
                       </div>
-                      <div className="text-[10px] text-slate-500">
-                        Pre-orders: <strong className="text-emerald-400 font-mono">{ch.conversions}</strong>
+                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/60">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(8, (reservations.length / 50) * 100))}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Actions & Live Status */}
+                <div className="flex flex-col sm:flex-row md:flex-col items-start sm:items-center md:items-end gap-2 shrink-0">
+                  <button
+                    onClick={handleRunExperimentsAI}
+                    disabled={isAnalyzingExperiments}
+                    className="w-full sm:w-auto px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors disabled:opacity-50 shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {isAnalyzingExperiments ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                        <span>Analyzing Telemetry...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sliders className="w-3.5 h-3.5 text-slate-300" />
+                        <span>Run Optimization</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Live Attribution Pulse</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 1: COMPACT TELEMETRY GRID */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Validation Engine Telemetry</span>
+                </span>
+                <span className="text-[11px] font-mono text-slate-500 font-medium">Target: 50 Presales ($1,000 Milestone)</span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+                {/* 1. Traffic */}
+                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-1 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Traffic</span>
+                    <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-600">
+                      <Radar className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div className="text-xl font-bold text-slate-900 tracking-tight leading-tight">{totalTraffic.toLocaleString()}</div>
+                  <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
+                    <span>Unique visitors</span>
+                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">Live</span>
+                  </div>
+                </div>
+
+                {/* 2. CTR */}
+                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-1 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">CTR</span>
+                    <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-600">
+                      <MousePointerClick className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div className="text-xl font-bold text-slate-900 tracking-tight leading-tight">{dynamicCTR.toFixed(1)}%</div>
+                  <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
+                    <span>Click-through</span>
+                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">Funnel</span>
+                  </div>
+                </div>
+
+                {/* 3. Signups */}
+                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-1 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Signups</span>
+                    <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-600">
+                      <Flame className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div className="text-xl font-bold text-slate-900 tracking-tight leading-tight">{totalSignups.toLocaleString()}</div>
+                  <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
+                    <span>Waitlist tribe</span>
+                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">Leads</span>
+                  </div>
+                </div>
+
+                {/* 4. Presales */}
+                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-1 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Presales</span>
+                    <div className="w-5 h-5 rounded-md bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
+                      <Crown className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div className="text-xl font-bold text-amber-700 tracking-tight leading-tight">{reservations.length} <span className="text-xs font-normal text-slate-400">/ 50</span></div>
+                  <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
+                    <span>Paid orders</span>
+                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200/80">{Math.round((reservations.length / 50) * 100)}%</span>
+                  </div>
+                </div>
+
+                {/* 5. Revenue */}
+                <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200 hover:border-emerald-300 transition-all space-y-1 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-emerald-800 font-semibold uppercase tracking-wider">Revenue</span>
+                    <div className="w-5 h-5 rounded-md bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700">
+                      <Coins className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div className="text-xl font-bold text-emerald-700 tracking-tight leading-tight">${presalesRevenue.toLocaleString()}</div>
+                  <div className="text-[10px] text-emerald-800/90 flex items-center justify-between pt-0.5">
+                    <span>Target: ${presaleTarget.toLocaleString()}</span>
+                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-200/80">{presalesRevenue >= 1000 ? 'Unlocked' : 'In Progress'}</span>
+                  </div>
+                </div>
+
+                {/* 6. Conversion */}
+                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-1 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Conversion</span>
+                    <div className="w-5 h-5 rounded-md bg-teal-50 border border-teal-200/60 flex items-center justify-center text-teal-600">
+                      <Gauge className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div className="text-xl font-bold text-slate-900 tracking-tight leading-tight">{dynamicConversionRate.toFixed(1)}%</div>
+                  <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
+                    <span>Visitor-to-paid</span>
+                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-teal-50 text-teal-800 border border-teal-200/80">{dynamicConversionRate >= 3 ? 'Healthy' : 'Tracking'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* VALIDATION MILESTONES & TROPHY RACK */}
+            <div className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 shadow-2xs" data-testid="quest-target-medallion">
+                    <Target className="w-4 h-4 text-slate-700" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Award className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Phase 1 Validation Quests & Trophy Rack</span>
+                    </span>
+                    <p className="text-[11px] text-slate-500">
+                      Complete founder milestones to validate commercial demand and de-risk Phase 2 MVP Engineering.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 shrink-0">
+                  {validationTrophies.filter(t => t.unlocked).length} / {validationTrophies.length} Milestones Achieved
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                {validationTrophies.map(trophy => {
+                  const Icon = trophy.icon
+                  return (
+                    <div
+                      key={trophy.id}
+                      className={`p-2.5 rounded-lg border transition-all text-xs space-y-1.5 relative ${
+                        trophy.unlocked
+                          ? 'bg-emerald-50/20 border-emerald-300 text-slate-900 shadow-2xs'
+                          : 'bg-slate-50/50 border-slate-200/80 text-slate-500'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
+                          trophy.unlocked
+                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-2xs'
+                            : 'bg-slate-100 text-slate-400 border border-slate-200'
+                        }`}>
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded ${
+                          trophy.unlocked
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            : 'bg-slate-100 text-slate-500 border border-slate-200'
+                        }`}>
+                          {trophy.unlocked ? 'Unlocked ✓' : 'Locked'}
+                        </span>
+                      </div>
+                      <div className="font-bold text-xs truncate text-slate-900">{trophy.title}</div>
+                      <div className="text-[10px] text-slate-500 line-clamp-1">{trophy.desc}</div>
+                      <div className="text-[9px] font-mono text-slate-500 font-medium flex items-center justify-between pt-1 border-t border-slate-100">
+                        <span className={trophy.unlocked ? 'text-emerald-700 font-semibold' : 'text-slate-400'}>{trophy.reward}</span>
+                        {trophy.current && <span className="text-slate-400 font-normal">{trophy.current}</span>}
                       </div>
                     </div>
                   )
@@ -3543,345 +3854,515 @@ export default function Phase1Validate({
               </div>
             </div>
 
-            {/* Recorded Presales List */}
-            <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xs font-bold text-white">Recorded Customer Pre-Orders ({reservations.length})</span>
+            {/* SECTION 2: ATTRIBUTION CHANNEL MATRIX & LEADERBOARD */}
+            <div className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-2.5 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-sky-500" />
+                    <span>Channel Attribution & Conversion Leaderboard</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Live channel CTR and paid preorder attribution originating from creator links.
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0 font-medium">
+                  Real-time Attribution
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                {rankedChannels.map((ch, idx) => {
+                  const Icon = ch.icon
+                  const ctr = ch.traffic > 0 ? `${((ch.conversions / ch.traffic) * 100).toFixed(1)}%` : '0.0%'
+                  const trafficPercent = Math.round((ch.traffic / maxTraffic) * 100)
+
+                  return (
+                    <div
+                      key={ch.id}
+                      className="p-2.5 rounded-lg bg-slate-50/70 border border-slate-200/70 hover:border-slate-300 hover:bg-white transition-all space-y-2 shadow-2xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center border shadow-2xs ${ch.iconColor}`}>
+                            {ch.isXLogo ? <XLogo className="w-3 h-3" /> : <Icon className="w-3.5 h-3.5" />}
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-900 block leading-tight">{ch.name}</span>
+                            <span className="text-[9px] text-slate-400 font-mono">{ch.badge}</span>
+                          </div>
+                        </div>
+
+                        <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded ${
+                          idx === 0 && ch.traffic > 0
+                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                            : 'bg-white text-slate-600 border border-slate-200'
+                        }`}>
+                          {idx === 0 && ch.traffic > 0 ? '#1 Top Driver' : `#${idx + 1}`}
+                        </span>
+                      </div>
+
+                      {/* Mini Traffic Bar */}
+                      <div className="space-y-0.5">
+                        <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                          <span>Traffic: <strong className="text-slate-900">{ch.traffic}</strong></span>
+                          <span>CTR: <strong className="text-emerald-700">{ctr}</strong></span>
+                        </div>
+                        <div className="w-full bg-slate-200/70 h-1 rounded-full overflow-hidden">
+                          <div
+                            className="bg-sky-500 h-full rounded-full transition-all duration-300"
+                            style={{ width: `${Math.max(5, trafficPercent)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] pt-1 border-t border-slate-200/50">
+                        <span className="text-slate-500">Pre-orders: <strong className="text-emerald-700 font-mono font-bold">{ch.conversions}</strong></span>
+                        {ch.conversions > 0 ? (
+                          <span className="text-[9px] font-mono font-semibold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200">
+                            High Intent
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono text-slate-400">Tracking</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* SECTION 3: RECORDED PRE-ORDERS & FOUNDING MEMBERS LEDGER */}
+            <div className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-3 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0 shadow-2xs">
+                    <Trophy className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>Founding Members Ledger ({reservations.length} / 50 Claimed)</span>
+                    </h4>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Target Validation Cohort · 50% Lifetime Price Lock
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
                   <a
                     href={`${origin}/preorder/${productSlug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-slate-300 hover:text-white underline font-semibold flex items-center gap-0.5"
+                    className="text-xs text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
                   >
                     <span>Open Preorder Checkout</span>
-                    <ExternalLink className="w-2.5 h-2.5" />
+                    <ExternalLink className="w-3 h-3 text-slate-400" />
                   </a>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-mono text-emerald-400 font-bold">${presalesRevenue.toLocaleString()} Collected</span>
+
+                  <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                    ${presalesRevenue.toLocaleString()} Collected
+                  </span>
+
                   {reservations.length > 0 && (
                     <button
                       onClick={handleClearAllReservations}
-                      className="text-[10px] text-red-400 hover:text-red-300 font-bold bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 rounded-lg border border-red-500/20 flex items-center gap-1 transition-colors cursor-pointer"
+                      className="text-xs text-red-600 hover:text-red-700 font-medium bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-200 flex items-center gap-1 transition-colors cursor-pointer"
                       title="Clear all recorded test pre-orders"
                     >
                       <Trash2 className="w-3 h-3" />
-                      <span>Clear All</span>
+                      <span>Reset</span>
                     </button>
                   )}
                 </div>
               </div>
 
               {reservations.length === 0 ? (
-                <div className="text-center py-6 text-slate-500 text-xs border border-dashed border-white/[0.08] rounded-xl space-y-1">
-                  <p>No customer pre-orders recorded yet.</p>
-                  <p className="text-[11px] text-slate-400">
-                    Visit <a href={`${origin}/preorder/${productSlug}`} target="_blank" rel="noopener noreferrer" className="text-slate-300 underline">{origin}/preorder/{productSlug}</a> to submit live pre-orders via Stripe or PayPal.
-                  </p>
+                /* COMPACT EMPTY STATE CARD */
+                <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0 shadow-2xs" data-testid="founding-trophy-pedestal">
+                      <Trophy className="w-4 h-4 text-amber-700" />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-slate-900">The 50 Founding Members Cohort is Open</h5>
+                      <p className="text-[11px] text-slate-500 leading-normal max-w-lg mt-0.5">
+                        Lock your first customer pre-order to claim <strong className="text-amber-800 font-semibold">Genesis Backer #1</strong> and kick off validation momentum toward Phase 2 MVP Engineering.
+                      </p>
+                    </div>
+                  </div>
+
+                  <a
+                    href={`${origin}/preorder/${productSlug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs shrink-0 cursor-pointer"
+                  >
+                    <span>Open Preorder Checkout ↗</span>
+                  </a>
                 </div>
               ) : (
+                /* BACKERS LIST */
                 <div className="space-y-1.5">
-                  {reservations.map(res => (
-                    <div key={res.id} className="p-3 rounded-lg bg-[#0e1117] border border-white/[0.06] flex items-center justify-between text-xs">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-white">{res.name}</span>
-                          {res.paymentMethod && (
-                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
-                              res.paymentMethod.toLowerCase().includes('paypal') 
-                                ? 'bg-[#0070ba]/20 text-[#38a9f5] border border-[#0070ba]/30'
-                                : 'bg-slate-800 text-slate-300 border border-slate-700'
-                            }`}>
-                              {res.paymentMethod}
-                            </span>
-                          )}
+                  {reservations.map((res, idx) => (
+                    <div
+                      key={res.id}
+                      className="p-2.5 rounded-lg bg-slate-50/70 border border-slate-200/80 hover:border-slate-300 hover:bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs transition-all shadow-2xs"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-800 shadow-2xs shrink-0">
+                          {idx === 0 ? '👑' : idx < 5 ? '⭐' : '#' + (idx + 1)}
                         </div>
-                        <div className="text-[11px] text-slate-400 font-mono">{res.email}</div>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-slate-900 text-xs">{res.name}</span>
+                            <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded border ${
+                              idx === 0
+                                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                : idx < 5
+                                ? 'bg-purple-100 text-purple-800 border-purple-300'
+                                : 'bg-slate-100 text-slate-700 border-slate-200'
+                            }`}>
+                              {idx === 0 ? 'Genesis Backer #1' : idx < 5 ? `Founding Pioneer #${idx + 1}` : `VIP Member #${idx + 1}`}
+                            </span>
+                            {res.paymentMethod && (
+                              <span className="text-[9px] font-mono text-slate-500 bg-slate-100 px-1 py-0.2 rounded border border-slate-200">
+                                {res.paymentMethod}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-mono">{res.email}</div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold text-emerald-400">+${res.amount}</div>
-                        <span className="text-[10px] text-slate-400">{res.tier}</span>
+
+                      <div className="text-right flex sm:flex-col items-center sm:items-end justify-between gap-0.5">
+                        <div className="font-bold text-xs text-emerald-700 font-mono">+${res.amount}</div>
+                        <span className="text-[9px] text-slate-500">{res.tier}</span>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* TIGHT RECORD TRANSACTION FORM */}
+              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Record Direct Backer Transaction</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">Manual Entry / VIP Checkout Simulation</span>
+                </div>
+
+                <form onSubmit={handleSimulatePresale} className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      { label: `Founding Annual ($${activeFoundingPrice})`, value: activeFoundingPrice, desc: '50% Lifetime Price Lock' },
+                      { label: `Refundable Deposit ($${activeDepositPrice})`, value: activeDepositPrice, desc: '100% Guaranteed VIP Hold' },
+                      { label: `VIP Founder Pass ($${activeVipPrice})`, value: activeVipPrice, desc: 'Roadmap Council + Direct Call' }
+                    ].map(tier => (
+                      <button
+                        key={tier.value}
+                        type="button"
+                        onClick={() => setSimBuyerTier(tier.value)}
+                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                          simBuyerTier === tier.value
+                            ? 'bg-white border-slate-900 text-slate-900 shadow-2xs ring-1 ring-slate-900'
+                            : 'bg-white/80 border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-white'
+                        }`}
+                      >
+                        <div className="text-xs font-semibold">{tier.label}</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">{tier.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Backer Name"
+                      value={simBuyerName}
+                      onChange={e => setSimBuyerName(e.target.value)}
+                      className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-400 h-8.5"
+                    />
+                    <input
+                      type="email"
+                      placeholder="Backer Email"
+                      value={simBuyerEmail}
+                      onChange={e => setSimBuyerEmail(e.target.value)}
+                      className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-400 h-8.5"
+                    />
+                    <button
+                      type="submit"
+                      className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer h-8.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Record Backer (+${simBuyerTier})</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            {/* SECTION 4: FUNNEL OPTIMIZATION & A/B EXPERIMENTS */}
+            <div className="space-y-3 text-xs pt-1">
+              <div className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-2 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 shadow-2xs">
+                      <Sliders className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block">Funnel Optimization & A/B Experiments</span>
+                      <span className="text-[10px] text-slate-400 font-mono">CRO telemetry analysis for messaging, pricing, and creator content</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleRunExperimentsAI}
+                    disabled={isAnalyzingExperiments}
+                    className="text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                  >
+                    {isAnalyzingExperiments ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sliders className="w-3.5 h-3.5 text-slate-300" />}
+                    <span>{experimentsData ? 'Re-Analyze Funnel' : 'Generate Experiments'}</span>
+                  </button>
+                </div>
+
+                <p className="text-slate-600 text-xs leading-relaxed">
+                  {experimentsData?.performanceAudit?.summary || 'Formulate conversion experiments tailored to audience resonance and live funnel bottlenecks.'}
+                </p>
+              </div>
+
+              {/* Experiments Cards Grid */}
+              {isAnalyzingExperiments ? (
+                <Phase1ExperimentsGenSkeleton />
+              ) : !experimentsData?.experiments || experimentsData.experiments.length === 0 ? (
+                <div className="p-5 text-center text-slate-500 border border-slate-200 rounded-xl space-y-2 bg-white">
+                  <p>No optimization experiments generated yet.</p>
+                  <button
+                    type="button"
+                    onClick={handleRunExperimentsAI}
+                    disabled={isAnalyzingExperiments}
+                    className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span>Analyze Funnel & Generate Experiments</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {/* Active Experiments Summary Banner */}
+                  {experimentsData.experiments.some(e => e.status === 'applied') && (
+                    <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 shadow-2xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shrink-0">
+                          <Check className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-emerald-900">
+                              {experimentsData.experiments.filter(e => e.status === 'applied').length} Active Optimization Experiment{experimentsData.experiments.filter(e => e.status === 'applied').length > 1 ? 's' : ''} Live in Phase 1
+                            </span>
+                            <span className="text-[9px] font-mono font-semibold uppercase px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              Active
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-emerald-700">
+                            Your Phase 1 Validation Plan (Step 1), live Landing Page (Step 2), and Creator Tasks (Step 3) are powered by these active variants.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveStep('assets')
+                          onSelectStep?.('assets')
+                        }}
+                        className="px-2.5 py-1 rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 text-xs font-semibold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                      >
+                        <span>View in Funnel</span>
+                        <ArrowRight className="w-3 h-3 text-emerald-700" />
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    {experimentsData.experiments.map((exp) => {
+                      const categoryIcons = {
+                        messaging: MessageSquare,
+                        pricing: Coins,
+                        landing_page: Layout,
+                        creator_content: Video
+                      }
+                      const CatIcon = categoryIcons[exp.category] || Sliders
+
+                      return (
+                        <div key={exp.id} className="p-3 rounded-lg bg-white border border-slate-200 hover:border-slate-300 space-y-2 flex flex-col justify-between transition-all shadow-2xs">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5">
+                                <CatIcon className="w-3 h-3 text-slate-600" />
+                                <span>{exp.category?.replace('_', ' ')} Experiment</span>
+                              </span>
+                              <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                {exp.expectedUplift}
+                              </span>
+                            </div>
+
+                            <h4 className="font-bold text-slate-900 text-xs leading-snug">{exp.title}</h4>
+                            <p className="text-[11px] text-slate-500 leading-relaxed">{exp.hypothesis}</p>
+
+                            <div className="p-2 rounded-md bg-slate-50 border border-slate-200/80 space-y-0.5 text-[11px]">
+                              <span className="text-emerald-700 font-semibold block flex items-center gap-1 text-[10px]">
+                                <ArrowRight className="w-3 h-3 text-emerald-600" />
+                                <span>Proposed Variant:</span>
+                              </span>
+                              <p className="text-slate-800 italic leading-relaxed">{exp.variant}</p>
+                            </div>
+
+                            {/* Phase 1 Implementation Mapping */}
+                            <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5">
+                              <span className="font-medium text-slate-500">Targets:</span>
+                              <span className="text-slate-600 font-mono">
+                                {exp.category === 'messaging'
+                                  ? 'Step 2 Campaign Kit & Step 3 Social Post Draft'
+                                  : exp.category === 'creator_content'
+                                  ? 'Step 3 Creator Story Sprints & Tasks'
+                                  : exp.category === 'landing_page'
+                                  ? 'Step 2 Live Landing Page Hero & Headline'
+                                  : 'Step 1 Validation Plan & Step 2 Pre-Order Checkout'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                exp.status === 'applied' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                              }`} />
+                              <span className={`text-[10px] font-mono font-medium uppercase tracking-wider ${
+                                exp.status === 'applied' ? 'text-emerald-700' : 'text-slate-500'
+                              }`}>
+                                {exp.status === 'applied' ? 'Live in Phase 1' : 'Ready to Test'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              {exp.status === 'applied' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRevertExperiment(exp)}
+                                  className="px-2 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
+                                  title="Revert back to control"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  <span>Revert</span>
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleApplyExperiment(exp)}
+                                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer shadow-2xs ${
+                                  exp.status === 'applied'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-slate-900 hover:bg-slate-800 text-white'
+                                }`}
+                              >
+                                <Check className="w-3 h-3" />
+                                <span>{exp.status === 'applied' ? 'Applied' : 'Apply to Phase 1'}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* SECTION 5: AUDIENCE FEEDBACK PULSE */}
+            <div className="space-y-2.5 text-xs pt-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Live Audience Feedback & Demand Sentiment</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Real-time qualitative insights gathered from customer discovery surveys and backer checkout notes.
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 font-semibold">
+                  {surveyResponses?.length || 0} Discovery Feedback Recorded
+                </span>
+              </div>
+
+              {(!surveyResponses || surveyResponses.length === 0) ? (
+                <div className="p-4 sm:p-5 text-center text-slate-500 border border-slate-200/80 rounded-xl space-y-1 bg-slate-50/50">
+                  <p className="font-medium text-xs text-slate-600">No audience discovery responses recorded yet.</p>
+                  <p className="text-[11px] text-slate-400">Share your research survey link with the audience to view live feedback pulse.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {surveyResponses.map(res => (
+                    <div key={res.id} className="p-3 rounded-lg bg-white border border-slate-200/80 space-y-1.5 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900">{res.name}</span>
+                          <span className="text-[10px] text-slate-500 font-mono">{res.email}</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          Intent: {res.rating || 8}/10
+                        </span>
+                      </div>
+
+                      {res.answers && (
+                        <div className="space-y-0.5 text-[11px] text-slate-700 bg-slate-50 p-2 rounded-md border border-slate-200/80">
+                          {Object.entries(res.answers).map(([qKey, ans], aIdx) => (
+                            <div key={aIdx} className="leading-relaxed">
+                              <strong className="text-slate-600 font-mono">{qKey}:</strong> {ans}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Record Presale Transaction */}
-            <div className="p-4 rounded-xl bg-[#161a23] border border-white/[0.08] space-y-3">
-              <span className="text-xs font-bold text-white block">Record Pre-Order Transaction</span>
-              <form onSubmit={handleSimulatePresale} className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                <input
-                  type="text"
-                  placeholder="Backer Name"
-                  value={simBuyerName}
-                  onChange={e => setSimBuyerName(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-slate-500"
-                />
-                <input
-                  type="email"
-                  placeholder="Backer Email"
-                  value={simBuyerEmail}
-                  onChange={e => setSimBuyerEmail(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none focus:border-slate-500"
-                />
-                <select
-                  value={simBuyerTier}
-                  onChange={e => setSimBuyerTier(Number(e.target.value))}
-                  className="px-3 py-2 rounded-lg bg-[#0e1117] border border-white/[0.08] text-xs text-white outline-none cursor-pointer"
-                >
-                  <option value={activeFoundingPrice}>Founding Annual (${activeFoundingPrice})</option>
-                  <option value={activeDepositPrice}>Refundable Deposit (${activeDepositPrice})</option>
-                  <option value={activeVipPrice}>VIP Founder Pass (${activeVipPrice})</option>
-                </select>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Record (+${simBuyerTier})</span>
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* SECTION 2: AI EXPERIMENTS (4 CRITICAL AREAS) */}
-          <div className="space-y-4 text-xs pt-2 border-t border-white/[0.08]">
-            {/* AI Performance Audit Banner */}
-            <div className="p-4 rounded-xl bg-[#161a23] border border-slate-700/60 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-slate-400" />
-                  <span>AI Optimization Audit & Bottleneck Analysis</span>
-                </span>
-                <button
-                  onClick={handleRunExperimentsAI}
-                  disabled={isAnalyzingExperiments}
-                  className="text-[10px] font-bold text-white bg-slate-900 hover:bg-slate-800 px-3 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  {isAnalyzingExperiments ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                  <span>{experimentsData ? 'Re-Analyze with AI' : 'Generate Experiments with AI'}</span>
-                </button>
-              </div>
-              <p className="text-slate-300 leading-relaxed">
-                {experimentsData?.performanceAudit?.summary || 'Click "Generate Experiments with AI" to analyze live telemetry and formulate experiments across Messaging, Pricing, Landing Page, and Creator Content.'}
-              </p>
-            </div>
-
-            {/* Experiments Cards Grid */}
-            {isAnalyzingExperiments ? (
-              <Phase1ExperimentsGenSkeleton />
-            ) : !experimentsData?.experiments || experimentsData.experiments.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 border border-dashed border-white/[0.08] rounded-xl space-y-3">
-                <p>No growth experiments generated yet.</p>
-                <button
-                  type="button"
-                  onClick={handleRunExperimentsAI}
-                  disabled={isAnalyzingExperiments}
-                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Analyze Telemetry & Generate Experiments</span>
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Active Experiments Summary Banner */}
-                {experimentsData.experiments.some(e => e.status === 'applied') && (
-                  <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
-                        <Sparkles className="w-4 h-4 text-emerald-700" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-emerald-900">
-                            {experimentsData.experiments.filter(e => e.status === 'applied').length} Active Optimization Experiment{experimentsData.experiments.filter(e => e.status === 'applied').length > 1 ? 's' : ''} Implemented in Phase 1
-                          </span>
-                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            Live in Phase 1
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-600 mt-0.5">
-                          Your Phase 1 Validation Plan (Step 1), live Landing Page & checkout (Step 2), and Creator Tasks (Step 3) are running these AI variants.
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveStep('assets')
-                        onSelectStep?.('assets')
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
-                    >
-                      <span>View in Step 2 Funnel</span>
-                      <ArrowRight className="w-3 h-3 text-emerald-700" />
-                    </button>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {experimentsData.experiments.map((exp) => (
-                    <div key={exp.id} className="p-4 rounded-xl bg-[#141720] border border-white/[0.08] space-y-3 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                            {exp.category?.replace('_', ' ')} Experiment
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-400 font-mono">
-                            {exp.expectedUplift}
-                          </span>
-                        </div>
-
-                        <h4 className="font-bold text-white text-xs leading-snug">{exp.title}</h4>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">{exp.hypothesis}</p>
-
-                        <div className="p-2.5 rounded-lg bg-[#0e1117] border border-white/[0.04] space-y-1 text-[11px]">
-                          <span className="text-slate-300 font-bold block">Proposed Variant:</span>
-                          <p className="text-slate-300 italic">{exp.variant}</p>
-                        </div>
-
-                        {/* Phase 1 Implementation Mapping */}
-                        <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5">
-                          <span className="text-slate-400 font-semibold">Phase 1 Target:</span>
-                          <span className="text-slate-300">
-                            {exp.category === 'messaging'
-                              ? 'Step 2 Campaign Kit & Step 3 Social Post Draft'
-                              : exp.category === 'creator_content'
-                              ? 'Step 3 Creator Story Sprints & Tasks'
-                              : exp.category === 'landing_page'
-                              ? 'Step 2 Live Landing Page Hero & Headline'
-                              : 'Step 1 Validation Plan & Step 2 Pre-Order Checkout'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`w-2 h-2 rounded-full ${
-                            exp.status === 'applied' ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
-                          }`} />
-                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                            exp.status === 'applied' ? 'text-emerald-400' : 'text-slate-400'
-                          }`}>
-                            {exp.status === 'applied' ? 'Live in Phase 1' : 'Ready to Test'}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          {exp.status === 'applied' && (
-                            <button
-                              type="button"
-                              onClick={() => handleRevertExperiment(exp)}
-                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] transition-colors flex items-center gap-1 cursor-pointer"
-                              title="Revert back to control"
-                            >
-                              <RotateCcw className="w-3 h-3" />
-                              <span>Revert</span>
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => handleApplyExperiment(exp)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer ${
-                              exp.status === 'applied'
-                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                                : 'bg-slate-900 hover:bg-slate-800 text-white'
-                            }`}
-                          >
-                            <Check className="w-3 h-3" />
-                            <span>{exp.status === 'applied' ? 'Applied' : 'Apply to Phase 1'}</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* SECTION 3: AUDIENCE FEEDBACK PULSE */}
-          <div className="space-y-4 text-xs pt-2 border-t border-white/[0.08]">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-xs font-bold text-white">Live Audience Feedback & Demand Sentiment</h4>
-                <p className="text-[11px] text-slate-400">
-                  Real-time qualitative insights gathered from customer discovery surveys and backer checkout notes.
-                </p>
-              </div>
-              <span className="text-[10px] font-mono text-slate-400">
-                {surveyResponses?.length || 0} Discovery Feedback Recorded
-              </span>
-            </div>
-
-            {(!surveyResponses || surveyResponses.length === 0) ? (
-              <div className="p-8 text-center text-slate-500 border border-dashed border-white/[0.08] rounded-xl space-y-2">
-                <p>No audience discovery responses recorded yet.</p>
-                <p className="text-[11px] text-slate-400">Share your research survey link with the audience to view live feedback pulse.</p>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {surveyResponses.map(res => (
-                  <div key={res.id} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">{res.name}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{res.email}</span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                        Intent: {res.rating || 8}/10 🔥
-                      </span>
-                    </div>
-
-                    {res.answers && (
-                      <div className="space-y-1 text-[11px] text-slate-300 bg-[#0e1117] p-2.5 rounded-lg border border-white/[0.04]">
-                        {Object.entries(res.answers).map(([qKey, ans], aIdx) => (
-                          <div key={aIdx} className="leading-relaxed">
-                            <strong className="text-slate-400 font-mono">{qKey}:</strong> {ans}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="pt-2 flex justify-end">
-            <button
-              onClick={() => {
-                const updated = {
-                  ...(project || {}),
-                  step4Done: true,
-                  validationOptimized: true,
-                  telemetryReviewed: true
-                }
-                if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-                if (project?.id) {
-                  updateCoLaunchProject(project.id, {
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => {
+                  const updated = {
+                    ...(project || {}),
                     step4Done: true,
                     validationOptimized: true,
                     telemetryReviewed: true
-                  }).catch(e => console.warn(e))
-                }
-                showNotification('Validation metrics reviewed. Ready for Gate Checkpoint.')
-                setActiveStep('gate')
-                onSelectStep?.('gate')
-              }}
-              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-            >
-              <span>Next: Gate</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+                  }
+                  if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+                  if (project?.id) {
+                    updateCoLaunchProject(project.id, {
+                      step4Done: true,
+                      validationOptimized: true,
+                      telemetryReviewed: true
+                    }).catch(e => console.warn(e))
+                  }
+                  showNotification('Validation metrics reviewed. Ready for Gate Checkpoint.')
+                  setActiveStep('gate')
+                  onSelectStep?.('gate')
+                }}
+                className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              >
+                <span>Proceed to Step 5: Gate Checkpoint</span>
+                <ArrowRight className="w-3.5 h-3.5 text-emerald-400" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* STEP 5: VALIDATION GATE */}
       {activeStep === 'gate' && (

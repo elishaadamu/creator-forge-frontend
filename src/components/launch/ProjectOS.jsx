@@ -20,7 +20,7 @@ import ProjectFileExplorer from './ProjectFileExplorer'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import AudienceGroundingModal from './AudienceGroundingModal'
 import { getProjectAudienceGrounding, enrichTasksWithGrounding } from '../../utils/audienceGrounding'
-import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards } from '../../utils/stepGuards'
+import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards, getProjectActiveStep } from '../../utils/stepGuards'
 
 // Detect raw UUID strings (prevent displaying raw UUIDs as creator names/handles)
 const isUuid = (str) => typeof str === 'string' && (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim()) || /^[0-9a-f-]{24,}$/i.test(str.trim()))
@@ -61,16 +61,16 @@ export default function ProjectOS({
     }
   }
 
-  // Initialize phase modal & step from URL or fallback
+  // Initialize phase modal & step from URL or fallback to the project's current active step
   const [selectedPhaseStep, setSelectedPhaseStep] = useState(() => {
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search)
       const stepParam = sp.get('step')
-      if (stepParam && ['plan', 'build', 'beta', 'gate', 'campaign', 'launch'].includes(stepParam)) {
-        return stepParam
+      if (stepParam && ['plan', 'assets', 'campaign', 'optimize', 'gate', 'build', 'beta', 'prep', 'launch', 'review', 'scale'].includes(stepParam.toLowerCase())) {
+        return stepParam.toLowerCase()
       }
     }
-    return 'plan'
+    return getProjectActiveStep(project, project?.currentPhase ? Number(project.currentPhase) : 1)
   })
 
   const [showShareModal, setShowShareModal] = useState(false)
@@ -868,7 +868,7 @@ partnerships@creatorforge.com`
 
                 <button
                   type="button"
-                  onClick={() => setShowPhaseExecutionModal(true)}
+                  onClick={() => openPhaseStep(getProjectActiveStep(project, currentPhase))}
                   className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
                 >
                   <span>Open Phase Workspace</span>
@@ -2058,7 +2058,7 @@ partnerships@creatorforge.com`
                 project={project}
                 api={api}
                 activeStepId={selectedPhaseStep}
-                onSelectStep={setSelectedPhaseStep}
+                onSelectStep={openPhaseStep}
                 onUpdateProject={onUpdateProject}
               />
             ) : (
@@ -2066,7 +2066,7 @@ partnerships@creatorforge.com`
                 project={project}
                 api={api}
                 activeStepId={selectedPhaseStep}
-                onSelectStep={setSelectedPhaseStep}
+                onSelectStep={openPhaseStep}
                 onUpdateProject={onUpdateProject}
                 onAdvanceToPhase2={() => {
                   handleAdvancePhase(2)
