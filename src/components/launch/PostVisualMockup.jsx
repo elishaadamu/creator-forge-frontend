@@ -42,12 +42,19 @@ export default function PostVisualMockup({
   copyText = '',
   preorderUrl = '',
   brandColor = '#f59e0b',
-  onCopy = null
+  onCopy = null,
+  imageUrl = null,
+  videoUrl = null,
+  isGeneratingImage = false,
+  isGeneratingVideo = false
 }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeStoryIdx, setActiveStoryIdx] = useState(0)
   const [pollSelected, setPollSelected] = useState(null)
   const [copied, setCopied] = useState(false)
+
+  const activeImageUrl = imageUrl || project?.campaignKit?.postImageUrl || project?.campaignKit?.postImageDataUrl || null
+  const activeVideoUrl = videoUrl || project?.campaignKit?.videoUrl || null
 
   const creatorName = project?.creatorName || 'Creator'
   const creatorHandle = (project?.creatorHandle || project?.handle || '@creator').replace(/^@/, '')
@@ -157,7 +164,20 @@ export default function PostVisualMockup({
           </div>
 
           {/* Attached High-Fidelity Visual Image Mockup Banner */}
-          <div className="rounded-2xl border border-[#2f3336] overflow-hidden bg-gradient-to-br from-[#0c1322] via-[#080d1a] to-[#030611] text-white shadow-xl group keep-dark product-mockup-display">
+          <div className="rounded-2xl border border-[#2f3336] overflow-hidden bg-gradient-to-br from-[#0c1322] via-[#080d1a] to-[#030611] text-white shadow-xl group keep-dark product-mockup-display relative">
+            {/* Generating Overlay */}
+            {isGeneratingImage && (
+              <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3 p-6 text-center">
+                <div className="w-10 h-10 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-amber-300 block">Generating AI Post Graphic with Gemini 3.1...</span>
+                  <span className="text-[10px] text-slate-400 block max-w-xs">
+                    Calling gemini-3.1-flash-image to synthesize official announcement graphic.
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Visual Header Banner */}
             <div className="p-3.5 sm:p-4 pb-3 flex items-center justify-between border-b border-white/[0.08] bg-white/[0.02]">
               <div className="flex items-center gap-2">
@@ -170,53 +190,67 @@ export default function PostVisualMockup({
               </div>
               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-400/15 text-amber-300 border border-amber-400/30 flex items-center gap-1 font-mono">
                 <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-                Founding Cohort (50 Spots)
+                {activeImageUrl ? 'Gemini 3.1 AI Graphic' : 'Founding Cohort (50 Spots)'}
               </span>
             </div>
 
-            {/* Visual Body Artwork */}
-            <div className="p-5 sm:p-6 space-y-4 relative">
-              <div className="space-y-1.5">
-                <div className="inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  {niche} Architecture OS
+            {/* Visual Body: AI Generated Image OR Graphic Artwork */}
+            {activeImageUrl ? (
+              <div className="relative group/media overflow-hidden bg-black flex items-center justify-center">
+                <img
+                  src={activeImageUrl}
+                  alt={`${productName} announcement`}
+                  className="w-full h-auto max-h-[440px] object-cover transition-transform duration-500 group-hover/media:scale-[1.01]"
+                />
+                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/80 backdrop-blur-md text-amber-300 border border-amber-400/30 flex items-center gap-1.5 shadow-lg">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span>Gemini 3.1 Flash Image</span>
                 </div>
-                <h3
-                  className="text-lg sm:text-xl font-extrabold text-white tracking-tight"
-                  style={{ color: '#ffffff' }}
-                >
-                  {productName}
-                </h3>
-                <p
-                  className="text-xs text-slate-300 max-w-md line-clamp-2"
-                  style={{ color: '#cbd5e1' }}
-                >
-                  {productTagline}
-                </p>
               </div>
+            ) : (
+              <div className="p-5 sm:p-6 space-y-4 relative">
+                <div className="space-y-1.5">
+                  <div className="inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    {niche} Architecture OS
+                  </div>
+                  <h3
+                    className="text-lg sm:text-xl font-extrabold text-white tracking-tight"
+                    style={{ color: '#ffffff' }}
+                  >
+                    {productName}
+                  </h3>
+                  <p
+                    className="text-xs text-slate-300 max-w-md line-clamp-2"
+                    style={{ color: '#cbd5e1' }}
+                  >
+                    {productTagline}
+                  </p>
+                </div>
 
-              {/* Graphic Mockup Cards Grid */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] space-y-1">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase block" style={{ color: '#94a3b8' }}>Founding Pass</span>
-                  <div className="text-sm font-extrabold text-emerald-400 font-mono" style={{ color: '#34d399' }}>50% Lifetime Off</div>
-                  <span className="text-[9px] text-slate-400 block" style={{ color: '#94a3b8' }}>${foundingPrice}/yr (Lock Forever)</span>
+                {/* Graphic Mockup Cards Grid */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] space-y-1">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase block" style={{ color: '#94a3b8' }}>Founding Pass</span>
+                    <div className="text-sm font-extrabold text-emerald-400 font-mono" style={{ color: '#34d399' }}>50% Lifetime Off</div>
+                    <span className="text-[9px] text-slate-400 block" style={{ color: '#94a3b8' }}>${foundingPrice}/yr (Lock Forever)</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] space-y-1">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase block" style={{ color: '#94a3b8' }}>Refundable Hold</span>
+                    <div className="text-sm font-extrabold text-amber-300 font-mono" style={{ color: '#fcd34d' }}>${depositPrice} Deposit</div>
+                    <span className="text-[9px] text-slate-400 block" style={{ color: '#94a3b8' }}>100% Guaranteed</span>
+                  </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] space-y-1">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase block" style={{ color: '#94a3b8' }}>Refundable Hold</span>
-                  <div className="text-sm font-extrabold text-amber-300 font-mono" style={{ color: '#fcd34d' }}>${depositPrice} Deposit</div>
-                  <span className="text-[9px] text-slate-400 block" style={{ color: '#94a3b8' }}>100% Guaranteed</span>
-                </div>
-              </div>
 
-              {/* Verified Attribution Watermark */}
-              <div className="pt-2 flex items-center justify-between text-[10px] border-t border-white/[0.06]">
-                <span style={{ color: '#94a3b8' }}>Co-founded with {creatorName}</span>
-                <span className="font-mono text-emerald-400 flex items-center gap-1" style={{ color: '#34d399' }}>
-                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                  Verified Engineering Pass
-                </span>
+                {/* Verified Attribution Watermark */}
+                <div className="pt-2 flex items-center justify-between text-[10px] border-t border-white/[0.06]">
+                  <span style={{ color: '#94a3b8' }}>Co-founded with {creatorName}</span>
+                  <span className="font-mono text-emerald-400 flex items-center gap-1" style={{ color: '#34d399' }}>
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    Verified Engineering Pass
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Clickable Card Link Metadata Footer */}
             <div className="px-4 py-2.5 bg-black border-t border-[#2f3336] flex items-center justify-between text-xs">
@@ -622,68 +656,95 @@ export default function PostVisualMockup({
           </span>
         </div>
 
-        {/* Video Canvas Simulation */}
+        {/* Video Canvas Simulation OR Real Veo 3.1 Video */}
         <div
-          className="relative aspect-video flex items-center justify-center p-6 overflow-hidden"
+          className="relative aspect-video flex items-center justify-center overflow-hidden bg-black"
           style={{ background: 'linear-gradient(135deg, #0f172a 0%, #090d16 50%, #030712 100%)' }}
         >
-          {/* Ambient Video Visual Backdrop */}
-          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" />
-
-          {/* Play/Pause Button Overlay */}
-          <button
-            type="button"
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="w-16 h-16 rounded-full bg-red-600/90 hover:bg-red-600 text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95 cursor-pointer relative z-20 group"
-          >
-            {isPlaying ? (
-              <Pause className="w-7 h-7" />
-            ) : (
-              <Play className="w-7 h-7 fill-white translate-x-0.5" />
-            )}
-          </button>
-
-          {/* Teleprompter Subtitle Overlay (Dynamic from AI copyText) */}
-          <div className="absolute bottom-4 inset-x-4 z-20 text-center space-y-2">
-            <div
-              className="inline-block px-3 py-1 rounded-full text-[11px] font-mono font-medium backdrop-blur-md"
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', border: '1px solid rgba(255, 255, 255, 0.2)', color: '#fde047' }}
-            >
-              {isPlaying ? '▶ Teleprompter Script Sync Active' : '⏸ Video Script Teleprompter Preview'}
+          {isGeneratingVideo ? (
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3 p-6 text-center">
+              <div className="w-12 h-12 rounded-full border-3 border-rose-500 border-t-transparent animate-spin" />
+              <div className="space-y-1">
+                <span className="text-sm font-bold text-rose-400 block">Veo 3.1 Video Generation In Progress...</span>
+                <span className="text-[11px] text-slate-300 block max-w-sm">
+                  Polling operation status via veo-3.1-generate-preview. Compiling cinematic AI video.
+                </span>
+              </div>
             </div>
-            <div
-              className="text-xs sm:text-[13px] font-medium leading-relaxed drop-shadow-md max-w-lg mx-auto backdrop-blur-md p-3 rounded-xl max-h-36 overflow-y-auto whitespace-pre-wrap text-left select-text"
-              style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.75)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: '#ffffff'
-              }}
-            >
-              {copyText || `"If you saw our recent breakdown on "${recentVideoTitle}", you saw how painful manual workflows in ${niche} really are. That's why we engineered ${productName}..."`}
+          ) : activeVideoUrl ? (
+            <div className="relative w-full h-full flex items-center justify-center bg-black group/video">
+              <video
+                src={activeVideoUrl}
+                controls
+                playsInline
+                className="w-full h-full object-contain"
+              />
+              <div className="absolute top-3 left-3 pointer-events-none px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/80 backdrop-blur-md text-rose-300 border border-rose-500/30 flex items-center gap-1.5 z-10 shadow-lg">
+                <Video className="w-3 h-3 text-rose-400" />
+                <span>Veo 3.1 AI Generated Video</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Ambient Video Visual Backdrop */}
+              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" />
 
-          {/* Live Attribution Overlay Badge */}
-          <div
-            className="absolute top-4 left-4 z-20 flex items-center gap-2 backdrop-blur-md px-3 py-1.5 rounded-xl"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)', border: '1px solid rgba(255, 255, 255, 0.15)' }}
-          >
-            {creatorAvatar ? (
-              <img src={creatorAvatar} alt="" className="w-5 h-5 rounded-full object-cover" />
-            ) : (
-              <Youtube className="w-4 h-4 text-red-500" />
-            )}
-            <span className="text-xs font-bold" style={{ color: '#ffffff' }}>{creatorName}</span>
-            <span className="text-[10px] font-mono" style={{ color: '#94a3b8' }}>0:24 / 1:00</span>
-          </div>
+              {/* Play/Pause Button Overlay */}
+              <button
+                type="button"
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="w-16 h-16 rounded-full bg-red-600/90 hover:bg-red-600 text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95 cursor-pointer relative z-20 group"
+              >
+                {isPlaying ? (
+                  <Pause className="w-7 h-7" />
+                ) : (
+                  <Play className="w-7 h-7 fill-white translate-x-0.5" />
+                )}
+              </button>
 
-          <div
-            className="absolute top-4 right-4 z-20 flex items-center gap-1.5 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-xs"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#cbd5e1' }}
-          >
-            <Volume2 className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-[10px] font-mono">Original Audio</span>
-          </div>
+              {/* Teleprompter Subtitle Overlay (Dynamic from AI copyText) */}
+              <div className="absolute bottom-4 inset-x-4 z-20 text-center space-y-2">
+                <div
+                  className="inline-block px-3 py-1 rounded-full text-[11px] font-mono font-medium backdrop-blur-md"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', border: '1px solid rgba(255, 255, 255, 0.2)', color: '#fde047' }}
+                >
+                  {isPlaying ? '▶ Teleprompter Script Sync Active' : '⏸ Video Script Teleprompter Preview'}
+                </div>
+                <div
+                  className="text-xs sm:text-[13px] font-medium leading-relaxed drop-shadow-md max-w-lg mx-auto backdrop-blur-md p-3 rounded-xl max-h-36 overflow-y-auto whitespace-pre-wrap text-left select-text"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: '#ffffff'
+                  }}
+                >
+                  {copyText || `"If you saw our recent breakdown on \"${recentVideoTitle}\", you saw how painful manual workflows in ${niche} really are. That's why we engineered ${productName}..."`}
+                </div>
+              </div>
+
+              {/* Live Attribution Overlay Badge */}
+              <div
+                className="absolute top-4 left-4 z-20 flex items-center gap-2 backdrop-blur-md px-3 py-1.5 rounded-xl"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)', border: '1px solid rgba(255, 255, 255, 0.15)' }}
+              >
+                {creatorAvatar ? (
+                  <img src={creatorAvatar} alt="" className="w-5 h-5 rounded-full object-cover" />
+                ) : (
+                  <Youtube className="w-4 h-4 text-red-500" />
+                )}
+                <span className="text-xs font-bold" style={{ color: '#ffffff' }}>{creatorName}</span>
+                <span className="text-[10px] font-mono" style={{ color: '#94a3b8' }}>0:24 / 1:00</span>
+              </div>
+
+              <div
+                className="absolute top-4 right-4 z-20 flex items-center gap-1.5 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-xs"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#cbd5e1' }}
+              >
+                <Volume2 className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-[10px] font-mono">Original Audio</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Video Scrubber & Script Stage Guide */}

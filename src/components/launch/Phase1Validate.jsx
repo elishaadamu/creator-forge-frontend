@@ -6,7 +6,7 @@ import {
   CreditCard, Users, TrendingUp, RefreshCw, FileText, Megaphone, Target,
   Flag, ArrowRight, Layers, HelpCircle, BarChart3, Radio, ShieldCheck,
   Palette, Smartphone, Send, Mail, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell, Lock, RotateCcw,
-  Youtube, Shield, Sliders, Trophy, Flame, Coins, Award, Crown, Radar, MousePointerClick, Camera, ShoppingBag, Gauge, Rocket
+  Youtube, Shield, Sliders, Trophy, Flame, Coins, Award, Crown, Radar, MousePointerClick, Camera, ShoppingBag, Gauge, Rocket, Clock, ShieldAlert
 } from 'lucide-react'
 import {
   generateValidationPlanAI,
@@ -27,7 +27,9 @@ import {
   recordGateDecision,
   updateCoLaunchProject,
   getFrontendUrl,
-  sendTaskReminder
+  sendTaskReminder,
+  generateCampaignSocialImage,
+  generateCampaignVideo
 } from '../../services/opsApi'
 import {
   parseMainPricingAmount,
@@ -351,6 +353,7 @@ export default function Phase1Validate({
   })
   const [isAnalyzingResponses, setIsAnalyzingResponses] = useState(false)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
   const [isGeneratingSurvey, setIsGeneratingSurvey] = useState(false)
 
   // Real Project Optimization Experiments
@@ -811,6 +814,87 @@ export default function Phase1Validate({
       showNotification('Failed to generate campaign assets.')
     } finally {
       setIsGeneratingCampaign(false)
+    }
+  }
+
+  const handleGeneratePostImage = async (customPrompt = null) => {
+    if (!project?.id) {
+      showNotification('Please save or select a valid project first.')
+      return
+    }
+    setIsGeneratingImage(true)
+    showNotification('🎨 Generating AI post graphic with Gemini 3.1 Flash Image...')
+    try {
+      const promptToUse = typeof customPrompt === 'string' && customPrompt.trim()
+        ? customPrompt.trim()
+        : (campaignKit?.announcementPost ? `Announcement graphic for: ${campaignKit.announcementPost.slice(0, 180)}` : undefined)
+      const res = await generateCampaignSocialImage(project.id, {
+        prompt: promptToUse
+      })
+      if (res?.success && res?.media) {
+        const nextKit = {
+          ...(campaignKit || {}),
+          postImageUrl: res.media.url,
+          postImageDataUrl: res.media.data_url,
+          postImagePrompt: res.media.prompt
+        }
+        setCampaignKit(nextKit)
+        if (onUpdateProject) {
+          onUpdateProject(curr => ({
+            ...(curr || {}),
+            campaignKit: nextKit,
+            metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: nextKit }
+          }))
+        }
+        showNotification('✨ AI post graphic generated with Gemini 3.1 & saved!')
+      } else {
+        throw new Error(res?.detail || 'Failed to generate image')
+      }
+    } catch (err) {
+      console.error('Image generation error:', err)
+      showNotification(`❌ Image generation failed: ${err.message || 'Please check API keys.'}`)
+    } finally {
+      setIsGeneratingImage(false)
+    }
+  }
+
+  const handleGenerateCampaignVideo = async (customPrompt = null) => {
+    if (!project?.id) {
+      showNotification('Please save or select a valid project first.')
+      return
+    }
+    setIsGeneratingVideo(true)
+    showNotification('🎬 Generating 60s teaser video with Veo 3.1 (veo-3.1-generate-preview)...')
+    try {
+      const promptToUse = typeof customPrompt === 'string' && customPrompt.trim()
+        ? customPrompt.trim()
+        : (campaignKit?.videoScript ? `Cinematic teaser video based on: ${campaignKit.videoScript.slice(0, 180)}` : undefined)
+      const res = await generateCampaignVideo(project.id, {
+        prompt: promptToUse
+      })
+      if (res?.success && res?.media) {
+        const nextKit = {
+          ...(campaignKit || {}),
+          videoUrl: res.media.url,
+          videoPrompt: res.media.prompt
+        }
+        setCampaignKit(nextKit)
+        if (onUpdateProject) {
+          onUpdateProject(curr => ({
+            ...(curr || {}),
+            campaignKit: nextKit,
+            metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: nextKit }
+          }))
+        }
+        showNotification('✅ 60s AI video generated with Veo 3.1 & saved!')
+      } else {
+        throw new Error(res?.detail || 'Failed to generate video')
+      }
+    } catch (err) {
+      console.error('Video generation error:', err)
+      showNotification(`❌ Video generation failed: ${err.message || 'Please check API keys.'}`)
+    } finally {
+      setIsGeneratingVideo(false)
     }
   }
 
@@ -1432,71 +1516,99 @@ export default function Phase1Validate({
   return (
     <div className="space-y-5 w-full max-w-full overflow-hidden">
       {/* 5-Step Phase 1 Progress Nav */}
-      <div className="p-2 rounded-2xl bg-slate-100/90 border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none min-w-0">
-          {[
-            { id: 'plan', label: '1. Plan', icon: FileText, isDone: isStep1Done, canAccess: canAccessStep1 },
-            { id: 'assets', label: '2. Assets', icon: Layout, isDone: isStep2Done, canAccess: canAccessStep2 },
-            { id: 'campaign', label: '3. Campaign', icon: Megaphone, isDone: isStep3Done, canAccess: canAccessStep3 },
-            { id: 'optimize', label: '4. Optimize', icon: TrendingUp, isDone: isStep4Done, canAccess: canAccessStep4 },
-            { id: 'gate', label: '5. Gate', icon: Flag, isDone: isStep5Done, canAccess: canAccessStep5 },
-          ].map(step => {
-            const Icon = step.icon
-            const isActive = activeStep === step.id
-            const isLocked = !step.canAccess
-            return (
-              <button
-                key={step.id}
-                onClick={() => handleStepChange(step.id)}
-                disabled={isLocked}
-                title={isLocked ? getStepMissingPrerequisiteText(step.id) : step.label}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
-                  isActive
-                    ? 'bg-slate-900 text-white shadow-xs border border-slate-900 cursor-pointer ring-2 ring-emerald-400/40'
-                    : step.isDone
-                    ? 'bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100/80 cursor-pointer font-bold shadow-2xs'
-                    : isLocked
-                    ? 'bg-slate-200/50 text-slate-400 border border-slate-200/80 cursor-not-allowed opacity-60'
-                    : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-50 border border-slate-200 cursor-pointer shadow-2xs'
-                }`}
-              >
-                {isLocked ? (
-                  <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                ) : step.isDone ? (
-                  <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                ) : (
-                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-slate-300' : 'text-slate-600'}`} />
-                )}
-                <span className={
-                  isActive
-                    ? 'text-white font-extrabold'
-                    : step.isDone
-                    ? 'text-emerald-950 font-bold'
-                    : isLocked
-                    ? 'text-slate-400 font-medium'
-                    : 'text-slate-800 font-bold'
-                }>
-                  {step.label}
-                </span>
-                {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0 ml-0.5" />
-                )}
-              </button>
-            )
-          })}
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-mono font-bold shadow-xs ring-1 ring-emerald-400/30">
-            <span className="text-[10px] text-slate-400 uppercase font-mono hidden md:inline">Execution Progress</span>
-            <span className="text-emerald-400 font-extrabold">
-              {[isStep1Done, isStep2Done, isStep3Done, isStep4Done, isStep5Done].filter(Boolean).length} of 5 Done
+      <div className="p-3 rounded-2xl bg-slate-100/90 border border-slate-200 shadow-2xs space-y-2.5">
+        {/* Top Row: Pipeline Title & Telemetry Badges */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-mono font-black uppercase tracking-wider text-slate-700">
+              Validation Sprint Pipeline
             </span>
           </div>
-          <div className="flex items-center justify-between sm:justify-end gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 shrink-0 shadow-2xs">
-            <span className="text-[10px] text-emerald-800 uppercase font-mono sm:hidden">Target Goal:</span>
-            <span className="flex items-center gap-1 font-mono font-extrabold"><DollarSign className="w-3.5 h-3.5 text-emerald-700 stroke-[2.5]" /> ${presalesRevenue.toLocaleString()} / ${presaleTarget.toLocaleString()}</span>
+
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-mono font-bold shadow-xs ring-1 ring-emerald-400/30">
+              <span className="text-[10px] text-slate-400 uppercase font-mono hidden md:inline">Execution Progress</span>
+              <span className="text-emerald-400 font-extrabold">
+                {[isStep1Done, isStep2Done, isStep3Done, isStep4Done, isStep5Done].filter(Boolean).length} of 5 Done
+              </span>
+            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 shrink-0 shadow-2xs">
+              <span className="text-[10px] text-slate-500 uppercase font-mono hidden sm:inline">Target Goal:</span>
+              <span className="flex items-center gap-1 font-mono font-extrabold text-slate-900">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" /> ${presalesRevenue.toLocaleString()} / ${presaleTarget.toLocaleString()}
+              </span>
+            </div>
           </div>
+        </div>
+
+        {/* Bottom Row: 5-Step Pipeline Roadmap (Full width, No horizontal scroll) */}
+        <div className="flex items-center justify-between gap-1 sm:gap-2">
+          {[
+            { id: 'plan', num: '01', label: '1. Plan', icon: FileText, isDone: isStep1Done, canAccess: canAccessStep1 },
+            { id: 'assets', num: '02', label: '2. Assets', icon: Layout, isDone: isStep2Done, canAccess: canAccessStep2 },
+            { id: 'campaign', num: '03', label: '3. Campaign', icon: Megaphone, isDone: isStep3Done, canAccess: canAccessStep3 },
+            { id: 'optimize', num: '04', label: '4. Optimize', icon: TrendingUp, isDone: isStep4Done, canAccess: canAccessStep4 },
+            { id: 'gate', num: '05', label: '5. Gate', icon: Flag, isDone: isStep5Done, canAccess: canAccessStep5 },
+          ].map((step, idx, arr) => {
+            const isActive = activeStep === step.id
+            const isLocked = !step.canAccess
+            const isDone = Boolean(step.isDone)
+
+            return (
+              <div key={step.id} className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0 last:flex-initial">
+                <button
+                  type="button"
+                  onClick={() => handleStepChange(step.id)}
+                  disabled={isLocked}
+                  title={isLocked ? getStepMissingPrerequisiteText(step.id) : step.label}
+                  className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-mono transition-all shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'bg-slate-900 text-white shadow-xs ring-2 ring-emerald-400/40 border border-slate-900 font-bold'
+                      : isDone
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100/80 font-semibold shadow-2xs'
+                      : isLocked
+                      ? 'bg-slate-200/50 text-slate-400 border border-slate-200/80 cursor-not-allowed opacity-60'
+                      : 'bg-slate-50 text-slate-600 hover:text-slate-950 hover:bg-white border border-slate-200 shadow-2xs'
+                  }`}
+                >
+                  {isActive ? (
+                    <>
+                      <span className="px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">
+                        STEP {step.num}
+                      </span>
+                      <span className="text-white font-sans font-extrabold whitespace-nowrap">{step.label}</span>
+                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5 shrink-0" />
+                    </>
+                  ) : isDone ? (
+                    <>
+                      <div className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </div>
+                      <span className="font-sans font-bold text-slate-900 whitespace-nowrap">{step.label}</span>
+                    </>
+                  ) : isLocked ? (
+                    <>
+                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="font-sans font-medium text-slate-500 whitespace-nowrap">{step.label}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-slate-400 font-bold">{step.num}</span>
+                      <span className="font-sans font-medium text-slate-600 whitespace-nowrap">{step.label}</span>
+                    </>
+                  )}
+                </button>
+                {idx < arr.length - 1 && (
+                  <div
+                    className={`flex-1 h-[2px] min-w-[8px] max-w-[48px] rounded-full shrink-0 ${
+                      isDone ? 'bg-emerald-400' : 'bg-slate-200'
+                    }`}
+                  />
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -2979,20 +3091,60 @@ export default function Phase1Validate({
               {campaignSubTab === 'post' && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                   {/* Left: High-Fidelity Social Media Card Mockup */}
-                  <div className="lg:col-span-7 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
+                  <div className="lg:col-span-7 space-y-2.5">
+                    <div className="flex items-center justify-between text-xs gap-2 flex-wrap">
                       <span className="font-bold text-slate-800 flex items-center gap-1.5">
                         <XLogo className="w-3.5 h-3.5 text-slate-900" />
                         <span>Visual Post Mockup (Official X Post Preview)</span>
                       </span>
-                      <span className="text-[10px] text-slate-500 font-mono">Dark mode feed preview with live media card</span>
+                      <button
+                        type="button"
+                        onClick={() => handleGeneratePostImage()}
+                        disabled={isGeneratingImage}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                        title="Generate realistic AI announcement graphic using Gemini 3.1 Flash Image"
+                      >
+                        {isGeneratingImage ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Generating Image...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-amber-950" />
+                            <span>{campaignKit?.postImageUrl ? 'Regenerate AI Image (Gemini 3.1)' : 'Generate AI Image (Gemini 3.1)'}</span>
+                          </>
+                        )}
+                      </button>
                     </div>
+
                     <PostVisualMockup
                       type="post"
                       project={project}
                       copyText={campaignKit?.announcementPost}
                       preorderUrl={`${origin}/preorder/${productSlug}`}
+                      imageUrl={campaignKit?.postImageUrl || campaignKit?.postImageDataUrl}
+                      isGeneratingImage={isGeneratingImage}
                     />
+
+                    {campaignKit?.postImageUrl && (
+                      <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 flex items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="text-amber-950 text-[11px] truncate">
+                            <strong>AI Graphic Active:</strong> Generated via <code className="font-mono text-amber-900 font-semibold">gemini-3.1-flash-image</code>
+                          </span>
+                        </div>
+                        <a
+                          href={campaignKit.postImageUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] font-bold text-amber-800 hover:text-amber-950 underline shrink-0 cursor-pointer"
+                        >
+                          View Full Graphic ↗
+                        </a>
+                      </div>
+                    )}
                   </div>
 
                   {/* Right: Copy & Caption Editor */}
@@ -3083,19 +3235,59 @@ export default function Phase1Validate({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                   {/* Left: 60-Second Video Player Mockup with Teleprompter */}
                   <div className="lg:col-span-7 space-y-2.5">
-                    <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center justify-between text-xs gap-2 flex-wrap">
                       <span className="font-bold text-slate-800 flex items-center gap-1.5">
                         <Video className="w-3.5 h-3.5 text-red-500" />
-                        <span>60-Second Video Player & Teleprompter Mockup</span>
+                        <span>60-Second Video Player &amp; Teleprompter Mockup</span>
                       </span>
-                      <span className="text-[10px] text-slate-500 font-mono">Shorts / Reels / Mid-Roll</span>
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateCampaignVideo()}
+                        disabled={isGeneratingVideo}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                        title="Generate realistic 60s AI teaser video using Veo 3.1"
+                      >
+                        {isGeneratingVideo ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Generating Video (Veo 3.1)...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-rose-200" />
+                            <span>{campaignKit?.videoUrl ? 'Regenerate AI Video (Veo 3.1)' : 'Generate AI Video (Veo 3.1)'}</span>
+                          </>
+                        )}
+                      </button>
                     </div>
+
                     <PostVisualMockup
                       type="video"
                       project={project}
                       copyText={campaignKit?.videoScript}
                       preorderUrl={`${origin}/preorder/${productSlug}`}
+                      videoUrl={campaignKit?.videoUrl}
+                      isGeneratingVideo={isGeneratingVideo}
                     />
+
+                    {campaignKit?.videoUrl && (
+                      <div className="p-2.5 rounded-xl bg-red-50/70 border border-red-200/80 flex items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="text-red-950 text-[11px] truncate">
+                            <strong>AI Video Active:</strong> Rendered via <code className="font-mono text-red-900 font-semibold">veo-3.1-generate-preview</code>
+                          </span>
+                        </div>
+                        <a
+                          href={campaignKit.videoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] font-bold text-red-700 hover:text-red-900 underline shrink-0 cursor-pointer"
+                        >
+                          Open Video ↗
+                        </a>
+                      </div>
+                    )}
                   </div>
 
                   {/* Right: Teleprompter Script Editor & Citation */}
@@ -3356,6 +3548,8 @@ export default function Phase1Validate({
                           project={project}
                           copyText={getTaskDraftContent(viewDraftTask)}
                           preorderUrl={`${origin}/preorder/${productSlug}`}
+                          imageUrl={campaignKit?.postImageUrl || campaignKit?.postImageDataUrl}
+                          videoUrl={campaignKit?.videoUrl}
                         />
                       </div>
                     ) : (
@@ -4366,15 +4560,15 @@ export default function Phase1Validate({
 
       {/* STEP 5: VALIDATION GATE */}
       {activeStep === 'gate' && (
-        <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-5">
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-6 text-slate-900">
           {/* Prerequisite Check Banner if prior steps are incomplete */}
           {!allPriorStepsDone && (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2.5 animate-fade-in shadow-lg shadow-amber-950/20">
-              <div className="flex items-center gap-2 font-bold text-amber-300">
-                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs space-y-2.5 animate-fade-in shadow-2xs">
+              <div className="flex items-center gap-2 font-bold text-amber-900">
+                <Lock className="w-4 h-4 text-amber-700 shrink-0" />
                 <span>Validation Gate is Locked: Prerequisite Steps Incomplete</span>
               </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
+              <p className="text-[11px] text-amber-800 leading-relaxed">
                 The Gate Checkpoint requires verified data, audience feedback, and campaign telemetry from Steps 1–4 before an executive MVP build decision can be made.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
@@ -4433,92 +4627,164 @@ export default function Phase1Validate({
             </div>
           )}
 
-          <div className="border-b border-white/[0.07] pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <span>5. Validation Gate Checkpoint</span>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase border ${
+          {/* Gate Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="p-2 rounded-xl bg-slate-900 text-white shadow-xs">
+                  <Flag className="w-4 h-4 text-emerald-400" />
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+                  5. Validation Gate Checkpoint
+                </h3>
+                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold tracking-wide uppercase border ${
                   !allPriorStepsDone
-                    ? 'bg-slate-800 text-slate-400 border-slate-700'
+                    ? 'bg-slate-100 text-slate-600 border-slate-200'
                     : isGatePassed
-                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                    : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                    : 'bg-amber-50 text-amber-900 border-amber-300'
                 }`}>
                   Result: {!allPriorStepsDone ? 'LOCKED' : isGatePassed ? 'PASS' : 'TEST AGAIN'}
                 </span>
-              </h3>
-              <p className="text-xs text-slate-400">
-                AI analyzes performance data and recommends next venture move. Human co-founders make the final decision.
+              </div>
+              <p className="text-xs text-slate-500 font-medium">
+                Synthesize campaign telemetry, verify buyer pre-orders, and execute the co-founder venture trajectory decision.
               </p>
             </div>
-            <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-              !allPriorStepsDone
-                ? 'bg-slate-800/80 text-slate-400 border border-slate-700'
-                : isGatePassed
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-extrabold'
-                : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
-            }`}>
-              Gate Status: {!allPriorStepsDone ? 'LOCKED (Prerequisites Pending)' : isGatePassed ? 'PASS (Ready for MVP Build)' : `${presaleTarget > 0 ? Math.round((presalesRevenue/presaleTarget)*100) : 0}% of Goal`}
-            </span>
+            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+              <span className={`text-xs font-mono font-bold px-3 py-1.5 rounded-xl border shadow-2xs flex items-center gap-1.5 ${
+                !allPriorStepsDone
+                  ? 'bg-slate-50 text-slate-500 border-slate-200'
+                  : isGatePassed
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold'
+                  : 'bg-amber-50 text-amber-900 border-amber-300 font-bold'
+              }`}>
+                {isGatePassed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : !allPriorStepsDone ? <Lock className="w-3.5 h-3.5 text-slate-400" /> : <Clock className="w-3.5 h-3.5 text-amber-600" />}
+                <span>Gate Status: {!allPriorStepsDone ? 'LOCKED (Prerequisites Required)' : isGatePassed ? 'PASS (Ready for MVP Build)' : `${presaleTarget > 0 ? Math.round((presalesRevenue/presaleTarget)*100) : 0}% of Goal`}</span>
+              </span>
+            </div>
           </div>
 
-          {/* AI Executive Summary Card */}
+          {/* Milestone Target Progress Bar */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2.5 shadow-2xs">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-slate-500" />
+                <span>Validation Revenue Threshold</span>
+              </span>
+              <span className="font-extrabold text-slate-900">
+                ${presalesRevenue.toLocaleString()}{' '}
+                <span className="text-slate-400 font-normal">
+                  / ${presaleTarget.toLocaleString()} target ({presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue/presaleTarget)*100)) : 0}%)
+                </span>
+              </span>
+            </div>
+            <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden p-0.5">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  isGatePassed
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                    : 'bg-gradient-to-r from-amber-500 to-emerald-500'
+                }`}
+                style={{ width: `${Math.max(2, Math.min(100, presaleTarget > 0 ? Math.round((presalesRevenue/presaleTarget)*100) : 0))}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Executive Telemetry Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-1.5 shadow-2xs hover:border-slate-300 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider">Goal</span>
+                <Target className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+              <span className="text-lg font-extrabold text-slate-900 block font-display">${presaleTarget.toLocaleString()}</span>
+              <span className="text-[11px] text-slate-500 font-medium block">14-day sprint target</span>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-1.5 shadow-2xs hover:border-slate-300 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider">Actual</span>
+                <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+              </div>
+              <span className={`text-lg font-extrabold block font-display ${presalesRevenue > 0 ? 'text-emerald-700' : 'text-slate-900'}`}>
+                ${presalesRevenue.toLocaleString()}
+              </span>
+              <span className="text-[11px] text-slate-500 font-medium block">
+                {reservations.length} paying backer{reservations.length === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-1.5 shadow-2xs hover:border-slate-300 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider">Conversion</span>
+                <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+              </div>
+              <span className="text-lg font-extrabold text-slate-900 block font-display">{dynamicConversionRate.toFixed(1)}%</span>
+              <span className="text-[11px] text-slate-500 font-medium block">Traffic-to-presale</span>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-1.5 shadow-2xs hover:border-slate-300 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider">Result</span>
+                {isGatePassed ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                ) : !allPriorStepsDone ? (
+                  <Lock className="w-3.5 h-3.5 text-slate-400" />
+                ) : (
+                  <Award className="w-3.5 h-3.5 text-amber-600" />
+                )}
+              </div>
+              <span className={`text-lg font-extrabold block font-display ${
+                isGatePassed ? 'text-emerald-700' : !allPriorStepsDone ? 'text-slate-500' : 'text-amber-700'
+              }`}>
+                {!allPriorStepsDone ? 'LOCKED' : isGatePassed ? 'PASS' : 'IN PROGRESS'}
+              </span>
+              <span className="text-[11px] text-slate-500 font-medium block">
+                {!allPriorStepsDone ? 'Prerequisites required' : isGatePassed ? 'Demand verified' : 'Awaiting target'}
+              </span>
+            </div>
+          </div>
+
+          {/* Strategic Recommendation Panel */}
+          <div className={`p-4 rounded-xl border flex items-start gap-3 text-xs leading-relaxed shadow-2xs ${
+            isGatePassed
+              ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+              : !allPriorStepsDone
+              ? 'bg-slate-50 border-slate-200 text-slate-700'
+              : 'bg-amber-50/80 border-amber-200 text-amber-950'
+          }`}>
+            <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+              isGatePassed ? 'bg-emerald-100 text-emerald-800' : !allPriorStepsDone ? 'bg-slate-200 text-slate-700' : 'bg-amber-100 text-amber-900'
+            }`}>
+              {isGatePassed ? <CheckCircle2 className="w-4 h-4" /> : !allPriorStepsDone ? <Lock className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+            </div>
+            <div className="space-y-1">
+              <strong className="font-bold block text-slate-900">
+                {!allPriorStepsDone
+                  ? 'Validation Prerequisites Incomplete'
+                  : isGatePassed
+                  ? 'Validation Target Achieved — Greenlight Ready'
+                  : 'Validation in Progress — Awaiting Target Revenue'}
+              </strong>
+              <p className="text-slate-600 text-xs">
+                {!allPriorStepsDone
+                  ? 'The Gate Checkpoint evaluates evidence gathered across the validation lifecycle. Please complete the plan, asset review, creator campaign sprint, and optimization steps before making a final gate decision.'
+                  : isGatePassed
+                  ? `The willingness-to-pay threshold of $${presaleTarget.toLocaleString()} was achieved with verified audience demand and a ${dynamicConversionRate.toFixed(1)}% conversion rate. You are ready to advance to Phase 2: Build MVP.`
+                  : `Collected $${presalesRevenue.toLocaleString()} across ${reservations.length} reservations toward the $${presaleTarget.toLocaleString()} goal. You can test additional messaging/pricing experiments in Step 4, or make an executive decision below.`}
+              </p>
+            </div>
+          </div>
+
+          {/* Co-Founder Decision Controls */}
           <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 shadow-2xs">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>AI Validation Gate Summary</span>
-              </span>
-              <span className="text-[10px] font-mono text-slate-500">
-                Validation Sprint Analysis
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Goal</span>
-                <span className="text-base font-extrabold text-slate-900 block font-display">${presaleTarget.toLocaleString()} presales</span>
-                <span className="text-[10px] text-slate-500">14-day window</span>
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900">Co-Founder Executive Decision</span>
               </div>
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
-                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Actual</span>
-                <span className="text-base font-extrabold text-emerald-700 block font-display">${presalesRevenue.toLocaleString()}</span>
-                <span className="text-[10px] text-emerald-700">{reservations.length} paying backers</span>
-              </div>
-              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Conversion</span>
-                <span className="text-base font-extrabold text-slate-900 block font-display">{dynamicConversionRate.toFixed(1)}%</span>
-                <span className="text-[10px] text-slate-500">Traffic-to-presale</span>
-              </div>
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
-                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Result</span>
-                <span className="text-base font-extrabold text-emerald-700 block font-display">{!allPriorStepsDone ? 'LOCKED' : isGatePassed ? 'PASS' : 'IN PROGRESS'}</span>
-                <span className="text-[10px] text-emerald-700">{!allPriorStepsDone ? 'Prerequisites Required' : isGatePassed ? 'Demand Proven' : 'Awaiting Target'}</span>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-700 leading-relaxed bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-              {!allPriorStepsDone ? (
-                <span>
-                  🔒 <strong>Validation Prerequisites Incomplete:</strong> The Gate checkpoint evaluates evidence gathered across the validation lifecycle. Please complete the validation plan, asset review, creator campaign sprint, and optimization steps before making a final gate decision.
-                </span>
-              ) : isGatePassed ? (
-                <span>
-                  🔥 <strong>Validation Successful:</strong> The customer willingness-to-pay threshold of ${presaleTarget.toLocaleString()} was achieved with strong audience demand and an estimated {dynamicConversionRate.toFixed(1)}% conversion rate. The AI engine recommends immediately advancing to <strong>Phase 2: Build MVP</strong>.
-                </span>
-              ) : (
-                <span>
-                  ℹ️ <strong>Validation in Progress:</strong> Collected ${presalesRevenue.toLocaleString()} across {reservations.length} reservations. Continue running the creator campaign and testing experiments in Step 4 to cross the threshold, or make an executive decision below.
-                </span>
-              )}
-            </p>
-          </div>
-
-          {/* Human Decision Controls */}
-          <div className="p-5 rounded-2xl bg-[#161a23] border border-white/[0.08] space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-white block">Human Co-Founder Decision:</span>
-              <span className="text-[10px] text-slate-400">Choose one path to progress</span>
+              <span className="text-[11px] font-mono text-slate-500">Choose one path to progress</span>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
@@ -4573,26 +4839,37 @@ export default function Phase1Validate({
                     setIsAdvancingPhase(false)
                   }
                 }}
-                className={`py-3 px-4 rounded-xl font-extrabold text-xs flex flex-col items-center justify-center gap-1 shadow-lg transition-all border ${
+                className={`py-3.5 px-4 rounded-xl font-extrabold text-xs flex flex-col items-center justify-center gap-1.5 shadow-sm transition-all border ${
                   allPriorStepsDone
                     ? isAdvancingPhase
-                      ? 'bg-emerald-700/80 text-white shadow-emerald-950/50 cursor-wait border-emerald-400/50'
-                      : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/50 active:scale-95 cursor-pointer border-emerald-400/40'
-                    : 'bg-slate-800/80 text-slate-500 border-slate-700/60 shadow-none cursor-not-allowed opacity-50'
+                      ? 'bg-emerald-700 text-white cursor-wait border-emerald-600'
+                      : isGatePassed
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white active:scale-98 cursor-pointer border-emerald-500 shadow-emerald-950/20'
+                      : 'bg-slate-900 hover:bg-slate-800 text-white active:scale-98 cursor-pointer border-slate-900'
+                    : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
                 }`}
                 title={!allPriorStepsDone ? 'Complete Steps 1–4 before advancing to Phase 2' : 'Advance to Phase 2 Sprints'}
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   {isAdvancingPhase ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
                   ) : !allPriorStepsDone ? (
-                    <Lock className="w-4 h-4 text-slate-500" />
+                    <Lock className="w-4 h-4 text-slate-400" />
                   ) : (
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className={`w-4 h-4 ${isGatePassed ? 'text-white' : 'text-emerald-400'}`} />
                   )}
-                  <span>{isAdvancingPhase ? 'Advancing to Phase 2...' : 'Build MVP (PASS)'}</span>
+                  <span className="font-extrabold text-white text-xs">
+                    {isAdvancingPhase ? 'Advancing to Phase 2...' : isGatePassed ? 'Build MVP (PASS)' : 'Build MVP (Override)'}
+                  </span>
+                  {allPriorStepsDone && (
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide ${
+                      isGatePassed ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-300'
+                    }`}>
+                      {isGatePassed ? 'RECOMMENDED' : 'MANUAL PASS'}
+                    </span>
+                  )}
                 </div>
-                <span className={allPriorStepsDone ? 'text-[10px] font-normal text-emerald-100/80' : 'text-[10px] font-normal text-slate-500'}>
+                <span className={allPriorStepsDone ? 'text-[10px] font-normal text-slate-300' : 'text-[10px] font-normal text-slate-400'}>
                   {isAdvancingPhase
                     ? 'Setting up Phase 2 Engineering Workspace...'
                     : allPriorStepsDone
@@ -4638,17 +4915,22 @@ export default function Phase1Validate({
                     setIsIteratingGate(false)
                   }
                 }}
-                className="py-3 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 hover:text-white border border-white/[0.1] text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="py-3.5 px-4 rounded-xl bg-white hover:bg-amber-50 text-slate-900 border border-amber-300 hover:border-amber-400 shadow-2xs font-extrabold text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   {isIteratingGate ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
                   ) : (
-                    <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                    <RefreshCw className="w-4 h-4 text-amber-600" />
                   )}
-                  <span>{isIteratingGate ? 'Resetting Sprint...' : 'Test Again (Iterate)'}</span>
+                  <span className="font-extrabold text-slate-900 text-xs">
+                    {isIteratingGate ? 'Resetting Sprint...' : 'Test Again (Iterate)'}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[9px] font-extrabold uppercase tracking-wide">
+                    {!isGatePassed ? 'RECOMMENDED' : 'ITERATE'}
+                  </span>
                 </div>
-                <span className="text-[10px] font-normal text-slate-400">
+                <span className="text-[10px] font-normal text-slate-600">
                   {isIteratingGate ? 'Preparing fresh experiments...' : 'Run fresh messaging/pricing'}
                 </span>
               </button>
@@ -4691,17 +4973,22 @@ export default function Phase1Validate({
                     }
                   }
                 }}
-                className="py-3 px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="py-3.5 px-4 rounded-xl bg-white hover:bg-rose-50 text-slate-900 border border-rose-300 hover:border-rose-400 shadow-2xs font-extrabold text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   {isArchivingProject ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" />
+                    <Loader2 className="w-4 h-4 animate-spin text-rose-600" />
                   ) : (
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4 text-rose-600" />
                   )}
-                  <span>{isArchivingProject ? 'Archiving Venture...' : 'Kill (Archive)'}</span>
+                  <span className="font-extrabold text-slate-900 text-xs">
+                    {isArchivingProject ? 'Archiving Venture...' : 'Kill (Archive)'}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[9px] font-extrabold uppercase tracking-wide">
+                    ARCHIVE
+                  </span>
                 </div>
-                <span className="text-[10px] font-normal text-red-400/70">
+                <span className="text-[10px] font-normal text-slate-600">
                   {isArchivingProject ? 'Logging audit & refund logs...' : 'Wind down & refund backers'}
                 </span>
               </button>

@@ -50,6 +50,11 @@ export default defineConfig(({ mode }) => {
             })
           },
         },
+        // Static generated media files (Veo videos, Gemini images)
+        '/static': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
 
       },
     },
