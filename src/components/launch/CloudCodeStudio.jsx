@@ -7,9 +7,9 @@ import {
   Search, X, FileText, CheckCheck, Loader2, ArrowRight, Cloud,
   CloudUpload, Activity, SlidersHorizontal, RotateCcw,
   Monitor, Tablet, Smartphone, Split,
-  Image as ImageIcon, ZoomIn, ZoomOut
+  Image as ImageIcon, ZoomIn, ZoomOut, Video as VideoIcon, Film
 } from 'lucide-react'
-import { executeAICodingTaskAI, generateCompleteMVPCodebaseAI, editOrGenerateCodeFileAI } from '../../services/ai'
+import { executeAICodingTaskAI, generateCompleteMVPCodebaseAI, editOrGenerateCodeFileAI, buildSmartFallbackCodebase } from '../../services/ai'
 import { uploadFormFileToCloudinary, updateCoLaunchProject } from '../../services/opsApi'
 import AutomatedQASuite from './AutomatedQASuite'
 
@@ -225,7 +225,31 @@ export default function CloudCodeStudio({
   const prodName = project?.productName || 'Creator Forge Engine'
   const prodSlug = (project?.slug || project?.productName || 'app').toLowerCase().replace(/[^a-z0-9]/g, '-')
 
-  // 1. Initialize files strictly from DB (project.projectFiles), localStorage, or AI task outputs
+  // Detect Phase 1 marketing media assets (promo graphics, teaser videos)
+  const isMarketingMediaAsset = (f) => {
+    if (!f) return false
+    const name = (f.name || f.path || '').toLowerCase()
+    const cat = (f.category || '').toLowerCase()
+    const folder = (f.folder || '').toLowerCase()
+    const url = (f.url || f.cloudinaryUrl || '').toLowerCase()
+    return (
+      cat === 'campaign_media' ||
+      cat === 'video' ||
+      cat === 'image' ||
+      name.includes('campaign announcement') ||
+      name.includes('campaign launch teaser') ||
+      name.includes('teaser video') ||
+      folder.includes('creators') ||
+      folder.includes('campaign') ||
+      f.type === 'mp4' ||
+      f.type === 'png' ||
+      name.endsWith('.mp4') ||
+      url.includes('/video/upload/') ||
+      (url.includes('/image/upload/') && !name.endsWith('.svg') && !name.endsWith('.ico'))
+    )
+  }
+
+  // 1. Initialize files: Isolate marketing media, load or auto-scaffold full MVP codebase
   const extractInitialFiles = () => {
     const existing = []
 
@@ -247,26 +271,38 @@ export default function CloudCodeStudio({
       }
     }
 
-    if (sourceFiles.length > 0) {
-      sourceFiles.forEach(f => {
-        if (f && (f.name || f.path)) {
-          const path = f.path || f.name
-          const name = f.name || (path ? path.split('/').pop() : 'script.js')
-          existing.push({
-            id: f.id || `file-${name}`,
-            path,
-            name,
-            folder: f.folder || (path && path.includes('/') ? path.split('/').slice(0, -1).join('/') : 'root'),
-            category: f.category || 'Code',
-            language: f.language || (name.endsWith('.py') ? 'python' : name.endsWith('.json') ? 'json' : name.endsWith('.md') ? 'markdown' : name.endsWith('.html') ? 'html' : name.endsWith('.css') ? 'css' : 'javascript'),
-            author: f.author || (f.assignedTo === 'Human Engineer' ? 'Human Engineer' : 'AI Agent'),
-            modified: false,
-            content: f.content || '',
-            cloudinaryUrl: f.cloudinaryUrl || f.url || null,
-            publicId: f.publicId || null,
-            updatedAt: f.updatedAt || new Date().toISOString()
-          })
+    const rawCodeFiles = []
+    const rawMarketingAssets = []
+
+    sourceFiles.forEach(f => {
+      if (f && (f.name || f.path)) {
+        if (isMarketingMediaAsset(f)) {
+          rawMarketingAssets.push(f)
+        } else {
+          rawCodeFiles.push(f)
         }
+      }
+    })
+
+    // Add valid codebase files
+    if (rawCodeFiles.length > 0) {
+      rawCodeFiles.forEach(f => {
+        const path = f.path || f.name
+        const name = f.name || (path ? path.split('/').pop() : 'script.js')
+        existing.push({
+          id: f.id || `file-${name}`,
+          path,
+          name,
+          folder: f.folder || (path && path.includes('/') ? path.split('/').slice(0, -1).join('/') : 'root'),
+          category: f.category || 'Code',
+          language: f.language || (name.endsWith('.py') ? 'python' : name.endsWith('.json') ? 'json' : name.endsWith('.md') ? 'markdown' : name.endsWith('.html') ? 'html' : name.endsWith('.css') ? 'css' : 'javascript'),
+          author: f.author || (f.assignedTo === 'Human Engineer' ? 'Human Engineer' : 'AI Agent'),
+          modified: false,
+          content: f.content || '',
+          cloudinaryUrl: f.cloudinaryUrl || f.url || null,
+          publicId: f.publicId || null,
+          updatedAt: f.updatedAt || new Date().toISOString()
+        })
       })
     }
 
@@ -303,12 +339,59 @@ export default function CloudCodeStudio({
       })
     }
 
+    // CRITICAL: If no codebase files exist, auto-synthesize complete MVP codebase for the venture!
+    if (existing.length === 0) {
+      const scaffold = buildSmartFallbackCodebase(project)
+      scaffold.forEach((sf, idx) => {
+        existing.push({
+          id: `ai-gen-file-${Date.now()}-${idx}`,
+          path: sf.path,
+          name: sf.name,
+          folder: sf.folder,
+          category: sf.category,
+          language: sf.language,
+          author: 'AI Agent',
+          modified: false,
+          content: sf.content,
+          cloudinaryUrl: null,
+          publicId: null,
+          updatedAt: new Date().toISOString()
+        })
+      })
+    }
+
+    // Cleanly place Phase 1 marketing assets under assets/campaign
+    rawMarketingAssets.forEach(f => {
+      const rawName = f.name || f.path || 'Campaign Asset'
+      const isVid = f.type === 'mp4' || rawName.toLowerCase().includes('video') || (f.url && f.url.includes('/video/'))
+      const ext = isVid ? '.mp4' : '.png'
+      const cleanName = rawName.endsWith('.mp4') || rawName.endsWith('.png') || rawName.endsWith('.jpg')
+        ? rawName
+        : `${rawName}${ext}`
+      const assetPath = `assets/campaign/${cleanName}`
+      existing.push({
+        id: f.id || `campaign-${cleanName}`,
+        path: assetPath,
+        name: cleanName,
+        folder: 'assets/campaign',
+        category: isVid ? 'Video' : 'Asset',
+        language: isVid ? 'video' : 'image',
+        author: 'Phase 1 Marketing Kit',
+        modified: false,
+        content: f.content || f.url || '',
+        cloudinaryUrl: f.cloudinaryUrl || f.url || null,
+        publicId: f.public_id || f.publicId || null,
+        updatedAt: f.updatedAt || new Date().toISOString()
+      })
+    })
+
     return existing
   }
 
   const [files, setFiles] = useState(extractInitialFiles)
-  const [activeFileId, setActiveFileId] = useState(() => files[0]?.id || null)
-  const [openTabIds, setOpenTabIds] = useState(() => (files[0] ? [files[0].id] : []))
+  const initialCodeFile = files.find(f => !isMarketingMediaAsset(f)) || files[0]
+  const [activeFileId, setActiveFileId] = useState(() => initialCodeFile?.id || null)
+  const [openTabIds, setOpenTabIds] = useState(() => (initialCodeFile ? [initialCodeFile.id] : []))
   const [fileSearch, setFileSearch] = useState('')
   const [isAiPrompting, setIsAiPrompting] = useState(false)
   const [aiPromptText, setAiPromptText] = useState('')
@@ -323,6 +406,7 @@ export default function CloudCodeStudio({
   const [collapsedFolders, setCollapsedFolders] = useState({})
   const lineNumbersRef = React.useRef(null)
   const textareaRef = React.useRef(null)
+  const hasTriggeredInitialSync = React.useRef(false)
 
   const handleEditorScroll = (e) => {
     if (lineNumbersRef.current) {
@@ -350,8 +434,25 @@ export default function CloudCodeStudio({
   const [svgViewMode, setSvgViewMode] = useState('preview') // 'preview' | 'code'
 
   const activeFile = files.find(f => f.id === activeFileId) || files[0] || null
+
+  const isVideoFile = Boolean(
+    activeFile &&
+    (
+      activeFile.name?.toLowerCase().endsWith('.mp4') ||
+      activeFile.name?.toLowerCase().endsWith('.webm') ||
+      activeFile.name?.toLowerCase().endsWith('.mov') ||
+      activeFile.type === 'mp4' ||
+      activeFile.category === 'Video' ||
+      activeFile.category === 'video' ||
+      activeFile.language === 'video' ||
+      activeFile.name?.toLowerCase().includes('teaser video') ||
+      (activeFile.cloudinaryUrl && activeFile.cloudinaryUrl.includes('/video/upload/'))
+    )
+  )
+
   const isImageFile = Boolean(
     activeFile &&
+    !isVideoFile &&
     (
       activeFile.name?.toLowerCase().endsWith('.png') ||
       activeFile.name?.toLowerCase().endsWith('.jpg') ||
@@ -363,13 +464,16 @@ export default function CloudCodeStudio({
       activeFile.name?.toLowerCase().endsWith('.avif') ||
       activeFile.name?.toLowerCase().endsWith('.bmp') ||
       activeFile.category === 'Asset' ||
-      activeFile.category === 'Image'
+      activeFile.category === 'Image' ||
+      activeFile.language === 'image' ||
+      activeFile.name?.toLowerCase().includes('announcement graphic')
     )
   )
 
   const isWebPreviewable = Boolean(
     activeFile &&
     !isImageFile &&
+    !isVideoFile &&
     (
       activeFile.name?.toLowerCase().endsWith('.html') ||
       activeFile.name?.toLowerCase().endsWith('.htm') ||
@@ -400,15 +504,118 @@ export default function CloudCodeStudio({
     return ''
   }
 
+  const getFileVideoSrc = (file) => {
+    if (!file) return ''
+    if (file.cloudinaryUrl) return file.cloudinaryUrl
+    if (file.url) return file.url
+    if (file.content) {
+      const trimmed = file.content.trim()
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:video/')) {
+        return trimmed
+      }
+    }
+    return ''
+  }
+
+  // Batch upload codebase files to Cloudinary CDN in the background
+  const syncCodebaseFilesToCloudinary = async (filesToSync) => {
+    if (!Array.isArray(filesToSync) || filesToSync.length === 0) return
+    const needSync = filesToSync.filter(f => !f.cloudinaryUrl && f.content && !isMarketingMediaAsset(f))
+    if (needSync.length === 0) return
+
+    setIsUploadingCloudinary(true)
+    setTerminalLogs(prev => [
+      ...prev,
+      `[cloudinary] ☁️ Uploading ${needSync.length} codebase files to Cloudinary CDN...`
+    ])
+
+    let currentList = [...filesToSync]
+    let syncedCount = 0
+
+    for (const f of needSync) {
+      try {
+        const blob = new Blob([f.content || ''], { type: 'text/plain;charset=utf-8' })
+        const fileName = f.name || 'script.js'
+        const fileObj = new File([blob], fileName, { type: 'text/plain' })
+        const folderPath = `creator_forge/${project?.id || prodSlug}/codebase/${f.folder || 'root'}`
+
+        const cloudRes = await uploadFormFileToCloudinary(fileObj, folderPath, project?.id)
+        if (cloudRes?.secure_url || cloudRes?.url) {
+          const cldUrl = cloudRes.secure_url || cloudRes.url
+          const pubId = cloudRes.public_id || null
+          currentList = currentList.map(item => item.id === f.id ? { ...item, cloudinaryUrl: cldUrl, publicId: pubId } : item)
+          setFiles(currentList)
+          syncedCount++
+          setTerminalLogs(prev => [
+            ...prev,
+            `[cloudinary] ✓ ${f.path} synced to Cloudinary CDN!`
+          ])
+        }
+      } catch (err) {
+        console.warn(`[Cloudinary] Codebase sync notice for ${f.path}:`, err)
+      }
+    }
+
+    setIsUploadingCloudinary(false)
+
+    // Save final merged list with CDN URLs to Parent, DB, and LocalStorage
+    const finalPayload = currentList.map(f => ({
+      id: f.id,
+      name: f.name,
+      path: f.path,
+      folder: f.folder,
+      category: f.category,
+      language: f.language,
+      author: f.author,
+      content: f.content,
+      cloudinaryUrl: f.cloudinaryUrl || null,
+      publicId: f.publicId || null,
+      updatedAt: f.updatedAt
+    }))
+
+    if (onSaveProjectFiles) onSaveProjectFiles(finalPayload)
+    if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), projectFiles: finalPayload }))
+    if (project?.id) updateCoLaunchProject(project.id, { projectFiles: finalPayload }).catch(() => {})
+
+    try {
+      const activeProjRaw = localStorage.getItem('forge_launch_active_project')
+      const activeProj = activeProjRaw ? JSON.parse(activeProjRaw) : (project || {})
+      const updatedProj = { ...activeProj, projectFiles: finalPayload }
+      localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProj))
+      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProj }))
+    } catch (e) {}
+
+    if (syncedCount > 0) {
+      setTerminalLogs(prev => [
+        ...prev,
+        `[cloudinary] ☁️ Codebase CDN sync complete: ${syncedCount} files saved to Cloudinary!`
+      ])
+      showToast?.(`Codebase saved & synced to Cloudinary CDN!`)
+    }
+  }
+
+  // Trigger auto-sync once on mount if any code files need Cloudinary upload
+  useEffect(() => {
+    if (!hasTriggeredInitialSync.current && files.length > 0) {
+      const unSynced = files.filter(f => !f.cloudinaryUrl && f.content && !isMarketingMediaAsset(f))
+      if (unSynced.length > 0) {
+        hasTriggeredInitialSync.current = true
+        syncCodebaseFilesToCloudinary(files)
+      }
+    }
+  }, [])
+
   // Keep internal state in sync with parent project.projectFiles on initial load
   useEffect(() => {
     if (Array.isArray(project?.projectFiles) && project.projectFiles.length > 0) {
-      if (files.length === 0) {
+      const codeFilesInProp = project.projectFiles.filter(f => !isMarketingMediaAsset(f))
+      if (codeFilesInProp.length > 0 && files.filter(f => !isMarketingMediaAsset(f)).length === 0) {
         const extracted = extractInitialFiles()
         if (extracted.length > 0) {
           setFiles(extracted)
-          setActiveFileId(extracted[0].id)
-          setOpenTabIds([extracted[0].id])
+          const firstCode = extracted.find(f => !isMarketingMediaAsset(f)) || extracted[0]
+          setActiveFileId(firstCode.id)
+          setOpenTabIds([firstCode.id])
         }
       }
     }
@@ -651,28 +858,32 @@ export default function CloudCodeStudio({
           name: gf.name || (gf.path ? gf.path.split('/').pop() : `file_${idx}.js`),
           folder: gf.folder || (gf.path && gf.path.includes('/') ? gf.path.split('/').slice(0, -1).join('/') : 'root'),
           category: gf.category || 'Code',
-          language: gf.language || (gf.name?.endsWith('.py') ? 'python' : 'javascript'),
+          language: gf.language || (gf.name?.endsWith('.py') ? 'python' : gf.name?.endsWith('.json') ? 'json' : gf.name?.endsWith('.md') ? 'markdown' : gf.name?.endsWith('.html') ? 'html' : gf.name?.endsWith('.css') ? 'css' : 'javascript'),
           author: 'AI Agent',
           modified: false,
           content: gf.content || '',
+          cloudinaryUrl: null,
+          publicId: null,
           updatedAt: new Date().toISOString()
         }))
 
-        setFiles(formatted)
+        // Keep any existing Phase 1 marketing assets intact
+        const marketingAssets = files.filter(f => isMarketingMediaAsset(f))
+        const mergedList = [...formatted, ...marketingAssets]
+
+        setFiles(mergedList)
         setActiveFileId(formatted[0].id)
         setOpenTabIds([formatted[0].id, formatted[1]?.id].filter(Boolean))
-
-        // Auto-save to Cloudinary & Database in background
-        if (project?.id) {
-          updateCoLaunchProject(project.id, { projectFiles: formatted }).catch(() => {})
-        }
 
         setTerminalLogs(prev => [
           ...prev,
           `[architect] ✓ Successfully generated ${formatted.length} codebase files for ${prodName}!`,
-          `[storage] Codebase synced to Cloudinary & Project Database.`
+          `[cloudinary] Uploading codebase to Cloudinary CDN in background...`
         ])
-        showToast?.(`Generated ${formatted.length} codebase files successfully!`)
+
+        // Immediately trigger Cloudinary upload for newly synthesized files
+        syncCodebaseFilesToCloudinary(mergedList)
+        showToast?.(`Generated ${formatted.length} codebase files!`)
       }
     } catch (err) {
       console.warn('AI Codebase error:', err)
@@ -810,6 +1021,25 @@ export default function CloudCodeStudio({
 
         {/* Right Actions Toolbar */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={handleGenerateFullCodebaseWithAI}
+            disabled={isGeneratingAll || isUploadingCloudinary}
+            className="px-2.5 py-1 rounded-md bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-white border border-blue-500/40 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-xs"
+            title="Synthesize and scaffold complete multi-file MVP codebase with AI and sync to Cloudinary"
+          >
+            {isGeneratingAll ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                <span>Synthesizing...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                <span>AI Scaffold Codebase</span>
+              </>
+            )}
+          </button>
+
           <button
             onClick={() => setIsNewFileModalOpen(true)}
             className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0"
@@ -1022,8 +1252,10 @@ export default function CloudCodeStudio({
                                   }`}
                                 >
                                   <div className="flex items-center gap-1.5 min-w-0">
-                                    {file.name.match(/\.(png|jpg|jpeg|webp|svg|gif|ico|avif)$/i) ? (
+                                    {file.name.match(/\.(png|jpg|jpeg|webp|svg|gif|ico|avif)$/i) || file.category === 'Asset' || file.category === 'Image' ? (
                                       <ImageIcon className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                                    ) : file.name.match(/\.(mp4|webm|mov|mkv)$/i) || file.category === 'Video' || file.language === 'video' ? (
+                                      <VideoIcon className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                                     ) : (
                                       <FileCode className={`w-3.5 h-3.5 shrink-0 ${
                                         file.name.endsWith('.jsx') || file.name.endsWith('.js')
@@ -1034,6 +1266,10 @@ export default function CloudCodeStudio({
                                           ? 'text-emerald-400'
                                           : file.name.endsWith('.html')
                                           ? 'text-orange-400'
+                                          : file.name.endsWith('.css')
+                                          ? 'text-cyan-400'
+                                          : file.name.endsWith('.md')
+                                          ? 'text-indigo-400'
                                           : 'text-slate-400'
                                       }`} />
                                     )}
@@ -1136,6 +1372,7 @@ export default function CloudCodeStudio({
                     if (!file) return null
                     const isActive = file.id === activeFileId
                     const isImg = file.name?.match(/\.(png|jpg|jpeg|webp|svg|gif|ico|avif)$/i) || file.category === 'Asset' || file.category === 'Image'
+                    const isVid = file.name?.match(/\.(mp4|webm|mov|mkv)$/i) || file.category === 'Video' || file.language === 'video'
                     return (
                       <div
                         key={file.id}
@@ -1152,7 +1389,9 @@ export default function CloudCodeStudio({
                           <div className="absolute top-0 left-0 right-0 h-[2px] bg-blue-500"></div>
                         )}
 
-                        {isImg ? (
+                        {isVid ? (
+                          <VideoIcon className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                        ) : isImg ? (
                           <ImageIcon className="w-3.5 h-3.5 text-pink-400 shrink-0" />
                         ) : (
                           <FileCode className="w-3.5 h-3.5 text-blue-400 shrink-0" />
@@ -1253,7 +1492,7 @@ export default function CloudCodeStudio({
               ) : (
                 <>
                   {/* Code Assistant Bar (Only for Code / Text / Script files) */}
-                  {!isImageFile && (
+                  {!isImageFile && !isVideoFile && (
                     <div className="px-3 py-1.5 bg-[#0b0d13] border-b border-white/[0.08] shrink-0">
                       <form onSubmit={handleAiRefactorActiveFile} className="flex items-center gap-2">
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/[0.08] text-slate-300 text-[11px] font-medium shrink-0">
@@ -1290,8 +1529,60 @@ export default function CloudCodeStudio({
                     </div>
                   )}
 
-                  {/* Main Editor / Image Preview Surface */}
-                  {isImageFile && (svgViewMode === 'preview' || !activeFile?.name?.toLowerCase().endsWith('.svg')) ? (
+                  {/* Main Editor / Video Player / Image Preview Surface */}
+                  {isVideoFile ? (
+                    <div className="flex-1 flex flex-col bg-[#06080a] overflow-hidden relative">
+                      {/* Video Viewer Toolbar */}
+                      <div className="h-10 bg-[#0c0e14] border-b border-white/[0.06] px-3 flex items-center justify-between text-xs shrink-0 select-none gap-2">
+                        <div className="flex items-center gap-2 font-mono min-w-0">
+                          <VideoIcon className="w-4 h-4 text-purple-400 shrink-0" />
+                          <span className="text-white font-bold text-xs truncate max-w-[200px] sm:max-w-xs md:max-w-md" title={activeFile.name}>
+                            {activeFile.name}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 uppercase font-mono shrink-0">
+                            MP4 Video
+                          </span>
+                          {activeFile.cloudinaryUrl && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 shrink-0">
+                              <Cloud className="w-3 h-3 text-emerald-400" />
+                              <span className="hidden sm:inline">CDN Synced</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {getFileVideoSrc(activeFile) && (
+                            <a
+                              href={getFileVideoSrc(activeFile)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-2.5 py-1 rounded bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+                            >
+                              <span>Open in Cloudinary CDN</span>
+                              <ExternalLink className="w-3.5 h-3.5 text-purple-400" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Video Player Canvas */}
+                      <div className="flex-1 overflow-auto flex items-center justify-center p-6 bg-[#06080a]">
+                        <div className="max-w-3xl w-full bg-[#0c0e14] rounded-2xl border border-white/[0.08] p-4 flex flex-col items-center gap-4 shadow-2xl">
+                          <video
+                            controls
+                            autoPlay={false}
+                            playsInline
+                            src={getFileVideoSrc(activeFile)}
+                            className="w-full max-h-[460px] rounded-xl bg-black border border-white/[0.06] shadow-xl"
+                          />
+                          <div className="w-full flex items-center justify-between text-xs text-slate-400 font-mono pt-1 border-t border-white/[0.04]">
+                            <span className="text-slate-300 font-semibold">{activeFile.name}</span>
+                            <span className="text-purple-400 font-semibold">Phase 1 Campaign Video Teaser</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : isImageFile && (svgViewMode === 'preview' || !activeFile?.name?.toLowerCase().endsWith('.svg')) ? (
                     <div className="flex-1 flex flex-col bg-[#06080a] overflow-hidden relative">
                       {/* Image Viewer Toolbar */}
                       <div className="h-10 bg-[#0c0e14] border-b border-white/[0.06] px-3 flex items-center justify-between text-xs shrink-0 select-none gap-2">

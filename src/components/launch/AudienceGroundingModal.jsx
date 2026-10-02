@@ -164,7 +164,7 @@ export default function AudienceGroundingModal({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Verified Creator Voice · 99.4% Match</span>
+                <span>Verified Creator Voice</span>
               </span>
               <span className="text-[11px] text-slate-500 font-mono">
                 {product} × {creator}

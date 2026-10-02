@@ -1291,28 +1291,12 @@ partnerships@creatorforge.com`
 
                   {/* AUDIENCE INTELLIGENCE & DATA GROUNDING BANNER (Anti-AI Slop & Proof) */}
                   <div className="p-4 rounded-xl border border-emerald-500/25 bg-emerald-50/50 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-2.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="font-extrabold text-xs text-slate-950 flex items-center gap-1.5">
-                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                          <span>Grounded in Creator Audience Data</span>
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                          Verified Creator Voice · 99.4% Match
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAudienceIntelModalTab('transcripts')
-                          setShowAudienceIntelModal(true)
-                        }}
-                        className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer transition-colors"
-                      >
-                        <span>Inspect Transcripts & Evidence Citations</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="flex items-center gap-2 border-b border-emerald-500/20 pb-2.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="font-extrabold text-xs text-slate-950 flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        <span>Grounded in Creator Audience Data</span>
+                      </span>
                     </div>
 
                     <p className="text-[11px] text-slate-700 leading-relaxed">

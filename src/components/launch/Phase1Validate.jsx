@@ -7,7 +7,7 @@ import {
   Flag, ArrowRight, Layers, HelpCircle, BarChart3, Radio, ShieldCheck,
   Palette, Smartphone, Send, Mail, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell, Lock, RotateCcw,
   Youtube, Shield, Sliders, Trophy, Flame, Coins, Award, Crown, Radar, MousePointerClick, Camera, ShoppingBag, Gauge, Rocket, Clock, ShieldAlert,
-  Download
+  Download, Play
 } from 'lucide-react'
 import {
   generateValidationPlanAI,
@@ -860,6 +860,24 @@ export default function Phase1Validate({
         caller: isCreator ? 'creator' : 'admin'
       })
       if (res?.success && res?.media) {
+        const newImgUrl = res.media.url
+        const existingSchedule = baseKit?.postingSchedule || campaignKit?.postingSchedule || []
+        const updatedSchedule = existingSchedule.map(t => {
+          const ch = (t.channel || '').toLowerCase()
+          const ti = (t.title || '').toLowerCase()
+          const dk = t.draftKey || ''
+          const isPost = dk === 'announcementPost' || (dk !== 'videoScript' && dk !== 'newsletterDraft' && dk !== 'storySequence' && (ti.includes('announcement') || ti.includes('launch') || (!ch.includes('video') && !ch.includes('story') && !ch.includes('email') && !ch.includes('newsletter'))))
+          if (isPost) {
+            return {
+              ...t,
+              imageUrl: newImgUrl,
+              postImageUrl: newImgUrl,
+              imageGeneratedAt: new Date().toISOString()
+            }
+          }
+          return t
+        })
+
         const nextKit = {
           ...baseKit,
           postImageUrl: res.media.url,
@@ -871,7 +889,8 @@ export default function Phase1Validate({
           cloudinaryUrl: res.media.cloudinary_url,
           creatorFolder: res.media.creator_folder,
           creatorSlug: res.media.creator_slug,
-          isCloudinary: res.media.is_cloudinary
+          isCloudinary: res.media.is_cloudinary,
+          postingSchedule: updatedSchedule
         }
         setCampaignKit(prev => ({ ...(prev || {}), ...nextKit }))
         setImageGenError(null)
@@ -916,6 +935,30 @@ export default function Phase1Validate({
         caller: isCreator ? 'creator' : 'admin'
       })
       if (res?.success && res?.media) {
+        const newVidUrl = res.media.url
+        const existingSchedule = baseKit?.postingSchedule || campaignKit?.postingSchedule || []
+        const updatedSchedule = existingSchedule.map(t => {
+          const ch = (t.channel || '').toLowerCase()
+          const ti = (t.title || '').toLowerCase()
+          const dk = t.draftKey || ''
+          const isVideo = dk === 'videoScript' || (dk !== 'announcementPost' && dk !== 'newsletterDraft' && dk !== 'storySequence' && (ch.includes('video') || ch.includes('reel') || ch.includes('short') || (ch.includes('youtube') && !ch.includes('community')) || ti.includes('video')))
+          if (isVideo) {
+            return {
+              ...t,
+              videoUrl: newVidUrl,
+              thumbnailUrl: res.media.thumbnail_url || newVidUrl,
+              videoGeneratedAt: new Date().toISOString()
+            }
+          } else if (dk === 'announcementPost' && t.videoUrl) {
+            const copy = { ...t }
+            delete copy.videoUrl
+            delete copy.thumbnailUrl
+            delete copy.videoGeneratedAt
+            return copy
+          }
+          return t
+        })
+
         const nextKit = {
           ...baseKit,
           videoUrl: res.media.url,
@@ -928,7 +971,8 @@ export default function Phase1Validate({
           videoOptimizeUrl: res.media.optimize_url,
           creatorFolder: res.media.creator_folder,
           creatorSlug: res.media.creator_slug,
-          isVideoCloudinary: res.media.is_cloudinary
+          isVideoCloudinary: res.media.is_cloudinary,
+          postingSchedule: updatedSchedule
         }
         setCampaignKit(prev => ({ ...(prev || {}), ...nextKit }))
         setVideoGenError(null)
@@ -1143,8 +1187,15 @@ export default function Phase1Validate({
     }
   }
 
-  const getTaskDraftContent = (task) => {
+  const getTaskDraftContent = (task, overrideType = null) => {
     if (!task) return ''
+    const effectiveType = overrideType || task.viewType
+    if (effectiveType === 'video') return normalizeUrlText(campaignKit?.videoScript || '60s Short-Form Video Script')
+    if (effectiveType === 'story') return normalizeUrlText(campaignKit?.storySequence || 'STORY 1 — Poll\nSTORY 2 — Product Reveal\nSTORY 3 — Pre-Order Link CTA')
+    if (effectiveType === 'newsletter') return normalizeUrlText(campaignKit?.newsletterDraft || 'Email Newsletter Broadcast Draft')
+    if (effectiveType === 'dm') return normalizeUrlText(campaignKit?.directMessageScript || '1-on-1 DM Script')
+    if (effectiveType === 'post') return normalizeUrlText(campaignKit?.announcementPost || 'Social Announcement Post Copy')
+
     let content = ''
     if (task.draftKey === 'storySequence') content = campaignKit?.storySequence || 'STORY 1 — Poll\nSTORY 2 — Product Reveal\nSTORY 3 — Pre-Order Link CTA'
     else if (task.draftKey === 'videoScript') content = campaignKit?.videoScript || '60s Short-Form Video Script'
@@ -2724,33 +2775,6 @@ export default function Phase1Validate({
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0 flex-wrap">
-              {/* Creator Official Channel Link */}
-              <a
-                href={creatorChannelUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs font-bold transition-all active:scale-95 shadow-2xs group cursor-pointer"
-                title={`Investigate ${project?.creatorName || 'creator'}'s official YouTube channel`}
-              >
-                <Youtube className="w-3.5 h-3.5 text-red-600 shrink-0 group-hover:scale-110 transition-transform" />
-                <span>Creator Channel</span>
-                <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-colors" />
-              </a>
-
-              {/* High-Contrast Audience Citations Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setAudienceIntelModalTab('transcripts')
-                  setShowAudienceIntelModal(true)
-                }}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold transition-all active:scale-95 shadow-2xs cursor-pointer group"
-                title="View YouTube transcripts & audience comments"
-              >
-                <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 group-hover:scale-110 transition-transform" />
-                <span className="text-emerald-900 font-extrabold">Audience Citations</span>
-              </button>
-
               <button
                 onClick={generateCampaign}
                 disabled={isGeneratingCampaign}
@@ -2811,10 +2835,10 @@ export default function Phase1Validate({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 text-xs font-bold transition-all shadow-2xs cursor-pointer group"
-                title="Investigate creator's YouTube channel directly"
+                title="Open Creator Channel"
               >
                 <Youtube className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                <span>Open Channel</span>
+                <span>Creator Channel</span>
                 <ExternalLink className="w-3 h-3 text-red-500 group-hover:translate-x-0.5 transition-transform" />
               </a>
               <button
@@ -2824,10 +2848,10 @@ export default function Phase1Validate({
                   setShowAudienceIntelModal(true)
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-                title="Investigate the collected audience transcripts and comments"
+                title="View Audience Citations and transcripts"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Investigate Sourced Data</span>
+                <span>Audience Citations</span>
               </button>
             </div>
           </div>
@@ -2840,12 +2864,6 @@ export default function Phase1Validate({
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                   Campaign Cadence
                 </h4>
-              </div>
-
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono shrink-0">
-                <Target className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-slate-500">Goal:</span>
-                <span className="font-bold text-slate-900">50 Presales ($1,000+)</span>
               </div>
             </div>
 
@@ -3042,6 +3060,107 @@ export default function Phase1Validate({
                       <p className="text-[11px] text-slate-600">
                         {todayTask.description}
                       </p>
+
+                      {/* Live Asset Preview in Today's Task if available */}
+                      {(() => {
+                        const todayDk = todayTask.draftKey || ''
+                        const todayCh = (todayTask.channel || '').toLowerCase()
+                        const todayTi = (todayTask.title || '').toLowerCase()
+                        const isTodayVideo = todayDk === 'videoScript' || (!todayDk && (todayCh.includes('video') || todayCh.includes('reel') || todayCh.includes('short') || (todayCh.includes('youtube') && !todayCh.includes('community')) || todayTi.includes('video')))
+                        const isTodayPost = todayDk === 'announcementPost' || (!isTodayVideo && !todayCh.includes('email') && !todayCh.includes('newsletter') && !todayCh.includes('story'))
+
+                        if (isTodayPost && (todayTask.imageUrl || campaignKit?.postImageUrl || campaignKit?.postImageDataUrl)) {
+                          return (
+                            <div className="mt-2.5 p-2 rounded-xl bg-white border border-slate-200 flex items-center gap-2.5 max-w-md shadow-2xs">
+                              <img
+                                src={todayTask.imageUrl || campaignKit?.postImageUrl || campaignKit?.postImageDataUrl}
+                                alt="Today's Announcement Graphic"
+                                className="w-12 h-12 object-cover rounded-lg border border-slate-300 shadow-2xs shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => {
+                                  setDraftModalView('visual')
+                                  setViewDraftTask({ ...todayTask, viewType: 'post' })
+                                }}
+                                title="Click to preview full mockup"
+                              />
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-slate-900 flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-amber-600 shrink-0" />
+                                  <span className="truncate">Visual Announcement Graphic</span>
+                                </span>
+                                <div className="flex items-center gap-2 text-[10px] pt-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setDraftModalView('visual')
+                                      setViewDraftTask({ ...todayTask, viewType: 'post' })
+                                    }}
+                                    className="font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                                  >
+                                    View Mockup
+                                  </button>
+                                  <span className="text-slate-300">·</span>
+                                  <a
+                                    href={todayTask.imageUrl || campaignKit?.postImageUrl || campaignKit?.postImageDataUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-bold text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-0.5"
+                                  >
+                                    <span>Full Res</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        }
+
+                        if (isTodayVideo && (todayTask.videoUrl || campaignKit?.videoUrl)) {
+                          return (
+                            <div className="mt-2.5 p-2 rounded-xl bg-white border border-slate-200 flex items-center gap-2.5 max-w-md shadow-2xs">
+                              <div
+                                onClick={() => {
+                                  setDraftModalView('video')
+                                  setViewDraftTask({ ...todayTask, viewType: 'video' })
+                                }}
+                                className="w-12 h-12 rounded-lg bg-slate-900 border border-slate-300 shadow-2xs shrink-0 flex items-center justify-center cursor-pointer hover:bg-black transition-colors group/play"
+                                title="Click to preview video teaser"
+                              >
+                                <Play className="w-4 h-4 text-amber-400 fill-amber-400 group-hover/play:scale-110 transition-transform" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-slate-900 flex items-center gap-1">
+                                  <Video className="w-3 h-3 text-rose-600 shrink-0" />
+                                  <span className="truncate">AI Video Teaser Attached</span>
+                                </span>
+                                <div className="flex items-center gap-2 text-[10px] pt-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setDraftModalView('video')
+                                      setViewDraftTask({ ...todayTask, viewType: 'video' })
+                                    }}
+                                    className="font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                                  >
+                                    Watch Video
+                                  </button>
+                                  <span className="text-slate-300">·</span>
+                                  <a
+                                    href={todayTask.videoUrl || campaignKit?.videoUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-bold text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-0.5"
+                                  >
+                                    <span>Download MP4</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        }
+
+                        return null
+                      })()}
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0 flex-wrap">
@@ -3098,27 +3217,12 @@ export default function Phase1Validate({
 
               {/* AUDIENCE PROVENANCE & ANTI-SPAM ARCHITECTURE BANNER */}
               <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 text-xs text-slate-700 space-y-2.5 shadow-2xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/80 pb-2.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      <span>Grounded in Real Creator Content & Audience Data</span>
-                    </span>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white text-emerald-800 border border-emerald-300 shadow-2xs">
-                      Verified Creator Voice · 99.4% Match
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAudienceIntelModalTab('transcripts')
-                      setShowAudienceIntelModal(true)
-                    }}
-                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <span>Inspect Transcripts & Evidence Citations →</span>
-                  </button>
+                <div className="flex items-center gap-2 border-b border-emerald-200/80 pb-2.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Grounded in Real Creator Content & Audience Data</span>
+                  </span>
                 </div>
                 <p className="text-[11px] text-slate-700 leading-relaxed">
                   Every post, 60s script, and email draft is derived directly from <strong className="text-slate-900 font-semibold">{project?.creatorName || 'the creator'}'s channel uploads</strong>, channel bio, and <strong className="text-slate-900 font-semibold">{audienceGroundingData.stats.commentsIngested}+ community comments</strong>. Formatted into spaced milestones with 1:1 plain-text emails to guarantee Primary Inbox delivery.
@@ -3263,13 +3367,15 @@ export default function Phase1Validate({
 
                       return (campaignKit?.postingSchedule || []).map((task, taskIdx) => {
                         const isOverdue = !task.done && task.day < currentCampaignDay
+                        const dk = task.draftKey || ''
                         const channelLower = (task.channel || '').toLowerCase()
                         const titleLower = (task.title || '').toLowerCase()
 
-                        const isVideoTask = channelLower.includes('video') || channelLower.includes('reel') || channelLower.includes('short') || channelLower.includes('youtube') || titleLower.includes('video')
-                        const isStoryTask = channelLower.includes('story') || channelLower.includes('instagram') || titleLower.includes('story')
-                        const isEmailTask = channelLower.includes('newsletter') || channelLower.includes('email') || titleLower.includes('newsletter') || titleLower.includes('email')
-                        const isPostTask = !isVideoTask && !isStoryTask && !isEmailTask
+                        const isVideoTask = dk === 'videoScript' || (!dk && (channelLower.includes('video') || channelLower.includes('reel') || channelLower.includes('short') || (channelLower.includes('youtube') && !channelLower.includes('community')) || titleLower.includes('video')))
+                        const isStoryTask = dk === 'storySequence' || (!dk && (channelLower.includes('story') || channelLower.includes('instagram') || titleLower.includes('story') || titleLower.includes('poll')))
+                        const isEmailTask = dk === 'newsletterDraft' || (!dk && (channelLower.includes('newsletter') || channelLower.includes('email') || titleLower.includes('newsletter') || titleLower.includes('email')))
+                        const isDmTask = dk === 'directMessageScript' || (!dk && (channelLower.includes('dm') || channelLower.includes('direct') || channelLower.includes('message') || titleLower.includes('dm')))
+                        const isPostTask = dk === 'announcementPost' || (!isVideoTask && !isStoryTask && !isEmailTask && !isDmTask)
 
                         return (
                           <div
@@ -3346,6 +3452,94 @@ export default function Phase1Validate({
                                   <p className="text-xs text-slate-600 leading-relaxed">
                                     {task.description}
                                   </p>
+
+                                  {/* Asset Thumbnail Preview for Announcement Graphic */}
+                                  {(isPostTask && (task.imageUrl || campaignKit?.postImageUrl || campaignKit?.postImageDataUrl)) && (
+                                    <div className="mt-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3 max-w-md shadow-2xs">
+                                      <img
+                                        src={task.imageUrl || campaignKit?.postImageUrl || campaignKit?.postImageDataUrl}
+                                        alt={task.title}
+                                        className="w-14 h-14 object-cover rounded-lg border border-slate-300 shadow-2xs shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => {
+                                          setDraftModalView('visual')
+                                          setViewDraftTask({ ...task, viewType: 'post' })
+                                        }}
+                                        title="Click to preview full mockup"
+                                      />
+                                      <div className="space-y-0.5 min-w-0">
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                                          <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                          <span className="truncate">Visual Announcement Graphic</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[11px]">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setDraftModalView('visual')
+                                              setViewDraftTask({ ...task, viewType: 'post' })
+                                            }}
+                                            className="font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                                          >
+                                            View Mockup
+                                          </button>
+                                          <span className="text-slate-300">·</span>
+                                          <a
+                                            href={task.imageUrl || campaignKit?.postImageUrl || campaignKit?.postImageDataUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="font-bold text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-0.5"
+                                          >
+                                            <span>Full Res</span>
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                          </a>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Video Teaser Preview exclusively for Video Tasks */}
+                                  {(isVideoTask && (task.videoUrl || campaignKit?.videoUrl)) && (
+                                    <div className="mt-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3 max-w-md shadow-2xs">
+                                      <div
+                                        onClick={() => {
+                                          setDraftModalView('video')
+                                          setViewDraftTask({ ...task, viewType: 'video' })
+                                        }}
+                                        className="w-14 h-14 rounded-lg bg-slate-900 border border-slate-300 shadow-2xs shrink-0 flex items-center justify-center cursor-pointer hover:bg-black transition-colors group/play"
+                                        title="Click to preview video teaser"
+                                      >
+                                        <Play className="w-5 h-5 text-amber-400 fill-amber-400 group-hover/play:scale-110 transition-transform" />
+                                      </div>
+                                      <div className="space-y-0.5 min-w-0">
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                                          <Video className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                          <span className="truncate">AI Video Teaser Attached</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[11px]">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setDraftModalView('video')
+                                              setViewDraftTask({ ...task, viewType: 'video' })
+                                            }}
+                                            className="font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                                          >
+                                            Watch Video
+                                          </button>
+                                          <span className="text-slate-300">·</span>
+                                          <a
+                                            href={task.videoUrl || campaignKit?.videoUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="font-bold text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-0.5"
+                                          >
+                                            <span>Download MP4</span>
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                          </a>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
 
@@ -3359,13 +3553,13 @@ export default function Phase1Validate({
                             {/* Milestone Card Footer: Action Bar & Asset Indicators */}
                             <div className="pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
                               <div className="flex items-center gap-2 flex-wrap">
-                                {isPostTask && campaignKit?.postImageUrl && (
+                                {isPostTask && (task.imageUrl || campaignKit?.postImageUrl || campaignKit?.postImageDataUrl) && (
                                   <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-mono flex items-center gap-1 shadow-2xs">
                                     <Sparkles className="w-2.5 h-2.5 text-amber-600" />
                                     <span>AI Graphic Ready (View in Modal)</span>
                                   </span>
                                 )}
-                                {isVideoTask && campaignKit?.videoUrl && (
+                                {isVideoTask && (task.videoUrl || campaignKit?.videoUrl) && (
                                   <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-mono flex items-center gap-1 shadow-2xs">
                                     <Video className="w-2.5 h-2.5 text-rose-600" />
                                     <span>AI Video Ready (View in Modal)</span>
@@ -3406,7 +3600,10 @@ export default function Phase1Validate({
 
                                 <button
                                   type="button"
-                                  onClick={() => setViewDraftTask(task)}
+                                  onClick={() => {
+                                    setDraftModalView(isVideoTask ? 'video' : 'visual')
+                                    setViewDraftTask(task)
+                                  }}
                                   className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                                   title="Open modal with visual mockup, generated image/video, and copy"
                                 >
@@ -3933,29 +4130,45 @@ export default function Phase1Validate({
                         <h3 className="text-base font-extrabold text-slate-900">{viewDraftTask.title}</h3>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {/* Visual / Text Toggle */}
+                        {/* Visual / Video / Text Toggle */}
                         <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
                           <button
                             type="button"
                             onClick={() => setDraftModalView('visual')}
-                            className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1 ${
                               draftModalView === 'visual'
                                 ? 'bg-white text-slate-900 shadow-2xs'
                                 : 'text-slate-600 hover:text-slate-900'
                             }`}
                           >
-                            👁️ Visual Mockup
+                            <span>👁️</span>
+                            <span>Visual Mockup</span>
                           </button>
+                          {(campaignKit?.videoUrl || viewDraftTask?.videoUrl || viewDraftTask?.draftKey === 'videoScript') && (
+                            <button
+                              type="button"
+                              onClick={() => setDraftModalView('video')}
+                              className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                draftModalView === 'video'
+                                  ? 'bg-rose-600 text-white shadow-2xs'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              <Video className="w-3 h-3" />
+                              <span>Watch Video</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => setDraftModalView('text')}
-                            className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1 ${
                               draftModalView === 'text'
                                 ? 'bg-white text-slate-900 shadow-2xs'
                                 : 'text-slate-600 hover:text-slate-900'
                             }`}
                           >
-                            📝 Raw Text
+                            <span>📝</span>
+                            <span>Raw Text</span>
                           </button>
                         </div>
 
@@ -3968,25 +4181,48 @@ export default function Phase1Validate({
                       </div>
                     </div>
 
-                    {/* Modal Body: Visual Mockup or Raw Text */}
-                    {draftModalView === 'visual' ? (
+                    {/* Modal Body: Video Player, Visual Mockup, or Raw Text */}
+                    {draftModalView === 'video' ? (
                       <div className="py-1 max-h-[68vh] overflow-y-auto pr-1">
                         <PostVisualMockup
-                          type={
-                            viewDraftTask.draftKey === 'storySequence'
-                              ? 'story'
-                              : viewDraftTask.draftKey === 'videoScript'
-                              ? 'video'
-                              : viewDraftTask.draftKey === 'newsletterDraft'
-                              ? 'newsletter'
-                              : 'post'
-                          }
+                          type="video"
                           project={project}
-                          copyText={getTaskDraftContent(viewDraftTask)}
+                          copyText={getTaskDraftContent(viewDraftTask, 'video')}
                           preorderUrl={`${origin}/preorder/${productSlug}`}
-                          imageUrl={campaignKit?.postImageUrl || campaignKit?.postImageDataUrl}
-                          videoUrl={campaignKit?.videoUrl}
+                          imageUrl={viewDraftTask?.imageUrl || campaignKit?.postImageUrl || campaignKit?.postImageDataUrl}
+                          videoUrl={viewDraftTask?.videoUrl || campaignKit?.videoUrl}
                         />
+                      </div>
+                    ) : draftModalView === 'visual' ? (
+                      <div className="py-1 max-h-[68vh] overflow-y-auto pr-1">
+                        {(() => {
+                          const targetType = viewDraftTask.viewType || (() => {
+                            const dk = viewDraftTask.draftKey || ''
+                            if (dk === 'videoScript') return 'video'
+                            if (dk === 'storySequence') return 'story'
+                            if (dk === 'newsletterDraft') return 'newsletter'
+                            if (dk === 'directMessageScript') return 'dm'
+                            if (dk === 'announcementPost') return 'post'
+                            const ch = (viewDraftTask.channel || '').toLowerCase()
+                            const ti = (viewDraftTask.title || '').toLowerCase()
+                            if (ch.includes('video') || ch.includes('reel') || ch.includes('short') || (ch.includes('youtube') && !ch.includes('community')) || ti.includes('video')) return 'video'
+                            if (ch.includes('story') || ch.includes('instagram') || ti.includes('story') || ti.includes('poll')) return 'story'
+                            if (ch.includes('newsletter') || ch.includes('email') || ti.includes('newsletter') || ti.includes('email')) return 'newsletter'
+                            if (ch.includes('dm') || ch.includes('direct') || ch.includes('message')) return 'dm'
+                            return 'post'
+                          })()
+
+                          return (
+                            <PostVisualMockup
+                              type={targetType}
+                              project={project}
+                              copyText={getTaskDraftContent(viewDraftTask, targetType)}
+                              preorderUrl={`${origin}/preorder/${productSlug}`}
+                              imageUrl={viewDraftTask?.imageUrl || campaignKit?.postImageUrl || campaignKit?.postImageDataUrl}
+                              videoUrl={viewDraftTask?.videoUrl || campaignKit?.videoUrl}
+                            />
+                          )
+                        })()}
                       </div>
                     ) : (
                       <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 max-h-72 overflow-y-auto font-sans leading-relaxed text-xs text-slate-800">
