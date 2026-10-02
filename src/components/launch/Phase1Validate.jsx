@@ -6,7 +6,8 @@ import {
   CreditCard, Users, TrendingUp, RefreshCw, FileText, Megaphone, Target,
   Flag, ArrowRight, Layers, HelpCircle, BarChart3, Radio, ShieldCheck,
   Palette, Smartphone, Send, Mail, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell, Lock, RotateCcw,
-  Youtube, Shield, Sliders, Trophy, Flame, Coins, Award, Crown, Radar, MousePointerClick, Camera, ShoppingBag, Gauge, Rocket, Clock, ShieldAlert
+  Youtube, Shield, Sliders, Trophy, Flame, Coins, Award, Crown, Radar, MousePointerClick, Camera, ShoppingBag, Gauge, Rocket, Clock, ShieldAlert,
+  Download
 } from 'lucide-react'
 import {
   generateValidationPlanAI,
@@ -29,7 +30,9 @@ import {
   getFrontendUrl,
   sendTaskReminder,
   generateCampaignSocialImage,
-  generateCampaignVideo
+  generateCampaignVideo,
+  sendCampaignPostEmail,
+  toggleAutonomousCampaignDelivery
 } from '../../services/opsApi'
 import {
   parseMainPricingAmount,
@@ -810,6 +813,25 @@ export default function Phase1Validate({
         }
 
         showNotification('Creator campaign assets generated with AI & saved to database!')
+
+        // Auto-generate post graphic (OpenAI) and video teaser (Veo 3.1) in parallel
+        showNotification('🚀 Generating AI Campaign: image & video teaser...')
+        handleGeneratePostImage(null, generated).catch(e => console.warn('Auto image gen warning:', e))
+        handleGenerateCampaignVideo(null, generated).catch(e => console.warn('Auto video gen warning:', e))
+
+        // Auto-configure autonomous email delivery at 12:00 AM in creator timezone
+        const creatorEmailAddr = autonomousEmail || project?.creatorEmail || project?.creator_email || ''
+        const tzToUse = creatorTimezone || detectedTimezone
+        const countryToUse = creatorCountry || 'United States'
+        if (project?.id && creatorEmailAddr) {
+          toggleAutonomousCampaignDelivery(project.id, {
+            enabled: true,
+            recipientEmail: creatorEmailAddr,
+            preferredHour: 0,
+            timezone: tzToUse,
+            country: countryToUse
+          }).catch(e => console.warn('Auto email config warning:', e))
+        }
       }
     } catch (err) {
       console.error('Campaign generation error:', err)
@@ -819,46 +841,54 @@ export default function Phase1Validate({
     }
   }
 
-  const handleGeneratePostImage = async (customPrompt = null) => {
+  const handleGeneratePostImage = async (customPrompt = null, targetKit = null) => {
     if (!project?.id) {
       showNotification('Please save or select a valid project first.')
       return
     }
+    const baseKit = targetKit || campaignKit || {}
     setImageGenError(null)
     setIsGeneratingImage(true)
+    showNotification('🎨 Generating image (OpenAI Astra)...')
     try {
       const promptToUse = typeof customPrompt === 'string' && customPrompt.trim()
         ? customPrompt.trim()
         : undefined
+      const isCreator = window.location.pathname.includes('/portal') || window.location.search.includes('role=creator')
       const res = await generateCampaignSocialImage(project.id, {
-        prompt: promptToUse
+        prompt: promptToUse,
+        caller: isCreator ? 'creator' : 'admin'
       })
       if (res?.success && res?.media) {
         const nextKit = {
-          ...(campaignKit || {}),
+          ...baseKit,
           postImageUrl: res.media.url,
           postImageDataUrl: res.media.data_url,
           postImagePrompt: res.media.prompt,
           postImageModel: res.media.model,
-          postImageProvider: res.media.provider
+          postImageProvider: res.media.provider,
+          cloudinaryPublicId: res.media.cloudinary_public_id,
+          cloudinaryUrl: res.media.cloudinary_url,
+          creatorFolder: res.media.creator_folder,
+          creatorSlug: res.media.creator_slug,
+          isCloudinary: res.media.is_cloudinary
         }
-        setCampaignKit(nextKit)
+        setCampaignKit(prev => ({ ...(prev || {}), ...nextKit }))
         setImageGenError(null)
         if (onUpdateProject) {
           onUpdateProject(curr => ({
             ...(curr || {}),
-            campaignKit: nextKit,
-            metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: nextKit }
+            campaignKit: { ...(curr?.campaignKit || {}), ...nextKit },
+            metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: { ...(curr?.metadataInfo?.campaign_kit || {}), ...nextKit } }
           }))
         }
-        const note = res.media.model ? ` (${res.media.model})` : ' (OpenAI)'
-        showNotification(`✨ AI post graphic generated${note} & saved!`)
+        showNotification('✨ Image generated & saved!')
       } else {
         throw new Error(res?.detail || 'Failed to generate image')
       }
     } catch (err) {
       console.error('Image generation error:', err)
-      const cleanMsg = err?.message || 'Image generation failed. Please verify OpenAI API key.'
+      const cleanMsg = err?.message || 'Image generation failed. Please try again.'
       setImageGenError(cleanMsg)
       showNotification(`❌ Image generation failed: ${cleanMsg}`)
     } finally {
@@ -866,47 +896,56 @@ export default function Phase1Validate({
     }
   }
 
-  const handleGenerateCampaignVideo = async (customPrompt = null) => {
+  const handleGenerateCampaignVideo = async (customPrompt = null, targetKit = null) => {
     if (!project?.id) {
       showNotification('Please save or select a valid project first.')
       return
     }
+    const baseKit = targetKit || campaignKit || {}
     setVideoGenError(null)
     setIsGeneratingVideo(true)
-    showNotification('🎬 Generating 60s teaser video with OpenAI Sora...')
+    showNotification('🎬 Generating video (Veo 3.1)...')
     try {
       const promptToUse = typeof customPrompt === 'string' && customPrompt.trim()
         ? customPrompt.trim()
         : undefined
+      const isCreator = window.location.pathname.includes('/portal') || window.location.search.includes('role=creator')
       const res = await generateCampaignVideo(project.id, {
         prompt: promptToUse,
-        postImageUrl: campaignKit?.postImageUrl
+        postImageUrl: baseKit?.postImageUrl || campaignKit?.postImageUrl,
+        caller: isCreator ? 'creator' : 'admin'
       })
       if (res?.success && res?.media) {
         const nextKit = {
-          ...(campaignKit || {}),
+          ...baseKit,
           videoUrl: res.media.url,
           videoPrompt: res.media.prompt,
           videoModel: res.media.model,
-          videoProvider: res.media.provider
+          videoProvider: res.media.provider,
+          cloudinaryVideoPublicId: res.media.cloudinary_public_id,
+          cloudinaryVideoUrl: res.media.cloudinary_url,
+          videoThumbnailUrl: res.media.thumbnail_url,
+          videoOptimizeUrl: res.media.optimize_url,
+          creatorFolder: res.media.creator_folder,
+          creatorSlug: res.media.creator_slug,
+          isVideoCloudinary: res.media.is_cloudinary
         }
-        setCampaignKit(nextKit)
+        setCampaignKit(prev => ({ ...(prev || {}), ...nextKit }))
         setVideoGenError(null)
         if (onUpdateProject) {
           onUpdateProject(curr => ({
             ...(curr || {}),
-            campaignKit: nextKit,
-            metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: nextKit }
+            campaignKit: { ...(curr?.campaignKit || {}), ...nextKit },
+            metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: { ...(curr?.metadataInfo?.campaign_kit || {}), ...nextKit } }
           }))
         }
-        const note = res.media.model ? ` (${res.media.model})` : ' (OpenAI Sora)'
-        showNotification(`✅ 60s AI video generated${note} & saved!`)
+        showNotification('🎬 Video generated & saved!')
       } else {
         throw new Error(res?.detail || 'Failed to generate video')
       }
     } catch (err) {
       console.error('Video generation error:', err)
-      const cleanMsg = err?.message || 'Video generation failed. Please verify OpenAI API key.'
+      const cleanMsg = err?.message || 'Video generation failed. Please try again.'
       setVideoGenError(cleanMsg)
       showNotification(`❌ Video generation failed: ${cleanMsg}`)
     } finally {
@@ -919,6 +958,153 @@ export default function Phase1Validate({
     const updatedSchedule = schedule.map(t => t.id === taskId ? { ...t, done: !t.done } : t)
     updateCampaignKit('postingSchedule', updatedSchedule)
     showNotification('Daily task status updated!')
+  }
+
+  const detectedTimezone = (() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York'
+    } catch {
+      return 'America/New_York'
+    }
+  })()
+
+  const [sendingEmailTaskId, setSendingEmailTaskId] = useState(null)
+  const [isSendingTodayEmail, setIsSendingTodayEmail] = useState(false)
+  const [autonomousEmail, setAutonomousEmail] = useState(
+    campaignKit?.autonomousEmailDelivery?.recipientEmail || project?.creatorEmail || project?.creator_email || ''
+  )
+  const [isAutonomousEnabled, setIsAutonomousEnabled] = useState(
+    campaignKit?.autonomousEmailDelivery?.enabled !== false
+  )
+  const [creatorTimezone, setCreatorTimezone] = useState(
+    campaignKit?.autonomousEmailDelivery?.timezone ||
+    campaignKit?.creatorTimezone ||
+    project?.creatorTimezone ||
+    project?.timezone ||
+    detectedTimezone
+  )
+  const [creatorCountry, setCreatorCountry] = useState(
+    campaignKit?.autonomousEmailDelivery?.country ||
+    campaignKit?.creatorCountry ||
+    project?.creatorCountry ||
+    project?.country ||
+    'United States'
+  )
+  const [isSavingAutonomousConfig, setIsSavingAutonomousConfig] = useState(false)
+  const [copiedTaskId, setCopiedTaskId] = useState(null)
+
+  useEffect(() => {
+    if (campaignKit?.autonomousEmailDelivery?.recipientEmail) {
+      setAutonomousEmail(campaignKit.autonomousEmailDelivery.recipientEmail)
+    } else if (project?.creatorEmail || project?.creator_email) {
+      setAutonomousEmail(project.creatorEmail || project.creator_email)
+    }
+    if (campaignKit?.autonomousEmailDelivery?.enabled !== undefined) {
+      setIsAutonomousEnabled(campaignKit.autonomousEmailDelivery.enabled)
+    }
+    if (campaignKit?.autonomousEmailDelivery?.timezone || campaignKit?.creatorTimezone) {
+      setCreatorTimezone(campaignKit.autonomousEmailDelivery?.timezone || campaignKit.creatorTimezone)
+    }
+    if (campaignKit?.autonomousEmailDelivery?.country || campaignKit?.creatorCountry) {
+      setCreatorCountry(campaignKit.autonomousEmailDelivery?.country || campaignKit.creatorCountry)
+    }
+  }, [campaignKit?.autonomousEmailDelivery, campaignKit?.creatorTimezone, campaignKit?.creatorCountry, project?.creatorEmail, project?.creator_email])
+
+  const handleSendPostKitEmail = async (task = null) => {
+    if (!project?.id) return
+    const tId = task?.id || null
+    const day = task?.day || null
+    if (tId) setSendingEmailTaskId(tId)
+    else setIsSendingTodayEmail(true)
+
+    try {
+      const res = await sendCampaignPostEmail(project.id, {
+        taskId: tId,
+        day: day,
+        recipientEmail: autonomousEmail || undefined
+      })
+      if (res?.success) {
+        showNotification(`📬 Post Kit sent to ${res.recipient}! Check inbox.`)
+        if (res?.project?.validationCampaign?.campaignKit) {
+          setCampaignKit(res.project.validationCampaign.campaignKit)
+        } else {
+          setCampaignKit(prev => {
+            const schedule = [...(prev?.postingSchedule || [])].map(t =>
+              (tId && t.id === tId) || (day && t.day === day)
+                ? { ...t, emailed: true, lastEmailedAt: new Date().toISOString() }
+                : t
+            )
+            return { ...prev, postingSchedule: schedule }
+          })
+        }
+      } else {
+        throw new Error(res?.detail || res?.message || 'Failed to dispatch email')
+      }
+    } catch (err) {
+      console.error('Email dispatch error:', err)
+      showNotification(`❌ Could not send post kit: ${err.message || 'Check email configuration'}`)
+    } finally {
+      setSendingEmailTaskId(null)
+      setIsSendingTodayEmail(false)
+    }
+  }
+
+  const handleToggleAutonomousEmail = async (enabled, customTz = null, customCountry = null) => {
+    if (!project?.id) return
+    setIsSavingAutonomousConfig(true)
+    const tzToUse = customTz || creatorTimezone || detectedTimezone
+    const countryToUse = customCountry || creatorCountry || 'United States'
+    try {
+      const res = await toggleAutonomousCampaignDelivery(project.id, {
+        enabled,
+        recipientEmail: autonomousEmail,
+        preferredHour: 0,
+        timezone: tzToUse,
+        country: countryToUse
+      })
+      if (res?.success) {
+        setIsAutonomousEnabled(enabled)
+        setCampaignKit(prev => ({
+          ...(prev || {}),
+          creatorTimezone: tzToUse,
+          creatorCountry: countryToUse,
+          autonomousEmailDelivery: {
+            ...(prev?.autonomousEmailDelivery || {}),
+            enabled,
+            recipientEmail: autonomousEmail,
+            preferredHour: 0,
+            timezone: tzToUse,
+            country: countryToUse,
+            dispatchSchedule: `12:00 AM (${tzToUse})`
+          }
+        }))
+        showNotification(enabled ? `✅ Autonomous post delivery active: 12:00 AM (${tzToUse.split('/')[1] || tzToUse})!` : '⏸️ Daily delivery paused.')
+      }
+    } catch (err) {
+      showNotification(`❌ Failed to update delivery settings: ${err.message}`)
+    } finally {
+      setIsSavingAutonomousConfig(false)
+    }
+  }
+
+  const handleDownloadAsset = (url, defaultName) => {
+    if (!url) return
+    const a = document.createElement('a')
+    a.href = url
+    a.download = defaultName || 'campaign-asset'
+    a.target = '_blank'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    showNotification('📥 Asset download started!')
+  }
+
+  const handleCopyTextWithFeedback = (text, taskId) => {
+    if (!text) return
+    navigator.clipboard.writeText(text)
+    setCopiedTaskId(taskId)
+    showNotification('📋 Caption copied to clipboard!')
+    setTimeout(() => setCopiedTaskId(null), 2500)
   }
 
   const [remindingTaskId, setRemindingTaskId] = useState(null)
@@ -1487,11 +1673,19 @@ export default function Phase1Validate({
     currentPresales: presalesRevenue
   })
 
-  // Gate can ONLY be passed if Steps 1-4 are ALL completed
-  const isGatePassed = Boolean(allPriorStepsDone && (
+  // Gate can be passed when threshold is met, DB gate passed, or manual advance
+  const isGatePassed = Boolean(
     dbGatePassed ||
-    (presaleTarget > 0 && presalesRevenue >= presaleTarget && reservations.length > 0)
-  ))
+    project?.p1Complete === true ||
+    project?.phase1Passed === true ||
+    Number(project?.currentPhase || project?.current_phase || 1) >= 2 ||
+    project?.status === 'building' ||
+    (presaleTarget > 0 && presalesRevenue >= presaleTarget && reservations.length > 0) ||
+    (allPriorStepsDone && (
+      dbGatePassed ||
+      (presaleTarget > 0 && presalesRevenue >= presaleTarget)
+    ))
+  )
 
   const canAccessStep = (stepId) => {
     if (stepId === 'plan') return true
@@ -2932,10 +3126,10 @@ export default function Phase1Validate({
               </div>
 
               {/* Subtabs Navigation */}
-              <div className="flex items-center gap-1.5 border-b border-slate-200 pb-3 overflow-x-auto no-scrollbar scrollbar-none">
+              <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 pb-3">
                 {[
-                  { id: 'schedule', label: '1. Schedule & Roadmap', icon: Calendar },
-                  { id: 'post', label: '2. X Announcement Post', icon: MessageSquare },
+                  { id: 'schedule', label: '1. Schedule', icon: Calendar },
+                  { id: 'post', label: '2. Announcement Post', icon: MessageSquare },
                   { id: 'story', label: '3. Stories & Polls', icon: Smartphone },
                   { id: 'video', label: '4. Video Script', icon: Video },
                   { id: 'newsletter', label: '5. Newsletter', icon: Send },
@@ -2963,8 +3157,81 @@ export default function Phase1Validate({
 
               {/* SUBTAB 1: SCHEDULE & CHECKLIST */}
               {campaignSubTab === 'schedule' && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-4">
+                  {/* Autonomous Morning Post Dispatcher Card */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center shrink-0 text-indigo-600 shadow-2xs">
+                          <Mail className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-extrabold text-slate-900 tracking-wide font-sans">
+                              Autonomous Daily Post Dispatcher
+                            </h4>
+                            <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold font-mono border ${
+                              isAutonomousEnabled
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-2xs'
+                                : 'bg-slate-200 text-slate-700 border-slate-300'
+                            }`}>
+                              {isAutonomousEnabled ? '● AUTO-DELIVERY ACTIVE (8:00 AM)' : 'PAUSED'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-relaxed max-w-2xl font-normal">
+                            Zero friction. Creator Forge automatically emails each day's ready-to-post caption + direct download link for the high-res graphic or video directly to the creator's inbox on schedule. No app login required.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => handleSendPostKitEmail(null)}
+                          disabled={isSendingTodayEmail}
+                          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                          title="Instantly email today's ready-to-post content kit"
+                        >
+                          {isSendingTodayEmail ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5 text-white" />
+                          )}
+                          <span>{isSendingTodayEmail ? 'Sending...' : "Send Today's Post to Email"}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-indigo-100 text-xs">
+                      <div className="flex items-center gap-2 flex-1 max-w-md">
+                        <span className="text-[11px] text-slate-700 font-semibold shrink-0">Deliver to:</span>
+                        <input
+                          type="email"
+                          value={autonomousEmail}
+                          onChange={(e) => setAutonomousEmail(e.target.value)}
+                          placeholder="creator@email.com"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-2xs"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleAutonomousEmail(!isAutonomousEnabled)}
+                          disabled={isSavingAutonomousConfig}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            isAutonomousEnabled
+                              ? 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs font-semibold'
+                              : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs font-bold'
+                          }`}
+                        >
+                          {isAutonomousEnabled ? 'Pause Daily Dispatch' : 'Enable Daily Dispatch'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Header & Progress */}
+                  <div className="flex items-center justify-between pt-1">
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">Creator Launch Roadmap (Non-Burdensome Cadence)</h4>
                       <p className="text-[11px] text-slate-500">
@@ -2986,7 +3253,8 @@ export default function Phase1Validate({
                     />
                   </div>
 
-                  <div className="space-y-2.5">
+                  {/* Milestone Cards with Visual Asset Showcase */}
+                  <div className="space-y-3.5">
                     {(() => {
                       const campaignStartDate = project?.validationCampaign?.createdAt || project?.created_at || project?.createdAt
                       const currentCampaignDay = campaignStartDate
@@ -2995,111 +3263,157 @@ export default function Phase1Validate({
 
                       return (campaignKit?.postingSchedule || []).map((task, taskIdx) => {
                         const isOverdue = !task.done && task.day < currentCampaignDay
+                        const channelLower = (task.channel || '').toLowerCase()
+                        const titleLower = (task.title || '').toLowerCase()
+
+                        const isVideoTask = channelLower.includes('video') || channelLower.includes('reel') || channelLower.includes('short') || channelLower.includes('youtube') || titleLower.includes('video')
+                        const isStoryTask = channelLower.includes('story') || channelLower.includes('instagram') || titleLower.includes('story')
+                        const isEmailTask = channelLower.includes('newsletter') || channelLower.includes('email') || titleLower.includes('newsletter') || titleLower.includes('email')
+                        const isPostTask = !isVideoTask && !isStoryTask && !isEmailTask
 
                         return (
                           <div
                             key={task.id || taskIdx}
-                            className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                            className={`p-4 rounded-2xl border transition-all space-y-3.5 ${
                               isOverdue
-                                ? 'bg-amber-50/70 border-amber-200 shadow-2xs'
+                                ? 'bg-amber-50/70 border-amber-300 shadow-sm'
                                 : task.isToday
-                                ? 'bg-white border-emerald-400 ring-2 ring-emerald-500/15 shadow-xs'
+                                ? 'bg-white border-emerald-400 ring-2 ring-emerald-500/15 shadow-sm'
                                 : task.done
-                                ? 'bg-slate-50/80 border-slate-200 opacity-80'
+                                ? 'bg-slate-50/80 border-slate-200 opacity-85'
                                 : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
                             }`}
                           >
-                            <div className="flex items-start gap-3">
-                              <button
-                                onClick={() => handleToggleScheduleTask(task.id)}
-                                className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 cursor-pointer ${
-                                  task.done
-                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-2xs'
-                                    : 'border-slate-300 bg-white hover:border-emerald-500 hover:bg-emerald-50/50'
-                                }`}
-                              >
-                                {task.done && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                              </button>
+                            {/* Card Top: Checkbox, Badges & Actions */}
+                            <div className="flex items-start justify-between gap-3 flex-wrap">
+                              <div className="flex items-start gap-3 min-w-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleScheduleTask(task.id)}
+                                  className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 cursor-pointer ${
+                                    task.done
+                                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-2xs'
+                                      : 'border-slate-300 bg-white hover:border-emerald-500 hover:bg-emerald-50/50'
+                                  }`}
+                                  title={task.done ? 'Mark pending' : 'Mark completed'}
+                                >
+                                  {task.done && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                                </button>
 
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {isOverdue ? (
-                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 font-mono">
-                                      <AlertCircle className="w-3 h-3 text-amber-600" />
-                                      <span>Missed · Milestone {task.milestoneNumber || taskIdx + 1}</span>
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {isOverdue ? (
+                                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 font-mono">
+                                        <AlertCircle className="w-3 h-3 text-amber-600" />
+                                        <span>Missed · Milestone {task.milestoneNumber || taskIdx + 1}</span>
+                                      </span>
+                                    ) : task.isToday ? (
+                                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono shadow-2xs flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                                        <span>Active · Milestone {task.milestoneNumber || taskIdx + 1} (Day {task.day})</span>
+                                      </span>
+                                    ) : task.done ? (
+                                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
+                                        Milestone {task.milestoneNumber || taskIdx + 1} (Day {task.day})
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                                        Milestone {task.milestoneNumber || taskIdx + 1} (Day {task.day})
+                                      </span>
+                                    )}
+
+                                    {(task.effort || task.effortEstimate) && (
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono">
+                                        ⏱️ {task.effort || task.effortEstimate}
+                                      </span>
+                                    )}
+
+                                    <span className="text-[10px] font-semibold text-slate-500 font-mono">
+                                      {task.channel}
                                     </span>
-                                  ) : task.isToday ? (
-                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono shadow-2xs flex items-center gap-1">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                                      <span>Active · Milestone {task.milestoneNumber || taskIdx + 1} (Day {task.day})</span>
-                                    </span>
-                                  ) : task.done ? (
-                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
-                                      Milestone {task.milestoneNumber || taskIdx + 1} (Day {task.day})
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-mono">
-                                      Milestone {task.milestoneNumber || taskIdx + 1} (Day {task.day})
-                                    </span>
-                                  )}
-                                  {(task.effort || task.effortEstimate) && (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono">
-                                      ⏱️ {task.effort || task.effortEstimate}
-                                    </span>
-                                  )}
-                                  <span className="text-[10px] font-semibold text-slate-500 font-mono">
-                                    {task.channel}
-                                  </span>
-                                  {task.groundingBadge && (
-                                    <span className="text-[10px] font-medium text-slate-600 bg-white border border-slate-200 px-2 py-0.5 rounded-md truncate max-w-[210px]" title={task.groundingSummary}>
-                                      {task.groundingBadge}
-                                    </span>
-                                  )}
+
+                                    {task.emailed && (
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono flex items-center gap-1">
+                                        <Mail className="w-2.5 h-2.5 text-indigo-500" />
+                                        <span>Emailed to Creator</span>
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <h5 className={`text-sm font-bold ${task.done ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                                    {task.title}
+                                  </h5>
+                                  <p className="text-xs text-slate-600 leading-relaxed">
+                                    {task.description}
+                                  </p>
                                 </div>
-                                <h5 className={`text-xs font-bold ${task.done ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-                                  {task.title}
-                                </h5>
-                                <p className="text-[11px] text-slate-600 leading-relaxed">
-                                  {task.description}
-                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono">
+                                  {task.channel}
+                                </span>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center flex-wrap">
-                              {isOverdue && (
-                                <>
-                                  <button
-                                    onClick={() => handleSendTaskReminder(task)}
-                                    disabled={remindingTaskId === task.id}
-                                    className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold border border-amber-300 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
-                                    title="Send email reminder to creator"
-                                  >
-                                    {remindingTaskId === task.id ? (
-                                      <Loader2 className="w-3 h-3 animate-spin text-amber-700" />
-                                    ) : (
-                                      <Bell className="w-3 h-3 text-amber-700" />
-                                    )}
-                                    <span>{remindingTaskId === task.id ? 'Sending...' : 'Remind Creator'}</span>
-                                  </button>
+                            {/* Milestone Card Footer: Action Bar & Asset Indicators */}
+                            <div className="pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {isPostTask && campaignKit?.postImageUrl && (
+                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-mono flex items-center gap-1 shadow-2xs">
+                                    <Sparkles className="w-2.5 h-2.5 text-amber-600" />
+                                    <span>AI Graphic Ready (View in Modal)</span>
+                                  </span>
+                                )}
+                                {isVideoTask && campaignKit?.videoUrl && (
+                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-mono flex items-center gap-1 shadow-2xs">
+                                    <Video className="w-2.5 h-2.5 text-rose-600" />
+                                    <span>AI Video Ready (View in Modal)</span>
+                                  </span>
+                                )}
+                                {!task.done && (
+                                  <span className="text-[11px] text-slate-500 font-medium">
+                                    {task.isToday ? "🔥 Scheduled for today's release" : `Scheduled for Day ${task.day}`}
+                                  </span>
+                                )}
+                              </div>
 
-                                  <button
-                                    onClick={() => handleWhatsAppNudge(task)}
-                                    className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300 flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
-                                    title="Copy WhatsApp Nudge message"
-                                  >
-                                    <MessageSquare className="w-3 h-3 text-emerald-600" />
-                                    <span className="hidden sm:inline">WhatsApp Nudge</span>
-                                  </button>
-                                </>
-                              )}
+                              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyTextWithFeedback(getTaskDraftContent(task), task.id)}
+                                  className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                                  title="Copy raw text draft"
+                                >
+                                  {copiedTaskId === task.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                                  <span>{copiedTaskId === task.id ? 'Copied!' : 'Copy Text'}</span>
+                                </button>
 
-                              <button
-                                onClick={() => setViewDraftTask(task)}
-                                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-bold border border-slate-200/90 hover:border-slate-300 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
-                              >
-                                <Eye className="w-3.5 h-3.5 text-slate-500" />
-                                <span>View Draft</span>
-                              </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSendPostKitEmail(task)}
+                                  disabled={sendingEmailTaskId === task.id}
+                                  className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                                  title="Send this specific post kit to creator email"
+                                >
+                                  {sendingEmailTaskId === task.id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                                  ) : (
+                                    <Mail className="w-3.5 h-3.5 text-indigo-600" />
+                                  )}
+                                  <span className="hidden sm:inline">{task.emailed ? 'Re-send Email' : 'Email Post Kit'}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setViewDraftTask(task)}
+                                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                                  title="Open modal with visual mockup, generated image/video, and copy"
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-slate-300" />
+                                  <span>View Draft &amp; Mockup</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )
@@ -3124,17 +3438,17 @@ export default function Phase1Validate({
                         onClick={() => handleGeneratePostImage()}
                         disabled={isGeneratingImage}
                         className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
-                        title="Generate realistic AI announcement graphic using OpenAI"
+                        title="Generate announcement graphic"
                       >
                         {isGeneratingImage ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                            <span className="text-white">Generating Image (OpenAI)...</span>
+                            <span className="text-white">Generating Image...</span>
                           </>
                         ) : (
                           <>
                             <Sparkles className="w-3.5 h-3.5 text-white" />
-                            <span className="text-white">{campaignKit?.postImageUrl ? 'Regenerate AI Image (OpenAI)' : 'Generate AI Image (OpenAI)'}</span>
+                            <span className="text-white">{campaignKit?.postImageUrl ? 'Regenerate Image' : 'Generate Image'}</span>
                           </>
                         )}
                       </button>
@@ -3145,11 +3459,8 @@ export default function Phase1Validate({
                         <div className="flex items-start gap-2.5 min-w-0">
                           <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                           <div className="space-y-0.5 min-w-0">
-                            <span className="font-bold text-rose-950 block">AI Image Generation Error</span>
+                            <span className="font-bold text-rose-950 block">Image Generation Notice</span>
                             <span className="text-[11px] text-rose-800 leading-relaxed block break-words">{imageGenError}</span>
-                            <span className="text-[10px] text-slate-500 block pt-0.5 font-mono">
-                              Generated with OpenAI Image API models.
-                            </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -3184,21 +3495,40 @@ export default function Phase1Validate({
                     />
 
                     {campaignKit?.postImageUrl && (
-                      <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 flex items-center justify-between gap-2 text-xs">
+                      <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/90 flex items-center justify-between gap-2 text-xs flex-wrap">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="text-amber-950 text-[11px] truncate">
-                            <strong>AI Graphic Active:</strong> Generated via <code className="font-mono text-amber-900 font-semibold">{campaignKit?.postImageModel || 'OpenAI Image API'}</code>
+                          <span className="text-amber-950 text-xs truncate">
+                            <strong>AI Announcement Graphic Active</strong>
                           </span>
                         </div>
-                        <a
-                          href={campaignKit.postImageUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[11px] font-bold text-amber-800 hover:text-amber-950 underline shrink-0 cursor-pointer"
-                        >
-                          View Full Graphic ↗
-                        </a>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadAsset(campaignKit.postImageUrl, `${project?.creatorHandle || 'launch'}_graphic.png`)}
+                            className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download PNG</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSendPostKitEmail(campaignKit?.postingSchedule?.find(t => (t.channel || '').toLowerCase().includes('post') || (t.channel || '').toLowerCase().includes('x')) || null)}
+                            disabled={isSendingTodayEmail}
+                            className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Email Post Kit</span>
+                          </button>
+                          <a
+                            href={campaignKit.postImageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-bold text-amber-800 hover:text-amber-950 underline cursor-pointer"
+                          >
+                            View ↗
+                          </a>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -3301,17 +3631,17 @@ export default function Phase1Validate({
                         onClick={() => handleGenerateCampaignVideo()}
                         disabled={isGeneratingVideo}
                         className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
-                        title="Generate realistic 60s AI teaser video using OpenAI Sora"
+                        title="Generate teaser video"
                       >
                         {isGeneratingVideo ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                            <span className="text-white">Generating Video (OpenAI Sora)...</span>
+                            <span className="text-white">Generating Video...</span>
                           </>
                         ) : (
                           <>
                             <Sparkles className="w-3.5 h-3.5 text-white" />
-                            <span className="text-white">{campaignKit?.videoUrl ? 'Regenerate AI Video (OpenAI Sora)' : 'Generate AI Video (OpenAI Sora)'}</span>
+                            <span className="text-white">{campaignKit?.videoUrl ? 'Regenerate Video' : 'Generate Video'}</span>
                           </>
                         )}
                       </button>
@@ -3322,11 +3652,8 @@ export default function Phase1Validate({
                         <div className="flex items-start gap-2.5 min-w-0">
                           <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                           <div className="space-y-0.5 min-w-0">
-                            <span className="font-bold text-rose-950 block">AI Video Generation Error</span>
+                            <span className="font-bold text-rose-950 block">Video Generation Notice</span>
                             <span className="text-[11px] text-rose-800 leading-relaxed block break-words">{videoGenError}</span>
-                            <span className="text-[10px] text-slate-500 block pt-0.5 font-mono">
-                              Generated using OpenAI Sora Video API.
-                            </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -3361,21 +3688,40 @@ export default function Phase1Validate({
                     />
 
                     {campaignKit?.videoUrl && (
-                      <div className="p-2.5 rounded-xl bg-red-50/70 border border-red-200/80 flex items-center justify-between gap-2 text-xs">
+                      <div className="p-3 rounded-xl bg-red-50/80 border border-red-200/90 flex items-center justify-between gap-2 text-xs flex-wrap">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="text-red-950 text-[11px] truncate">
-                            <strong>AI Video Active:</strong> Rendered via <code className="font-mono text-red-900 font-semibold">{campaignKit?.videoModel || 'sora-2'}</code>
+                          <span className="text-red-950 text-xs truncate">
+                            <strong>AI Launch Video Active</strong>
                           </span>
                         </div>
-                        <a
-                          href={campaignKit.videoUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[11px] font-bold text-red-700 hover:text-red-900 underline shrink-0 cursor-pointer"
-                        >
-                          Open Video ↗
-                        </a>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadAsset(campaignKit.videoUrl, `${project?.creatorHandle || 'launch'}_video.mp4`)}
+                            className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download MP4</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSendPostKitEmail(campaignKit?.postingSchedule?.find(t => (t.channel || '').toLowerCase().includes('video')) || null)}
+                            disabled={isSendingTodayEmail}
+                            className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Email Video Kit</span>
+                          </button>
+                          <a
+                            href={campaignKit.videoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-bold text-red-700 hover:text-red-900 underline cursor-pointer"
+                          >
+                            Open ↗
+                          </a>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -4659,7 +5005,7 @@ export default function Phase1Validate({
                 <span>Validation Gate is Locked: Prerequisite Steps Incomplete</span>
               </div>
               <p className="text-[11px] text-amber-800 leading-relaxed">
-                The Gate Checkpoint requires verified data, audience feedback, and campaign telemetry from Steps 1–4 before an executive MVP build decision can be made.
+                The Gate Checkpoint evaluates data, audience feedback, and campaign telemetry from Steps 1–4. You can review each step below, or mark all prerequisites complete to proceed with your MVP decision.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                 <button
@@ -4712,6 +5058,42 @@ export default function Phase1Validate({
                 >
                   <span className="font-extrabold">4. Optimize</span>
                   <span className="font-mono">{isStep4Done ? '✓ Done' : '❌ Required'}</span>
+                </button>
+              </div>
+              <div className="flex items-center justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = {
+                      ...(project || {}),
+                      planLocked: true,
+                      assetsApproved: true,
+                      landingPageApproved: true,
+                      campaignApproved: true,
+                      step3Done: true,
+                      step4Done: true,
+                      validationOptimized: true,
+                      telemetryReviewed: true
+                    }
+                    if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+                    if (project?.id) {
+                      updateCoLaunchProject(project.id, {
+                        planLocked: true,
+                        assetsApproved: true,
+                        landingPageApproved: true,
+                        campaignApproved: true,
+                        step3Done: true,
+                        step4Done: true,
+                        validationOptimized: true,
+                        telemetryReviewed: true
+                      }).catch(e => console.warn(e))
+                    }
+                    showNotification('All prerequisite validation steps marked complete.')
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white font-bold text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-200" />
+                  <span>Mark All 1–4 Prerequisites Complete</span>
                 </button>
               </div>
             </div>
@@ -4880,9 +5262,9 @@ export default function Phase1Validate({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               {/* Option 1: Build MVP */}
               <button
-                disabled={!allPriorStepsDone || isAdvancingPhase || isIteratingGate || isArchivingProject}
+                disabled={isAdvancingPhase || isIteratingGate || isArchivingProject}
                 onClick={async () => {
-                  if (!allPriorStepsDone || isAdvancingPhase) return
+                  if (isAdvancingPhase) return
                   setIsAdvancingPhase(true)
                   try {
                     const notes = `Validation target passed with $${presalesRevenue.toLocaleString()} presales and ${reservations.length} backers.`
@@ -4903,6 +5285,10 @@ export default function Phase1Validate({
                       current_phase: 2,
                       currentStep: 'plan',
                       current_step: 'plan',
+                      p1Complete: true,
+                      phase1Passed: true,
+                      step4Done: true,
+                      step5Done: true,
                       status: 'building',
                       gateDecisions: [decisionItem, ...(project?.gateDecisions || [])],
                       decisions: [decisionItem, ...(project?.decisions || [])]
@@ -4917,6 +5303,10 @@ export default function Phase1Validate({
                           current_phase: 2,
                           currentStep: 'plan',
                           current_step: 'plan',
+                          p1Complete: true,
+                          phase1Passed: true,
+                          step4Done: true,
+                          step5Done: true,
                           status: 'building'
                         })
                       } catch (e) {
@@ -4929,42 +5319,34 @@ export default function Phase1Validate({
                     setIsAdvancingPhase(false)
                   }
                 }}
-                className={`py-3.5 px-4 rounded-xl font-extrabold text-xs flex flex-col items-center justify-center gap-1.5 shadow-sm transition-all border ${
-                  allPriorStepsDone
-                    ? isAdvancingPhase
-                      ? 'bg-emerald-700 text-white cursor-wait border-emerald-600'
-                      : isGatePassed
-                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white active:scale-98 cursor-pointer border-emerald-500 shadow-emerald-950/20'
-                      : 'bg-slate-900 hover:bg-slate-800 text-white active:scale-98 cursor-pointer border-slate-900'
-                    : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                className={`py-3.5 px-4 rounded-xl font-extrabold text-xs flex flex-col items-center justify-center gap-1.5 shadow-sm transition-all border cursor-pointer ${
+                  isAdvancingPhase
+                    ? 'bg-emerald-700 text-white cursor-wait border-emerald-600'
+                    : isGatePassed
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white active:scale-98 border-emerald-500 shadow-emerald-950/20'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white active:scale-98 border-slate-900'
                 }`}
-                title={!allPriorStepsDone ? 'Complete Steps 1–4 before advancing to Phase 2' : 'Advance to Phase 2 Sprints'}
+                title="Advance to Phase 2 Sprints"
               >
                 <div className="flex items-center gap-2">
                   {isAdvancingPhase ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  ) : !allPriorStepsDone ? (
-                    <Lock className="w-4 h-4 text-slate-400" />
                   ) : (
                     <CheckCircle2 className={`w-4 h-4 ${isGatePassed ? 'text-white' : 'text-emerald-400'}`} />
                   )}
                   <span className="font-extrabold text-white text-xs">
-                    {isAdvancingPhase ? 'Advancing to Phase 2...' : isGatePassed ? 'Build MVP (PASS)' : 'Build MVP (Override)'}
+                    {isAdvancingPhase ? 'Advancing to Phase 2...' : isGatePassed ? 'Build MVP (PASS)' : 'Build MVP (Advance to Phase 2)'}
                   </span>
-                  {allPriorStepsDone && (
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide ${
-                      isGatePassed ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-300'
-                    }`}>
-                      {isGatePassed ? 'RECOMMENDED' : 'MANUAL PASS'}
-                    </span>
-                  )}
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide ${
+                    isGatePassed ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-300'
+                  }`}>
+                    {isGatePassed ? 'RECOMMENDED' : 'PASS & ADVANCE'}
+                  </span>
                 </div>
-                <span className={allPriorStepsDone ? 'text-[10px] font-normal text-slate-300' : 'text-[10px] font-normal text-slate-400'}>
+                <span className="text-[10px] font-normal text-slate-300">
                   {isAdvancingPhase
                     ? 'Setting up Phase 2 Engineering Workspace...'
-                    : allPriorStepsDone
-                    ? 'Advance to Phase 2 Sprints'
-                    : 'Locked — Complete Steps 1–4 first'}
+                    : 'Advance to Phase 2 Sprints & Mark Phase 1 Done'}
                 </span>
               </button>
 

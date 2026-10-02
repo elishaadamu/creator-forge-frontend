@@ -308,7 +308,7 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
     showToast('Task removed from Ops Checklist.')
   }
 
-  // AI Generation Handlers (Gemini 3.1 Flash Lite with instant fallback)
+  // AI Generation Handlers (with instant fallback)
   const handleGenerateStrategy = async () => {
     setIsGeneratingStrategy(true)
     try {
@@ -316,7 +316,7 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
       const finalStrat = gen || buildSmartFallbackPhase3Strategy(project)
       setStrategy(finalStrat)
       await handleSaveState({ strategy: finalStrat })
-      showToast('AI Launch Strategy & Checklists generated with Gemini 3.1 Flash Lite!')
+      showToast('AI Launch Strategy & Checklists generated!')
     } catch (e) {
       console.warn('Strategy generation fallback:', e)
       const fallback = buildSmartFallbackPhase3Strategy(project)
@@ -335,7 +335,7 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
       const finalAssets = gen || buildSmartFallbackPhase3CreatorAssets(project)
       setCreatorAssets(finalAssets)
       await handleSaveState({ creatorAssets: finalAssets })
-      showToast('AI generated fresh creator launch assets with Gemini 3.1 Flash Lite!')
+      showToast('AI generated fresh creator launch assets!')
     } catch (e) {
       console.warn('Asset generation fallback:', e)
       const fallback = buildSmartFallbackPhase3CreatorAssets(project)
@@ -828,7 +828,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                 onClick={handleGenerateStrategy}
                 disabled={isGeneratingStrategy}
                 className="px-3.5 py-1.5 rounded-xl bg-[#1a1f2c] hover:bg-[#252c3f] text-purple-300 border border-purple-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shrink-0"
-                title="Synthesizes complete launch strategy, 48-hour schedule, and checklists using Gemini 3.1 Flash Lite"
+                title="Synthesizes complete launch strategy, 48-hour schedule, and checklists with AI"
               >
                 {isGeneratingStrategy ? <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-200" /> : <Sparkles className="w-3.5 h-3.5 text-purple-400" />}
                 <span>{isGeneratingStrategy ? 'Synthesizing with AI...' : 'Regenerate Strategy with AI'}</span>
@@ -844,7 +844,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                   <div className="flex items-center gap-2.5">
                     <Loader2 className="w-5 h-5 animate-spin text-purple-400 shrink-0" />
                     <div>
-                      <strong className="text-white block text-sm font-bold">Gemini 3.1 Flash Lite is Synthesizing Launch Strategy...</strong>
+                      <strong className="text-white block text-sm font-bold">Synthesizing Launch Strategy with AI...</strong>
                       <span className="text-[11px] text-purple-300/80">Analyzing presales, multi-channel distribution matrix, and 48-hour schedule</span>
                     </div>
                   </div>
@@ -862,7 +862,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                 <div className="space-y-1">
                   <h3 className="text-lg font-black text-white">No Launch Strategy Generated Yet</h3>
                   <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed">
-                    Click below to let Gemini 3.1 Flash Lite synthesize a commercial launch strategy, multi-channel distribution plan, and 48-hour rollout schedule.
+                    Click below to synthesize a commercial launch strategy, multi-channel distribution plan, and 48-hour rollout schedule with AI.
                   </p>
                 </div>
                 <button
@@ -1142,7 +1142,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                   <div className="flex items-center gap-2.5">
                     <Loader2 className="w-5 h-5 animate-spin text-purple-400 shrink-0" />
                     <div>
-                      <strong className="text-white block text-sm font-bold">Gemini 3.1 Flash Lite is Generating Creator Assets...</strong>
+                      <strong className="text-white block text-sm font-bold">Generating Creator Assets with AI...</strong>
                       <span className="text-[11px] text-purple-300/80">Drafting announcement posts, story sequences, newsletter, scripts & referral links</span>
                     </div>
                   </div>
@@ -1160,7 +1160,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
                 <div className="space-y-1">
                   <h3 className="text-lg font-black text-white">No Creator Launch Assets Generated Yet</h3>
                   <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed">
-                    Click below to let Gemini 3.1 Flash Lite generate high-converting social posts, Instagram story sequences, email newsletter broadcasts, and video scripts.
+                    Click below to generate high-converting social posts, Instagram story sequences, email newsletter broadcasts, and video scripts with AI.
                   </p>
                 </div>
                 <button
@@ -2483,7 +2483,7 @@ ${creatorAssets?.newsletterBroadcast?.body || 'Not yet generated'}
               <div className="space-y-1">
                 <h3 className="text-lg font-black text-white">Commercial Launch Report & Decision Gate</h3>
                 <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed">
-                  Generate the commercial launch score, customer CAC analysis, channel rankings, and strategic scaling recommendations with Gemini 3.1 Flash Lite.
+                  Generate the commercial launch score, customer CAC analysis, channel rankings, and strategic scaling recommendations with AI.
                 </p>
               </div>
               <button

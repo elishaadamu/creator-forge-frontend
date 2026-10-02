@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Code, Cpu, Terminal, CheckCircle2, ShieldCheck, Sparkles, Layers,
   Database, Server, Lock, CreditCard, BarChart3, AlertCircle, ArrowRight,
@@ -33,6 +33,27 @@ export default function Phase2BuildMVP({
   onUpdateProject,
   onAdvanceToPhase3
 }) {
+  // Derive Phase 1 dynamic pricing tiers
+  const projectPricingTiers = useMemo(() => {
+    if (Array.isArray(project?.campaignKit?.pricingTiers) && project.campaignKit.pricingTiers.length > 0) {
+      return project.campaignKit.pricingTiers.map(t => ({
+        label: `${t.name || t.title || 'Founding Tier'} ($${t.price})`,
+        value: `${t.name || t.title || 'Founding Tier'} ($${t.price})`
+      }))
+    }
+    const singlePrice = project?.validationPlan?.pricing || project?.pricing || project?.selectedConcept?.pricing
+    if (singlePrice) {
+      return [
+        { label: `Founding Access (${singlePrice})`, value: `Founding Access (${singlePrice})` },
+        { label: 'Waitlist VIP', value: 'Waitlist VIP' }
+      ]
+    }
+    return [
+      { label: 'Founding Member Pass', value: 'Founding Member Pass' },
+      { label: 'Waitlist VIP', value: 'Waitlist VIP' }
+    ]
+  }, [project?.campaignKit?.pricingTiers, project?.validationPlan?.pricing, project?.pricing, project?.selectedConcept?.pricing])
+
   const [activeStep, setActiveStepState] = useState(() => {
     if (activeStepId && ['plan', 'build', 'beta', 'gate'].includes(activeStepId)) {
       return activeStepId
@@ -48,8 +69,6 @@ export default function Phase2BuildMVP({
     }
     return 'plan'
   })
-
-
 
   // Synchronize when activeStepId prop changes
   useEffect(() => {
@@ -120,17 +139,22 @@ export default function Phase2BuildMVP({
     return []
   })
 
-  // Raw Beta Feedback Feed
+  // Raw Beta Feedback Feed (Inherits Phase 1 details and reservations)
   const [rawFeedback, setRawFeedback] = useState(() => {
     if (project?.betaFeedback && project.betaFeedback.length > 0) return project.betaFeedback
     const prod = project?.productName || 'the product'
-    const cust = project?.validationPlan?.customer || project?.targetAudience || 'users'
-    const prob = project?.validationPlan?.problem || 'automating workflows'
+    const cust = project?.validationPlan?.customer || project?.campaignKit?.targetAudience || project?.targetAudience || 'users'
+    const prob = project?.validationPlan?.problem || project?.campaignKit?.problemAgitation || 'automating workflows'
+    const res = Array.isArray(project?.reservations) ? project.reservations : []
+    const author1 = res[0]?.name || 'Beta Backer #1'
+    const author2 = res[1]?.name || 'Beta Backer #2'
+    const author3 = res[2]?.name || 'Beta Backer #3'
+    const author4 = res[3]?.name || 'Beta Backer #4'
     return [
-      { id: 'f-1', author: 'Beta Tester #1', type: 'UX / Onboarding', message: `Initial setup was fast, but a guided 3-step walkthrough would help ${cust} onboard even faster.`, timestamp: '2h ago' },
-      { id: 'f-2', author: 'Beta Tester #2', type: 'Feature Request', message: `Can we add direct 1-click cloud sync & webhook triggers for ${prod}?`, timestamp: '4h ago' },
-      { id: 'f-3', author: 'Beta Tester #3', type: 'Validation Feedback', message: `This directly eliminates our daily friction around "${prob}". Excellent speed!`, timestamp: '6h ago' },
-      { id: 'f-4', author: 'Beta Tester #4', type: 'Bug', message: 'Encountered minor session token timeout when leaving workspace idle for 30 minutes.', timestamp: '1d ago' }
+      { id: 'f-1', author: author1, type: 'UX / Onboarding', message: `Initial setup was fast, but a guided 3-step walkthrough would help ${cust} onboard even faster.`, timestamp: '2h ago' },
+      { id: 'f-2', author: author2, type: 'Feature Request', message: `Can we add direct 1-click cloud sync & webhook triggers for ${prod}?`, timestamp: '4h ago' },
+      { id: 'f-3', author: author3, type: 'Validation Feedback', message: `This directly eliminates our daily friction around "${prob}". Excellent speed!`, timestamp: '6h ago' },
+      { id: 'f-4', author: author4, type: 'Bug', message: 'Encountered minor session token timeout when leaving workspace idle for 30 minutes.', timestamp: '1d ago' }
     ]
   })
 
@@ -1077,22 +1101,22 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
   let dynamicVerdict = 'BUILD IN PROGRESS'
   let dynamicConfidence = 'Preliminary'
-  let verdictBadgeClass = 'text-amber-400 bg-amber-500/10 border-amber-500/30'
-  let textVerdictClass = 'text-amber-400'
-  let cardBorderClass = 'border-amber-500/30'
+  let verdictBadgeClass = 'text-amber-800 bg-amber-50 border-amber-300'
+  let textVerdictClass = 'text-amber-700'
+  let cardBorderClass = 'border-amber-200'
 
   if (dynamicReadinessScore >= 85) {
     dynamicVerdict = 'READY FOR GENERAL LAUNCH'
     dynamicConfidence = 'High'
-    verdictBadgeClass = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-    textVerdictClass = 'text-emerald-400'
-    cardBorderClass = 'border-emerald-500/30'
+    verdictBadgeClass = 'text-emerald-800 bg-emerald-50 border-emerald-300'
+    textVerdictClass = 'text-emerald-700'
+    cardBorderClass = 'border-emerald-200'
   } else if (dynamicReadinessScore >= 50) {
     dynamicVerdict = 'IN ACTIVE BETA & QA'
     dynamicConfidence = 'Moderate'
-    verdictBadgeClass = 'text-blue-400 bg-blue-500/10 border-blue-500/30'
-    textVerdictClass = 'text-blue-400'
-    cardBorderClass = 'border-blue-500/30'
+    verdictBadgeClass = 'text-blue-800 bg-blue-50 border-blue-300'
+    textVerdictClass = 'text-blue-700'
+    cardBorderClass = 'border-blue-200'
   }
 
   const activeReadiness = {
@@ -1117,30 +1141,30 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
     <div className="space-y-6 text-left">
       {/* Toast notification */}
       {saveToast && (
-        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-2xl bg-blue-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-blue-400/40 animate-slide-up">
-          <CheckCircle className="w-4 h-4 text-emerald-300" />
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-2xl bg-slate-900 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-slate-700 animate-slide-up">
+          <CheckCircle className="w-4 h-4 text-emerald-400" />
           <span>{saveToast}</span>
         </div>
       )}
 
       {/* Kill Confirmation Modal */}
       {showKillModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-md w-full p-6 rounded-3xl bg-[#0e1117] border border-red-500/40 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-red-400">
-              <AlertTriangle className="w-6 h-6" />
-              <h3 className="text-base font-black text-white">Confirm Kill / Pivot Decision</h3>
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="max-w-md w-full p-6 rounded-3xl bg-white border border-red-200 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <AlertTriangle className="w-6 h-6 shrink-0" />
+              <h3 className="text-base font-black text-slate-950">Confirm Kill / Pivot Decision</h3>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Are you sure you want to stop development for <strong>{project?.productName || 'this product'}</strong>? You can choose to archive the project and refund presale founding backers, or pivot to a new product hypothesis.
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Are you sure you want to stop development for <strong className="text-slate-900">{project?.productName || 'this product'}</strong>? You can choose to archive the project and refund presale founding backers, or pivot to a new product hypothesis.
             </p>
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[11px] text-red-300">
-              Validated Presales to Refund: <strong>${presalesRevenue.toLocaleString()}</strong> across <strong>{backersCount}</strong> backers.
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-[11px] text-red-700 font-medium">
+              Validated Presales to Refund: <strong className="text-red-900">${presalesRevenue.toLocaleString()}</strong> across <strong className="text-red-900">{backersCount}</strong> backers.
             </div>
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 onClick={() => setShowKillModal(false)}
-                className="px-4 py-2 rounded-xl bg-white/[0.06] text-slate-300 hover:text-white text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -1150,7 +1174,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   setDecisionNotice('Project archived. Presale pledges queued for refund processing.')
                   showToast('Project archived.')
                 }}
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs"
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
               >
                 Confirm Project Archive
               </button>
@@ -1160,19 +1184,19 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
       )}
 
       {/* Header Banner with Validated Demand Telemetry */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-[#0c0e14] via-[#111624] to-[#0c0e14] border border-white/[0.08] shadow-2xl space-y-4">
+      <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-2xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-wider border border-blue-500/30">
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-wider border border-blue-200">
                 Phase 2 Checkpoint
               </span>
-              <span className="text-xs font-semibold text-slate-400">Build MVP</span>
+              <span className="text-xs font-semibold text-slate-500">Build MVP</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
               Turn Validated Demand into the Smallest Usable Version
             </h1>
-            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
               Division of labor between AI Coding Agents & Human Engineering with automated testing, beta cohort validation, and readiness audit.
             </p>
           </div>
@@ -1184,20 +1208,20 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   if (isEditingSpec) handleSavePlan()
                   setIsEditingSpec(!isEditingSpec)
                 }}
-                className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
                   isEditingSpec
-                    ? 'bg-emerald-500 text-slate-950 border-emerald-400'
-                    : 'bg-[#1a1f2c] hover:bg-[#23293b] text-slate-200 border-white/[0.08]'
+                    ? 'bg-amber-50 text-amber-800 border-amber-300 shadow-2xs'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 shadow-2xs'
                 }`}
               >
                 {isEditingSpec ? (
                   <>
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-3.5 h-3.5 text-amber-700" />
                     <span>Done Editing</span>
                   </>
                 ) : (
                   <>
-                    <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+                    <Edit3 className="w-3.5 h-3.5 text-slate-500" />
                     <span>Edit Spec</span>
                   </>
                 )}
@@ -1207,11 +1231,11 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             <button
               onClick={handleGenerateAIPlan}
               disabled={isGenerating}
-              className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300" />
                   <span>AI Generating...</span>
                 </>
               ) : (
@@ -1224,16 +1248,16 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
             <button
               onClick={handleSaveToProjectFiles}
-              className="px-3 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
               title="Save this build plan into Project Files"
             >
-              <Save className="w-3.5 h-3.5 text-emerald-400" />
+              <Save className="w-3.5 h-3.5 text-white" />
               <span>Save to Files</span>
             </button>
 
             <button
               onClick={handleExportMarkdown}
-              className="p-2.5 rounded-xl bg-[#1a1f2c] hover:bg-[#23293b] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold flex items-center gap-1.5"
+              className="p-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
               title="Download Markdown Spec"
             >
               <Download className="w-4 h-4" />
@@ -1243,44 +1267,44 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
         {/* Validated Demand Telemetry Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="p-3 rounded-2xl bg-[#090b0e] border border-white/[0.06] space-y-0.5">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Validated Presales</span>
-            <div className="text-base sm:text-lg font-black text-emerald-400 font-mono">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Validated Presales</span>
+            <div className="text-base sm:text-lg font-black text-emerald-600 font-mono">
               ${presalesRevenue.toLocaleString()}
             </div>
-            <span className="text-[10px] text-slate-500">Collected in Phase 1</span>
+            <span className="text-[10px] text-slate-400 block">Collected in Phase 1</span>
           </div>
 
-          <div className="p-3 rounded-2xl bg-[#090b0e] border border-white/[0.06] space-y-0.5">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Founding Backers</span>
-            <div className="text-base sm:text-lg font-black text-slate-200 font-mono">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Founding Backers</span>
+            <div className="text-base sm:text-lg font-black text-slate-900 font-mono">
               {backersCount} Cohort Members
             </div>
-            <span className="text-[10px] text-slate-500">Awaiting private beta access</span>
+            <span className="text-[10px] text-slate-400 block">Awaiting private beta access</span>
           </div>
 
-          <div className="p-3 rounded-2xl bg-[#090b0e] border border-white/[0.06] space-y-0.5">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">MVP Engineering Build</span>
-            <div className="text-base sm:text-lg font-black text-blue-400 font-mono">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">MVP Engineering Build</span>
+            <div className="text-base sm:text-lg font-black text-blue-600 font-mono">
               {progressPercent}% Complete
             </div>
-            <div className="w-full bg-white/[0.08] rounded-full h-1.5 overflow-hidden mt-1">
-              <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }} />
+            <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden mt-1">
+              <div className="bg-blue-600 h-full rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }} />
             </div>
           </div>
 
-          <div className="p-3 rounded-2xl bg-[#090b0e] border border-white/[0.06] space-y-0.5">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Product Readiness</span>
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Product Readiness</span>
             <div className={`text-base sm:text-lg font-black font-mono ${activeReadiness.textVerdictClass}`}>
               {activeReadiness.score}/100
             </div>
-            <span className={`text-[10px] font-semibold ${activeReadiness.textVerdictClass}`}>{activeReadiness.verdict}</span>
+            <span className={`text-[10px] font-bold block ${activeReadiness.textVerdictClass}`}>{activeReadiness.verdict}</span>
           </div>
         </div>
       </div>
 
       {/* Main 4 Steps Stepper Navigation */}
-      <div className="flex items-center justify-between p-1.5 rounded-2xl bg-[#0e1117] border border-white/[0.08] overflow-x-auto">
+      <div className="flex items-center justify-between p-1.5 rounded-2xl bg-slate-100 border border-slate-200/90 shadow-2xs overflow-x-auto">
         <div className="flex items-center gap-1.5 min-w-max">
           {[
             {
@@ -1328,29 +1352,27 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 }}
                 disabled={isLocked}
                 title={isLocked ? getP2StepMissingPrerequisiteText(tab.id) : tab.label}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap shrink-0 transition-all ${
                   isLocked
-                    ? 'opacity-40 cursor-not-allowed text-slate-500 bg-white/[0.01]'
+                    ? 'opacity-40 cursor-not-allowed text-slate-400 bg-transparent'
                     : isActive
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-950/60 cursor-pointer'
+                    ? 'bg-blue-600 text-white shadow-xs font-black cursor-pointer'
                     : isDone
-                    ? 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30 cursor-pointer'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04] cursor-pointer'
+                    ? 'bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200 shadow-2xs cursor-pointer'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/80 cursor-pointer'
                 }`}
               >
                 {isLocked ? (
-                  <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 ) : isDone ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 ) : (
                   <Icon className="w-3.5 h-3.5 shrink-0" />
                 )}
-                <span className={isLocked ? 'text-slate-500' : isDone ? 'text-slate-200 font-semibold' : ''}>
-                  {tab.label}
-                </span>
+                <span className="whitespace-nowrap">{tab.label}</span>
                 {isDone && !isLocked && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-normal ${
-                    isActive ? 'bg-emerald-400/20 text-emerald-200 border border-emerald-400/30' : 'bg-emerald-500/20 text-emerald-300'
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    isActive ? 'bg-blue-700 text-white' : 'bg-emerald-100 text-emerald-800'
                   }`}>
                     Done
                   </span>
@@ -1363,17 +1385,17 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
       {/* Dynamic In-Page AI Error Banner */}
       {aiError && (
-        <div className="p-4 rounded-2xl bg-red-950/40 border border-red-500/40 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-xs shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-red-500/20 text-red-400 shrink-0 mt-0.5 sm:mt-0">
+            <div className="p-2 rounded-xl bg-red-100 text-red-600 shrink-0 mt-0.5 sm:mt-0">
               <AlertTriangle className="w-4 h-4" />
             </div>
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <strong className="text-red-300 font-bold">{aiError.source || 'AI Service Notice'}</strong>
-                <span className="text-[10px] text-red-400/80 font-mono">Error Details</span>
+                <strong className="text-red-900 font-bold">{aiError.source || 'AI Service Notice'}</strong>
+                <span className="text-[10px] text-red-600 font-mono">Error Details</span>
               </div>
-              <p className="text-red-200/90 text-[11px] leading-relaxed">
+              <p className="text-red-800 text-[11px] leading-relaxed">
                 {aiError.message}
               </p>
             </div>
@@ -1383,7 +1405,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             {aiError.action === 'generate_plan' && (
               <button
                 onClick={handleGenerateAIPlan}
-                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Retry with AI</span>
@@ -1392,7 +1414,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             {aiError.action === 'cluster_feedback' && (
               <button
                 onClick={handleClusterFeedbackAI}
-                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Retry with AI</span>
@@ -1401,7 +1423,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             {aiError.action === 'auto_fix' && (
               <button
                 onClick={handleApplyAIAutoFixes}
-                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Retry with AI</span>
@@ -1410,7 +1432,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             {aiError.action === 'dispatch_task' && aiError.task && (
               <button
                 onClick={() => handleDispatchAIAgent(aiError.task)}
-                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Retry AI Task</span>
@@ -1418,7 +1440,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             )}
             <button
               onClick={() => setAiError(null)}
-              className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 hover:text-white font-semibold text-xs transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-semibold text-xs shadow-2xs transition-colors cursor-pointer"
             >
               Dismiss
             </button>
@@ -1433,29 +1455,27 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
         ) : (
         <div className="space-y-5">
           {/* Subtabs for Step 1 + Unified Single-Go AI Action Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-3.5">
-            <div className="flex items-center gap-1.5 overflow-x-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-200 pb-3">
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200/80 max-w-full overflow-x-auto">
               {[
-                { id: 'spec', label: 'Product Spec', isDone: Boolean(buildPlan?.productSpec?.coreValueProp || buildPlan?.productSpec?.targetUser || buildPlan?.productSpec?.features?.length > 0) },
+                { id: 'spec', label: 'Product Spec', isDone: Boolean(buildPlan?.productSpec?.coreValueProp || buildPlan?.productSpec?.targetUser || buildPlan?.productSpec?.targetCustomer || buildPlan?.productSpec?.features?.length > 0) },
                 { id: 'technical', label: 'Technical Plan', isDone: Boolean(buildPlan?.technicalPlan?.architecture || buildPlan?.technicalPlan?.databaseSchema || buildPlan?.technicalPlan?.techStack || buildPlan?.technicalPlan?.database?.length > 0) },
-                { id: 'scope', label: 'Scope Boundaries', isDone: Boolean(buildPlan?.scopeBoundaries?.inScopeMvp?.length > 0 || buildPlan?.scopeBoundaries?.outOfScopeFuture?.length > 0) },
+                { id: 'scope', label: 'Scope Boundaries', isDone: Boolean(buildPlan?.scopeBoundaries?.includedInMVP?.length > 0 || buildPlan?.scopeBoundaries?.inScopeMvp?.length > 0) },
                 { id: 'tasks', label: `Engineering Tasks (${engineeringTasks.length})`, isDone: Boolean(engineeringTasks.length > 0) },
               ].map(sub => (
                 <button
                   key={sub.id}
                   onClick={() => setSpecSubtab(sub.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer flex items-center gap-1.5 ${
                     specSubtab === sub.id
-                      ? 'bg-white/10 text-white border border-white/20 shadow-sm'
+                      ? 'bg-white text-slate-900 border border-slate-200/80 shadow-2xs font-bold'
                       : sub.isDone
-                      ? 'text-emerald-300 hover:text-emerald-200'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'text-emerald-700 hover:text-emerald-800 hover:bg-white/60'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                   }`}
                 >
-                  {sub.isDone && <Check className="w-3 h-3 text-emerald-400" />}
-                  <span className={sub.isDone ? 'text-slate-200 font-semibold' : ''}>
-                    {sub.label}
-                  </span>
+                  {sub.isDone && <Check className="w-3 h-3 text-emerald-600 shrink-0" />}
+                  <span className="whitespace-nowrap">{sub.label}</span>
                 </button>
               ))}
             </div>
@@ -1464,28 +1484,28 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               <button
                 onClick={handleGenerateAIPlan}
                 disabled={isGenerating}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 active:scale-95 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 active:scale-95 cursor-pointer whitespace-nowrap"
                 title="Synthesizes Product Spec, Technical Plan, Scope Boundaries & Sprint Tasks in 1 go"
               >
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300" />
-                    <span>Synthesizing All 4 Tabs...</span>
+                    <span>Synthesizing...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3.5 h-3.5 text-slate-300" />
-                    <span>Generate Full Build Plan with AI</span>
+                    <span>AI Generate Build Plan</span>
                   </>
                 )}
               </button>
 
               <button
                 onClick={() => setIsEditingSpec(!isEditingSpec)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
                   isEditingSpec
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                    : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
+                    ? 'bg-amber-50 text-amber-800 border-amber-300 shadow-2xs font-bold'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 shadow-2xs'
                 }`}
               >
                 {isEditingSpec ? 'Done Editing' : 'Edit Spec'}
@@ -1493,9 +1513,9 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
               <button
                 onClick={handleSaveToProjectFiles}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs text-xs font-bold transition-all active:scale-95 cursor-pointer whitespace-nowrap"
               >
-                <Save className="w-3.5 h-3.5 text-emerald-400" />
+                <Save className="w-3.5 h-3.5 text-white" />
                 <span>Save</span>
               </button>
             </div>
@@ -1503,21 +1523,21 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
           {/* SUBTABS CONTENT */}
           {!buildPlan ? (
-            <div className="p-10 sm:p-14 rounded-3xl bg-[#0e1117] border border-white/[0.08] text-center space-y-5 my-2">
-              <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center mx-auto shadow-md">
-                <Sparkles className="w-8 h-8 text-slate-300" />
+            <div className="p-10 sm:p-14 rounded-3xl bg-white border border-slate-200 shadow-2xs text-center space-y-5 my-2">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center mx-auto shadow-2xs">
+                <Sparkles className="w-8 h-8 text-slate-700" />
               </div>
               <div className="space-y-2 max-w-lg mx-auto">
-                <h3 className="text-base sm:text-lg font-bold text-white">No MVP Build Plan Generated Yet</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Click below to synthesize your Product Spec, Technical Architecture, Scope Boundaries & Sprint Tasks with Gemini 3.1 Flash Lite.
+                <h3 className="text-base sm:text-lg font-black text-slate-900">No MVP Build Plan Generated Yet</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Click below to synthesize your Product Spec, Technical Architecture, Scope Boundaries & Sprint Tasks with AI.
                 </p>
               </div>
               <div>
                 <button
                   onClick={handleGenerateAIPlan}
                   disabled={isGenerating}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all disabled:opacity-50 active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 active:scale-95 cursor-pointer"
                 >
                   {isGenerating ? (
                     <>
@@ -1538,14 +1558,15 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               {/* SUBTAB A: PRODUCT SPEC */}
               {specSubtab === 'spec' && (
             <div className="space-y-4">
-              {/* Target Customer & Core Problem Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
+              {/* Target Customer, Core Problem & Value Proposition Grid (Direct from Phase 1) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5" />
                       <span>Target Customer</span>
                     </span>
+                    <span className="text-[9px] font-mono text-slate-400">Phase 1</span>
                   </div>
                   {isEditingSpec ? (
                     <textarea
@@ -1553,21 +1574,22 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                       onChange={e => updateSpecField('targetCustomer', e.target.value)}
                       placeholder="Describe target customer segment..."
                       rows={3}
-                      className="w-full px-3 py-2 rounded-xl bg-[#141720] border border-white/[0.1] text-xs text-white outline-none focus:border-blue-500/60"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 outline-none focus:border-blue-600 shadow-2xs"
                     />
                   ) : (
-                    <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                      {buildPlan.productSpec?.targetCustomer || project?.validationPlan?.customer || 'No target customer defined yet. Click Edit Spec or Generate AI Build Plan.'}
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {buildPlan.productSpec?.targetCustomer || project?.validationPlan?.customer || project?.campaignKit?.targetAudience || project?.targetAudience || 'No target customer defined yet. Click AI Generate Build Plan.'}
                     </p>
                   )}
                 </div>
 
-                <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-red-700 uppercase tracking-wider flex items-center gap-1.5">
                       <AlertCircle className="w-3.5 h-3.5" />
                       <span>Core Problem Validated</span>
                     </span>
+                    <span className="text-[9px] font-mono text-slate-400">Phase 1</span>
                   </div>
                   {isEditingSpec ? (
                     <textarea
@@ -1575,82 +1597,105 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                       onChange={e => updateSpecField('coreProblem', e.target.value)}
                       placeholder="Describe core problem validated in Phase 1..."
                       rows={3}
-                      className="w-full px-3 py-2 rounded-xl bg-[#141720] border border-white/[0.1] text-xs text-white outline-none focus:border-blue-500/60"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 outline-none focus:border-blue-600 shadow-2xs"
                     />
                   ) : (
-                    <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                      {buildPlan.productSpec?.coreProblem || project?.validationPlan?.problem || 'No core problem defined yet. Click Edit Spec or Generate AI Build Plan.'}
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {buildPlan.productSpec?.coreProblem || project?.validationPlan?.problem || project?.campaignKit?.problemAgitation || project?.problemStatement || 'No core problem defined yet. Click AI Generate Build Plan.'}
+                    </p>
+                  )}
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Value Prop / Solution</span>
+                    </span>
+                    <span className="text-[9px] font-mono text-slate-400">Phase 1</span>
+                  </div>
+                  {isEditingSpec ? (
+                    <textarea
+                      value={buildPlan.productSpec?.valueProposition || ''}
+                      onChange={e => updateSpecField('valueProposition', e.target.value)}
+                      placeholder="Describe validated value proposition..."
+                      rows={3}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 outline-none focus:border-blue-600 shadow-2xs"
+                    />
+                  ) : (
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {buildPlan.productSpec?.valueProposition || project?.validationPlan?.solution || project?.campaignKit?.headline || project?.productTagline || 'No value proposition defined yet. Click AI Generate Build Plan.'}
                     </p>
                   )}
                 </div>
               </div>
 
               {/* Core MVP Features */}
-              <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-blue-400" />
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-blue-600" />
                     <span>Core MVP Features</span>
                   </h3>
-                  <span className="text-[10px] font-mono text-slate-400">Strict P0 / P1 Focus</span>
+                  <span className="text-[10px] font-mono text-slate-500 font-semibold">Strict P0 / P1 Focus</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {(buildPlan.productSpec?.features || []).map((feat, idx) => (
-                    <div key={idx} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1 relative group">
+                    <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 relative group">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-white text-xs">{feat.name}</span>
+                        <span className="font-bold text-slate-900 text-xs">{feat.name}</span>
                         <div className="flex items-center gap-2">
                           <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full ${
                             feat.priority?.includes('P0')
-                              ? 'bg-red-500/15 text-red-300 border border-red-500/30'
-                              : 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                              ? 'bg-red-50 text-red-700 border border-red-200'
+                              : 'bg-blue-50 text-blue-700 border border-blue-200'
                           }`}>
                             {feat.priority}
                           </span>
                           {isEditingSpec && (
-                            <button onClick={() => handleDeleteFeature(idx)} className="text-slate-500 hover:text-red-400">
+                            <button onClick={() => handleDeleteFeature(idx)} className="text-slate-400 hover:text-red-600 cursor-pointer">
                               <Trash2 className="w-3 h-3" />
                             </button>
                           )}
                         </div>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">{feat.description}</p>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">{feat.description}</p>
                     </div>
                   ))}
                 </div>
 
                 {/* Add Feature Form */}
                 {isEditingSpec && (
-                  <form onSubmit={handleAddFeature} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.08] space-y-2 mt-2">
-                    <span className="text-xs font-bold text-white block">Add Core MVP Feature</span>
+                  <form onSubmit={handleAddFeature} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 mt-2">
+                    <span className="text-xs font-bold text-slate-900 block">Add Core MVP Feature</span>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <input
                         type="text"
                         placeholder="Feature name..."
                         value={newFeatureName}
                         onChange={e => setNewFeatureName(e.target.value)}
-                        className="px-3 py-1.5 rounded-lg bg-[#090b0e] border border-white/[0.08] text-xs text-white outline-none"
+                        className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slate-900 outline-none shadow-2xs"
                       />
                       <input
                         type="text"
                         placeholder="Feature description..."
                         value={newFeatureDesc}
                         onChange={e => setNewFeatureDesc(e.target.value)}
-                        className="px-3 py-1.5 rounded-lg bg-[#090b0e] border border-white/[0.08] text-xs text-white outline-none"
+                        className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slate-900 outline-none shadow-2xs"
                       />
                       <div className="flex items-center gap-2">
                         <select
                           value={newFeaturePriority}
                           onChange={e => setNewFeaturePriority(e.target.value)}
-                          className="px-2 py-1.5 rounded-lg bg-[#090b0e] border border-white/[0.08] text-xs text-slate-300 outline-none"
+                          className="px-2 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slate-700 outline-none shadow-2xs"
                         >
                           <option value="P0 - Must Have">P0 - Must Have</option>
                           <option value="P1 - High Priority">P1 - High Priority</option>
                         </select>
                         <button
                           type="submit"
-                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" />
                           <span>Add</span>
@@ -1662,24 +1707,24 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               </div>
 
               {/* End-to-End User Flow */}
-              <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Workflow className="w-4 h-4 text-emerald-400" />
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <Workflow className="w-4 h-4 text-emerald-600" />
                     <span>End-to-End User Flow</span>
                   </h3>
-                  <span className="text-[10px] font-mono text-slate-400">Step-by-Step Experience</span>
+                  <span className="text-[10px] font-mono text-slate-500 font-semibold">Step-by-Step Experience</span>
                 </div>
 
                 <div className="space-y-2">
                   {(buildPlan.productSpec?.userFlows || []).map((flow, idx) => (
-                    <div key={idx} className="p-3 rounded-xl bg-[#141720] border border-white/[0.06] flex items-start gap-3 text-xs">
-                      <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[11px] shrink-0">
+                    <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3 text-xs">
+                      <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-[11px] flex items-center justify-center shrink-0">
                         {idx + 1}
                       </div>
                       <div>
-                        <span className="font-bold text-white block">{flow.step}</span>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">{flow.action}</p>
+                        <span className="font-bold text-slate-900 block">{flow.step}</span>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">{flow.action}</p>
                       </div>
                     </div>
                   ))}
@@ -1687,19 +1732,19 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               </div>
 
               {/* Key Screens */}
-              <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Laptop className="w-4 h-4 text-slate-400" />
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <Laptop className="w-4 h-4 text-slate-700" />
                     <span>Core MVP Screens & UI Canvas</span>
                   </h3>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {(buildPlan.productSpec?.screens || []).map((screen, idx) => (
-                    <div key={idx} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
-                      <span className="font-bold text-white text-xs block">{screen.name}</span>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">{screen.description}</p>
+                    <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                      <span className="font-bold text-slate-900 text-xs block">{screen.name}</span>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">{screen.description}</p>
                     </div>
                   ))}
                 </div>
@@ -1707,37 +1752,43 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
               {/* Integrations, Payments & Auth */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-4 rounded-xl bg-[#0e1117] border border-white/[0.08] space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-700">
                     <CreditCard className="w-4 h-4" />
                     <span>Payments & Billing</span>
                   </div>
                   <div className="space-y-1 text-[11px]">
-                    <div className="text-white font-semibold">{buildPlan.productSpec?.payments?.provider || 'Stripe Billing'}</div>
-                    <div className="text-slate-400">{buildPlan.productSpec?.payments?.model || 'Founding Tier Pass ($99/yr)'}</div>
-                    <div className="text-slate-500 text-[10px]">{buildPlan.productSpec?.payments?.flow}</div>
+                    <div className="text-slate-900 font-semibold">{buildPlan.productSpec?.payments?.provider || 'Stripe Billing'}</div>
+                    <div className="text-slate-600">
+                      {buildPlan.productSpec?.payments?.model || (
+                        projectPricingTiers.length > 0
+                          ? projectPricingTiers.map(t => t.label).join(' • ')
+                          : 'Founding Member Access'
+                      )}
+                    </div>
+                    <div className="text-slate-400 text-[10px]">{buildPlan.productSpec?.payments?.flow || 'Customer checkout flow'}</div>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-[#0e1117] border border-white/[0.08] space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
+                <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-blue-700">
                     <Lock className="w-4 h-4" />
                     <span>Authentication & Security</span>
                   </div>
                   <div className="space-y-1 text-[11px]">
-                    <div className="text-white font-semibold">{buildPlan.productSpec?.authentication?.method || 'Google OAuth + Magic Link'}</div>
-                    <div className="text-slate-400">{buildPlan.productSpec?.authentication?.security || 'JWT Sessions + RBAC'}</div>
+                    <div className="text-slate-900 font-semibold">{buildPlan.productSpec?.authentication?.method || 'Google OAuth + Magic Link'}</div>
+                    <div className="text-slate-600">{buildPlan.productSpec?.authentication?.security || 'JWT Sessions + RBAC'}</div>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-[#0e1117] border border-white/[0.08] space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+                <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
                     <BarChart3 className="w-4 h-4" />
                     <span>Telemetry & Analytics</span>
                   </div>
                   <div className="space-y-1 text-[11px]">
-                    <div className="text-white font-semibold">{buildPlan.productSpec?.analytics?.engine || 'Built-in Telemetry'}</div>
-                    <div className="text-slate-400">
+                    <div className="text-slate-900 font-semibold">{buildPlan.productSpec?.analytics?.engine || 'Built-in Telemetry'}</div>
+                    <div className="text-slate-600">
                       {(buildPlan.productSpec?.analytics?.trackedEvents || []).slice(0, 3).join(', ')}
                     </div>
                   </div>
@@ -1750,60 +1801,60 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           {specSubtab === 'technical' && (
             <div className="space-y-4">
               {/* Architecture Overview */}
-              <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2.5">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Server className="w-4 h-4 text-blue-400" />
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <Server className="w-4 h-4 text-blue-600" />
                     <span>System Architecture Overview</span>
                   </h3>
-                  <span className="text-[10px] font-mono text-emerald-400">Decoupled Full-Stack Architecture</span>
+                  <span className="text-[10px] font-mono text-emerald-700 font-bold">Decoupled Full-Stack Architecture</span>
                 </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                   {buildPlan.technicalPlan?.architecture || 'Modern decoupled SPA with Vite + React Frontend, FastAPI Python REST/WebSocket Backend, and Redis background queues.'}
                 </p>
               </div>
 
               {/* Tech Stack Matrix */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Frontend</span>
-                  <div className="text-xs font-bold text-white">{buildPlan.technicalPlan?.techStack?.frontend || 'React 18 + Vite'}</div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Frontend</span>
+                  <div className="text-xs font-black text-slate-900">{buildPlan.technicalPlan?.techStack?.frontend || 'React 18 + Vite'}</div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Backend API</span>
-                  <div className="text-xs font-bold text-white">{buildPlan.technicalPlan?.techStack?.backend || 'FastAPI Python'}</div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Backend API</span>
+                  <div className="text-xs font-black text-slate-900">{buildPlan.technicalPlan?.techStack?.backend || 'FastAPI Python'}</div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Database</span>
-                  <div className="text-xs font-bold text-white">{buildPlan.technicalPlan?.techStack?.database || 'PostgreSQL + Redis'}</div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Database</span>
+                  <div className="text-xs font-black text-slate-900">{buildPlan.technicalPlan?.techStack?.database || 'PostgreSQL + Redis'}</div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">AI Inference</span>
-                  <div className="text-xs font-bold text-white">{buildPlan.technicalPlan?.techStack?.aiInference || 'Adaptive AI Engine / Full-Stack LLM'}</div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">AI Inference</span>
+                  <div className="text-xs font-black text-slate-900">{buildPlan.technicalPlan?.techStack?.aiInference || 'Adaptive AI Engine / Full-Stack LLM'}</div>
                 </div>
               </div>
 
               {/* Database Schema */}
-              <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Database className="w-4 h-4 text-emerald-400" />
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <Database className="w-4 h-4 text-emerald-600" />
                     <span>Database Schema Design</span>
                   </h3>
-                  <span className="text-[10px] font-mono text-slate-400">PostgreSQL Relational Entities</span>
+                  <span className="text-[10px] font-mono text-slate-500 font-semibold">PostgreSQL Relational Entities</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {(buildPlan.technicalPlan?.database || []).map((tbl, idx) => (
-                    <div key={idx} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5 font-mono text-xs">
+                    <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 font-mono text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold text-[10px]">TABLE</span>
-                        <span className="font-bold text-white">{tbl.table}</span>
+                        <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">TABLE</span>
+                        <span className="font-bold text-slate-900">{tbl.table}</span>
                       </div>
-                      <div className="text-[11px] text-slate-400 break-words leading-relaxed pl-2 border-l border-white/[0.1]">
+                      <div className="text-[11px] text-slate-600 break-words leading-relaxed pl-2 border-l border-slate-300">
                         {tbl.columns}
                       </div>
                     </div>
@@ -1812,18 +1863,18 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               </div>
 
               {/* Acceptance Criteria */}
-              <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-blue-400" />
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600" />
                     <span>Acceptance Criteria (Definition of Done)</span>
                   </h3>
                 </div>
 
                 <div className="space-y-1.5">
                   {(buildPlan.technicalPlan?.acceptanceCriteria || []).map((crit, idx) => (
-                    <div key={idx} className="p-2.5 rounded-xl bg-[#141720] border border-white/[0.04] flex items-center gap-2.5 text-xs text-slate-200">
-                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <div key={idx} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2.5 text-xs text-slate-800 font-medium">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>{crit}</span>
                     </div>
                   ))}
@@ -1831,22 +1882,22 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               </div>
 
               {/* Sprints & Milestones */}
-              <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Milestone className="w-4 h-4 text-slate-400" />
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <Milestone className="w-4 h-4 text-slate-700" />
                     <span>Sprints & Milestones</span>
                   </h3>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {(buildPlan.technicalPlan?.milestones || []).map((m, idx) => (
-                    <div key={idx} className="p-3 rounded-xl bg-[#141720] border border-white/[0.06] flex items-center justify-between text-xs">
+                    <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
                       <div>
-                        <span className="font-bold text-white block">{m.name}</span>
-                        <span className="text-[10px] text-slate-400">{m.duration}</span>
+                        <span className="font-bold text-slate-900 block">{m.name}</span>
+                        <span className="text-[10px] text-slate-500">{m.duration}</span>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                         {m.status || 'Ready'}
                       </span>
                     </div>
@@ -1861,28 +1912,28 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* What IS Included */}
-                <div className="p-5 rounded-2xl bg-[#0e1117] border border-emerald-500/30 space-y-3">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+                <div className="p-5 rounded-2xl bg-white border border-emerald-200 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400">
+                      <div className="p-1 rounded-lg bg-emerald-100 text-emerald-700">
                         <CheckCircle2 className="w-4 h-4" />
                       </div>
-                      <h3 className="font-bold text-white text-xs">What IS Included in MVP</h3>
+                      <h3 className="font-bold text-slate-900 text-xs">What IS Included in MVP</h3>
                     </div>
-                    <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                    <span className="text-[10px] font-mono text-emerald-700 font-bold">
                       {(buildPlan.scopeBoundaries?.includedInMVP || []).length} Items
                     </span>
                   </div>
 
                   <div className="space-y-2 pt-1">
                     {(buildPlan.scopeBoundaries?.includedInMVP || []).map((inc, idx) => (
-                      <div key={idx} className="p-3 rounded-xl bg-[#141720] border border-emerald-500/20 flex items-center justify-between gap-2.5 text-xs text-slate-200">
+                      <div key={idx} className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100 flex items-center justify-between gap-2.5 text-xs text-slate-800">
                         <div className="flex items-start gap-2.5">
-                          <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                          <span className="text-emerald-600 font-bold shrink-0">✓</span>
                           <span>{inc}</span>
                         </div>
                         {isEditingSpec && (
-                          <button onClick={() => handleDeleteIncluded(idx)} className="text-slate-500 hover:text-red-400">
+                          <button onClick={() => handleDeleteIncluded(idx)} className="text-slate-400 hover:text-red-600 cursor-pointer">
                             <Trash2 className="w-3 h-3" />
                           </button>
                         )}
@@ -1897,9 +1948,9 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                         placeholder="Add included MVP item..."
                         value={newIncludedItem}
                         onChange={e => setNewIncludedItem(e.target.value)}
-                        className="flex-1 px-3 py-1.5 rounded-lg bg-[#090b0e] border border-white/[0.08] text-xs text-white outline-none"
+                        className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slate-900 outline-none shadow-2xs"
                       />
-                      <button type="submit" className="px-3 py-1.5 rounded-lg bg-emerald-600 text-slate-950 font-bold text-xs">
+                      <button type="submit" className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer">
                         Add
                       </button>
                     </form>
@@ -1907,28 +1958,28 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 </div>
 
                 {/* What IS NOT Included */}
-                <div className="p-5 rounded-2xl bg-[#0e1117] border border-red-500/30 space-y-3">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+                <div className="p-5 rounded-2xl bg-white border border-red-200 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="p-1 rounded-lg bg-red-500/20 text-red-400">
+                      <div className="p-1 rounded-lg bg-red-100 text-red-700">
                         <ShieldAlert className="w-4 h-4" />
                       </div>
-                      <h3 className="font-bold text-white text-xs">What is NOT Included (Post-MVP)</h3>
+                      <h3 className="font-bold text-slate-900 text-xs">What is NOT Included (Post-MVP)</h3>
                     </div>
-                    <span className="text-[10px] font-mono text-red-400 font-bold">
+                    <span className="text-[10px] font-mono text-red-700 font-bold">
                       {(buildPlan.scopeBoundaries?.excludedFromMVP || []).length} Excluded
                     </span>
                   </div>
 
                   <div className="space-y-2 pt-1">
                     {(buildPlan.scopeBoundaries?.excludedFromMVP || []).map((exc, idx) => (
-                      <div key={idx} className="p-3 rounded-xl bg-[#141720] border border-red-500/20 flex items-center justify-between gap-2.5 text-xs text-slate-300">
+                      <div key={idx} className="p-3 rounded-xl bg-red-50/60 border border-red-100 flex items-center justify-between gap-2.5 text-xs text-slate-800">
                         <div className="flex items-start gap-2.5">
-                          <span className="text-red-400 font-bold shrink-0">✕</span>
+                          <span className="text-red-600 font-bold shrink-0">✕</span>
                           <span>{exc}</span>
                         </div>
                         {isEditingSpec && (
-                          <button onClick={() => handleDeleteExcluded(idx)} className="text-slate-500 hover:text-red-400">
+                          <button onClick={() => handleDeleteExcluded(idx)} className="text-slate-400 hover:text-red-600 cursor-pointer">
                             <Trash2 className="w-3 h-3" />
                           </button>
                         )}
@@ -1943,9 +1994,9 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                         placeholder="Add excluded post-MVP item..."
                         value={newExcludedItem}
                         onChange={e => setNewExcludedItem(e.target.value)}
-                        className="flex-1 px-3 py-1.5 rounded-lg bg-[#090b0e] border border-white/[0.08] text-xs text-white outline-none"
+                        className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slate-900 outline-none shadow-2xs"
                       />
-                      <button type="submit" className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-bold text-xs">
+                      <button type="submit" className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs cursor-pointer">
                         Add
                       </button>
                     </form>
@@ -1958,14 +2009,14 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           {/* SUBTAB D: ENGINEERING TASK MATRIX */}
           {specSubtab === 'tasks' && (
             <div className="space-y-4">
-              <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Code className="w-4 h-4 text-blue-400" />
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <Code className="w-4 h-4 text-blue-600" />
                     <span>Sprint Engineering Tasks ({engineeringTasks.length})</span>
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-slate-400">Click status to toggle</span>
+                    <span className="text-[10px] font-mono text-slate-500 font-medium">Click status to toggle</span>
                     {completedCount > 0 && (
                       <button
                         onClick={() => {
@@ -1974,10 +2025,10 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                           handleSavePlan(buildPlan, resetTasks)
                           showToast('Reset all sprint tasks to Ready (0% Complete).')
                         }}
-                        className="px-2 py-0.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[10px] text-slate-400 hover:text-white border border-white/[0.08] flex items-center gap-1 transition-colors cursor-pointer"
+                        className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[10px] text-slate-600 hover:text-slate-900 border border-slate-200 flex items-center gap-1 transition-colors cursor-pointer"
                         title="Reset sprint tasks to Ready"
                       >
-                        <RotateCcw className="w-3 h-3 text-slate-400" />
+                        <RotateCcw className="w-3 h-3 text-slate-500" />
                         <span>Reset to 0%</span>
                       </button>
                     )}
@@ -1989,7 +2040,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   {engineeringTasks.map(task => (
                     <div
                       key={task.id}
-                      className="rounded-2xl bg-[#141720] border border-white/[0.06] overflow-hidden transition-all duration-200"
+                      className="rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden transition-all duration-200 shadow-2xs"
                     >
                       <div className="p-3.5 flex items-center justify-between gap-3 text-xs">
                         <div className="flex items-center gap-3">
@@ -1997,26 +2048,26 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                             onClick={() => handleToggleTaskStatus(task.id)}
                             className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
                               task.status === 'Completed'
-                                ? 'bg-emerald-500 text-slate-950 font-black'
-                                : 'bg-white/[0.06] border border-white/[0.1] hover:border-blue-400'
+                                ? 'bg-emerald-600 text-white font-black'
+                                : 'bg-white border border-slate-300 hover:border-blue-500'
                             }`}
                           >
-                            {task.status === 'Completed' && <Check className="w-3.5 h-3.5" />}
+                            {task.status === 'Completed' && <Check className="w-3.5 h-3.5 text-white" />}
                           </button>
                           <div>
-                            <span className={`font-bold block ${task.status === 'Completed' || task.status === 'done' ? 'line-through text-slate-300 decoration-emerald-400/80 decoration-2' : 'text-white'}`}>
+                            <span className={`font-bold block ${task.status === 'Completed' || task.status === 'done' ? 'line-through text-slate-400 font-medium' : 'text-slate-900'}`}>
                               {task.title}
                             </span>
-                            <span className="text-[10px] text-slate-400 flex items-center gap-2">
+                            <span className="text-[10px] text-slate-500 flex items-center gap-2">
                               <span>{task.category}</span>
                               <span>•</span>
-                              <span>Assigned: <strong className={task.assignedTo === 'AI Agent' ? 'text-slate-300 font-semibold' : 'text-blue-400'}>{task.assignedTo}</strong></span>
+                              <span>Assigned: <strong className={task.assignedTo === 'AI Agent' ? 'text-slate-800 font-bold' : 'text-blue-700 font-bold'}>{task.assignedTo}</strong></span>
                               <span>•</span>
                               <span>{task.estimate}</span>
                               {task.status === 'Completed' && (
                                 <>
                                   <span>•</span>
-                                  <span className="text-emerald-400 font-medium">✓ Code Ready</span>
+                                  <span className="text-emerald-700 font-bold">✓ Code Ready</span>
                                 </>
                               )}
                             </span>
@@ -2027,10 +2078,10 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                           <select
                             value={task.assignedTo || 'AI Agent'}
                             onChange={e => handleReassignTask(task.id, e.target.value)}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-bold border outline-none cursor-pointer transition-colors ${
+                            className={`px-2 py-1 rounded-lg text-[10px] font-bold border outline-none cursor-pointer transition-colors shadow-2xs ${
                               task.assignedTo === 'Human Engineer'
-                                ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
-                                : 'bg-slate-800 text-slate-300 border-slate-700'
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : 'bg-white text-slate-800 border-slate-300'
                             }`}
                             title="Switch task assignment between AI Agent and Human Engineer"
                           >
@@ -2042,12 +2093,12 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                             onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
                             className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer border ${
                               expandedTaskId === task.id
-                                ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
-                                : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
+                                ? 'bg-slate-900 text-white border-slate-800 shadow-xs'
+                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300 shadow-2xs'
                             }`}
                             title="Inspect scaffolded code & files"
                           >
-                            <Code2 className="w-3 h-3 text-blue-400" />
+                            <Code2 className="w-3 h-3 text-blue-600" />
                             <span>{expandedTaskId === task.id ? 'Hide Code' : 'View Code'}</span>
                           </button>
 
@@ -2055,17 +2106,17 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                             <button
                               onClick={() => handleDispatchAIAgent(task)}
                               disabled={executingTaskId === task.id}
-                              className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                              className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
                               title="Dispatch AI Coding Agent to write code and tests"
                             >
                               {executingTaskId === task.id ? (
                                 <>
-                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  <Loader2 className="w-3 h-3 animate-spin text-slate-300" />
                                   <span>Coding...</span>
                                 </>
                               ) : (
                                 <>
-                                  <Bot className="w-3 h-3" />
+                                  <Bot className="w-3 h-3 text-slate-300" />
                                   <span>Dispatch AI</span>
                                 </>
                               )}
@@ -2076,10 +2127,10 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                             onClick={() => handleToggleTaskStatus(task.id)}
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer transition-colors ${
                               task.status === 'Completed'
-                                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                 : task.status === 'In Progress'
-                                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                                : 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : 'bg-blue-50 text-blue-700 border border-blue-200'
                             }`}
                           >
                             {task.status}
@@ -2087,7 +2138,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
                           <button
                             onClick={() => handleDeleteTask(task.id)}
-                            className="p-1 rounded text-slate-500 hover:text-red-400 cursor-pointer"
+                            className="p-1 rounded text-slate-400 hover:text-red-600 cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -2096,36 +2147,36 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
                       {/* Expanded Code & Files Inspector */}
                       {expandedTaskId === task.id && (
-                        <div className="p-4 bg-[#090b0e] border-t border-white/[0.06] space-y-3 font-mono text-xs animate-in fade-in duration-150">
+                        <div className="keep-dark cloud-code-studio p-4 bg-slate-950 border-t border-slate-800 space-y-3 font-mono text-xs animate-in fade-in duration-150 text-slate-200">
                           {/* Sleek Toolbar Header */}
                           <div className="flex flex-wrap items-center justify-between gap-2.5 pb-1">
                             <div className="flex items-center gap-2 min-w-0">
-                              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 shrink-0">
+                              <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 shrink-0">
                                 <FileCode className="w-3.5 h-3.5" />
                               </div>
                               <span className="text-white font-bold text-xs truncate">
                                 {task.aiOutput?.filesScaffolded?.[0]?.filePath || (task.category === 'Frontend' ? `src/components/${(task.title || 'Component').replace(/[^a-zA-Z0-9]/g, '')}.jsx` : `app/routers/${(task.category || 'backend').toLowerCase().replace(/[^a-z0-9]/g, '_')}.py`)}
                               </span>
-                              <span className="px-2 py-0.5 rounded-md bg-white/[0.06] text-slate-300 text-[10px] font-sans font-semibold shrink-0">
+                              <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[10px] font-sans font-semibold shrink-0">
                                 {task.category}
                               </span>
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
                               {task.aiOutput ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-[10px] font-sans font-semibold border border-slate-700 whitespace-nowrap shrink-0">
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[10px] font-sans font-semibold border border-slate-700 whitespace-nowrap shrink-0">
                                   <Sparkles className="w-3 h-3 text-slate-300 shrink-0" />
-                                  <span>Gemini 3.1 Flash Lite</span>
+                                  <span>AI Architecture</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white/[0.04] text-slate-400 text-[10px] font-sans font-semibold whitespace-nowrap shrink-0">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 text-[10px] font-sans font-semibold whitespace-nowrap shrink-0">
                                   Scaffolded Spec
                                 </span>
                               )}
 
                               <button
                                 onClick={() => handleCopyCode(task.aiOutput?.filesScaffolded?.[0]?.codeSnippet || getTaskDefaultCode(task), task.id)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white text-xs font-sans font-semibold transition-all active:scale-95 cursor-pointer whitespace-nowrap border border-white/[0.08] shrink-0"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-sans font-semibold transition-all active:scale-95 cursor-pointer whitespace-nowrap border border-slate-700 shrink-0"
                               >
                                 {copiedCodeId === task.id ? (
                                   <>
@@ -2143,7 +2194,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                           </div>
 
                           {/* Code Viewer Container */}
-                          <div className="p-3 rounded-xl bg-[#050608] border border-white/[0.06] text-[11px] text-slate-300 overflow-x-auto max-h-72 overflow-y-auto leading-relaxed">
+                          <div className="p-3 rounded-xl bg-black border border-slate-800 text-[11px] text-slate-200 overflow-x-auto max-h-72 overflow-y-auto leading-relaxed">
                             <pre className="font-mono">
                               <code>{task.aiOutput?.filesScaffolded?.[0]?.codeSnippet || getTaskDefaultCode(task)}</code>
                             </pre>
@@ -2151,7 +2202,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
                           {/* Automated Tests & Implementation Notes Strip */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-sans text-xs">
-                            <div className="p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex items-center gap-2.5">
+                            <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 flex items-center gap-2.5">
                               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                               <div>
                                 <span className="font-bold text-emerald-300 block text-[11px]">
@@ -2163,10 +2214,10 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                               </div>
                             </div>
 
-                            <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center gap-2">
+                            <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-2">
                               <Info className="w-4 h-4 text-blue-400 shrink-0" />
                               <div className="overflow-hidden">
-                                <span className="font-bold text-slate-300 block text-[11px]">Architecture Notes</span>
+                                <span className="font-bold text-slate-200 block text-[11px]">Architecture Notes</span>
                                 <p className="text-[10px] text-slate-400 truncate">
                                   {task.aiOutput?.implementationNotes || task.notes || `Scaffolded for ${project?.productName || 'MVP'}`}
                                 </p>
@@ -2186,12 +2237,12 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                     placeholder="New engineering sprint task..."
                     value={newTaskTitle}
                     onChange={e => setNewTaskTitle(e.target.value)}
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-white outline-none focus:border-blue-500/60"
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 outline-none focus:border-blue-600 shadow-2xs"
                   />
                   <select
                     value={newTaskAssigned}
                     onChange={e => setNewTaskAssigned(e.target.value)}
-                    className="px-3 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-slate-300 outline-none font-bold"
+                    className="px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-700 outline-none font-bold shadow-2xs"
                   >
                     <option value="AI Agent">🤖 AI Agent</option>
                     <option value="Human Engineer">👤 Human Engineer</option>
@@ -2199,7 +2250,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   <select
                     value={newTaskCategory}
                     onChange={e => setNewTaskCategory(e.target.value)}
-                    className="px-3 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-slate-300 outline-none"
+                    className="px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-700 outline-none shadow-2xs"
                   >
                     <option value="Backend">Backend</option>
                     <option value="Frontend">Frontend</option>
@@ -2210,7 +2261,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   </select>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add</span>
@@ -2223,19 +2274,19 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           )}
 
           {/* Step 1 Footer Action */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={handleSaveToProjectFiles}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs text-xs font-bold flex items-center justify-center gap-2 cursor-pointer active:scale-95"
               >
-                <Save className="w-3.5 h-3.5 text-emerald-400" />
+                <Save className="w-3.5 h-3.5 text-white" />
                 <span>Save to Project Files</span>
               </button>
 
               <button
                 onClick={handleExportMarkdown}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Export Spec (.md)</span>
@@ -2247,7 +2298,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 await handleSavePlan(buildPlan, engineeringTasks, { buildPlanApproved: true, status: 'approved' })
                 setActiveStep('build')
               }}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-950/50 transition-all active:scale-95 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
             >
               <span>Proceed to 2. Build MVP</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -2260,36 +2311,38 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
       {/* STEP 2: BUILD MVP (CLOUD CODEBASE STUDIO & IDE) */}
       {activeStep === 'build' && (
         <div className="space-y-5">
-          <CloudCodeStudio
-            project={project}
-            engineeringTasks={engineeringTasks}
-            buildPlan={buildPlan}
-            qaResults={qaResults}
-            setQaResults={setQaResults}
-            onUpdateTasks={setEngineeringTasks}
-            onSaveProjectFiles={handleSaveCodeFiles}
-            onUpdateProject={onUpdateProject}
-            handleSavePlan={handleSavePlan}
-            handleToggleTaskStatus={handleToggleTaskStatus}
-            handleReassignTask={handleReassignTask}
-            handleSwitchAllToAI={handleSwitchAllToAI}
-            handleSwitchToAIAndDispatch={handleSwitchToAIAndDispatch}
-            handleAutoDistributeDivisionOfLabor={handleAutoDistributeDivisionOfLabor}
-            handleAddDefaultHumanTask={handleAddDefaultHumanTask}
-            onAutoBuildPlan={() => handleRegenerateMVPPlan(false)}
-            isBuildingPlan={isGenerating}
-            onRunQA={() => handleRunAutomatedQA(qaResults)}
-            qaRunning={qaRunning}
-            currentPhase={2}
-            executingTaskId={executingTaskId}
-            showToast={showToast}
-          />
+          <div className="keep-dark cloud-code-studio rounded-3xl overflow-hidden shadow-xl border border-slate-800">
+            <CloudCodeStudio
+              project={project}
+              engineeringTasks={engineeringTasks}
+              buildPlan={buildPlan}
+              qaResults={qaResults}
+              setQaResults={setQaResults}
+              onUpdateTasks={setEngineeringTasks}
+              onSaveProjectFiles={handleSaveCodeFiles}
+              onUpdateProject={onUpdateProject}
+              handleSavePlan={handleSavePlan}
+              handleToggleTaskStatus={handleToggleTaskStatus}
+              handleReassignTask={handleReassignTask}
+              handleSwitchAllToAI={handleSwitchAllToAI}
+              handleSwitchToAIAndDispatch={handleSwitchToAIAndDispatch}
+              handleAutoDistributeDivisionOfLabor={handleAutoDistributeDivisionOfLabor}
+              handleAddDefaultHumanTask={handleAddDefaultHumanTask}
+              onAutoBuildPlan={() => handleRegenerateMVPPlan(false)}
+              isBuildingPlan={isGenerating}
+              onRunQA={() => handleRunAutomatedQA(qaResults)}
+              qaRunning={qaRunning}
+              currentPhase={2}
+              executingTaskId={executingTaskId}
+              showToast={showToast}
+            />
+          </div>
 
           {/* Step 2 Footer */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
             <button
               onClick={() => setActiveStep('plan')}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs text-xs font-semibold cursor-pointer"
             >
               ← Back to Product Plan
             </button>
@@ -2298,7 +2351,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 await handleSavePlan(buildPlan, engineeringTasks, { buildCompleted: true, mvpBuildDone: true })
                 setActiveStep('beta')
               }}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-950/50 transition-all active:scale-95 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
             >
               <span>Proceed to 3. Beta Test</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -2311,8 +2364,8 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
       {activeStep === 'beta' && (
         <div className="space-y-5">
           {/* Subtabs for Step 3 */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-200 pb-3">
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200/80 max-w-full overflow-x-auto">
               {[
                 { id: 'clusters', label: '1. AI Recurring Feedback Clusters' },
                 { id: 'cohort', label: `2. Beta Cohort Invites (${betaCohort.length})` },
@@ -2321,13 +2374,13 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 <button
                   key={sub.id}
                   onClick={() => setBetaSubtab(sub.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                     betaSubtab === sub.id
-                      ? 'bg-slate-800 text-white border border-slate-600'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-white text-slate-900 border border-slate-200/80 shadow-2xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                   }`}
                 >
-                  {sub.label}
+                  <span className="whitespace-nowrap">{sub.label}</span>
                 </button>
               ))}
             </div>
@@ -2335,16 +2388,16 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             <button
               onClick={handleClusterFeedbackAI}
               disabled={isClusteringAI}
-              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer whitespace-nowrap"
             >
               {isClusteringAI ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300" />
                   <span>AI Grouping Feedback...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <Sparkles className="w-3.5 h-3.5 text-slate-300" />
                   <span>AI Cluster & Group Feedback</span>
                 </>
               )}
@@ -2356,23 +2409,23 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             isClusteringAI ? (
               <FeedbackClusterSkeleton />
             ) : !feedbackClusters ? (
-              <div className="p-10 sm:p-14 rounded-3xl bg-[#0e1117] border border-white/[0.08] text-center space-y-4 my-2">
-                <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center mx-auto shadow-md">
+              <div className="p-10 sm:p-14 rounded-3xl bg-white border border-slate-200 shadow-2xs text-center space-y-4 my-2">
+                <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center mx-auto shadow-2xs">
                   <Sparkles className="w-7 h-7" />
                 </div>
                 <div className="space-y-1.5 max-w-md mx-auto">
-                  <h4 className="text-sm font-bold text-white">No Feedback Clusters Generated Yet</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Click "AI Cluster & Group Feedback" above to group raw customer feedback into quantified recurring issues using Gemini 3.1 Flash Lite.
+                  <h4 className="text-sm font-black text-slate-900">No Feedback Clusters Generated Yet</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Click "AI Cluster & Group Feedback" above to group raw customer feedback into quantified recurring issues.
                   </p>
                 </div>
                 <div>
                   <button
                     onClick={handleClusterFeedbackAI}
                     disabled={isClusteringAI}
-                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Sparkles className="w-3.5 h-3.5 text-slate-300" />
                     <span>AI Cluster & Group Feedback</span>
                   </button>
                 </div>
@@ -2381,11 +2434,11 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-slate-400" />
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-slate-700" />
                     <span>AI Recurring Issue Summaries & Quantified Clusters</span>
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-600">
                     AI analyzes support conversations, bug reports, and objections into prioritized resolution tasks.
                   </p>
                 </div>
@@ -2407,46 +2460,46 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   return (
                     <div
                       key={cluster?.id || `cluster-${idx}`}
-                      className="p-4 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3 flex flex-col justify-between"
+                      className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3 flex flex-col justify-between"
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-lg font-black text-white font-mono flex items-center gap-1.5">
-                            <span className={isBug ? 'text-red-400' : isUX ? 'text-amber-400' : 'text-blue-400'}>
+                          <span className="text-lg font-black text-slate-900 font-mono flex items-center gap-1.5">
+                            <span className={isBug ? 'text-red-600' : isUX ? 'text-amber-600' : 'text-blue-600'}>
                               {count} {count === 1 ? 'user' : 'users'}
                             </span>
                           </span>
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                             severity === 'High'
-                              ? 'bg-red-500/15 text-red-300 border border-red-500/30'
+                              ? 'bg-red-50 text-red-700 border border-red-200'
                               : severity === 'Medium'
-                              ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                              : 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'bg-blue-50 text-blue-700 border border-blue-200'
                           }`}>
                             {category} • {severity}
                           </span>
                         </div>
 
-                        <h4 className="font-bold text-white text-xs leading-snug">{title}</h4>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">{description}</p>
+                        <h4 className="font-bold text-slate-900 text-xs leading-snug">{title}</h4>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">{description}</p>
 
                         {quote && (
-                          <div className="p-2.5 rounded-xl bg-[#141720] border border-white/[0.04] text-[10px] text-slate-300 italic">
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[10px] text-slate-700 italic font-medium">
                             "{quote}"
                           </div>
                         )}
                       </div>
 
-                      <div className="pt-2 border-t border-white/[0.06] space-y-2">
+                      <div className="pt-2 border-t border-slate-200 space-y-2">
                         {fix && (
-                          <div className="text-[10px] text-emerald-400">
+                          <div className="text-[10px] text-emerald-700 font-medium">
                             <strong>Recommended Fix:</strong> {fix}
                           </div>
                         )}
 
                         <button
                           onClick={() => handleConvertClusterToTask(cluster)}
-                          className="w-full py-2 rounded-xl bg-[#1a1f2c] hover:bg-blue-600 hover:text-white text-slate-200 border border-white/[0.08] font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          className="w-full py-2 rounded-xl bg-slate-900 hover:bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
                           <span>Convert to Sprint Task</span>
@@ -2462,13 +2515,13 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
           {/* SUBTAB 2: BETA COHORT INVITES */}
           {betaSubtab === 'cohort' && (
-            <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.07] pb-3">
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
                 <div>
-                  <h3 className="text-sm font-bold text-white">Presale & Waitlist Beta Access Manager</h3>
-                  <p className="text-xs text-slate-400">Provision private tokens to verified early backers and waitlist members.</p>
+                  <h3 className="text-sm font-black text-slate-900">Presale & Waitlist Beta Access Manager</h3>
+                  <p className="text-xs text-slate-600">Provision private tokens to verified early backers and waitlist members.</p>
                 </div>
-                <span className="text-xs font-mono text-emerald-400 font-bold">${presalesRevenue.toLocaleString()} Total Pledged ({betaCohort.length} Backers)</span>
+                <span className="text-xs font-mono text-emerald-700 font-bold">${presalesRevenue.toLocaleString()} Total Pledged ({betaCohort.length} Backers)</span>
               </div>
 
               {/* Quick Invite New Backer Form */}
@@ -2494,33 +2547,33 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   form.reset()
                   showToast(`Invited ${name} to private beta!`)
                 }}
-                className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-3.5 rounded-xl bg-[#141720] border border-white/[0.06]"
+                className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200"
               >
                 <input
                   name="name"
                   type="text"
                   placeholder="Backer name..."
                   required
-                  className="px-3 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-white outline-none"
+                  className="px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 outline-none shadow-2xs"
                 />
                 <input
                   name="email"
                   type="email"
                   placeholder="Email address..."
                   required
-                  className="px-3 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-white outline-none"
+                  className="px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 outline-none shadow-2xs"
                 />
                 <select
                   name="tier"
-                  className="px-3 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-slate-300 outline-none"
+                  className="px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-700 outline-none shadow-2xs"
                 >
-                  <option value="Founding Annual ($99)">Founding Annual ($99)</option>
-                  <option value="VIP Founder ($199)">VIP Founder ($199)</option>
-                  <option value="Waitlist VIP">Waitlist VIP</option>
+                  {projectPricingTiers.map((pt, idx) => (
+                    <option key={idx} value={pt.value}>{pt.label}</option>
+                  ))}
                 </select>
                 <button
                   type="submit"
-                  className="py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors border border-white/[0.1]"
+                  className="py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Invite Backer</span>
@@ -2529,32 +2582,32 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
               {/* Cohort List */}
               {betaCohort.length === 0 ? (
-                <div className="p-8 rounded-2xl bg-[#141720]/40 border border-dashed border-white/[0.08] text-center space-y-2">
-                  <User className="w-8 h-8 text-slate-500 mx-auto" />
-                  <h4 className="text-xs font-bold text-white">No Beta Backers Invited Yet</h4>
-                  <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                <div className="p-8 rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-center space-y-2">
+                  <User className="w-8 h-8 text-slate-400 mx-auto" />
+                  <h4 className="text-xs font-bold text-slate-900">No Beta Backers Invited Yet</h4>
+                  <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
                     Backers who pre-order in Phase 1 appear here automatically. Use the form above to invite additional testers.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {betaCohort.map(backer => (
-                    <div key={backer.id} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div key={backer.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-white">{backer.name}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-bold">
+                          <span className="font-bold text-slate-900">{backer.name}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-300 font-bold">
                             {backer.tier}
                           </span>
                         </div>
-                        <span className="text-[11px] text-slate-400 font-mono block">{backer.email}</span>
+                        <span className="text-[11px] text-slate-500 font-mono block">{backer.email}</span>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${
                           backer.status === 'Active in Beta'
-                            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                            : 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-blue-50 text-blue-700 border border-blue-200'
                         }`}>
                           {backer.status}
                         </span>
@@ -2565,7 +2618,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                             navigator.clipboard?.writeText(url)
                             showToast(`Copied Beta Magic Link for ${backer.name}!`)
                           }}
-                          className="px-3 py-1.5 rounded-lg bg-[#090b0e] hover:bg-[#1f2536] text-slate-200 border border-white/[0.08] font-semibold text-[11px] flex items-center gap-1 transition-colors"
+                          className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <Copy className="w-3 h-3" />
                           <span>Copy Invite Link</span>
@@ -2580,8 +2633,8 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
           {/* SUBTAB 3: RAW FEEDBACK LOGGER */}
           {betaSubtab === 'feedback' && (
-            <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-4">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider">Log Customer Support Conversation / Friction Point</h3>
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Log Customer Support Conversation / Friction Point</h3>
 
               <form onSubmit={handleAddFeedback} className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
                 <input
@@ -2589,12 +2642,12 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   placeholder="Customer name..."
                   value={newFeedbackAuthor}
                   onChange={e => setNewFeedbackAuthor(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-white outline-none"
+                  className="px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 outline-none shadow-2xs"
                 />
                 <select
                   value={newFeedbackType}
                   onChange={e => setNewFeedbackType(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-slate-300 outline-none"
+                  className="px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-700 outline-none shadow-2xs"
                 >
                   <option value="UX / Onboarding">UX / Onboarding</option>
                   <option value="Feature Request">Feature Request</option>
@@ -2606,11 +2659,11 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   placeholder="Feedback or message..."
                   value={newFeedbackMsg}
                   onChange={e => setNewFeedbackMsg(e.target.value)}
-                  className="sm:col-span-2 px-3 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-white outline-none"
+                  className="sm:col-span-2 px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 outline-none shadow-2xs"
                 />
                 <button
                   type="submit"
-                  className="sm:col-span-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                  className="sm:col-span-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Log Feedback Item</span>
@@ -2620,12 +2673,12 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               {/* Feed List */}
               <div className="space-y-2 pt-2">
                 {rawFeedback.map(f => (
-                  <div key={f.id} className="p-3 rounded-xl bg-[#141720] border border-white/[0.06] text-xs space-y-1">
+                  <div key={f.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-white">{f.author}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">{f.type} • {f.timestamp}</span>
+                      <span className="font-bold text-slate-900">{f.author}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">{f.type} • {f.timestamp}</span>
                     </div>
-                    <p className="text-slate-300 text-[11px]">"{f.message}"</p>
+                    <p className="text-slate-700 text-[11px]">"{f.message}"</p>
                   </div>
                 ))}
               </div>
@@ -2633,10 +2686,10 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           )}
 
           {/* Step 3 Footer */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
             <button
               onClick={() => setActiveStep('build')}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs text-xs font-semibold cursor-pointer"
             >
               ← Back to Build
             </button>
@@ -2645,7 +2698,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 setActiveStep('gate')
                 await handleSavePlan(buildPlan, engineeringTasks, { betaTestingCompleted: true })
               }}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-950/50 transition-all active:scale-95"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
             >
               <span>Proceed to 4. Iterate + Launch Gate</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -2659,19 +2712,19 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
         <div className="space-y-5">
           {/* Prerequisite Check Banner if prior steps are incomplete */}
           {!p2Guards.allPriorStepsDone && (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2.5 animate-fade-in shadow-lg shadow-amber-950/20">
-              <div className="flex items-center gap-2 font-bold text-amber-300">
-                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2.5 shadow-2xs">
+              <div className="flex items-center gap-2 font-bold text-amber-900">
+                <Lock className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>Phase 2 Launch Gate is Locked: Prerequisite Steps Incomplete</span>
               </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
+              <p className="text-[11px] text-amber-800 leading-relaxed">
                 The Launch Gate requires completing product specifications, the MVP codebase build tasks, and beta cohort testing before public release.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
                 <button
                   onClick={() => setActiveStep('plan')}
-                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all cursor-pointer ${
-                    p2Guards.isStep1Done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20'
+                  className={`p-2.5 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all cursor-pointer ${
+                    p2Guards.isStep1Done ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800 hover:bg-red-100'
                   }`}
                 >
                   <span>1. Product + Build Plan</span>
@@ -2680,12 +2733,12 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 <button
                   onClick={() => setActiveStep('build')}
                   disabled={!p2Guards.canAccessStep2}
-                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                  className={`p-2.5 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
                     p2Guards.isStep2Done
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800 cursor-pointer'
                       : p2Guards.canAccessStep2
-                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
-                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                      ? 'bg-red-50 border-red-200 text-red-800 hover:bg-red-100 cursor-pointer'
+                      : 'opacity-40 border-slate-200 text-slate-400 cursor-not-allowed'
                   }`}
                 >
                   <span>2. Build MVP</span>
@@ -2694,12 +2747,12 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 <button
                   onClick={() => setActiveStep('beta')}
                   disabled={!p2Guards.canAccessStep3}
-                  className={`p-2 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
+                  className={`p-2.5 rounded-xl text-left text-[11px] font-semibold border flex items-center justify-between transition-all ${
                     p2Guards.isStep3Done
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 cursor-pointer'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800 cursor-pointer'
                       : p2Guards.canAccessStep3
-                      ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 cursor-pointer'
-                      : 'opacity-40 border-slate-700 text-slate-500 cursor-not-allowed'
+                      ? 'bg-red-50 border-red-200 text-red-800 hover:bg-red-100 cursor-pointer'
+                      : 'opacity-40 border-slate-200 text-slate-400 cursor-not-allowed'
                   }`}
                 >
                   <span>3. Beta Test</span>
@@ -2710,14 +2763,14 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           )}
 
           {/* Executive Header Banner */}
-          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-slate-600" />
                   <span>Step 4: Iterate + Launch Gate</span>
                 </span>
-                <h3 className="text-base font-black text-white">
+                <h3 className="text-base font-black text-slate-950">
                   Executive Product-Readiness Audit & Launch Gate
                 </h3>
               </div>
@@ -2726,16 +2779,16 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 <button
                   onClick={handleApplyAIAutoFixes}
                   disabled={isAutoFixing}
-                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-md border border-white/[0.1] transition-all active:scale-95 disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   {isAutoFixing ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300" />
                       <span>Applying Fixes & Retesting...</span>
                     </>
                   ) : (
                     <>
-                      <Zap className="w-3.5 h-3.5" />
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
                       <span>Apply AI Fixes & Update MVP</span>
                     </>
                   )}
@@ -2744,37 +2797,37 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 <button
                   onClick={handleGenerateReadinessAudit}
                   disabled={isAuditing}
-                  className="px-3.5 py-2 rounded-xl bg-[#1a1f2c] hover:bg-[#252c3f] text-slate-200 border border-white/[0.08] font-semibold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs font-semibold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  {isAuditing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  {isAuditing ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" /> : <RefreshCw className="w-3.5 h-3.5 text-slate-500" />}
                   <span>Re-Audit</span>
                 </button>
               </div>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-600 leading-relaxed">
               AI prioritizes feedback issues, applies targeted code hotfixes, updates the MVP build version, and verifies product readiness.
             </p>
           </div>
 
           {/* Decision Notice (if Continue Beta or Killed) */}
           {decisionNotice && (
-            <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-200 text-xs flex items-center gap-2 font-medium">
-              <Compass className="w-4 h-4 text-blue-400 shrink-0" />
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center gap-2 font-medium shadow-2xs">
+              <Compass className="w-4 h-4 text-blue-600 shrink-0" />
               <span>{decisionNotice}</span>
             </div>
           )}
 
           {/* 1. AI Product-Readiness Audit Score Card */}
-          <div className={`p-5 rounded-3xl bg-gradient-to-br from-[#0e1117] to-[#131724] border ${activeReadiness.cardBorderClass} shadow-xl space-y-4`}>
+          <div className={`p-5 rounded-3xl bg-white border ${activeReadiness.cardBorderClass} shadow-2xs space-y-4`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <span className={`text-[10px] font-bold uppercase tracking-wider ${activeReadiness.textVerdictClass}`}>
                   AI Product-Readiness Score
                 </span>
                 <div className="flex items-baseline gap-3">
-                  <span className="text-3xl sm:text-4xl font-black text-white font-mono">
-                    {activeReadiness.score}<span className="text-slate-500 text-xl font-normal">/100</span>
+                  <span className="text-3xl sm:text-4xl font-black text-slate-950 font-mono">
+                    {activeReadiness.score}<span className="text-slate-400 text-xl font-normal">/100</span>
                   </span>
                   <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${activeReadiness.verdictBadgeClass}`}>
                     {activeReadiness.verdict}
@@ -2782,53 +2835,53 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 </div>
               </div>
 
-              <div className="text-xs text-slate-400 text-left sm:text-right space-y-0.5">
-                <div>Confidence Level: <strong className="text-white">{activeReadiness.confidence}</strong></div>
-                <div>MVP Build Release: <strong className="text-slate-300 font-mono">{mvpVersion}</strong></div>
+              <div className="text-xs text-slate-600 text-left sm:text-right space-y-0.5">
+                <div>Confidence Level: <strong className="text-slate-900">{activeReadiness.confidence}</strong></div>
+                <div>MVP Build Release: <strong className="text-slate-800 font-mono">{mvpVersion}</strong></div>
               </div>
             </div>
 
-            <p className="text-xs text-slate-200 leading-relaxed font-medium bg-[#090b0e] p-3 rounded-xl border border-white/[0.06]">
+            <p className="text-xs text-slate-700 leading-relaxed font-medium bg-slate-50 p-3 rounded-xl border border-slate-200">
               "{activeReadiness.summary}"
             </p>
 
             {/* 4 Pillars Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               {(activeReadiness.pillars || []).map((p, idx) => (
-                <div key={idx} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1 text-xs">
+                <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-white flex items-center gap-1.5">
-                      <CheckCircle className={`w-3.5 h-3.5 ${p.score >= 70 ? 'text-emerald-400' : 'text-amber-400'}`} />
+                    <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <CheckCircle className={`w-3.5 h-3.5 ${p.score >= 70 ? 'text-emerald-600' : 'text-amber-600'}`} />
                       <span>{p.name}</span>
                     </span>
-                    <span className={`font-mono font-bold ${p.score >= 70 ? 'text-emerald-400' : 'text-amber-400'}`}>{p.score}% • {p.status}</span>
+                    <span className={`font-mono font-bold ${p.score >= 70 ? 'text-emerald-700' : 'text-amber-700'}`}>{p.score}% • {p.status}</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">{p.detail}</p>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">{p.detail}</p>
                 </div>
               ))}
             </div>
           </div>
 
           {/* 2. Automated Hotfixes & MVP Update Log */}
-          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-            <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-400" />
+          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
                 <span>AI Automated Code Hotfixes ({appliedPatches.length} Patches Applied)</span>
               </h3>
-              <span className="text-[10px] font-mono text-emerald-400">All Patches Verified ✓</span>
+              <span className="text-[10px] font-mono text-emerald-700 font-bold">All Patches Verified ✓</span>
             </div>
 
             <div className="space-y-2">
               {appliedPatches.map((patch, idx) => (
-                <div key={idx} className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1.5 text-xs">
+                <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-white">{patch.issueTitle}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                    <span className="font-bold text-slate-900">{patch.issueTitle}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold">
                       Verified Fix ✓
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-400">{patch.fixSummary}</p>
+                  <p className="text-[11px] text-slate-600">{patch.fixSummary}</p>
                   <div className="text-[10px] text-slate-500 font-mono">
                     Files patched: {patch.filesModified.join(', ')}
                   </div>
@@ -2838,52 +2891,52 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           </div>
 
           {/* 3. Post-Patch Retest Results */}
-          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-            <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <CheckCheck className="w-4 h-4 text-emerald-400" />
+          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <CheckCheck className="w-4 h-4 text-emerald-600" />
                 <span>Updated MVP Retest Summary</span>
               </h3>
-              <span className="text-[10px] font-mono text-slate-400">Target: Zero Launch Blockers</span>
+              <span className="text-[10px] font-mono text-slate-500 font-medium">Target: Zero Launch Blockers</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Unit & Integration Tests</span>
-                <div className="text-base font-black text-emerald-400 font-mono">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-500 font-bold uppercase">Unit & Integration Tests</span>
+                <div className="text-base font-black text-emerald-700 font-mono">
                   {qaResults.unitTests.passed + qaResults.integrationTests.passed} Tests Passing (100%)
                 </div>
-                <span className="text-[10px] text-slate-500">0 failures, 0 regressions</span>
+                <span className="text-[10px] text-slate-400">0 failures, 0 regressions</span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Critical P0 Bugs</span>
-                <div className="text-base font-black text-emerald-400 font-mono">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-500 font-bold uppercase">Critical P0 Bugs</span>
+                <div className="text-base font-black text-emerald-700 font-mono">
                   0 Open Blockers
                 </div>
-                <span className="text-[10px] text-slate-500">All P0 criteria met</span>
+                <span className="text-[10px] text-slate-400">All P0 criteria met</span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-[#141720] border border-white/[0.06] space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Beta Backer Provisioning</span>
-                <div className="text-base font-black text-emerald-400 font-mono">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-500 font-bold uppercase">Beta Backer Provisioning</span>
+                <div className="text-base font-black text-emerald-700 font-mono">
                   {backersCount} Ready for Public Access
                 </div>
-                <span className="text-[10px] text-slate-500">Tokens activated</span>
+                <span className="text-[10px] text-slate-400">Tokens activated</span>
               </div>
             </div>
           </div>
 
           {/* 4. Human Executive Decision Gate */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-[#0e1117] via-[#151a28] to-[#121626] border border-blue-500/40 shadow-2xl space-y-4">
+          <div className="p-6 rounded-3xl bg-white border-2 border-blue-500 shadow-md space-y-4">
             <div>
-              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block">
+              <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest block">
                 Human Executive Decision
               </span>
-              <h3 className="text-lg font-black text-white tracking-tight">
+              <h3 className="text-lg font-black text-slate-950 tracking-tight">
                 Choose the Next Strategic Milestone
               </h3>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className="text-xs text-slate-600 mt-1">
                 As the technical operator, choose whether to launch generally, continue the private beta cycle, or kill/pivot the project.
               </p>
             </div>
@@ -2895,26 +2948,26 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 onClick={p2Guards.allPriorStepsDone ? onAdvanceToPhase3 : undefined}
                 className={`p-4 rounded-2xl text-left space-y-2 transition-all group border ${
                   p2Guards.allPriorStepsDone
-                    ? 'bg-gradient-to-b from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white shadow-xl shadow-blue-950/60 active:scale-[0.98] border-blue-400/40 cursor-pointer'
-                    : 'bg-slate-800/80 text-slate-500 border-slate-700/60 shadow-none cursor-not-allowed opacity-50'
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md active:scale-[0.98] border-blue-500 cursor-pointer'
+                    : 'bg-slate-100 text-slate-400 border-slate-200 shadow-none cursor-not-allowed opacity-60'
                 }`}
                 title={!p2Guards.allPriorStepsDone ? 'Complete Steps 1–3 before advancing to Phase 3' : 'Advance to Phase 3'}
               >
                 <div className="flex items-center justify-between">
-                  <div className={`p-2 rounded-xl ${p2Guards.allPriorStepsDone ? 'bg-white/10 text-white' : 'bg-slate-700/50 text-slate-500'}`}>
+                  <div className={`p-2 rounded-xl ${p2Guards.allPriorStepsDone ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-400'}`}>
                     {!p2Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <Rocket className="w-5 h-5" />}
                   </div>
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                    p2Guards.allPriorStepsDone ? 'bg-emerald-400 text-slate-950' : 'bg-slate-700 text-slate-400'
+                    p2Guards.allPriorStepsDone ? 'bg-emerald-400 text-slate-950' : 'bg-slate-200 text-slate-500'
                   }`}>
                     {p2Guards.allPriorStepsDone ? 'Recommended' : 'Locked'}
                   </span>
                 </div>
                 <div>
-                  <h4 className={`text-sm font-black transition-colors ${p2Guards.allPriorStepsDone ? 'text-white group-hover:text-blue-100' : 'text-slate-400'}`}>
+                  <h4 className={`text-sm font-black transition-colors ${p2Guards.allPriorStepsDone ? 'text-white' : 'text-slate-500'}`}>
                     1. Launch Product
                   </h4>
-                  <p className={`text-[11px] leading-relaxed mt-0.5 ${p2Guards.allPriorStepsDone ? 'text-blue-100/80' : 'text-slate-500'}`}>
+                  <p className={`text-[11px] leading-relaxed mt-0.5 ${p2Guards.allPriorStepsDone ? 'text-blue-100' : 'text-slate-400'}`}>
                     {p2Guards.allPriorStepsDone
                       ? 'Advance to Phase 3 (Scale / General Launch), open public onboarding, and activate marketing engine.'
                       : 'Locked — Complete Steps 1–3 (Product Plan, MVP Engineering Build, and Beta Test) first.'}
@@ -2929,19 +2982,19 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   setDecisionNotice('Beta cycle extended. Continue collecting usage data and inviting cohort testers.')
                   showToast('Beta cycle extended.')
                 }}
-                className="p-4 rounded-2xl bg-[#141720] hover:bg-[#1a1f2c] text-white text-left space-y-2 border border-white/[0.08] hover:border-slate-500/40 transition-all active:scale-[0.98] group"
+                className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-900 text-left space-y-2 border border-slate-200 hover:border-slate-300 transition-all active:scale-[0.98] group cursor-pointer shadow-2xs"
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-slate-800 text-slate-300">
+                  <div className="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 shadow-2xs">
                     <RotateCcw className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400">Iterate</span>
+                  <span className="text-[10px] font-mono text-slate-500 font-semibold">Iterate</span>
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white group-hover:text-slate-200 transition-colors">
+                  <h4 className="text-sm font-bold text-slate-900">
                     2. Continue Beta
                   </h4>
-                  <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
+                  <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5">
                     Gather more cohort usage data, log additional feedback, and refine edge cases before public launch.
                   </p>
                 </div>
@@ -2950,19 +3003,19 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               {/* Choice 3: Kill / Pivot */}
               <button
                 onClick={() => setShowKillModal(true)}
-                className="p-4 rounded-2xl bg-[#141720] hover:bg-red-950/30 text-white text-left space-y-2 border border-white/[0.08] hover:border-red-500/40 transition-all active:scale-[0.98] group"
+                className="p-4 rounded-2xl bg-red-50/50 hover:bg-red-50 text-red-900 text-left space-y-2 border border-red-200 hover:border-red-300 transition-all active:scale-[0.98] group cursor-pointer shadow-2xs"
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-red-500/20 text-red-400">
+                  <div className="p-2 rounded-xl bg-red-100 text-red-700">
                     <XCircle className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-mono text-red-400">Pivot</span>
+                  <span className="text-[10px] font-mono text-red-700 font-bold">Pivot</span>
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-red-300 group-hover:text-red-200 transition-colors">
+                  <h4 className="text-sm font-bold text-red-700">
                     3. Kill / Pivot
                   </h4>
-                  <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
+                  <p className="text-[11px] text-red-600/80 leading-relaxed mt-0.5">
                     Gracefully archive the project, process presale refunds, or pivot into a new validated problem space.
                   </p>
                 </div>
@@ -2971,10 +3024,10 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           </div>
 
           {/* Step 4 Footer */}
-          <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+          <div className="flex items-center justify-between pt-2 border-t border-slate-200">
             <button
               onClick={() => setActiveStep('beta')}
-              className="px-4 py-2.5 rounded-xl bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] text-xs font-semibold"
+              className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs text-xs font-semibold cursor-pointer"
             >
               ← Back to Beta Testing
             </button>

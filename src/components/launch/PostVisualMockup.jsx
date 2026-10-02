@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Heart,
   MessageCircle,
@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   Layers,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react'
 
 export function XLogo({ className = 'w-4 h-4' }) {
@@ -58,6 +59,17 @@ export default function PostVisualMockup({
   const [pollSelected, setPollSelected] = useState(null)
   const [copied, setCopied] = useState(false)
 
+  const handleDownloadAsset = (url, filename) => {
+    if (!url) return
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename || 'campaign-asset'
+    a.target = '_blank'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
   const activeImageUrl = imageUrl || project?.campaignKit?.postImageUrl || project?.campaignKit?.postImageDataUrl || null
   const activeVideoUrl = videoUrl || project?.campaignKit?.videoUrl || null
 
@@ -80,6 +92,8 @@ export default function PostVisualMockup({
     'Recent Channel Upload'
 
   const targetUrl = preorderUrl || (typeof window !== 'undefined' ? `${window.location.origin}/preorder/${(productName || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : 'https://creatorforge.app/preorder')
+
+  const scriptText = copyText || project?.campaignKit?.videoScript || ''
 
   const handleCopyAction = () => {
     if (onCopy) {
@@ -136,6 +150,17 @@ export default function PostVisualMockup({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {activeImageUrl && (
+                <button
+                  type="button"
+                  onClick={() => handleDownloadAsset(activeImageUrl, `${creatorHandle}_launch_graphic.png`)}
+                  className="px-2.5 py-1 rounded-full bg-[#16181c] hover:bg-[#202327] text-sky-300 text-xs font-semibold flex items-center gap-1.5 border border-sky-500/30 transition-colors cursor-pointer"
+                  title="Download image graphic"
+                >
+                  <Download className="w-3 h-3 text-sky-400" />
+                  <span className="hidden sm:inline">Download</span>
+                </button>
+              )}
               <XLogo className="w-4 h-4 text-[#71767b]" />
               <button
                 type="button"
@@ -175,9 +200,9 @@ export default function PostVisualMockup({
               <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3 p-6 text-center">
                 <div className="w-10 h-10 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-amber-300 block">Generating AI Post Graphic with OpenAI...</span>
+                  <span className="text-xs font-bold text-amber-300 block">Generating Image...</span>
                   <span className="text-[10px] text-slate-400 block max-w-xs">
-                    Synthesizing official launch card graphic with OpenAI Image API.
+                    Creating official launch card graphic.
                   </span>
                 </div>
               </div>
@@ -214,11 +239,11 @@ export default function PostVisualMockup({
               </div>
               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-400/15 text-amber-300 border border-amber-400/30 flex items-center gap-1 font-mono">
                 <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-                {activeImageUrl ? (project?.campaignKit?.postImageModel || 'OpenAI AI Graphic') : 'Founding Cohort (50 Spots)'}
+                {activeImageUrl ? 'Announcement Graphic' : 'Founding Cohort (50 Spots)'}
               </span>
             </div>
 
-            {/* Visual Body: AI Generated Image OR Graphic Artwork */}
+            {/* Visual Body: Generated Image OR Graphic Artwork */}
             {activeImageUrl ? (
               <div className="relative group/media overflow-hidden bg-black flex items-center justify-center">
                 <img
@@ -226,10 +251,6 @@ export default function PostVisualMockup({
                   alt={`${productName} announcement`}
                   className="w-full h-auto max-h-[440px] object-cover transition-transform duration-500 group-hover/media:scale-[1.01]"
                 />
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/80 backdrop-blur-md text-amber-300 border border-amber-400/30 flex items-center gap-1.5 shadow-lg">
-                  <Sparkles className="w-3 h-3 text-amber-400" />
-                  <span>{project?.campaignKit?.postImageModel || 'OpenAI Image API'}</span>
-                </div>
               </div>
             ) : (
               <div className="p-5 sm:p-6 space-y-4 relative">
@@ -665,22 +686,45 @@ export default function PostVisualMockup({
       >
         {/* Player Top Bar */}
         <div
-          className="px-4 py-2.5 flex items-center justify-between text-xs"
-          style={{ backgroundColor: '#0f1422', borderBottom: '1px solid #1e2433', color: '#94a3b8' }}
+          className="px-4 py-3 flex items-center justify-between text-xs gap-3 border-b"
+          style={{ backgroundColor: '#0d121f', borderColor: '#1e2638' }}
         >
-          <div className="flex items-center gap-2">
-            <Video className="w-4 h-4 text-red-500" />
-            <span className="font-bold" style={{ color: '#ffffff' }}>60s Video Integration Mockup (Shorts / Reels / Mid-Roll)</span>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+              <Video className="w-3.5 h-3.5 text-red-400" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-white text-xs tracking-tight">60s Video Integration Mockup</span>
+                <span className="text-[11px] text-slate-400 hidden sm:inline">· Shorts / Reels / Mid-Roll</span>
+              </div>
+            </div>
           </div>
-          <span
-            className="px-2 py-0.5 rounded-full text-[10px] font-mono"
-            style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-          >
-            Native Video Script
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            {activeVideoUrl && (
+              <button
+                type="button"
+                onClick={() => handleDownloadAsset(activeVideoUrl, `${creatorHandle}_launch_video.mp4`)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                title="Download video MP4"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download MP4</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleCopyAction}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-200 hover:text-white text-xs font-semibold border border-slate-700/80 shadow-xs transition-all cursor-pointer"
+              title="Copy 60s video script"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+              <span>{copied ? 'Copied' : 'Copy Script'}</span>
+            </button>
+          </div>
         </div>
 
-        {/* Video Canvas Simulation OR Real OpenAI Sora Video */}
+        {/* Video Canvas Simulation OR Real Video */}
         <div
           className="relative aspect-video flex items-center justify-center overflow-hidden bg-black"
           style={{ background: 'linear-gradient(135deg, #0f172a 0%, #090d16 50%, #030712 100%)' }}
@@ -689,9 +733,9 @@ export default function PostVisualMockup({
             <div className="absolute inset-0 bg-black/90 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3 p-6 text-center">
               <div className="w-12 h-12 rounded-full border-3 border-rose-500 border-t-transparent animate-spin" />
               <div className="space-y-1">
-                <span className="text-sm font-bold text-rose-400 block">OpenAI Sora Video Generation In Progress...</span>
+                <span className="text-sm font-bold text-rose-400 block">Generating Video...</span>
                 <span className="text-[11px] text-slate-300 block max-w-sm">
-                  Synthesizing high-impact launch teaser via OpenAI Sora Video API.
+                  Creating high-impact launch teaser video.
                 </span>
               </div>
             </div>
@@ -718,14 +762,11 @@ export default function PostVisualMockup({
             <div className="relative w-full h-full flex items-center justify-center bg-black group/video">
               <video
                 src={activeVideoUrl}
+                poster={project?.campaignKit?.videoThumbnailUrl || activeImageUrl || undefined}
                 controls
                 playsInline
                 className="w-full h-full object-contain"
               />
-              <div className="absolute top-3 left-3 pointer-events-none px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/80 backdrop-blur-md text-rose-300 border border-rose-500/30 flex items-center gap-1.5 z-10 shadow-lg">
-                <Video className="w-3 h-3 text-rose-400" />
-                <span>{project?.campaignKit?.videoModel || 'OpenAI Sora Video'}</span>
-              </div>
             </div>
           ) : (
             <>
@@ -788,49 +829,6 @@ export default function PostVisualMockup({
               </div>
             </>
           )}
-        </div>
-
-        {/* Video Scrubber & Script Stage Guide */}
-        <div
-          className="p-4 border-t space-y-3"
-          style={{ backgroundColor: '#0c101d', borderColor: '#1e2433' }}
-        >
-          {/* Progress bar */}
-          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-            <div className="bg-red-500 h-full w-2/5 rounded-full" />
-          </div>
-
-          {/* 4-Stage Script Breakdown Markers */}
-          <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-mono">
-            <div
-              className="p-1.5 rounded-lg"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#fde047' }}
-            >
-              <span className="font-bold block">Hook (0-8s)</span>
-              <span className="text-[9px]" style={{ color: '#94a3b8' }}>Video Citation</span>
-            </div>
-            <div
-              className="p-1.5 rounded-lg"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#fda4af' }}
-            >
-              <span className="font-bold block">Problem (8-22s)</span>
-              <span className="text-[9px]" style={{ color: '#94a3b8' }}>Viewer Pain</span>
-            </div>
-            <div
-              className="p-1.5 rounded-lg"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#6ee7b7' }}
-            >
-              <span className="font-bold block">Solution (22-42s)</span>
-              <span className="text-[9px]" style={{ color: '#94a3b8' }}>Software Demo</span>
-            </div>
-            <div
-              className="p-1.5 rounded-lg"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#7dd3fc' }}
-            >
-              <span className="font-bold block">CTA (42-60s)</span>
-              <span className="text-[9px]" style={{ color: '#94a3b8' }}>50 Founding Spots</span>
-            </div>
-          </div>
         </div>
       </div>
     )

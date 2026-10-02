@@ -510,41 +510,42 @@
 }
 
 /* Base Light Container Conversion (Excludes explicitly dark components like Code Studios, Terminals & Mockups) */
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#0e1117]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#090b0e]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#0c0e14]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#0c1017]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#080A0C]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#07090e]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#101419]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#11141c]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#141720]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#141824]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#161a23]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#171C22]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#1a1f2c]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#1b202c]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="from-[#141824]"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="to-[#0d0f17]"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#0e1117]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#090b0e]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#0c0e14]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#0c1017]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#080A0C]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#07090e]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#101419]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#11141c]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#141720]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#141824]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#161a23]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#171C22]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#1a1f2c]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#1b202c]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="from-[#141824]"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="to-[#0d0f17]"] {
   background-image: none !important;
   background-color: #f8fafc !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
 }
 
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-black/"],
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#06080d]"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-black/"],
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="bg-[#06080d]"] {
   background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
 }
 
-.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="border-white/"] {
+.phase-modal-white-theme :not(.keep-dark):not(.keep-dark *):not(.cloud-code-studio):not(.cloud-code-studio *):not(.product-mockup-display):not(.product-mockup-display *):not(.post-visual-mockup):not(.post-visual-mockup *)[class*="border-white/"] {
   border-color: #e2e8f0 !important;
 }
 
 /* Explicit Preservation for Dark Mockups, Code Editors, Terminals, and Command Cards */
 .phase-modal-white-theme .keep-dark,
+.phase-modal-white-theme .cloud-code-studio,
 .phase-modal-white-theme .product-mockup-display,
 .phase-modal-white-theme .product-mockup-canvas {
   background-color: #0c0e14 !important;
@@ -740,6 +741,44 @@
   stroke: #ffffff !important;
 }
 
+/* Primary Blue Action Buttons */
+.phase-modal-white-theme button[class*="bg-blue-600"] {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+.phase-modal-white-theme button[class*="bg-blue-600"]:hover {
+  background-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  border-color: #1d4ed8 !important;
+}
+.phase-modal-white-theme button[class*="bg-blue-600"] * {
+  color: #ffffff !important;
+}
+.phase-modal-white-theme button[class*="bg-blue-600"] svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Primary Emerald Action Buttons */
+.phase-modal-white-theme button[class*="bg-emerald-600"] {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+  border-color: #059669 !important;
+}
+.phase-modal-white-theme button[class*="bg-emerald-600"]:hover {
+  background-color: #047857 !important;
+  color: #ffffff !important;
+  border-color: #047857 !important;
+}
+.phase-modal-white-theme button[class*="bg-emerald-600"] * {
+  color: #ffffff !important;
+}
+.phase-modal-white-theme button[class*="bg-emerald-600"] svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
 /* Secondary other buttons */
 .phase-modal-white-theme button[class*="bg-slate-800"] {
   background-color: #1e293b !important;
@@ -803,12 +842,30 @@
   color: #065f46 !important;
 }
 
-.phase-modal-white-theme input,
-.phase-modal-white-theme textarea,
-.phase-modal-white-theme select {
+.phase-modal-white-theme input:not(.keep-dark *):not(.cloud-code-studio *),
+.phase-modal-white-theme textarea:not(.keep-dark *):not(.cloud-code-studio *),
+.phase-modal-white-theme select:not(.keep-dark *):not(.cloud-code-studio *) {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
+}
+
+/* Ensure CloudCodeStudio remains in pristine, distraction-free dark developer mode */
+.cloud-code-studio textarea {
+  background-color: #06080a !important;
+  color: #f1f5f9 !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.cloud-code-studio input {
+  background-color: #090b0e !important;
+  color: #f1f5f9 !important;
+}
+
+.cloud-code-studio select {
+  background-color: #090b0e !important;
+  color: #f1f5f9 !important;
 }
 
 /* Remove AI-centric generic purple inside modal */

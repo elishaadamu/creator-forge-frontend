@@ -3,7 +3,7 @@ import {
   Activity, Play, CheckCircle2, XCircle, ShieldCheck,
   RefreshCw, Check, ChevronDown, ChevronRight,
   Sparkles, AlertCircle, Loader2, Send, CheckCheck,
-  FileCode, ArrowRight, Bot, User, Layers, Search
+  FileCode, ArrowRight, Bot, User, Layers, Search, Terminal
 } from 'lucide-react'
 import { verifyProjectTaskWithAI, editOrGenerateCodeFileAI } from '../../services/ai'
 
@@ -145,8 +145,8 @@ export default function AutomatedQASuite({
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h2 className="text-sm sm:text-base font-bold text-white whitespace-nowrap">AI Task & Code QA</h2>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-mono whitespace-nowrap">
-                Gemini 3.1 Flash Lite
+              <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/[0.06] text-slate-300 border border-white/[0.1] font-mono whitespace-nowrap">
+                Automated QA Engine
               </span>
             </div>
             <p className="text-xs text-slate-400 truncate mt-0.5">
@@ -168,7 +168,7 @@ export default function AutomatedQASuite({
           <button
             onClick={handleVerifyAllTasks}
             disabled={isVerifyingAll || engineeringTasks.length === 0}
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-950/40 transition-all disabled:opacity-40 cursor-pointer whitespace-nowrap"
+            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-xs transition-all disabled:opacity-40 cursor-pointer whitespace-nowrap"
           >
             {isVerifyingAll ? (
               <>
@@ -186,10 +186,10 @@ export default function AutomatedQASuite({
       </div>
 
       {/* 1. Custom Test Prompt Runner */}
-      <div className="px-6 py-5 rounded-2xl bg-[#090b0e] border border-white/[0.08] space-y-3.5">
+      <div className="px-5 py-4 rounded-xl bg-[#090b0e] border border-white/[0.08] space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <Terminal className="w-3.5 h-3.5 text-blue-400" />
             <span>Run Custom Code Verification Prompt</span>
           </label>
           <span className="text-[11px] text-slate-500 font-mono">
@@ -203,13 +203,13 @@ export default function AutomatedQASuite({
             value={customPrompt}
             onChange={e => setCustomPrompt(e.target.value)}
             placeholder="e.g. Test that index.html has a working hero section, responsive layout, and dark theme..."
-            className="flex-1 px-3.5 py-2 rounded-xl bg-[#06080a] border border-white/[0.08] text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500/50 font-mono"
+            className="flex-1 px-3 py-1.5 rounded-lg bg-[#06080a] border border-white/[0.08] text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500/50 font-mono"
           />
 
           <button
             type="submit"
             disabled={isVerifyingCustom || !customPrompt.trim()}
-            className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-md shadow-purple-950/40"
+            className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-xs shrink-0"
           >
             {isVerifyingCustom ? (
               <>
@@ -219,7 +219,7 @@ export default function AutomatedQASuite({
             ) : (
               <>
                 <Send className="w-3.5 h-3.5" />
-                <span>Run Test Prompt</span>
+                <span>Run Test</span>
               </>
             )}
           </button>
@@ -295,7 +295,7 @@ export default function AutomatedQASuite({
       <div className="p-5 rounded-2xl bg-[#090b0e] border border-white/[0.08] space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-purple-400" />
+            <Layers className="w-4 h-4 text-blue-400" />
             <h3 className="text-sm font-bold text-white">Sprint Tasks Verification Matrix</h3>
             <span className="text-xs text-slate-400">({engineeringTasks.length} tasks)</span>
           </div>
@@ -342,7 +342,7 @@ export default function AutomatedQASuite({
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400">
                         <span className="px-2 py-0.5 rounded bg-white/[0.04] text-slate-400 border border-white/[0.06] flex items-center gap-1">
-                          {task.assignedTo === 'AI Agent' ? <Bot className="w-3 h-3 text-purple-400" /> : <User className="w-3 h-3 text-blue-400" />}
+                          {task.assignedTo === 'AI Agent' ? <Bot className="w-3 h-3 text-blue-400" /> : <User className="w-3 h-3 text-emerald-400" />}
                           <span>{task.assignedTo || 'AI Agent'}</span>
                         </span>
                         {task.category && (

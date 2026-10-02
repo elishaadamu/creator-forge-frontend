@@ -214,7 +214,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
             }`}
           >
             <Sparkles className="w-3 h-3 text-yellow-400" />
-            <span>DALL-E 3</span>
+            <span>Generated</span>
           </button>
           {convertedImageUrl && (
             <button

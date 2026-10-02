@@ -350,13 +350,34 @@ partnerships@creatorforge.com`
   const handleAdvancePhase = (nextPhase) => {
     const updatedStatus = nextPhase === 2 ? 'building' : nextPhase === 3 ? 'launched' : 'validating'
     const initialStep = nextPhase === 2 ? 'plan' : nextPhase === 3 ? 'prep' : 'plan'
+    const decisionItem = nextPhase === 2 ? {
+      id: `gate_${Date.now()}`,
+      decision: 'pass_to_phase2',
+      gateStatus: 'passed',
+      targetRevenue: presaleTarget,
+      achievedRevenue: presalesRevenue,
+      backersCount: Array.isArray(project.reservations) ? project.reservations.length : Number(project.telemetry?.presalesCount || 0),
+      conversionRate: Number(project.conversionRate || 0),
+      notes: 'Phase 1 completed. Advanced to Phase 2: Build MVP.',
+      decidedAt: new Date().toLocaleString()
+    } : null
+
     const updated = {
       ...(project || {}),
       currentPhase: nextPhase,
       current_phase: nextPhase,
+      p1Complete: true,
+      phase1Passed: true,
+      step4Done: true,
+      step5Done: true,
+      ...(nextPhase === 3 ? { p2Complete: true, phase2Passed: true } : {}),
       currentStep: initialStep,
       current_step: initialStep,
-      status: updatedStatus
+      status: updatedStatus,
+      ...(decisionItem ? {
+        gateDecisions: [decisionItem, ...(project?.gateDecisions || [])],
+        decisions: [decisionItem, ...(project?.decisions || [])]
+      } : {})
     }
     setSelectedPhaseTab(nextPhase)
     setSelectedPhaseStep(initialStep)
@@ -365,13 +386,20 @@ partnerships@creatorforge.com`
       ...updated
     }))
     if (project?.id) {
-      import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
+      import('../../services/opsApi').then(({ updateCoLaunchProject, recordGateDecision }) => {
+        if (nextPhase === 2 && recordGateDecision) {
+          recordGateDecision(project.id, { decision: 'pass_to_phase2', notes: 'Phase 1 completed. Advanced to Phase 2: Build MVP.' }).catch(e => console.warn(e))
+        }
         updateCoLaunchProject(project.id, {
           currentPhase: nextPhase,
           current_phase: nextPhase,
           currentStep: initialStep,
           current_step: initialStep,
-          status: updatedStatus
+          status: updatedStatus,
+          p1Complete: true,
+          phase1Passed: true,
+          step4Done: true,
+          step5Done: true
         }).catch(e => console.warn(e))
       })
     }
@@ -596,7 +624,18 @@ partnerships@creatorforge.com`
     Boolean(project.phase3Strategy?.productionLive === true)
   )
 
-  const isP1Done = isGatePassed
+  const isP1Done = Boolean(
+    isGatePassed ||
+    isStep5Done ||
+    project.p1Complete === true ||
+    project.phase1Passed === true ||
+    Number(project.currentPhase || project.current_phase || 1) >= 2 ||
+    project.status === 'building' ||
+    project.status === 'launched' ||
+    project.status === 'LIVE' ||
+    (Array.isArray(project.gateDecisions) && project.gateDecisions.some(d => (d.decision === 'pass_to_phase2' || d.gateStatus === 'passed' || d.decision === 'pass') && d.phase !== 3)) ||
+    (isStep1Done && isStep2Done && isStep3Done && isStep4Done)
+  )
 
   const isP2Done = Boolean(
     project.p2Complete === true ||
@@ -723,25 +762,41 @@ partnerships@creatorforge.com`
             {/* ACTIVE PHASE PINNED TO BOTTOM ON DESKTOP, INLINE ON MOBILE */}
             <div className="md:mt-auto md:pt-4 shrink-0 w-full">
               <div className="p-2 sm:p-3 rounded-2xl bg-white border border-slate-200 text-center flex md:flex-col items-center gap-2 shadow-2xs">
-                <span className="hidden md:flex items-center justify-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                  {isLiveLaunch ? (
-                    <>
-                      <Rocket className="w-3 h-3 text-emerald-600" />
-                      <span>Live Launch</span>
-                    </>
-                  ) : (
-                    'Active Phase'
+                <div className="hidden md:flex items-center justify-between w-full px-1">
+                  <span className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                    {isLiveLaunch ? (
+                      <>
+                        <Rocket className="w-3 h-3 text-emerald-600" />
+                        <span>Live Launch</span>
+                      </>
+                    ) : (
+                      'Active Phase'
+                    )}
+                  </span>
+                  {isP1Done && (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      P1 Done
+                    </span>
                   )}
-                </span>
+                </div>
                 <div className="flex items-center justify-center gap-1.5">
                   {[1, 2, 3].map(p => {
                     const isDone = p === 1 ? isP1Done : p === 2 ? isP2Done : isP3Done
+                    const isActive = currentPhase === p
                     return (
                       <button
                         key={p}
-                        onClick={() => setSelectedPhaseTab(p)}
-                        className={`relative w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
-                          currentPhase === p
+                        onClick={() => {
+                          setSelectedPhaseTab(p)
+                          if (p === 2 && projectCurrentPhase < 2) {
+                            handleAdvancePhase(2)
+                          } else if (p === 3 && projectCurrentPhase < 3) {
+                            handleAdvancePhase(3)
+                          }
+                        }}
+                        className={`relative w-8 h-8 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
+                          isActive
                             ? p === 2
                               ? 'bg-blue-600 text-white shadow-xs'
                               : p === 3
@@ -757,7 +812,7 @@ partnerships@creatorforge.com`
                       >
                         <span>P{p}</span>
                         {isDone && (
-                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] font-black shadow-2xs">
+                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] font-black shadow-2xs border-2 border-white">
                             <Check className="w-2 h-2 stroke-[3]" />
                           </span>
                         )}
@@ -765,20 +820,35 @@ partnerships@creatorforge.com`
                     )
                   })}
                 </div>
-                <span className="hidden md:flex text-[11px] font-black text-slate-900 items-center justify-center gap-1.5 pt-0.5">
-                  {isLiveLaunch ? (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                      <span className="text-emerald-700">Live Launch Verified</span>
-                    </>
-                  ) : currentPhase === 1 ? (
-                    'Phase 1: Validate'
-                  ) : currentPhase === 2 ? (
-                    'Phase 2: Build MVP'
-                  ) : (
-                    'Phase 3: Launch'
+                <div className="hidden md:flex flex-col items-center justify-center gap-1 pt-0.5 w-full">
+                  <span className="text-[11px] font-black text-slate-900 flex items-center justify-center gap-1.5">
+                    {isLiveLaunch ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                        <span className="text-emerald-700">Live Launch Verified</span>
+                      </>
+                    ) : currentPhase === 1 ? (
+                      isP1Done ? 'Phase 1: Validated (Done)' : 'Phase 1: Validate'
+                    ) : currentPhase === 2 ? (
+                      'Phase 2: Build MVP'
+                    ) : (
+                      'Phase 3: Launch'
+                    )}
+                  </span>
+
+                  {/* Direct button to mark Phase 1 done and advance to Phase 2 */}
+                  {currentPhase === 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleAdvancePhase(2)}
+                      className="mt-1 w-full py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer"
+                      title="Mark Phase 1 as Done and Advance to Phase 2: Build MVP"
+                    >
+                      <CheckCircle2 className="w-3 h-3 text-emerald-200" />
+                      <span>Mark P1 Done → P2</span>
+                    </button>
                   )}
-                </span>
+                </div>
               </div>
             </div>
           </div>
@@ -850,7 +920,9 @@ partnerships@creatorforge.com`
                     ? 'text-blue-800 bg-blue-50 border border-blue-300'
                     : currentPhase === 3
                     ? 'text-slate-900 bg-slate-100 border border-slate-300'
-                    : 'text-emerald-800 bg-emerald-50 border border-emerald-300'
+                    : isP1Done
+                    ? 'text-emerald-800 bg-emerald-50 border border-emerald-300'
+                    : 'text-slate-800 bg-slate-100 border border-slate-300'
                 }`}>
                   {isLiveLaunch ? (
                     <>
@@ -858,13 +930,33 @@ partnerships@creatorforge.com`
                       <span>Live Launch</span>
                     </>
                   ) : currentPhase === 1 ? (
-                    'Phase 1: Validate'
+                    isP1Done ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Phase 1: Validated (Done)</span>
+                      </>
+                    ) : (
+                      'Phase 1: Validate'
+                    )
                   ) : currentPhase === 2 ? (
                     'Phase 2: Build MVP'
                   ) : (
                     'Phase 3: Launch'
                   )}
                 </span>
+
+                {/* Direct quick advance button if currently on Phase 1 */}
+                {currentPhase === 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleAdvancePhase(2)}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+                    title="Mark Phase 1 Done & Advance to Phase 2: Build MVP"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                    <span>Advance to Phase 2</span>
+                  </button>
+                )}
 
                 <button
                   type="button"

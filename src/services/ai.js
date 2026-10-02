@@ -2557,113 +2557,145 @@ export function buildSmartFallbackMVPBuildPlan(projectData) {
   const creator = projectData?.creatorName || "Creator";
   const niche = projectData?.niche || "Software & Tech";
   const customer =
-    projectData?.validationPlan?.customer || projectData?.targetAudience || `Learners and professionals in ${niche}`;
+    projectData?.validationPlan?.customer ||
+    projectData?.campaignKit?.targetAudience ||
+    projectData?.targetAudience ||
+    `Learners and professionals in ${niche}`;
   const problem =
-    projectData?.validationPlan?.problem || projectData?.problemStatement || `Bottlenecks and lack of interactive practice in ${niche}`;
+    projectData?.validationPlan?.problem ||
+    projectData?.campaignKit?.problemAgitation ||
+    projectData?.problemStatement ||
+    `Bottlenecks and lack of interactive practice in ${niche}`;
+  const solution =
+    projectData?.validationPlan?.solution ||
+    projectData?.validationPlan?.offer ||
+    projectData?.campaignKit?.headline ||
+    projectData?.productTagline ||
+    `The complete ${product} automated platform`;
   const offer =
-    projectData?.validationPlan?.offer || projectData?.productTagline || `The complete ${product} platform`;
+    projectData?.campaignKit?.headline ||
+    projectData?.validationPlan?.offer ||
+    solution;
+
+  // Extract real Phase 1 pricing tiers if available
+  const pricingTiers = Array.isArray(projectData?.campaignKit?.pricingTiers) && projectData.campaignKit.pricingTiers.length > 0
+    ? projectData.campaignKit.pricingTiers
+    : null;
+  const tierSummary = pricingTiers
+    ? pricingTiers.map(t => `${t.name || t.title} ($${t.price})`).join(' • ')
+    : null;
   const pricing =
+    tierSummary ||
     projectData?.selectedConcept?.pricing ||
     projectData?.pricing ||
     projectData?.validationPlan?.pricing ||
     projectData?.validation_plan?.pricing ||
-    "$49/mo";
+    "Founding Member Pass";
 
   const cleanProb = problem.toLowerCase();
   const cleanProd = product.toLowerCase();
 
-  let feat1Name = `${product} Core Execution Canvas`;
-  let feat1Desc = `Primary interactive engine solving: "${problem}".`;
-  let feat2Name = `Real-Time Review & Validation Loop`;
-  let feat2Desc = `Interactive evaluation workspace assessing user submissions with live feedback.`;
-  let feat3Name = `Automated Progress & Sync Engine`;
-  let feat3Desc = `Background pipeline tracking milestones, exports, and integrations.`;
-  let feat4Name = `Founding Backer Resource Hub`;
-  let feat4Desc = `Encrypted license gate with exclusive templates, repositories, and founding tier perks.`;
+  // 1. Check if Phase 1 campaign kit has validated features
+  const phase1Features = Array.isArray(projectData?.campaignKit?.features) && projectData.campaignKit.features.length > 0
+    ? projectData.campaignKit.features
+    : (Array.isArray(projectData?.features) && projectData.features.length > 0 ? projectData.features : null);
 
-  if (cleanProb.includes("code") || cleanProb.includes("tutorial") || cleanProb.includes("learn") || cleanProb.includes("sandbox") || cleanProd.includes("code") || cleanProd.includes("tutorial") || cleanProd.includes("learn")) {
-    feat1Name = `Interactive In-Browser Code Sandbox & REPL`;
-    feat1Desc = `Live coding environment with real-time execution to eliminate passive video retention drop-off.`;
-    feat2Name = `Automated Code Review & Instant Feedback Engine`;
-    feat2Desc = `Real-time evaluation engine assessing learner code against automated test cases and syntax checkers.`;
-    feat3Name = `Step-by-Step Project Milestone & Track System`;
-    feat3Desc = `Structured hands-on progression modules with automated completion telemetry and checkpoints.`;
-    feat4Name = `Founding Backer Code Repo & Asset Vault`;
-    feat4Desc = `Private repository access, starter templates, and community discussion hub for early adopters.`;
-  } else if (cleanProb.includes("client") || cleanProb.includes("lead") || cleanProb.includes("outreach") || cleanProb.includes("agency") || cleanProb.includes("prospect")) {
-    feat1Name = `Automated Prospect Discovery & Scraping Engine`;
-    feat1Desc = `AI filtering pipeline finding qualified target accounts based on ICP parameters.`;
-    feat2Name = `Personalized Outreach & Multi-Channel Sequence Engine`;
-    feat2Desc = `Dynamic template generator crafting platform-native messaging with 1-click dispatch.`;
-    feat3Name = `Unified CRM & Opportunity Pipeline`;
-    feat3Desc = `Kanban board tracking deal stages, reply classifications, and meeting bookings.`;
-    feat4Name = `Founding Pass Workspace & Webhook Hub`;
-    feat4Desc = `Dedicated workspace with Stripe webhook syncing and unlimited export capabilities.`;
-  } else if (cleanProb.includes("content") || cleanProb.includes("video") || cleanProb.includes("social") || cleanProb.includes("script") || cleanProb.includes("edit")) {
-    feat1Name = `AI Content Generation & Scripting Canvas`;
-    feat1Desc = `Multi-format writer generating platform-tailored scripts, hooks, and captions in seconds.`;
-    feat2Name = `Interactive Storyboard & Visual Asset Studio`;
-    feat2Desc = `Visual staging canvas to arrange scenes, review generated assets, and refine copy.`;
-    feat3Name = `Automated Multi-Platform Scheduler & Export Engine`;
-    feat3Desc = `Direct 1-click formatting and distribution queue for YouTube, TikTok, and X.`;
-    feat4Name = `Founding Member Master Archive`;
-    feat4Desc = `Searchable library of high-performing hooks, viral frameworks, and audio assets.`;
+  let features = [];
+  if (phase1Features && phase1Features.length > 0) {
+    features = phase1Features.map((f, idx) => {
+      const name = typeof f === 'string' ? f : (f.title || f.name || `Core Feature ${idx + 1}`);
+      const desc = typeof f === 'string'
+        ? `Validated core feature for ${product} directly addressing: "${problem}".`
+        : (f.description || f.desc || `Validated core capability for ${product} directly addressing: "${problem}".`);
+      return {
+        name,
+        description: desc,
+        priority: idx < 2 ? "P0 - Must Have" : "P1 - High Priority"
+      };
+    });
+  } else {
+    let feat1Name = `${product} Core Execution Canvas`;
+    let feat1Desc = `Primary interactive engine solving: "${problem}".`;
+    let feat2Name = `Real-Time Review & Validation Loop`;
+    let feat2Desc = `Interactive evaluation workspace assessing user submissions with live feedback.`;
+    let feat3Name = `Automated Progress & Sync Engine`;
+    let feat3Desc = `Background pipeline tracking milestones, exports, and integrations.`;
+    let feat4Name = `Founding Backer Resource Hub`;
+    let feat4Desc = `Encrypted license gate with exclusive templates, repositories, and founding tier perks.`;
+
+    if (cleanProb.includes("code") || cleanProb.includes("tutorial") || cleanProb.includes("learn") || cleanProb.includes("sandbox") || cleanProd.includes("code") || cleanProd.includes("tutorial") || cleanProd.includes("learn")) {
+      feat1Name = `Interactive In-Browser Code Sandbox & REPL`;
+      feat1Desc = `Live coding environment with real-time execution to eliminate passive video retention drop-off.`;
+      feat2Name = `Automated Code Review & Instant Feedback Engine`;
+      feat2Desc = `Real-time evaluation engine assessing learner code against automated test cases and syntax checkers.`;
+      feat3Name = `Step-by-Step Project Milestone & Track System`;
+      feat3Desc = `Structured hands-on progression modules with automated completion telemetry and checkpoints.`;
+      feat4Name = `Founding Backer Code Repo & Asset Vault`;
+      feat4Desc = `Private repository access, starter templates, and community discussion hub for early adopters.`;
+    } else if (cleanProb.includes("client") || cleanProb.includes("lead") || cleanProb.includes("outreach") || cleanProb.includes("agency") || cleanProb.includes("prospect")) {
+      feat1Name = `Automated Prospect Discovery & Scraping Engine`;
+      feat1Desc = `AI filtering pipeline finding qualified target accounts based on ICP parameters.`;
+      feat2Name = `Personalized Outreach & Multi-Channel Sequence Engine`;
+      feat2Desc = `Dynamic template generator crafting platform-native messaging with 1-click dispatch.`;
+      feat3Name = `Unified CRM & Opportunity Pipeline`;
+      feat3Desc = `Kanban board tracking deal stages, reply classifications, and meeting bookings.`;
+      feat4Name = `Founding Pass Workspace & Webhook Hub`;
+      feat4Desc = `Dedicated workspace with Stripe webhook syncing and unlimited export capabilities.`;
+    } else if (cleanProb.includes("content") || cleanProb.includes("video") || cleanProb.includes("social") || cleanProb.includes("script") || cleanProb.includes("edit")) {
+      feat1Name = `AI Content Generation & Scripting Canvas`;
+      feat1Desc = `Multi-format writer generating platform-tailored scripts, hooks, and captions in seconds.`;
+      feat2Name = `Interactive Storyboard & Visual Asset Studio`;
+      feat2Desc = `Visual staging canvas to arrange scenes, review generated assets, and refine copy.`;
+      feat3Name = `Automated Multi-Platform Scheduler & Export Engine`;
+      feat3Desc = `Direct 1-click formatting and distribution queue for YouTube, TikTok, and X.`;
+      feat4Name = `Founding Member Master Archive`;
+      feat4Desc = `Searchable library of high-performing hooks, viral frameworks, and audio assets.`;
+    }
+
+    features = [
+      { name: feat1Name, description: feat1Desc, priority: "P0 - Must Have" },
+      { name: feat2Name, description: feat2Desc, priority: "P0 - Must Have" },
+      { name: feat3Name, description: feat3Desc, priority: "P1 - High Priority" },
+      { name: feat4Name, description: feat4Desc, priority: "P0 - Must Have" }
+    ];
   }
+
+  const primaryFeatName = features[0]?.name || `${product} Core Engine`;
+  const secondaryFeatName = features[1]?.name || `Sync & Pipeline`;
 
   return {
     productSpec: {
       targetCustomer: customer,
       coreProblem: problem,
-      valueProposition: offer,
-      features: [
-        {
-          name: feat1Name,
-          description: feat1Desc,
-          priority: "P0 - Must Have",
-        },
-        {
-          name: feat2Name,
-          description: feat2Desc,
-          priority: "P0 - Must Have",
-        },
-        {
-          name: feat3Name,
-          description: feat3Desc,
-          priority: "P1 - High Priority",
-        },
-        {
-          name: feat4Name,
-          description: feat4Desc,
-          priority: "P0 - Must Have",
-        },
-      ],
+      valueProposition: solution || offer,
+      features,
       userFlows: [
         {
           step: "1. Onboarding & Authentication",
           action:
-            "User registers via Google OAuth or Magic Link and unlocks workspace with founding license key.",
+            `User registers via Google OAuth or Magic Link and unlocks workspace with founding license key.`,
         },
         {
-          step: "2. Project Setup & Input",
+          step: "2. Project Setup & Configuration",
           action:
-            `User creates a new workspace, configures preferences, and initializes their environment in < 60s.`,
+            `User creates a new workspace, configures preferences, and initializes ${product} in < 60s.`,
         },
         {
           step: "3. Core Interactive Execution",
           action:
-            `Learner or operator executes workflows inside ${product} with real-time feedback.`,
+            `${customer} operates ${primaryFeatName} with real-time feedback to solve "${problem}".`,
         },
         {
-          step: "4. Review & Export",
+          step: "4. Review, Validation & Export",
           action:
-            "User inspects outputs, passes validation checks, and syncs progress.",
+            "User inspects outputs, passes automated validation checks, and syncs progress to external workflows.",
         },
       ],
       screens: [
         {
           name: "1. Authentication & Welcome",
           description:
-            `OAuth login, license activation, and quick 3-step onboarding walkthrough for ${customer}.`,
+            `OAuth login, license activation, and quick 3-step onboarding walkthrough tailored for ${customer}.`,
         },
         {
           name: `2. ${product} Command Center`,
@@ -2671,34 +2703,34 @@ export function buildSmartFallbackMVPBuildPlan(projectData) {
             "Active workspaces, progression metrics, recent outputs, and quick-action launcher.",
         },
         {
-          name: `3. Interactive Execution Canvas`,
+          name: `3. ${primaryFeatName} Canvas`,
           description:
-            `Primary workspace canvas with real-time execution, parameter controls, and live output inspector.`,
+            `Primary interactive canvas with live execution controls, parameter configuration, and real-time inspector.`,
         },
         {
-          name: "4. Settings & Stripe Billing",
+          name: "4. Settings & Billing Management",
           description:
-            "Founding tier management, API credentials, and account profile.",
+            `Tier pass management (${pricing}), API credentials, and account settings.`,
         },
       ],
       integrations: [
         {
-          name: "Stripe Billing",
+          name: "Stripe Billing & Webhooks",
           purpose:
-            "Subscription processing, $99 founding pass unlocks, and invoices.",
+            `Payment processing, automated entitlement provisioning (${pricing}), and invoices.`,
         },
         {
           name: "Cloud Storage (S3 / Supabase)",
-          purpose: "Encrypted asset and output file storage.",
+          purpose: `Encrypted asset and output file storage for ${product}.`,
         },
         {
-          name: "External Webhooks",
+          name: "External Webhooks & API",
           purpose: "Custom HTTP callback triggers on workflow completion.",
         },
       ],
       payments: {
         provider: "Stripe Billing & Checkout",
-        model: pricing || "Founding Annual ($99/yr) & VIP Pass ($199 Lifetime)",
+        model: pricing,
         flow: "Seamless Stripe Customer Portal with 1-click self-service license renewal.",
       },
       authentication: {
@@ -2719,7 +2751,7 @@ export function buildSmartFallbackMVPBuildPlan(projectData) {
     },
     technicalPlan: {
       architecture:
-        "Modern decoupled SPA: Vite + React Frontend communicating via REST / WebSocket with a FastAPI Python Backend and Celery/Redis background worker queue.",
+        `Modern decoupled SPA: Vite + React Frontend communicating via REST / WebSocket with a FastAPI Python Backend and Redis background worker queue for ${product}.`,
       database: [
         {
           table: "users",
@@ -2742,19 +2774,19 @@ export function buildSmartFallbackMVPBuildPlan(projectData) {
         },
       ],
       techStack: {
-        frontend: "React 18, Vite, Tailwind CSS, Lucide Icons, Headless UI",
+        frontend: "React 18, Vite, Tailwind CSS, Lucide Icons",
         backend:
-          "FastAPI (Python 3.11), SQLAlchemy, Pydantic v2, Celery Workers",
+          "FastAPI (Python 3.11), SQLAlchemy, Pydantic v2, Background Workers",
         database:
           "PostgreSQL 15 (Supabase / RDS) + Redis for caching and background queues",
         aiInference:
-          "Google Gemini 2.5 / OpenAI GPT-4o API client with streaming fallbacks",
+          "Google Gemini 3.1 Flash Lite API client with streaming fallbacks",
       },
       engineeringTasks: [
         {
           id: "task-1",
           title:
-            "Setup FastAPI backend skeleton, PostgreSQL schema & Alembic migrations",
+            `Setup FastAPI backend, PostgreSQL schema & Alembic migrations for ${product}`,
           category: "Backend",
           status: "Ready",
           estimate: "1 Day",
@@ -2762,21 +2794,21 @@ export function buildSmartFallbackMVPBuildPlan(projectData) {
         {
           id: "task-2",
           title: "Implement Google OAuth & JWT token verification middleware",
-          category: "Auth",
+          category: "Security / Auth",
           status: "Ready",
           estimate: "1 Day",
         },
         {
           id: "task-3",
           title:
-            "Build React command workspace & pipeline configuration canvas",
+            `Build React interactive command workspace & ${primaryFeatName} canvas`,
           category: "Frontend",
           status: "Ready",
           estimate: "2 Days",
         },
         {
           id: "task-4",
-          title: "Implement Celery async background worker queue with Redis",
+          title: `Implement ${secondaryFeatName} background worker pipeline with Redis`,
           category: "Backend / Workers",
           status: "Ready",
           estimate: "1.5 Days",
@@ -2784,15 +2816,15 @@ export function buildSmartFallbackMVPBuildPlan(projectData) {
         {
           id: "task-5",
           title:
-            "Integrate Stripe Webhook endpoint for automated license provisioning",
+            `Integrate Stripe Webhook endpoint for automated license provisioning (${pricing})`,
           category: "Payments",
           status: "Ready",
           estimate: "1 Day",
         },
         {
           id: "task-6",
-          title: "End-to-end integration tests & beta telemetry tracker",
-          category: "QA / DevOps",
+          title: `End-to-end integration tests & beta telemetry tracker for ${customer}`,
+          category: "QA / Testing",
           status: "Ready",
           estimate: "1 Day",
         },
@@ -2810,9 +2842,9 @@ export function buildSmartFallbackMVPBuildPlan(projectData) {
         "Vite",
       ],
       acceptanceCriteria: [
-        "Core workflow completes end-to-end with valid output in under 10 seconds.",
+        `Core workflow completes end-to-end with valid output in under 10 seconds for ${customer}.`,
         "OAuth authentication successfully provisions user record and persistent session.",
-        "Stripe checkout webhook reliably assigns Founding Member tier without manual intervention.",
+        `Stripe checkout webhook reliably assigns founding tier license (${pricing}) without manual intervention.`,
         "Zero critical frontend errors or unhandled server exceptions during core user journey.",
       ],
       milestones: [
@@ -2822,12 +2854,12 @@ export function buildSmartFallbackMVPBuildPlan(projectData) {
           status: "Ready",
         },
         {
-          name: "Sprint 2: Core Workflow Pipeline & UI Editor",
+          name: `Sprint 2: ${primaryFeatName} & UI Editor`,
           duration: "Days 3-5",
           status: "Ready",
         },
         {
-          name: "Sprint 3: Payments, Webhooks & Export Engine",
+          name: `Sprint 3: Payments (${pricing}), Webhooks & Export Engine`,
           duration: "Day 6",
           status: "Ready",
         },
@@ -2840,9 +2872,10 @@ export function buildSmartFallbackMVPBuildPlan(projectData) {
     },
     scopeBoundaries: {
       includedInMVP: [
-        "Core primary automation workflow validated in Phase 1",
+        ...features.map(f => f.name),
+        `Primary end-to-end workflow validated in Phase 1 for ${customer}`,
         "Google OAuth & Magic Link authentication",
-        "Stripe Founding Tier checkout & automated entitlement provisioning",
+        `Stripe founding checkout & automated entitlement provisioning (${pricing})`,
         "Interactive Command Dashboard with live status updates",
         "Export to JSON, CSV and direct file download",
         "Built-in error logging & telemetry",
@@ -2871,37 +2904,62 @@ export async function generateMVPProductBuildPlanAI(
     : 0;
   const customer =
     projectData?.validationPlan?.customer ||
+    projectData?.campaignKit?.targetAudience ||
     projectData?.targetAudience ||
     "Audience";
   const problem =
     projectData?.validationPlan?.problem ||
+    projectData?.campaignKit?.problemAgitation ||
     projectData?.problemStatement ||
     "Manual bottlenecks";
+  const solution =
+    projectData?.validationPlan?.solution ||
+    projectData?.validationPlan?.offer ||
+    "";
+  const problemAgitation = projectData?.campaignKit?.problemAgitation || "";
   const offer =
+    projectData?.campaignKit?.headline ||
     projectData?.validationPlan?.offer ||
     projectData?.productTagline ||
     "Autonomous workflow suite";
+
+  // Real Phase 1 pricing tiers & features
+  const pricingTiers = Array.isArray(projectData?.campaignKit?.pricingTiers) && projectData.campaignKit.pricingTiers.length > 0
+    ? projectData.campaignKit.pricingTiers.map(t => `${t.name || t.title}: $${t.price} (${t.description || ''})`).join('; ')
+    : "";
   const pricing =
+    pricingTiers ||
     projectData?.selectedConcept?.pricing ||
     projectData?.pricing ||
     projectData?.validationPlan?.pricing ||
     projectData?.validation_plan?.pricing ||
     "$49/mo";
-  const takeaways = (projectData?.surveyData?.keyTakeaways || []).join("; ");
 
-  const system = `You are a Principal Software Architect, VP of Product, and Technical Co-Founder. You formulate exhaustive, production-grade Product Specifications and Technical Build Plans for an early-stage SaaS MVP based strictly on real validation inputs. Return ONLY valid JSON.`;
+  const validatedFeatures = Array.isArray(projectData?.campaignKit?.features) && projectData.campaignKit.features.length > 0
+    ? projectData.campaignKit.features.map(f => typeof f === 'string' ? f : `${f.name || f.title}: ${f.description || ''}`).join('; ')
+    : (Array.isArray(projectData?.features) ? projectData.features.join('; ') : "");
+
+  const takeaways = (projectData?.surveyData?.keyTakeaways || []).join("; ") || projectData?.surveyAnalysis?.summary || "";
+
+  const system = `You are a Principal Software Architect, VP of Product, and Technical Co-Founder. You formulate exhaustive, production-grade Product Specifications and Technical Build Plans for an early-stage SaaS MVP based strictly on real validation inputs from Phase 1. Return ONLY valid JSON.`;
   const prompt = `Construct the complete Phase 2 MVP Product Spec & Technical Build Plan for:
 Product Name: ${product}
 Creator Co-Founder: ${creator}
 Niche: ${niche}
-Validated Customer Target: ${customer}
-Validated Core Problem: ${problem}
-Validated Offer: ${offer}
-Validated Pricing Model: ${pricing}
-Discovery Insights: ${takeaways || "Validated via presales pledges"}
+Validated Customer Target (from Phase 1): ${customer}
+Validated Core Problem (from Phase 1): ${problem}
+${problemAgitation ? `Problem Friction / Agitation (from Phase 1): ${problemAgitation}` : ''}
+${solution ? `Validated Solution Architecture (from Phase 1): ${solution}` : ''}
+Validated Offer & Value Prop (from Phase 1): ${offer}
+${validatedFeatures ? `Validated Core Features (from Phase 1 Campaign Kit): ${validatedFeatures}` : ''}
+Validated Pricing Model & Tiers: ${pricing}
+Customer Discovery & Survey Insights: ${takeaways || "Validated via presales pledges"}
 Validated Demand: $${presales} in presales from ${backers} founding backers.
 
-Ensure all features, user flows, and database schemas directly address the validated problem: "${problem}" for target customer: "${customer}".
+CRITICAL ARCHITECTURAL MANDATES:
+1. Ensure all features, user flows, database schemas, and engineering sprint tasks directly address the validated problem: "${problem}" for target customer: "${customer}".
+2. Inherit and expand upon the Phase 1 validated features: "${validatedFeatures || 'Core workflow features'}".
+3. Do not invent unrelated generic features; build directly upon the Phase 1 validated solution.
 
 Return JSON with exact structure:
 {
@@ -2931,7 +2989,7 @@ Return JSON with exact structure:
     ],
     "payments": {
       "provider": "Stripe Billing",
-      "model": "Founding Tier pricing description",
+      "model": "${pricing}",
       "flow": "Customer checkout flow"
     },
     "authentication": {
@@ -2944,7 +3002,7 @@ Return JSON with exact structure:
     }
   },
   "technicalPlan": {
-    "architecture": "Full stack architecture description",
+    "architecture": "Full stack architecture description for ${product}",
     "database": [
       { "table": "table_name", "columns": "col1, col2, col3..." },
       { "table": "table_name", "columns": "col1, col2, col3..." }

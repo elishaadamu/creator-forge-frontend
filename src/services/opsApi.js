@@ -77,7 +77,8 @@ async function req(method, path, body, customSignal = null) {
       errMsg = (typeof errMsg === 'string' ? errMsg : String(errMsg || '')).trim()
       if (!errMsg) {
         if (res.status === 500) errMsg = 'Backend server temporarily unavailable (HTTP 500). Service is ready for retry.'
-        else if (res.status === 502 || res.status === 504) errMsg = 'Gateway timeout. Please retry with a smaller batch size.'
+        else if (res.status === 502) errMsg = 'Backend server restarting or unavailable (HTTP 502 Bad Gateway). Please wait a moment and retry.'
+        else if (res.status === 504) errMsg = 'Gateway timeout (HTTP 504). Operation took too long.'
         else if (res.status === 404) errMsg = `Endpoint not found (${cleanPath})`
         else errMsg = `Server returned HTTP ${res.status}`
       }
@@ -389,4 +390,11 @@ export const removeNicheFromDb = (name, permanent = false) =>
   req('DELETE', `/niches/${encodeURIComponent(name)}${permanent ? '?permanent=true' : ''}`)
 export const saveActiveNichesToDb = (niches) => req('PUT', '/niches/active', { niches })
 export const toggleNicheActiveInDb = (name, is_active) => req('PUT', '/niches/toggle', { name, is_active })
+
+// ── Campaign Media & Autonomous Post Delivery Operations ──────────────────────
+export const sendCampaignPostEmail = (projectId, payload = {}) =>
+  req('POST', `/projects/${projectId}/campaign/send-post-email`, payload)
+
+export const toggleAutonomousCampaignDelivery = (projectId, payload = {}) =>
+  req('POST', `/projects/${projectId}/campaign/toggle-autonomous-delivery`, payload)
 
