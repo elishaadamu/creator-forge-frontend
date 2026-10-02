@@ -353,7 +353,9 @@ export default function Phase1Validate({
   })
   const [isAnalyzingResponses, setIsAnalyzingResponses] = useState(false)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [imageGenError, setImageGenError] = useState(null)
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
+  const [videoGenError, setVideoGenError] = useState(null)
   const [isGeneratingSurvey, setIsGeneratingSurvey] = useState(false)
 
   // Real Project Optimization Experiments
@@ -822,12 +824,12 @@ export default function Phase1Validate({
       showNotification('Please save or select a valid project first.')
       return
     }
+    setImageGenError(null)
     setIsGeneratingImage(true)
-    showNotification('🎨 Generating AI post graphic with Gemini 3.1 Flash Image...')
     try {
       const promptToUse = typeof customPrompt === 'string' && customPrompt.trim()
         ? customPrompt.trim()
-        : (campaignKit?.announcementPost ? `Announcement graphic for: ${campaignKit.announcementPost.slice(0, 180)}` : undefined)
+        : undefined
       const res = await generateCampaignSocialImage(project.id, {
         prompt: promptToUse
       })
@@ -836,9 +838,12 @@ export default function Phase1Validate({
           ...(campaignKit || {}),
           postImageUrl: res.media.url,
           postImageDataUrl: res.media.data_url,
-          postImagePrompt: res.media.prompt
+          postImagePrompt: res.media.prompt,
+          postImageModel: res.media.model,
+          postImageProvider: res.media.provider
         }
         setCampaignKit(nextKit)
+        setImageGenError(null)
         if (onUpdateProject) {
           onUpdateProject(curr => ({
             ...(curr || {}),
@@ -846,13 +851,16 @@ export default function Phase1Validate({
             metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: nextKit }
           }))
         }
-        showNotification('✨ AI post graphic generated with Gemini 3.1 & saved!')
+        const note = res.media.model ? ` (${res.media.model})` : ' (OpenAI)'
+        showNotification(`✨ AI post graphic generated${note} & saved!`)
       } else {
         throw new Error(res?.detail || 'Failed to generate image')
       }
     } catch (err) {
       console.error('Image generation error:', err)
-      showNotification(`❌ Image generation failed: ${err.message || 'Please check API keys.'}`)
+      const cleanMsg = err?.message || 'Image generation failed. Please verify OpenAI API key.'
+      setImageGenError(cleanMsg)
+      showNotification(`❌ Image generation failed: ${cleanMsg}`)
     } finally {
       setIsGeneratingImage(false)
     }
@@ -863,22 +871,27 @@ export default function Phase1Validate({
       showNotification('Please save or select a valid project first.')
       return
     }
+    setVideoGenError(null)
     setIsGeneratingVideo(true)
-    showNotification('🎬 Generating 60s teaser video with Veo 3.1 (veo-3.1-generate-preview)...')
+    showNotification('🎬 Generating 60s teaser video with OpenAI Sora...')
     try {
       const promptToUse = typeof customPrompt === 'string' && customPrompt.trim()
         ? customPrompt.trim()
-        : (campaignKit?.videoScript ? `Cinematic teaser video based on: ${campaignKit.videoScript.slice(0, 180)}` : undefined)
+        : undefined
       const res = await generateCampaignVideo(project.id, {
-        prompt: promptToUse
+        prompt: promptToUse,
+        postImageUrl: campaignKit?.postImageUrl
       })
       if (res?.success && res?.media) {
         const nextKit = {
           ...(campaignKit || {}),
           videoUrl: res.media.url,
-          videoPrompt: res.media.prompt
+          videoPrompt: res.media.prompt,
+          videoModel: res.media.model,
+          videoProvider: res.media.provider
         }
         setCampaignKit(nextKit)
+        setVideoGenError(null)
         if (onUpdateProject) {
           onUpdateProject(curr => ({
             ...(curr || {}),
@@ -886,13 +899,16 @@ export default function Phase1Validate({
             metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: nextKit }
           }))
         }
-        showNotification('✅ 60s AI video generated with Veo 3.1 & saved!')
+        const note = res.media.model ? ` (${res.media.model})` : ' (OpenAI Sora)'
+        showNotification(`✅ 60s AI video generated${note} & saved!`)
       } else {
         throw new Error(res?.detail || 'Failed to generate video')
       }
     } catch (err) {
       console.error('Video generation error:', err)
-      showNotification(`❌ Video generation failed: ${err.message || 'Please check API keys.'}`)
+      const cleanMsg = err?.message || 'Video generation failed. Please verify OpenAI API key.'
+      setVideoGenError(cleanMsg)
+      showNotification(`❌ Video generation failed: ${cleanMsg}`)
     } finally {
       setIsGeneratingVideo(false)
     }
@@ -3108,21 +3124,53 @@ export default function Phase1Validate({
                         onClick={() => handleGeneratePostImage()}
                         disabled={isGeneratingImage}
                         className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
-                        title="Generate realistic AI announcement graphic using Gemini 3.1 Flash Image"
+                        title="Generate realistic AI announcement graphic using OpenAI"
                       >
                         {isGeneratingImage ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                            <span className="text-white">Generating Image...</span>
+                            <span className="text-white">Generating Image (OpenAI)...</span>
                           </>
                         ) : (
                           <>
                             <Sparkles className="w-3.5 h-3.5 text-white" />
-                            <span className="text-white">{campaignKit?.postImageUrl ? 'Regenerate AI Image (Gemini 3.1)' : 'Generate AI Image (Gemini 3.1)'}</span>
+                            <span className="text-white">{campaignKit?.postImageUrl ? 'Regenerate AI Image (OpenAI)' : 'Generate AI Image (OpenAI)'}</span>
                           </>
                         )}
                       </button>
                     </div>
+
+                    {imageGenError && (
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200/90 text-rose-800 text-xs flex items-start justify-between gap-3 animate-fade-in shadow-2xs">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-bold text-rose-950 block">AI Image Generation Error</span>
+                            <span className="text-[11px] text-rose-800 leading-relaxed block break-words">{imageGenError}</span>
+                            <span className="text-[10px] text-slate-500 block pt-0.5 font-mono">
+                              Generated with OpenAI Image API models.
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleGeneratePostImage()}
+                            className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
+                          >
+                            Retry
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setImageGenError(null)}
+                            className="p-1 rounded-md text-rose-400 hover:text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                            title="Dismiss error"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     <PostVisualMockup
                       type="post"
@@ -3131,6 +3179,8 @@ export default function Phase1Validate({
                       preorderUrl={`${origin}/preorder/${productSlug}`}
                       imageUrl={campaignKit?.postImageUrl || campaignKit?.postImageDataUrl}
                       isGeneratingImage={isGeneratingImage}
+                      imageError={imageGenError}
+                      onRetryImage={() => handleGeneratePostImage()}
                     />
 
                     {campaignKit?.postImageUrl && (
@@ -3138,7 +3188,7 @@ export default function Phase1Validate({
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                           <span className="text-amber-950 text-[11px] truncate">
-                            <strong>AI Graphic Active:</strong> Generated via <code className="font-mono text-amber-900 font-semibold">gemini-3.1-flash-image</code>
+                            <strong>AI Graphic Active:</strong> Generated via <code className="font-mono text-amber-900 font-semibold">{campaignKit?.postImageModel || 'OpenAI Image API'}</code>
                           </span>
                         </div>
                         <a
@@ -3250,22 +3300,54 @@ export default function Phase1Validate({
                         type="button"
                         onClick={() => handleGenerateCampaignVideo()}
                         disabled={isGeneratingVideo}
-                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
-                        title="Generate realistic 60s AI teaser video using Veo 3.1"
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                        title="Generate realistic 60s AI teaser video using OpenAI Sora"
                       >
                         {isGeneratingVideo ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                            <span className="text-white">Generating Video (Veo 3.1)...</span>
+                            <span className="text-white">Generating Video (OpenAI Sora)...</span>
                           </>
                         ) : (
                           <>
                             <Sparkles className="w-3.5 h-3.5 text-white" />
-                            <span className="text-white">{campaignKit?.videoUrl ? 'Regenerate AI Video (Veo 3.1)' : 'Generate AI Video (Veo 3.1)'}</span>
+                            <span className="text-white">{campaignKit?.videoUrl ? 'Regenerate AI Video (OpenAI Sora)' : 'Generate AI Video (OpenAI Sora)'}</span>
                           </>
                         )}
                       </button>
                     </div>
+
+                    {videoGenError && (
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200/90 text-rose-800 text-xs flex items-start justify-between gap-3 animate-fade-in shadow-2xs">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-bold text-rose-950 block">AI Video Generation Error</span>
+                            <span className="text-[11px] text-rose-800 leading-relaxed block break-words">{videoGenError}</span>
+                            <span className="text-[10px] text-slate-500 block pt-0.5 font-mono">
+                              Generated using OpenAI Sora Video API.
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleGenerateCampaignVideo()}
+                            className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
+                          >
+                            Retry
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setVideoGenError(null)}
+                            className="p-1 rounded-md text-rose-400 hover:text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                            title="Dismiss error"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     <PostVisualMockup
                       type="video"
@@ -3274,6 +3356,8 @@ export default function Phase1Validate({
                       preorderUrl={`${origin}/preorder/${productSlug}`}
                       videoUrl={campaignKit?.videoUrl}
                       isGeneratingVideo={isGeneratingVideo}
+                      videoError={videoGenError}
+                      onRetryVideo={() => handleGenerateCampaignVideo()}
                     />
 
                     {campaignKit?.videoUrl && (
@@ -3281,7 +3365,7 @@ export default function Phase1Validate({
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                           <span className="text-red-950 text-[11px] truncate">
-                            <strong>AI Video Active:</strong> Rendered via <code className="font-mono text-red-900 font-semibold">veo-3.1-generate-preview</code>
+                            <strong>AI Video Active:</strong> Rendered via <code className="font-mono text-red-900 font-semibold">{campaignKit?.videoModel || 'sora-2'}</code>
                           </span>
                         </div>
                         <a

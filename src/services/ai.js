@@ -25,8 +25,10 @@ let aiKeysConsentGiven = false;
 
 try {
   inMemoryAiKeys.geminiKey = localStorage.getItem("forge_gemini_api_key") || "";
-  inMemoryAiKeys.togetherKey = localStorage.getItem("forge_together_api_key") || "";
-  inMemoryAiKeys.openaiKey = localStorage.getItem("forge_openai_api_key") || import.meta.env.VITE_OPENAI_API_KEY || "";
+  const storedOpenaiKey = localStorage.getItem("forge_openai_api_key") || "";
+  inMemoryAiKeys.openaiKey = (storedOpenaiKey.endsWith("WOYA") || storedOpenaiKey.endsWith("jwwA"))
+    ? (import.meta.env.VITE_OPENAI_API_KEY || "")
+    : (storedOpenaiKey || import.meta.env.VITE_OPENAI_API_KEY || "");
   inMemoryAiKeys.anthropicKey = localStorage.getItem("forge_anthropic_api_key") || "";
   aiKeysConsentGiven = localStorage.getItem("forge_ai_keys_consent") === "true";
 } catch (e) {
@@ -86,7 +88,7 @@ export function saveAiKeys({
 
   if (openaiKey !== undefined) {
     const val = (openaiKey || "").trim();
-    inMemoryAiKeys.openaiKey = val.endsWith("jwwA") ? "" : val;
+    inMemoryAiKeys.openaiKey = (val.endsWith("jwwA") || val.endsWith("WOYA")) ? "" : val;
     try {
       if (inMemoryAiKeys.openaiKey) {
         localStorage.setItem("forge_openai_api_key", inMemoryAiKeys.openaiKey);
@@ -214,7 +216,7 @@ export function restoreAiKeysFromLoginData(aiKeysData) {
     inMemoryAiKeys.togetherKey = aiKeysData.togetherKey || "";
 
     const val = aiKeysData.openaiKey || "";
-    inMemoryAiKeys.openaiKey = val.endsWith("jwwA") ? "" : val;
+    inMemoryAiKeys.openaiKey = (val.endsWith("jwwA") || val.endsWith("WOYA")) ? "" : val;
     inMemoryAiKeys.anthropicKey = aiKeysData.anthropicKey || "";
     aiKeysConsentGiven = true;
   }

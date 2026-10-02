@@ -20,7 +20,8 @@ import {
   Video,
   CheckCircle2,
   Layers,
-  ArrowRight
+  ArrowRight,
+  AlertCircle
 } from 'lucide-react'
 
 export function XLogo({ className = 'w-4 h-4' }) {
@@ -46,7 +47,11 @@ export default function PostVisualMockup({
   imageUrl = null,
   videoUrl = null,
   isGeneratingImage = false,
-  isGeneratingVideo = false
+  isGeneratingVideo = false,
+  imageError = null,
+  videoError = null,
+  onRetryImage = null,
+  onRetryVideo = null
 }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeStoryIdx, setActiveStoryIdx] = useState(0)
@@ -170,11 +175,30 @@ export default function PostVisualMockup({
               <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3 p-6 text-center">
                 <div className="w-10 h-10 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-amber-300 block">Generating AI Post Graphic with Gemini 3.1...</span>
+                  <span className="text-xs font-bold text-amber-300 block">Generating AI Post Graphic with OpenAI...</span>
                   <span className="text-[10px] text-slate-400 block max-w-xs">
-                    Calling gemini-3.1-flash-image to synthesize official announcement graphic.
+                    Synthesizing official launch card graphic with OpenAI Image API.
                   </span>
                 </div>
+              </div>
+            )}
+
+            {/* Error Notification Banner inside mockup */}
+            {imageError && !isGeneratingImage && (
+              <div className="p-3 bg-rose-950/80 border-b border-rose-500/40 text-rose-200 text-xs flex items-center justify-between gap-2 z-20 relative">
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span className="text-[11px] truncate leading-tight font-medium">Generation Error: {imageError}</span>
+                </div>
+                {onRetryImage && (
+                  <button
+                    type="button"
+                    onClick={onRetryImage}
+                    className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold shrink-0 cursor-pointer"
+                  >
+                    Retry
+                  </button>
+                )}
               </div>
             )}
 
@@ -190,7 +214,7 @@ export default function PostVisualMockup({
               </div>
               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-400/15 text-amber-300 border border-amber-400/30 flex items-center gap-1 font-mono">
                 <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-                {activeImageUrl ? 'Gemini 3.1 AI Graphic' : 'Founding Cohort (50 Spots)'}
+                {activeImageUrl ? (project?.campaignKit?.postImageModel || 'OpenAI AI Graphic') : 'Founding Cohort (50 Spots)'}
               </span>
             </div>
 
@@ -204,7 +228,7 @@ export default function PostVisualMockup({
                 />
                 <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/80 backdrop-blur-md text-amber-300 border border-amber-400/30 flex items-center gap-1.5 shadow-lg">
                   <Sparkles className="w-3 h-3 text-amber-400" />
-                  <span>Gemini 3.1 Flash Image</span>
+                  <span>{project?.campaignKit?.postImageModel || 'OpenAI Image API'}</span>
                 </div>
               </div>
             ) : (
@@ -656,7 +680,7 @@ export default function PostVisualMockup({
           </span>
         </div>
 
-        {/* Video Canvas Simulation OR Real Veo 3.1 Video */}
+        {/* Video Canvas Simulation OR Real OpenAI Sora Video */}
         <div
           className="relative aspect-video flex items-center justify-center overflow-hidden bg-black"
           style={{ background: 'linear-gradient(135deg, #0f172a 0%, #090d16 50%, #030712 100%)' }}
@@ -665,11 +689,30 @@ export default function PostVisualMockup({
             <div className="absolute inset-0 bg-black/90 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3 p-6 text-center">
               <div className="w-12 h-12 rounded-full border-3 border-rose-500 border-t-transparent animate-spin" />
               <div className="space-y-1">
-                <span className="text-sm font-bold text-rose-400 block">Veo 3.1 Video Generation In Progress...</span>
+                <span className="text-sm font-bold text-rose-400 block">OpenAI Sora Video Generation In Progress...</span>
                 <span className="text-[11px] text-slate-300 block max-w-sm">
-                  Polling operation status via veo-3.1-generate-preview. Compiling cinematic AI video.
+                  Synthesizing high-impact launch teaser via OpenAI Sora Video API.
                 </span>
               </div>
+            </div>
+          ) : videoError ? (
+            <div className="absolute inset-0 bg-black/95 z-30 flex flex-col items-center justify-center gap-3 p-6 text-center">
+              <div className="w-10 h-10 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400">
+                <AlertCircle className="w-5 h-5 text-rose-400" />
+              </div>
+              <div className="space-y-1 max-w-xs">
+                <span className="text-xs font-bold text-rose-300 block">Video Generation Notice</span>
+                <span className="text-[11px] text-slate-400 block break-words leading-relaxed">{videoError}</span>
+              </div>
+              {onRetryVideo && (
+                <button
+                  type="button"
+                  onClick={onRetryVideo}
+                  className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all cursor-pointer shadow-xs mt-1"
+                >
+                  Retry Video Generation
+                </button>
+              )}
             </div>
           ) : activeVideoUrl ? (
             <div className="relative w-full h-full flex items-center justify-center bg-black group/video">
@@ -681,7 +724,7 @@ export default function PostVisualMockup({
               />
               <div className="absolute top-3 left-3 pointer-events-none px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/80 backdrop-blur-md text-rose-300 border border-rose-500/30 flex items-center gap-1.5 z-10 shadow-lg">
                 <Video className="w-3 h-3 text-rose-400" />
-                <span>Veo 3.1 AI Generated Video</span>
+                <span>{project?.campaignKit?.videoModel || 'OpenAI Sora Video'}</span>
               </div>
             </div>
           ) : (
