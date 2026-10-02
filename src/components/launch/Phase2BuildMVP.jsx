@@ -62,6 +62,10 @@ export default function Phase2BuildMVP({
       const sp = new URLSearchParams(window.location.search)
       const s = sp.get('step')
       if (s && ['plan', 'build', 'beta', 'gate'].includes(s)) return s
+      if (project?.id) {
+        const cached = localStorage.getItem(`forge_p2_step_${project.id}`)
+        if (cached && ['plan', 'build', 'beta', 'gate'].includes(cached)) return cached
+      }
     }
     const dbStep = project?.currentStep || project?.current_step
     if (dbStep && ['plan', 'build', 'beta', 'gate'].includes(dbStep)) {
@@ -325,13 +329,24 @@ export default function Phase2BuildMVP({
       try {
         const url = new URL(window.location.href)
         url.searchParams.set('step', newStep)
+        url.searchParams.set('modal', 'phase')
         window.history.replaceState({}, '', url.toString())
+        if (project?.id) {
+          localStorage.setItem(`forge_p2_step_${project.id}`, newStep)
+        }
       } catch (e) {}
+    }
+    if (onUpdateProject) {
+      onUpdateProject(prev => ({
+        ...(prev || {}),
+        currentStep: newStep,
+        current_step: newStep
+      }))
     }
     // Direct persistence to PostgreSQL database
     if (project?.id) {
       import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
-        updateCoLaunchProject(project.id, { currentStep: newStep }).catch(e => console.warn('[Phase2] DB step sync warning:', e))
+        updateCoLaunchProject(project.id, { currentStep: newStep, current_step: newStep }).catch(e => console.warn('[Phase2] DB step sync warning:', e))
       }).catch(() => {})
     }
   }
@@ -353,9 +368,19 @@ export default function Phase2BuildMVP({
     const version = extraUpdates.mvpVersion !== undefined ? extraUpdates.mvpVersion : mvpVersion
     const qa = extraUpdates.qaResults !== undefined ? extraUpdates.qaResults : qaResults
 
+    const shouldApprove = Boolean(extraUpdates.buildPlanApproved || updatedPlan?.approved || updatedPlan?.status === 'approved')
+    const finalizedPlan = shouldApprove
+      ? {
+          ...(updatedPlan || {}),
+          status: 'approved',
+          approved: true,
+          locked: true
+        }
+      : updatedPlan
+
     const updated = {
       ...(project || {}),
-      mvpBuildPlan: updatedPlan,
+      mvpBuildPlan: finalizedPlan,
       engineeringTasks: updatedTasks,
       qaResults: qa,
       betaFeedback: feedback,
@@ -363,6 +388,9 @@ export default function Phase2BuildMVP({
       readinessReport: readiness,
       appliedPatches: patches,
       mvpVersion: version,
+      buildPlanApproved: extraUpdates.buildPlanApproved ?? project?.buildPlanApproved ?? shouldApprove,
+      currentStep: extraUpdates.currentStep || activeStep,
+      current_step: extraUpdates.current_step || extraUpdates.currentStep || activeStep,
       ...extraUpdates
     }
     if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
@@ -372,7 +400,7 @@ export default function Phase2BuildMVP({
       try {
         const { updateCoLaunchProject } = await import('../../services/opsApi')
         await updateCoLaunchProject(project.id, {
-          mvpBuildPlan: updatedPlan,
+          mvpBuildPlan: finalizedPlan,
           engineeringTasks: updatedTasks,
           qaResults: qa,
           betaFeedback: feedback,
@@ -380,6 +408,9 @@ export default function Phase2BuildMVP({
           readinessReport: readiness,
           appliedPatches: patches,
           mvpVersion: version,
+          buildPlanApproved: extraUpdates.buildPlanApproved ?? project?.buildPlanApproved ?? shouldApprove,
+          currentStep: extraUpdates.currentStep || activeStep,
+          current_step: extraUpdates.current_step || extraUpdates.currentStep || activeStep,
           ...extraUpdates
         })
       } catch (err) {
@@ -2294,9 +2325,50 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             </div>
 
             <button
-              onClick={async () => {
-                await handleSavePlan(buildPlan, engineeringTasks, { buildPlanApproved: true, status: 'approved' })
-                setActiveStep('build')
+              type="button"
+              onClick={() => {
+                const approvedPlan = {
+                  ...(buildPlan || {}),
+                  status: 'approved',
+                  approved: true,
+                  locked: true
+                }
+                setBuildPlan(approvedPlan)
+
+                // Immediate optimistic state transition - zero latency
+                setActiveStepState('build')
+                if (onSelectStep) onSelectStep('build')
+
+                if (typeof window !== 'undefined') {
+                  try {
+                    const url = new URL(window.location.href)
+                    url.searchParams.set('step', 'build')
+                    url.searchParams.set('modal', 'phase')
+                    window.history.replaceState({}, '', url.toString())
+                    if (project?.id) {
+                      localStorage.setItem(`forge_p2_step_${project.id}`, 'build')
+                    }
+                  } catch (e) {}
+                }
+
+                if (onUpdateProject) {
+                  onUpdateProject(prev => ({
+                    ...(prev || {}),
+                    mvpBuildPlan: approvedPlan,
+                    buildPlanApproved: true,
+                    currentStep: 'build',
+                    current_step: 'build'
+                  }))
+                }
+
+                // Background async save & database synchronization without blocking the UI
+                handleSavePlan(approvedPlan, engineeringTasks, {
+                  buildPlanApproved: true,
+                  currentStep: 'build',
+                  current_step: 'build'
+                }).catch(err => {
+                  console.warn('[Phase2BuildMVP] Background plan save warning:', err)
+                })
               }}
               className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
             >
@@ -2347,9 +2419,36 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               ← Back to Product Plan
             </button>
             <button
-              onClick={async () => {
-                await handleSavePlan(buildPlan, engineeringTasks, { buildCompleted: true, mvpBuildDone: true })
-                setActiveStep('beta')
+              type="button"
+              onClick={() => {
+                setActiveStepState('beta')
+                if (onSelectStep) onSelectStep('beta')
+                if (typeof window !== 'undefined') {
+                  try {
+                    const url = new URL(window.location.href)
+                    url.searchParams.set('step', 'beta')
+                    url.searchParams.set('modal', 'phase')
+                    window.history.replaceState({}, '', url.toString())
+                    if (project?.id) {
+                      localStorage.setItem(`forge_p2_step_${project.id}`, 'beta')
+                    }
+                  } catch (e) {}
+                }
+                if (onUpdateProject) {
+                  onUpdateProject(prev => ({
+                    ...(prev || {}),
+                    buildCompleted: true,
+                    mvpBuildDone: true,
+                    currentStep: 'beta',
+                    current_step: 'beta'
+                  }))
+                }
+                handleSavePlan(buildPlan, engineeringTasks, {
+                  buildCompleted: true,
+                  mvpBuildDone: true,
+                  currentStep: 'beta',
+                  current_step: 'beta'
+                }).catch(err => console.warn('[Phase2BuildMVP] Background save beta warning:', err))
               }}
               className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
             >
@@ -2694,9 +2793,34 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               ← Back to Build
             </button>
             <button
-              onClick={async () => {
-                setActiveStep('gate')
-                await handleSavePlan(buildPlan, engineeringTasks, { betaTestingCompleted: true })
+              type="button"
+              onClick={() => {
+                setActiveStepState('gate')
+                if (onSelectStep) onSelectStep('gate')
+                if (typeof window !== 'undefined') {
+                  try {
+                    const url = new URL(window.location.href)
+                    url.searchParams.set('step', 'gate')
+                    url.searchParams.set('modal', 'phase')
+                    window.history.replaceState({}, '', url.toString())
+                    if (project?.id) {
+                      localStorage.setItem(`forge_p2_step_${project.id}`, 'gate')
+                    }
+                  } catch (e) {}
+                }
+                if (onUpdateProject) {
+                  onUpdateProject(prev => ({
+                    ...(prev || {}),
+                    betaTestingCompleted: true,
+                    currentStep: 'gate',
+                    current_step: 'gate'
+                  }))
+                }
+                handleSavePlan(buildPlan, engineeringTasks, {
+                  betaTestingCompleted: true,
+                  currentStep: 'gate',
+                  current_step: 'gate'
+                }).catch(err => console.warn('[Phase2BuildMVP] Background save gate warning:', err))
               }}
               className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
             >

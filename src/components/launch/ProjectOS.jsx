@@ -69,6 +69,13 @@ export default function ProjectOS({
       if (stepParam && ['plan', 'assets', 'campaign', 'optimize', 'gate', 'build', 'beta', 'prep', 'launch', 'review', 'scale'].includes(stepParam.toLowerCase())) {
         return stepParam.toLowerCase()
       }
+      const pNum = project?.currentPhase ? Number(project.currentPhase) : (project?.status === 'building' ? 2 : 1)
+      if (project?.id) {
+        const cached = localStorage.getItem(`forge_p${pNum}_step_${project.id}`)
+        if (cached && ['plan', 'assets', 'campaign', 'optimize', 'gate', 'build', 'beta', 'prep', 'launch', 'review', 'scale'].includes(cached)) {
+          return cached
+        }
+      }
     }
     return getProjectActiveStep(project, project?.currentPhase ? Number(project.currentPhase) : 1)
   })
@@ -539,7 +546,11 @@ partnerships@creatorforge.com`
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href)
         url.searchParams.set('step', sId)
+        url.searchParams.set('modal', 'phase')
         window.history.replaceState({}, '', url.toString())
+        if (project?.id) {
+          localStorage.setItem(`forge_p${currentPhase}_step_${project.id}`, sId)
+        }
       }
     } catch (e) {}
   }

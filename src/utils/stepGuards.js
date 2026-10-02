@@ -152,9 +152,19 @@ export function getPhase2StepGuards(project = {}, { buildPlan, engineeringTasks,
 
   // Step 1: Product + Build Plan
   const isStep1Done = Boolean(
-    (plan && (plan.productSpec || plan.technicalPlan) && (plan.status === 'approved' || plan.locked === true)) ||
-    (project?.mvpBuildPlan && (project.mvpBuildPlan.approved === true || project.mvpBuildPlan.locked === true || project.mvpBuildPlan.status === 'approved')) ||
+    (plan && (plan.productSpec || plan.technicalPlan || (Array.isArray(plan.features) && plan.features.length > 0))) ||
+    (project?.mvpBuildPlan && (project.mvpBuildPlan.productSpec || project.mvpBuildPlan.technicalPlan)) ||
     project?.buildPlanApproved === true ||
+    project?.mvpBuildPlan?.approved === true ||
+    project?.mvpBuildPlan?.status === 'approved' ||
+    project?.mvpBuildPlan?.locked === true ||
+    project?.currentStep === 'build' ||
+    project?.currentStep === 'beta' ||
+    project?.currentStep === 'gate' ||
+    project?.current_step === 'build' ||
+    project?.current_step === 'beta' ||
+    project?.current_step === 'gate' ||
+    (Array.isArray(tasks) && tasks.length > 0) ||
     projectCurrentPhase > 2
   );
 
@@ -288,7 +298,10 @@ export function getPhase3StepGuards(project = {}, { strategy, telemetry, launchM
 
 export function getProjectActiveStep(project = {}, phase) {
   const currentPhase = Number(phase || project.currentPhase || project.current_phase || (project.status === 'building' ? 2 : project.status === 'launched' ? 3 : 1));
+  const dbStep = project.currentStep || project.current_step;
+
   if (currentPhase === 3) {
+    if (dbStep && ['prep', 'launch', 'review', 'scale'].includes(dbStep)) return dbStep;
     const guards = getPhase3StepGuards(project);
     if (!guards.isStep1Done) return 'prep';
     if (!guards.isStep2Done) return 'launch';
@@ -296,6 +309,7 @@ export function getProjectActiveStep(project = {}, phase) {
     return 'scale';
   }
   if (currentPhase === 2) {
+    if (dbStep && ['plan', 'build', 'beta', 'gate'].includes(dbStep)) return dbStep;
     const guards = getPhase2StepGuards(project);
     if (!guards.isStep1Done) return 'plan';
     if (!guards.isStep2Done) return 'build';
@@ -303,6 +317,7 @@ export function getProjectActiveStep(project = {}, phase) {
     return 'gate';
   }
   // Phase 1
+  if (dbStep && ['plan', 'assets', 'campaign', 'optimize', 'gate'].includes(dbStep)) return dbStep;
   const guards = getPhase1StepGuards(project);
   if (!guards.isStep1Done) return 'plan';
   if (!guards.isStep2Done) return 'assets';

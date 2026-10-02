@@ -146,9 +146,6 @@ export default function CreatorPortal({ portalId }) {
     }
     window.addEventListener('forge_project_updated', handleSync)
     window.addEventListener('forge_view_change', handleViewChange)
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('forge_diy_paid')
-    }
     return () => {
       window.removeEventListener('forge_project_updated', handleSync)
       window.removeEventListener('forge_view_change', handleViewChange)
@@ -163,12 +160,12 @@ export default function CreatorPortal({ portalId }) {
       if (v === 'projectos' || v === 'pipeline' || v === 'diy') {
         return 'projectos'
       }
-      const isPaidParam = sp.get('token') === 'cf_diy_paid' || sp.get('paid') === 'true'
+      const isPaidParam = sp.get('token') === 'cf_diy_paid' || sp.get('paid') === 'true' || localStorage.getItem('forge_diy_paid') === 'true'
       if (isPaidParam) {
         return 'projectos'
       }
     }
-    return 'launch_kit'
+    return 'projectos'
   })
 
   const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'scripts' | 'presales' | 'messages' | 'strategy'
@@ -178,8 +175,23 @@ export default function CreatorPortal({ portalId }) {
     project?.isDIY ||
     project?.diySubscription?.active ||
     project?.diyOfferStatus === 'accepted' ||
-    project?.diyOfferStatus === 'paid'
+    project?.diyOfferStatus === 'paid' ||
+    (typeof window !== 'undefined' && (
+      (project?.id && localStorage.getItem(`forge_diy_paid_${project.id}`) === 'true') ||
+      (project?.creatorHandle && localStorage.getItem(`forge_diy_paid_${project.creatorHandle.replace(/^@/, '').toLowerCase()}`) === 'true') ||
+      localStorage.getItem('forge_diy_paid') === 'true' ||
+      new URLSearchParams(window.location.search).get('token') === 'cf_diy_paid' ||
+      new URLSearchParams(window.location.search).get('paid') === 'true'
+    ))
   )
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isDiyActive) {
+      if (project?.id) localStorage.setItem(`forge_diy_paid_${project.id}`, 'true')
+      if (project?.creatorHandle) localStorage.setItem(`forge_diy_paid_${project.creatorHandle.replace(/^@/, '').toLowerCase()}`, 'true')
+      localStorage.setItem('forge_diy_paid', 'true')
+    }
+  }, [isDiyActive, project?.id, project?.creatorHandle])
 
   const defaultPassPrice = (() => {
     try {
@@ -217,7 +229,7 @@ export default function CreatorPortal({ portalId }) {
   )
 
   // Critical fix: If the user has already paid ($50 Co-Builder) or accepted/dismissed, track choice MUST NOT block them
-  const isTrackChoicePending = !isDiyActive && !trackChoiceDismissed && project?.diyOfferStatus !== 'accepted' && (
+  const isTrackChoicePending = !isDiyActive && !trackChoiceDismissed && project?.diyOfferStatus !== 'accepted' && project?.diyOfferStatus !== 'paid' && (
     isTrackChoiceUrl ||
     project?.diyOfferStatus !== 'declined'
   )
