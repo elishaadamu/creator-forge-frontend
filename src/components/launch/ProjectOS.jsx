@@ -492,51 +492,44 @@ partnerships@creatorforge.com`
   }
 
   const openPhaseStep = (stepId) => {
-    const sId = stepId || 'plan'
+    let sId = stepId || (currentPhase === 3 ? 'prep' : 'plan')
 
-    // Check phase step guards before opening modal
+    // Check phase step guards before opening modal and fallback gracefully so the modal ALWAYS opens
     if (currentPhase === 1) {
-      if (sId === 'assets' && !p1Guards.canAccessStep2) {
-        showToast('Step 1 (Validation Plan) must be completed before accessing Assets.')
-        return
-      }
-      if (sId === 'campaign' && !p1Guards.canAccessStep3) {
-        showToast('Step 2 (Validation Assets) must be completed before accessing Campaign.')
-        return
-      }
-      if (sId === 'optimize' && !p1Guards.canAccessStep4) {
-        showToast('Step 3 (Creator Campaign) must be completed before accessing Optimization.')
-        return
-      }
       if (sId === 'gate' && !p1Guards.canAccessStep5) {
         showToast('Validation Gate is locked: Complete Steps 1–4 first.')
-        return
+        sId = p1Guards.canAccessStep4 ? 'optimize' : p1Guards.canAccessStep3 ? 'campaign' : p1Guards.canAccessStep2 ? 'assets' : 'plan'
+      } else if (sId === 'optimize' && !p1Guards.canAccessStep4) {
+        showToast('Step 3 (Creator Campaign) must be completed before accessing Optimization.')
+        sId = p1Guards.canAccessStep3 ? 'campaign' : p1Guards.canAccessStep2 ? 'assets' : 'plan'
+      } else if (sId === 'campaign' && !p1Guards.canAccessStep3) {
+        showToast('Step 2 (Validation Assets) must be completed before accessing Campaign.')
+        sId = p1Guards.canAccessStep2 ? 'assets' : 'plan'
+      } else if (sId === 'assets' && !p1Guards.canAccessStep2) {
+        showToast('Step 1 (Validation Plan) must be completed before accessing Assets.')
+        sId = 'plan'
       }
     } else if (currentPhase === 2) {
-      if (sId === 'build' && !p2Guards.canAccessStep2) {
-        showToast('Step 1 (Product + Build Plan) must be completed before accessing Build.')
-        return
-      }
-      if (sId === 'beta' && !p2Guards.canAccessStep3) {
-        showToast('Step 2 (Build MVP) must be completed before accessing Beta Testing.')
-        return
-      }
       if (sId === 'gate' && !p2Guards.canAccessStep4) {
         showToast('Launch Gate is locked: Complete Steps 1–3 first.')
-        return
+        sId = p2Guards.canAccessStep3 ? 'beta' : p2Guards.canAccessStep2 ? 'build' : 'plan'
+      } else if (sId === 'beta' && !p2Guards.canAccessStep3) {
+        showToast('Step 2 (Build MVP) must be completed before accessing Beta Testing. Opening Build step.')
+        sId = p2Guards.canAccessStep2 ? 'build' : 'plan'
+      } else if (sId === 'build' && !p2Guards.canAccessStep2) {
+        showToast('Step 1 (Product + Build Plan) must be completed before accessing Build. Opening Plan.')
+        sId = 'plan'
       }
     } else if (currentPhase === 3) {
-      if (sId === 'monitor' && !p3Guards.canAccessStep2) {
-        showToast('Step 1 (Prepare Launch) must be completed before accessing Monitor.')
-        return
-      }
-      if (sId === 'manager' && !p3Guards.canAccessStep3) {
-        showToast('Step 2 (Launch + Monitor) must be completed before accessing AI Launch Manager.')
-        return
-      }
       if (sId === 'report' && !p3Guards.canAccessStep4) {
         showToast('Launch Decision Gate is locked: Complete Steps 1–3 first.')
-        return
+        sId = p3Guards.canAccessStep3 ? 'manager' : p3Guards.canAccessStep2 ? 'monitor' : 'prep'
+      } else if (sId === 'manager' && !p3Guards.canAccessStep3) {
+        showToast('Step 2 (Launch + Monitor) must be completed before accessing AI Launch Manager.')
+        sId = p3Guards.canAccessStep2 ? 'monitor' : 'prep'
+      } else if (sId === 'monitor' && !p3Guards.canAccessStep2) {
+        showToast('Step 1 (Prepare Launch) must be completed before accessing Monitor.')
+        sId = 'prep'
       }
     }
 

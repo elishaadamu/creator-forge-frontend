@@ -22,7 +22,7 @@
     },
     {
       "source": "/api/:path*",
-      "destination": "https://creator-forge-backend.onrender.com/api/:path*"
+      "destination": "https://creator-forge-backend-ls4s.onrender.com/api/:path*"
     },
     {
       "source": "/((?!api/).*)",

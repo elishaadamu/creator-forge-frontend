@@ -169,11 +169,25 @@ export function getPhase2StepGuards(project = {}, { buildPlan, engineeringTasks,
   );
 
   // Step 2: Build MVP (Engineering Build) - Requires Step 1
+  const hasCodeFiles = Array.isArray(project?.projectFiles) && project.projectFiles.some(f =>
+    !f.category || f.category === 'Code' || f.category === 'Frontend' || f.category === 'Backend' ||
+    (f.path && (f.path.endsWith('.jsx') || f.path.endsWith('.py') || f.path.endsWith('.js') || f.path.endsWith('.ts')))
+  );
+
   const isStep2Done = Boolean(
     isStep1Done && (
       (Array.isArray(tasks) && tasks.length > 0 && tasks.every(t => t.status === 'Completed' || t.status === 'done')) ||
       project?.buildCompleted === true ||
       project?.mvpBuildDone === true ||
+      project?.step2Done === true ||
+      project?.metadataInfo?.buildCompleted === true ||
+      project?.metadataInfo?.mvpBuildDone === true ||
+      project?.metadataInfo?.step2Done === true ||
+      project?.currentStep === 'beta' ||
+      project?.currentStep === 'gate' ||
+      project?.current_step === 'beta' ||
+      project?.current_step === 'gate' ||
+      hasCodeFiles ||
       projectCurrentPhase > 2
     )
   );
@@ -184,6 +198,11 @@ export function getPhase2StepGuards(project = {}, { buildPlan, engineeringTasks,
       project?.betaTestingCompleted === true ||
       project?.betaApproved === true ||
       project?.phase2BetaDone === true ||
+      project?.step3Done === true ||
+      project?.metadataInfo?.betaApproved === true ||
+      project?.metadataInfo?.betaTestingCompleted === true ||
+      project?.currentStep === 'gate' ||
+      project?.current_step === 'gate' ||
       (Array.isArray(clusters) && clusters.length > 0 && Array.isArray(project?.betaFeedback) && project.betaFeedback.some(f => f.approved || f.resolved)) ||
       projectCurrentPhase > 2
     )
@@ -301,24 +320,40 @@ export function getProjectActiveStep(project = {}, phase) {
   const dbStep = project.currentStep || project.current_step;
 
   if (currentPhase === 3) {
-    if (dbStep && ['prep', 'launch', 'review', 'scale'].includes(dbStep)) return dbStep;
     const guards = getPhase3StepGuards(project);
+    if (dbStep && ['prep', 'launch', 'review', 'scale'].includes(dbStep)) {
+      if (dbStep === 'scale' && guards.canAccessStep4) return 'scale';
+      if (dbStep === 'review' && guards.canAccessStep3) return 'review';
+      if (dbStep === 'launch' && guards.canAccessStep2) return 'launch';
+      if (dbStep === 'prep') return 'prep';
+    }
     if (!guards.isStep1Done) return 'prep';
     if (!guards.isStep2Done) return 'launch';
     if (!guards.isStep3Done) return 'review';
     return 'scale';
   }
   if (currentPhase === 2) {
-    if (dbStep && ['plan', 'build', 'beta', 'gate'].includes(dbStep)) return dbStep;
     const guards = getPhase2StepGuards(project);
+    if (dbStep && ['plan', 'build', 'beta', 'gate'].includes(dbStep)) {
+      if (dbStep === 'gate' && guards.canAccessStep4) return 'gate';
+      if (dbStep === 'beta' && guards.canAccessStep3) return 'beta';
+      if (dbStep === 'build' && guards.canAccessStep2) return 'build';
+      if (dbStep === 'plan') return 'plan';
+    }
     if (!guards.isStep1Done) return 'plan';
     if (!guards.isStep2Done) return 'build';
     if (!guards.isStep3Done) return 'beta';
     return 'gate';
   }
   // Phase 1
-  if (dbStep && ['plan', 'assets', 'campaign', 'optimize', 'gate'].includes(dbStep)) return dbStep;
   const guards = getPhase1StepGuards(project);
+  if (dbStep && ['plan', 'assets', 'campaign', 'optimize', 'gate'].includes(dbStep)) {
+    if (dbStep === 'gate' && guards.canAccessStep5) return 'gate';
+    if (dbStep === 'optimize' && guards.canAccessStep4) return 'optimize';
+    if (dbStep === 'campaign' && guards.canAccessStep3) return 'campaign';
+    if (dbStep === 'assets' && guards.canAccessStep2) return 'assets';
+    if (dbStep === 'plan') return 'plan';
+  }
   if (!guards.isStep1Done) return 'plan';
   if (!guards.isStep2Done) return 'assets';
   if (!guards.isStep3Done) return 'campaign';
