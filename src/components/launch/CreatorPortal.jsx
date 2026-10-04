@@ -201,9 +201,9 @@ export default function CreatorPortal({ portalId }) {
   const [defaultPassPrice, setDefaultPassPrice] = useState(() => {
     try {
       const saved = localStorage.getItem('forge_cobuilder_pass_price')
-      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
+      return saved && !isNaN(Number(saved)) ? Number(saved) : 199
     } catch {
-      return 50
+      return 199
     }
   })
 
@@ -217,16 +217,30 @@ export default function CreatorPortal({ portalId }) {
     }).catch(() => {})
   }, [])
 
+  const hasCustomFee = Boolean(
+    project?.hasCustomFee ||
+    project?.metadataInfo?.hasCustomFee ||
+    project?.metadata_info?.hasCustomFee
+  )
+
   const cobuilderPrice = Number(
-    project?.diyFee ??
-    project?.diyPassPrice ??
-    project?.metadataInfo?.diy_fee ??
-    project?.metadataInfo?.diyFee ??
-    project?.metadataInfo?.diyPassPrice ??
-    project?.metadata_info?.diy_fee ??
-    project?.diySubscription?.amount ??
-    defaultPassPrice ??
-    50
+    hasCustomFee
+      ? (project?.diyFee ??
+         project?.diyPassPrice ??
+         project?.metadataInfo?.diy_fee ??
+         project?.metadataInfo?.diyFee ??
+         project?.metadataInfo?.diyPassPrice ??
+         project?.metadata_info?.diy_fee ??
+         project?.diySubscription?.amount ??
+         defaultPassPrice ??
+         199)
+      : (defaultPassPrice ??
+         project?.diyFee ??
+         project?.diyPassPrice ??
+         project?.metadataInfo?.diy_fee ??
+         project?.metadataInfo?.diyFee ??
+         project?.metadataInfo?.diyPassPrice ??
+         199)
   )
 
   // When creator has paid, projectOS is the default view (unless explicitly overridden by URL)
