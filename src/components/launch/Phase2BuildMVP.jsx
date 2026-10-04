@@ -2769,15 +2769,10 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                             href={betaUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#C8FF3D] hover:bg-[#b5ee2e] text-[#080A0C] font-black shadow-xs text-[11px] transition-all cursor-pointer group active:scale-95"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#C8FF3D] hover:bg-[#b5ee2e] text-[#080A0C] font-black text-[11px] transition-colors cursor-pointer"
                           >
                             <span>Open Beta Portal</span>
                             <ExternalLink className="w-3 h-3 text-[#080A0C]" />
-                            {/* Signature Beacon */}
-                            <span className="absolute -top-1 -right-1 flex h-2 w-2 pointer-events-none">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white" />
-                            </span>
                           </a>
                         </div>
                       </div>
