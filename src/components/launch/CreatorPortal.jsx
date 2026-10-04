@@ -6,7 +6,7 @@ import {
   CheckCheck, Loader2, MessageCircle, Zap, Lock, Layers, Cpu, Laptop, CreditCard,
   Plus, RotateCcw, Share2, HelpCircle
 } from 'lucide-react'
-import { getFrontendUrl, updateCoLaunchProject, getCoLaunchProject, getThreads } from '../../services/opsApi'
+import { getFrontendUrl, updateCoLaunchProject, getCoLaunchProject, getThreads, getWorkflowState } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
 import { CreatorPortalSkeleton } from './Section2Skeletons'
 import { deduplicateAndSortMessages } from './CreatorWhatsAppChat'
@@ -198,14 +198,24 @@ export default function CreatorPortal({ portalId }) {
     }
   }, [project?.id, project?.creatorHandle, portalId])
 
-  const defaultPassPrice = (() => {
+  const [defaultPassPrice, setDefaultPassPrice] = useState(() => {
     try {
       const saved = localStorage.getItem('forge_cobuilder_pass_price')
       return saved && !isNaN(Number(saved)) ? Number(saved) : 50
     } catch {
       return 50
     }
-  })()
+  })
+
+  useEffect(() => {
+    getWorkflowState().then((wf) => {
+      const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price
+      if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
+        setDefaultPassPrice(Number(dbFee))
+        try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
+      }
+    }).catch(() => {})
+  }, [])
 
   const cobuilderPrice = Number(
     project?.diyFee ??

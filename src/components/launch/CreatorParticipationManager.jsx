@@ -40,7 +40,9 @@ import {
   deleteCoLaunchProject,
   deleteAllProjects,
   sendDirectEmail,
-  getCreators
+  getCreators,
+  getWorkflowState,
+  updateWorkflowState
 } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
 import { getExpiringItem, removeExpiringItem } from '../../utils/expiringStorage'
@@ -115,11 +117,12 @@ export default function CreatorParticipationManager() {
     if (proj.diySubscription?.amount && !isNaN(Number(proj.diySubscription.amount))) {
       return Number(proj.diySubscription.amount)
     }
-    if (proj.diyFee !== undefined && proj.diyFee !== null && !isNaN(Number(proj.diyFee))) {
-      return Number(proj.diyFee)
+    const metaFee = proj.metadataInfo?.diy_fee ?? proj.metadataInfo?.diyFee ?? proj.metadata_info?.diy_fee ?? proj.metadata_info?.diyFee
+    if (metaFee !== undefined && metaFee !== null && !isNaN(Number(metaFee))) {
+      return Number(metaFee)
     }
-    if (proj.diyPassPrice !== undefined && proj.diyPassPrice !== null && !isNaN(Number(proj.diyPassPrice))) {
-      return Number(proj.diyPassPrice)
+    if (proj.hasCustomFee && proj.diyFee !== undefined && proj.diyFee !== null && !isNaN(Number(proj.diyFee))) {
+      return Number(proj.diyFee)
     }
     return defaultPassPrice
   }, [defaultPassPrice])
@@ -131,30 +134,44 @@ export default function CreatorParticipationManager() {
     setCustomPriceInput(getProjectPassPrice(proj))
   }
 
-  // Save custom price for a project
-  const handleSaveCustomPrice = async () => {
+  // Save custom price for a project (or reset to global default)
+  const handleSaveCustomPrice = async (isReset = false) => {
     if (!customPriceModalProject?.id) return
-    const numericFee = Math.max(0, Number(customPriceInput) || 0)
+    const numericFee = isReset ? null : Math.max(0, Number(customPriceInput) || 0)
     setIsSavingCustomPrice(true)
 
     try {
-      await updateCoLaunchProject(customPriceModalProject.id, {
-        diyFee: numericFee,
-        diyPassPrice: numericFee
-      })
+      const payload = isReset
+        ? { diyFee: null, diyPassPrice: null, resetToDefault: true }
+        : { diyFee: numericFee, diyPassPrice: numericFee }
+
+      await updateCoLaunchProject(customPriceModalProject.id, payload)
 
       setProjects((prev) =>
         prev.map((p) =>
           p.id === customPriceModalProject.id
-            ? { ...p, diyFee: numericFee, diyPassPrice: numericFee }
+            ? {
+                ...p,
+                diyFee: isReset ? defaultPassPrice : numericFee,
+                diyPassPrice: isReset ? defaultPassPrice : numericFee,
+                hasCustomFee: !isReset,
+                metadataInfo: {
+                  ...(p.metadataInfo || {}),
+                  diy_fee: isReset ? undefined : numericFee,
+                  diyFee: isReset ? undefined : numericFee,
+                  diyPassPrice: isReset ? undefined : numericFee
+                }
+              }
             : p
         )
       )
 
       showToast(
         'success',
-        'Pass Fee Updated',
-        `Co-Builder pass fee for ${customPriceModalProject.creatorName || 'creator'} set to $${numericFee} USD`
+        isReset ? 'Fee Reset to Default' : 'Pass Fee Updated',
+        isReset
+          ? `Co-Builder pass fee for ${customPriceModalProject.creatorName || 'creator'} reset to global default ($${defaultPassPrice} USD)`
+          : `Co-Builder pass fee for ${customPriceModalProject.creatorName || 'creator'} set to $${numericFee} USD`
       )
       setCustomPriceModalProject(null)
     } catch (err) {
@@ -171,11 +188,21 @@ export default function CreatorParticipationManager() {
     setIsSavingGlobalPrice(true)
 
     try {
+      // 1. Persist to MongoDB Atlas via WorkflowState
+      await updateWorkflowState({
+        extra_state: {
+          default_pass_price: numericFee,
+          cobuilder_pass_price: numericFee
+        }
+      }).catch(err => console.warn('[CreatorParticipationManager] Workflow state pass fee sync notice:', err))
+
+      // 2. Mirror to localStorage
       try {
         localStorage.setItem('forge_cobuilder_pass_price', String(numericFee))
       } catch (e) {}
       setDefaultPassPrice(numericFee)
 
+      // 3. Update pending ventures
       if (updatePendingWithGlobal) {
         const pendingProjects = projects.filter(
           (p) => !(p.isDIY || p.diySubscription?.active || p.diyOfferStatus === 'paid' || p.diyOfferStatus === 'accepted')
@@ -191,7 +218,12 @@ export default function CreatorParticipationManager() {
           prev.map((p) => {
             const isPaid = p.isDIY || p.diySubscription?.active || p.diyOfferStatus === 'paid' || p.diyOfferStatus === 'accepted'
             if (!isPaid) {
-              return { ...p, diyFee: numericFee, diyPassPrice: numericFee }
+              return {
+                ...p,
+                diyFee: numericFee,
+                diyPassPrice: numericFee,
+                metadataInfo: { ...(p.metadataInfo || {}), diy_fee: numericFee, diyFee: numericFee, diyPassPrice: numericFee }
+              }
             }
             return p
           })
@@ -248,10 +280,22 @@ export default function CreatorParticipationManager() {
     else setIsRefreshing(true)
 
     try {
-      const [projRes, creatorRes] = await Promise.allSettled([
+      const [projRes, creatorRes, wfRes] = await Promise.allSettled([
         getCoLaunchProjects(),
-        getCreators({ limit: 100 })
+        getCreators({ limit: 100 }),
+        getWorkflowState()
       ])
+
+      if (wfRes.status === 'fulfilled' && wfRes.value) {
+        const wf = wfRes.value
+        const dbFee = wf.default_pass_price ?? wf.cobuilder_pass_price ?? wf.extra_state?.default_pass_price ?? wf.extra_state?.cobuilder_pass_price
+        if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
+          setDefaultPassPrice(Number(dbFee))
+          try {
+            localStorage.setItem('forge_cobuilder_pass_price', String(dbFee))
+          } catch (e) {}
+        }
+      }
 
       if (projRes.status === 'fulfilled' && projRes.value) {
         const list = Array.isArray(projRes.value) ? projRes.value : projRes.value?.projects || []
@@ -1752,7 +1796,8 @@ export default function CreatorParticipationManager() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setCustomPriceInput(defaultPassPrice)}
+                  onClick={() => handleSaveCustomPrice(true)}
+                  disabled={isSavingCustomPrice}
                   className={`text-[10px] font-bold cursor-pointer transition-colors ${
                     isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
                   } underline underline-offset-2`}
@@ -1802,7 +1847,7 @@ export default function CreatorParticipationManager() {
                   className={`w-full py-2.5 px-2 bg-transparent text-base font-black font-mono outline-none ${
                     isLight ? 'text-slate-900 placeholder:text-slate-400' : 'text-white placeholder:text-slate-500'
                   }`}
-                  placeholder="50"
+                  placeholder={String(defaultPassPrice || 50)}
                 />
                 <div className="pr-3 shrink-0">
                   <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md ${

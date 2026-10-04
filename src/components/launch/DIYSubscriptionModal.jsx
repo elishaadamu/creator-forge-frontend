@@ -71,6 +71,9 @@ export default function DIYSubscriptionModal({
   const amountToCharge = Number(
     project?.diyFee ??
     project?.diyPassPrice ??
+    project?.metadataInfo?.diy_fee ??
+    project?.metadataInfo?.diyFee ??
+    project?.metadata_info?.diy_fee ??
     project?.diySubscription?.amount ??
     defaultPassPrice ??
     50

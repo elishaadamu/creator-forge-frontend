@@ -5674,11 +5674,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       const all = await getCoLaunchProjects();
       const list = Array.isArray(all) ? all : all?.projects || [];
       const proj = list.find(p => p.creatorId === creator.id || p.creatorHandle === creator.handle);
+      const feeToUse = cobuilderPassPrice || 50;
       const sub = {
         active: true,
-        plan: 'diy_full_50',
-        planName: 'Full DIY Creator ProjectOS License ($50 USD)',
-        amount: 50,
+        plan: `diy_full_${feeToUse}`,
+        planName: `Full DIY Creator ProjectOS License ($${feeToUse} USD)`,
+        amount: feeToUse,
         billingCycle: 'one_time',
         paymentMethod: 'Admin Override (Paid)',
         unlockedAt: new Date().toISOString(),
