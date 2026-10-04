@@ -160,7 +160,7 @@ export default function CreatorPortal({ portalId }) {
       if (v === 'projectos' || v === 'pipeline' || v === 'diy') {
         return 'projectos'
       }
-      const isPaidParam = sp.get('token') === 'cf_diy_paid' || sp.get('paid') === 'true' || localStorage.getItem('forge_diy_paid') === 'true'
+      const isPaidParam = sp.get('token') === 'cf_diy_paid' || sp.get('paid') === 'true'
       if (isPaidParam) {
         return 'projectos'
       }
@@ -171,27 +171,39 @@ export default function CreatorPortal({ portalId }) {
   const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'scripts' | 'presales' | 'messages' | 'strategy'
   const [activeScriptTab, setActiveScriptTab] = useState('post') // 'post' | 'video' | 'dm'
 
-  const isDiyActive = Boolean(
+  // Single authoritative source of truth: Database project state
+  const isDiyFromDb = Boolean(
     project?.isDIY ||
     project?.diySubscription?.active ||
     project?.diyOfferStatus === 'accepted' ||
-    project?.diyOfferStatus === 'paid' ||
-    (typeof window !== 'undefined' && (
-      (project?.id && localStorage.getItem(`forge_diy_paid_${project.id}`) === 'true') ||
-      (project?.creatorHandle && localStorage.getItem(`forge_diy_paid_${project.creatorHandle.replace(/^@/, '').toLowerCase()}`) === 'true') ||
-      localStorage.getItem('forge_diy_paid') === 'true' ||
-      new URLSearchParams(window.location.search).get('token') === 'cf_diy_paid' ||
-      new URLSearchParams(window.location.search).get('paid') === 'true'
+    project?.diyOfferStatus === 'paid'
+  )
+
+  const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null
+  const urlPaidParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('paid') : null
+  const isExplicitUrlPaid = urlToken === 'cf_diy_paid' || urlPaidParam === 'true'
+
+  // When project exists, DB status takes priority over stale browser localStorage
+  const isDiyActive = Boolean(
+    isDiyFromDb ||
+    isExplicitUrlPaid ||
+    (!project && typeof window !== 'undefined' && (
+      (portalId && localStorage.getItem(`forge_diy_paid_${portalId}`) === 'true')
     ))
   )
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && isDiyActive) {
-      if (project?.id) localStorage.setItem(`forge_diy_paid_${project.id}`, 'true')
-      if (project?.creatorHandle) localStorage.setItem(`forge_diy_paid_${project.creatorHandle.replace(/^@/, '').toLowerCase()}`, 'true')
-      localStorage.setItem('forge_diy_paid', 'true')
+    if (typeof window !== 'undefined' && project) {
+      if (isDiyActive) {
+        if (project.id) localStorage.setItem(`forge_diy_paid_${project.id}`, 'true')
+      } else {
+        // If DB indicates NOT paid, clean up any stale cached flags
+        if (project.id) localStorage.removeItem(`forge_diy_paid_${project.id}`)
+        if (project.creatorHandle) localStorage.removeItem(`forge_diy_paid_${project.creatorHandle.replace(/^@/, '').toLowerCase()}`)
+        localStorage.removeItem('forge_diy_paid')
+      }
     }
-  }, [isDiyActive, project?.id, project?.creatorHandle])
+  }, [isDiyActive, project?.id, project?.creatorHandle, isDiyFromDb])
 
   const defaultPassPrice = (() => {
     try {

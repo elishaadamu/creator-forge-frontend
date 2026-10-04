@@ -156,7 +156,6 @@ export default function DIYSubscriptionModal({
       if (typeof window !== 'undefined') {
         if (project?.id) localStorage.setItem(`forge_diy_paid_${project.id}`, 'true')
         if (creatorHandleClean) localStorage.setItem(`forge_diy_paid_${creatorHandleClean}`, 'true')
-        localStorage.setItem('forge_diy_paid', 'true')
         window.dispatchEvent(
           new CustomEvent('forge_project_updated', { detail: updatedProject })
         )
