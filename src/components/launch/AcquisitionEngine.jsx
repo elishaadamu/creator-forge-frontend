@@ -596,6 +596,12 @@ export default function AcquisitionEngine({
             }
             return merged;
           });
+        } else {
+          setCreators([]);
+          try {
+            localStorage.removeItem("forge_launch_discovered_creators");
+            localStorage.removeItem("forge_crm_cached_creators");
+          } catch (e) { }
         }
         setLoadingCreatorsFromDb(false);
       }).catch(() => {
@@ -664,8 +670,10 @@ export default function AcquisitionEngine({
 
         return merged;
       });
+    } else if (initialCreators && Array.isArray(initialCreators) && initialCreators.length === 0 && !loadingCreatorsFromDb) {
+      setCreators([]);
     }
-  }, [initialCreators, discovering]);
+  }, [initialCreators, discovering, loadingCreatorsFromDb]);
 
   // Enforce platform requirement: strictly 100k-1M followers, max 50 creators
   useEffect(() => {
@@ -1017,6 +1025,7 @@ export default function AcquisitionEngine({
       // Deep wipe of all launch persistence keys in localStorage
       localStorage.removeItem("forge_acquisition_completed_steps");
       localStorage.removeItem("forge_launch_discovered_creators");
+      localStorage.removeItem("forge_crm_cached_creators");
       localStorage.removeItem("forge_launch_active_project");
       localStorage.removeItem("forge_launch_acquisition_step");
       localStorage.removeItem("forge_launch_active_step");

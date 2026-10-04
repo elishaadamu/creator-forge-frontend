@@ -8,23 +8,13 @@ import CreatorForgeLogo from "../ui/CreatorForgeLogo";
 import { HeroShallowPolygons } from "../ui/FloatingPolygons";
 
 export default function FollowUpCRMPage() {
-  const [creators, setCreators] = useState(() => {
-    try {
-      const cached = JSON.parse(
-        localStorage.getItem("forge_crm_cached_creators") ||
-        localStorage.getItem("forge_launch_discovered_creators") ||
-        "[]"
-      );
-      return Array.isArray(cached) ? cached : [];
-    } catch {
-      return [];
-    }
-  });
+  const [creators, setCreators] = useState([]);
   const [realThreads, setRealThreads] = useState([]);
   const [projects, setProjects] = useState([]);
   const [workflowState, setWorkflowState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSyncingImap, setIsSyncingImap] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
@@ -51,40 +41,20 @@ export default function FollowUpCRMPage() {
       ]);
 
       if (creatorsRes.status === "fulfilled" && creatorsRes.value) {
-        let rawList = Array.isArray(creatorsRes.value)
+        const rawList = Array.isArray(creatorsRes.value)
           ? creatorsRes.value
           : creatorsRes.value?.creators || [];
         
-        // If DB returned empty list, check for discovered/cached creators in local storage
+        // MongoDB Atlas is the single authoritative source of truth
+        setCreators(rawList);
         if (rawList.length === 0) {
           try {
-            const cached = JSON.parse(
-              localStorage.getItem("forge_crm_cached_creators") ||
-              localStorage.getItem("forge_launch_discovered_creators") ||
-              "[]"
-            );
-            if (Array.isArray(cached) && cached.length > 0) {
-              rawList = cached;
-            }
-          } catch (e) { }
-        } else {
-          try {
-            localStorage.setItem("forge_crm_cached_creators", JSON.stringify(rawList));
+            localStorage.removeItem("forge_crm_cached_creators");
+            localStorage.removeItem("forge_launch_discovered_creators");
           } catch (e) { }
         }
-        setCreators(rawList);
       } else {
-        // Fallback to cached creators if request failed
-        try {
-          const cached = JSON.parse(
-            localStorage.getItem("forge_crm_cached_creators") ||
-            localStorage.getItem("forge_launch_discovered_creators") ||
-            "[]"
-          );
-          if (Array.isArray(cached) && cached.length > 0) {
-            setCreators(cached);
-          }
-        } catch (e) { }
+        setCreators([]);
       }
       if (threadsRes.status === "fulfilled" && threadsRes.value) {
         setRealThreads(Array.isArray(threadsRes.value) ? threadsRes.value : []);
@@ -97,17 +67,7 @@ export default function FollowUpCRMPage() {
       }
     } catch (err) {
       console.warn("[FollowUpCRMPage] Data load error:", err);
-      // Fallback to cache on error
-      try {
-        const cached = JSON.parse(
-          localStorage.getItem("forge_crm_cached_creators") ||
-          localStorage.getItem("forge_launch_discovered_creators") ||
-          "[]"
-        );
-        if (Array.isArray(cached) && cached.length > 0) {
-          setCreators(cached);
-        }
-      } catch (e) { }
+      setCreators([]);
       if (!isSilent) {
         notify("error", "Sync Error", "Failed to retrieve latest CRM data from database.");
       }
@@ -189,7 +149,8 @@ export default function FollowUpCRMPage() {
     }
 
     try {
-
+      localStorage.removeItem("forge_crm_cached_creators");
+      localStorage.removeItem("forge_launch_discovered_creators");
       const rawDeleted = (() => {
         try {
           const direct = localStorage.getItem("forge_deleted_creator_ids");
@@ -214,6 +175,31 @@ export default function FollowUpCRMPage() {
       new CustomEvent("forge_creator_deleted", { detail: { creatorId } })
     );
     loadData(true);
+  };
+
+  const handleDeleteAllCreators = async () => {
+    if (!window.confirm("Are you sure you want to permanently delete all creators from the database? This action cannot be undone.")) {
+      return;
+    }
+    setIsDeletingAll(true);
+    setCreators([]);
+    setRealThreads([]);
+    try {
+      localStorage.removeItem("forge_crm_cached_creators");
+      localStorage.removeItem("forge_launch_discovered_creators");
+      localStorage.removeItem("forge_launch_real_threads");
+      localStorage.removeItem("forge_launch_pitch_sent_map");
+      localStorage.removeItem("forge_launch_ai_choice_map");
+      const { deleteAllCreators } = await import("../../services/opsApi");
+      await deleteAllCreators();
+      notify("success", "All Leads Deleted", "All creators have been deleted from MongoDB Atlas.");
+    } catch (err) {
+      console.warn("Delete all creators failed:", err);
+      notify("error", "Delete Failed", "Failed to delete all creators from database.");
+    } finally {
+      setIsDeletingAll(false);
+      loadData(true);
+    }
   };
 
   return (
@@ -259,6 +245,19 @@ export default function FollowUpCRMPage() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {creators.length > 0 && (
+            <button
+              type="button"
+              onClick={handleDeleteAllCreators}
+              disabled={isDeletingAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-semibold transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+              title="Permanently wipe all creators from database"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">{isDeletingAll ? "Deleting..." : `Delete All (${creators.length})`}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleSyncImap}

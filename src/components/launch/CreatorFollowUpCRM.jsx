@@ -1279,6 +1279,30 @@ export default function CreatorFollowUpCRM({
           delete storedPitches[cleanHandle];
           localStorage.setItem("forge_launch_pitch_sent_map", JSON.stringify(storedPitches));
         } catch (err) {}
+
+        // Clean up creator from any cached lists
+        try {
+          const cachedCrm = JSON.parse(localStorage.getItem("forge_crm_cached_creators") || "[]");
+          const filteredCrm = cachedCrm.filter(
+            (c) => c.id !== targetId && c.id !== creator.id && (c.handle || "").replace(/^@/, "").toLowerCase() !== cleanHandle
+          );
+          if (filteredCrm.length > 0) {
+            localStorage.setItem("forge_crm_cached_creators", JSON.stringify(filteredCrm));
+          } else {
+            localStorage.removeItem("forge_crm_cached_creators");
+          }
+        } catch (err) {}
+        try {
+          const cachedDisc = JSON.parse(localStorage.getItem("forge_launch_discovered_creators") || "[]");
+          const filteredDisc = cachedDisc.filter(
+            (c) => c.id !== targetId && c.id !== creator.id && (c.handle || "").replace(/^@/, "").toLowerCase() !== cleanHandle
+          );
+          if (filteredDisc.length > 0) {
+            localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(filteredDisc));
+          } else {
+            localStorage.removeItem("forge_launch_discovered_creators");
+          }
+        } catch (err) {}
       } catch (e) {
         console.warn("LocalStorage update error on creator delete:", e);
       }

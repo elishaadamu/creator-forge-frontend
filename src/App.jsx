@@ -222,6 +222,9 @@ export default function App() {
         localStorage.removeItem('forge_onboarding_timestamp')
       }
 
+      // Purge legacy shadow cache so deleted database creators never ghost in browser
+      localStorage.removeItem('forge_crm_cached_creators')
+
       const path = window.location.pathname
       const cachedUser = localStorage.getItem('forge_user_profile')
       const activeSession = localStorage.getItem('forge_active_session')
