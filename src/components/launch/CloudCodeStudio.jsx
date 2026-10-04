@@ -428,7 +428,19 @@ export default function CloudCodeStudio({
     }
   }
 
-  const [htmlViewMode, setHtmlViewMode] = useState('split') // 'code' | 'split' | 'preview'
+  const [htmlViewMode, setHtmlViewMode] = useState(() => {
+    try {
+      return localStorage.getItem('forge_code_studio_view_mode') || 'code'
+    } catch (e) {
+      return 'code'
+    }
+  }) // 'code' | 'split' | 'preview'
+  const handleSetHtmlViewMode = (mode) => {
+    setHtmlViewMode(mode)
+    try {
+      localStorage.setItem('forge_code_studio_view_mode', mode)
+    } catch (e) {}
+  }
   const [previewViewport, setPreviewViewport] = useState('desktop') // 'desktop' | 'tablet' | 'mobile'
   const [imageZoom, setImageZoom] = useState(100)
   const [svgViewMode, setSvgViewMode] = useState('preview') // 'preview' | 'code'
@@ -594,15 +606,10 @@ export default function CloudCodeStudio({
     }
   }
 
-  // Trigger auto-sync once on mount if any code files need Cloudinary upload
+  // Codebase files are stored locally and in DB. Do not freeze the UI with bulk uploads on mount.
   useEffect(() => {
-    if (!hasTriggeredInitialSync.current && files.length > 0) {
-      const unSynced = files.filter(f => !f.cloudinaryUrl && f.content && !isMarketingMediaAsset(f))
-      if (unSynced.length > 0) {
-        hasTriggeredInitialSync.current = true
-        syncCodebaseFilesToCloudinary(files)
-      }
-    }
+    hasTriggeredInitialSync.current = true
+    setIsUploadingCloudinary(false)
   }, [])
 
   // Keep internal state in sync with parent project.projectFiles on initial load
@@ -705,58 +712,31 @@ export default function CloudCodeStudio({
       })
     }
 
-    // 5. Asynchronously upload raw file to Cloudinary CDN
-    try {
-      const blob = new Blob([fileToSave.content || ''], { type: 'text/plain;charset=utf-8' })
-      const fileName = fileToSave.name || 'script.js'
-      const fileObj = new File([blob], fileName, { type: 'text/plain' })
-      const folderPath = `creator_forge/${project?.id || prodSlug}/codebase/${fileToSave.folder || 'root'}`
+    // 5. Complete save immediately and reset saving indicator
+    setIsUploadingCloudinary(false)
+    showToast?.(`Saved "${fileToSave.name}"!`)
 
-      setTerminalLogs(prev => [
-        ...prev,
-        `[cloudinary] ☁️ Uploading ${fileToSave.path} to Cloudinary...`
-      ])
+    // 6. Non-blocking background sync if needed (never freezes UI)
+    setTimeout(() => {
+      try {
+        const blob = new Blob([fileToSave.content || ''], { type: 'text/plain;charset=utf-8' })
+        const fileName = fileToSave.name || 'script.js'
+        const fileObj = new File([blob], fileName, { type: 'text/plain' })
+        const folderPath = `creator_forge/${project?.id || prodSlug}/codebase/${fileToSave.folder || 'root'}`
 
-      const cloudRes = await uploadFormFileToCloudinary(fileObj, folderPath, project?.id)
-      if (cloudRes?.secure_url || cloudRes?.url) {
-        const cldUrl = cloudRes.secure_url || cloudRes.url
-        const pubId = cloudRes.public_id || null
-        const withCldFile = { ...baseUpdatedFile, cloudinaryUrl: cldUrl, publicId: pubId }
-        const withCldList = updatedFilesList.map(f => f.id === withCldFile.id ? withCldFile : f)
-        setFiles(withCldList)
-
-        const withCldPayload = withCldList.map(f => ({
-          id: f.id,
-          name: f.name,
-          path: f.path,
-          folder: f.folder,
-          category: f.category,
-          language: f.language,
-          author: f.author,
-          content: f.content,
-          cloudinaryUrl: f.cloudinaryUrl || null,
-          publicId: f.publicId || null,
-          updatedAt: f.updatedAt
-        }))
-
-        if (onSaveProjectFiles) onSaveProjectFiles(withCldPayload)
-        if (project?.id) updateCoLaunchProject(project.id, { projectFiles: withCldPayload }).catch(() => {})
-
-        setTerminalLogs(prev => [
-          ...prev,
-          `[cloudinary] ✓ ${fileToSave.path} saved & CDN synced!`
-        ])
-      }
-    } catch (cloudErr) {
-      console.warn('[Cloudinary] Cloud upload notice:', cloudErr)
-      setTerminalLogs(prev => [
-        ...prev,
-        `[storage] ✓ ${fileToSave.name} saved to project files.`
-      ])
-    } finally {
-      setIsUploadingCloudinary(false)
-      showToast?.(`Saved "${fileToSave.name}"!`)
-    }
+        uploadFormFileToCloudinary(fileObj, folderPath, project?.id)
+          .then(cloudRes => {
+            if (cloudRes?.secure_url || cloudRes?.url) {
+              const cldUrl = cloudRes.secure_url || cloudRes.url
+              const pubId = cloudRes.public_id || null
+              const withCldFile = { ...baseUpdatedFile, cloudinaryUrl: cldUrl, publicId: pubId }
+              const withCldList = updatedFilesList.map(f => f.id === withCldFile.id ? withCldFile : f)
+              setFiles(withCldList)
+            }
+          })
+          .catch(() => {})
+      } catch (e) {}
+    }, 10)
   }
 
   // Save active file handler
@@ -1413,9 +1393,9 @@ export default function CloudCodeStudio({
                 {isWebPreviewable && (
                   <div className="flex items-center gap-0.5 bg-[#090b0e] p-0.5 rounded-md border border-white/[0.08] shrink-0 mr-1">
                     <button
-                      onClick={() => setHtmlViewMode('code')}
+                      onClick={() => handleSetHtmlViewMode('code')}
                       className={`px-2 py-0.5 rounded text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer ${
-                        htmlViewMode === 'code' ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'text-slate-400 hover:text-white'
+                        htmlViewMode === 'code' ? 'bg-[#C8FF3D]/20 text-[#C8FF3D] border border-[#C8FF3D]/40 font-bold' : 'text-slate-400 hover:text-white'
                       }`}
                       title="Show Code Only"
                     >
@@ -1423,9 +1403,9 @@ export default function CloudCodeStudio({
                       <span>Code</span>
                     </button>
                     <button
-                      onClick={() => setHtmlViewMode('split')}
+                      onClick={() => handleSetHtmlViewMode('split')}
                       className={`px-2 py-0.5 rounded text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer ${
-                        htmlViewMode === 'split' ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'text-slate-400 hover:text-white'
+                        htmlViewMode === 'split' ? 'bg-[#C8FF3D]/20 text-[#C8FF3D] border border-[#C8FF3D]/40 font-bold' : 'text-slate-400 hover:text-white'
                       }`}
                       title="Split Code & Live Sandbox Preview"
                     >
@@ -1433,9 +1413,9 @@ export default function CloudCodeStudio({
                       <span>Split</span>
                     </button>
                     <button
-                      onClick={() => setHtmlViewMode('preview')}
+                      onClick={() => handleSetHtmlViewMode('preview')}
                       className={`px-2 py-0.5 rounded text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer ${
-                        htmlViewMode === 'preview' ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-400 hover:text-white'
+                        htmlViewMode === 'preview' ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 font-bold' : 'text-slate-400 hover:text-white'
                       }`}
                       title="Live Web Sandbox Preview Only"
                     >
