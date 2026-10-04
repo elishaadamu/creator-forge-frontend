@@ -113,18 +113,28 @@ export default function CreatorParticipationManager() {
 
   // Helper to resolve pass price for any project (custom or default)
   const getProjectPassPrice = useCallback((proj) => {
-    if (!proj) return defaultPassPrice
+    if (!proj) return defaultPassPrice || 199
     if (proj.diySubscription?.amount && !isNaN(Number(proj.diySubscription.amount))) {
       return Number(proj.diySubscription.amount)
     }
-    const metaFee = proj.metadataInfo?.diy_fee ?? proj.metadataInfo?.diyFee ?? proj.metadata_info?.diy_fee ?? proj.metadata_info?.diyFee
-    if (metaFee !== undefined && metaFee !== null && !isNaN(Number(metaFee))) {
-      return Number(metaFee)
+    const hasCustom = Boolean(
+      proj.hasCustomFee ||
+      proj.metadataInfo?.hasCustomFee ||
+      proj.metadata_info?.hasCustomFee
+    )
+    if (hasCustom) {
+      if (proj.diyFee !== undefined && proj.diyFee !== null && !isNaN(Number(proj.diyFee))) {
+        return Number(proj.diyFee)
+      }
+      if (proj.diyPassPrice !== undefined && proj.diyPassPrice !== null && !isNaN(Number(proj.diyPassPrice))) {
+        return Number(proj.diyPassPrice)
+      }
+      const metaFee = proj.metadataInfo?.diy_fee ?? proj.metadataInfo?.diyFee ?? proj.metadata_info?.diy_fee ?? proj.metadata_info?.diyFee
+      if (metaFee !== undefined && metaFee !== null && !isNaN(Number(metaFee))) {
+        return Number(metaFee)
+      }
     }
-    if (proj.hasCustomFee && proj.diyFee !== undefined && proj.diyFee !== null && !isNaN(Number(proj.diyFee))) {
-      return Number(proj.diyFee)
-    }
-    return defaultPassPrice
+    return defaultPassPrice || 199
   }, [defaultPassPrice])
 
   // Open custom price modal for a project
@@ -142,8 +152,8 @@ export default function CreatorParticipationManager() {
 
     try {
       const payload = isReset
-        ? { diyFee: null, diyPassPrice: null, resetToDefault: true }
-        : { diyFee: numericFee, diyPassPrice: numericFee }
+        ? { diyFee: null, diyPassPrice: null, resetToDefault: true, hasCustomFee: false }
+        : { diyFee: numericFee, diyPassPrice: numericFee, hasCustomFee: true }
 
       await updateCoLaunchProject(customPriceModalProject.id, payload)
 
@@ -210,7 +220,7 @@ export default function CreatorParticipationManager() {
 
         await Promise.allSettled(
           pendingProjects.map((p) =>
-            updateCoLaunchProject(p.id, { diyFee: numericFee, diyPassPrice: numericFee })
+            updateCoLaunchProject(p.id, { diyFee: numericFee, diyPassPrice: numericFee, hasCustomFee: false })
           )
         )
 
