@@ -152,10 +152,8 @@ export default function DIYSubscriptionModal({
         }
       }
 
-      // Broadcast event so portal & ProjectOS immediately sync
+      // Broadcast event so portal & ProjectOS immediately sync with database updatedProject
       if (typeof window !== 'undefined') {
-        if (project?.id) localStorage.setItem(`forge_diy_paid_${project.id}`, 'true')
-        if (creatorHandleClean) localStorage.setItem(`forge_diy_paid_${creatorHandleClean}`, 'true')
         window.dispatchEvent(
           new CustomEvent('forge_project_updated', { detail: updatedProject })
         )

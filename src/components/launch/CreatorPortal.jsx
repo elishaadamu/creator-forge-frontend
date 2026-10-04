@@ -183,27 +183,20 @@ export default function CreatorPortal({ portalId }) {
   const urlPaidParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('paid') : null
   const isExplicitUrlPaid = urlToken === 'cf_diy_paid' || urlPaidParam === 'true'
 
-  // When project exists, DB status takes priority over stale browser localStorage
-  const isDiyActive = Boolean(
-    isDiyFromDb ||
-    isExplicitUrlPaid ||
-    (!project && typeof window !== 'undefined' && (
-      (portalId && localStorage.getItem(`forge_diy_paid_${portalId}`) === 'true')
-    ))
-  )
+  // The database is the ONLY source of truth for payment status. No localStorage mocking!
+  const isDiyActive = Boolean(isDiyFromDb || isExplicitUrlPaid)
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && project) {
-      if (isDiyActive) {
-        if (project.id) localStorage.setItem(`forge_diy_paid_${project.id}`, 'true')
-      } else {
-        // If DB indicates NOT paid, clean up any stale cached flags
-        if (project.id) localStorage.removeItem(`forge_diy_paid_${project.id}`)
-        if (project.creatorHandle) localStorage.removeItem(`forge_diy_paid_${project.creatorHandle.replace(/^@/, '').toLowerCase()}`)
+    if (typeof window !== 'undefined') {
+      // Purge all legacy localStorage test flags to ensure DB is the sole source of truth
+      try {
+        if (project?.id) localStorage.removeItem(`forge_diy_paid_${project.id}`)
+        if (project?.creatorHandle) localStorage.removeItem(`forge_diy_paid_${project.creatorHandle.replace(/^@/, '').toLowerCase()}`)
+        if (portalId) localStorage.removeItem(`forge_diy_paid_${portalId}`)
         localStorage.removeItem('forge_diy_paid')
-      }
+      } catch (e) {}
     }
-  }, [isDiyActive, project?.id, project?.creatorHandle, isDiyFromDb])
+  }, [project?.id, project?.creatorHandle, portalId])
 
   const defaultPassPrice = (() => {
     try {
