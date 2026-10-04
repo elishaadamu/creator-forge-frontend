@@ -21,6 +21,7 @@ import FollowUpCRMPage from './components/launch/FollowUpCRMPage'
 import AdminErrorLogPage from './components/launch/AdminErrorLogPage'
 import ProjectOSPage from './components/launch/ProjectOSPage'
 import CreatorParticipationManager from './components/launch/CreatorParticipationManager'
+import BetaTestingPortal from './components/launch/BetaTestingPortal'
 import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys } from './services/ai'
@@ -816,6 +817,12 @@ export default function App() {
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/preorder')) {
     const slug = window.location.pathname.replace('/preorder/', '').replace('/preorder', '').replace(/\/$/, '')
     return <PreorderLandingPage slug={slug} />
+  }
+
+  // /beta/:slug or /beta route — live private Beta Testing & Feedback Workspace for invited backers
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/beta')) {
+    const slug = window.location.pathname.replace('/beta/', '').replace('/beta', '').replace(/\/$/, '')
+    return <BetaTestingPortal slug={slug} />
   }
 
   // /survey/:slug or /research/:slug route — live shareable audience discovery survey

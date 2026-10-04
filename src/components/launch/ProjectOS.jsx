@@ -363,7 +363,7 @@ partnerships@creatorforge.com`
       gateStatus: 'passed',
       targetRevenue: presaleTarget,
       achievedRevenue: presalesRevenue,
-      backersCount: Array.isArray(project.reservations) ? project.reservations.length : Number(project.telemetry?.presalesCount || 0),
+      backersCount: Array.isArray(project.reservations) ? new Set(project.reservations.map(r => (r.email || r.id || '').toLowerCase().trim())).size : Number(project.telemetry?.presalesCount || 0),
       conversionRate: Number(project.conversionRate || 0),
       notes: 'Phase 1 completed. Advanced to Phase 2: Build MVP.',
       decidedAt: new Date().toLocaleString()
@@ -609,7 +609,7 @@ partnerships@creatorforge.com`
   const p3Guards = getPhase3StepGuards(project)
 
   const presaleGoal = p1Guards.presaleGoal
-  const backersCount = Array.isArray(project.reservations) ? project.reservations.length : Number(project.telemetry?.presalesCount || 0)
+  const backersCount = Array.isArray(project.reservations) ? new Set(project.reservations.map(r => (r.email || r.id || '').toLowerCase().trim())).size : Number(project.telemetry?.presalesCount || 0)
   const currentPresales = p1Guards.currentPresales
   const conversionRate = Number(project.conversionRate || (Number(project.visitors || 0) > 0 ? (backersCount / Number(project.visitors)) * 100 : 0))
   const isGatePassed = p1Guards.isGatePassed
@@ -1579,7 +1579,7 @@ partnerships@creatorforge.com`
                     }
                     const derivedGoal = parseThreshold(project.validationPlan?.threshold)
                     const presaleGoal = derivedGoal > 0 ? derivedGoal : Number(project.presaleTarget || project.targetRevenue || 5000)
-                    const backersCount = Array.isArray(project.reservations) ? project.reservations.length : Number(project.telemetry?.presalesCount || 0)
+                    const backersCount = Array.isArray(project.reservations) ? new Set(project.reservations.map(r => (r.email || r.id || '').toLowerCase().trim())).size : Number(project.telemetry?.presalesCount || 0)
                     const currentPresales = Number(String(project.currentPresales || 0).replace(/[^0-9.]/g, '')) || (project.reservations || []).reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
                     const conversionRate = Number(project.conversionRate || (Number(project.visitors || 0) > 0 ? (backersCount / Number(project.visitors)) * 100 : 0))
                     const isRevenueGoalMet = presaleGoal > 0 && currentPresales >= presaleGoal

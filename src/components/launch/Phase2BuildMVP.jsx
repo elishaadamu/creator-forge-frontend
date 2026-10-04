@@ -25,6 +25,45 @@ import CloudCodeStudio from './CloudCodeStudio'
 import AutomatedQASuite from './AutomatedQASuite'
 import { getPhase2StepGuards } from '../../utils/stepGuards'
 
+export function buildUniqueBetaCohort(reservations = []) {
+  if (!Array.isArray(reservations) || reservations.length === 0) return []
+
+  const byEmail = new Map()
+  for (const r of reservations) {
+    const rawEmail = (r.email || '').trim().toLowerCase()
+    const emailKey = rawEmail || (r.id || String(Math.random()))
+    if (!byEmail.has(emailKey)) {
+      byEmail.set(emailKey, {
+        id: r.id,
+        name: r.name || 'Anonymous Backer',
+        email: r.email || '',
+        tiers: [r.tier || 'Founding Backer'],
+        totalAmount: Number(r.amount) || 0,
+        txIds: [r.txId || r.id],
+        status: 'Active in Beta',
+        token: `beta_${(r.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6) || 'access'}`,
+        lastActive: 'Just now'
+      })
+    } else {
+      const existing = byEmail.get(emailKey)
+      if (r.tier && !existing.tiers.includes(r.tier)) {
+        existing.tiers.push(r.tier)
+      }
+      existing.totalAmount += (Number(r.amount) || 0)
+      if (r.txId && !existing.txIds.includes(r.txId)) existing.txIds.push(r.txId)
+      if ((!existing.name || existing.name === 'Anonymous Backer') && r.name) {
+        existing.name = r.name
+      }
+    }
+  }
+
+  return Array.from(byEmail.values()).map(b => ({
+    ...b,
+    tier: b.tiers.join(' • '),
+    displayTier: b.tiers.join(' • ')
+  }))
+}
+
 export default function Phase2BuildMVP({
   project,
   api,
@@ -126,21 +165,9 @@ export default function Phase2BuildMVP({
     }
   })
 
-  // Beta Cohort State (Real Presales & Waitlist from Phase 1)
+  // Beta Cohort State (Deduplicated Real Presales & Waitlist from Phase 1)
   const [betaCohort, setBetaCohort] = useState(() => {
-    const res = Array.isArray(project?.reservations) ? project.reservations : []
-    if (res.length > 0) {
-      return res.map(r => ({
-        id: r.id,
-        name: r.name,
-        email: r.email,
-        tier: r.tier || 'Founding Backer',
-        status: 'Active in Beta',
-        token: `beta_${(r.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6) || 'access'}`,
-        lastActive: 'Just now'
-      }))
-    }
-    return []
+    return buildUniqueBetaCohort(project?.reservations)
   })
 
   // Raw Beta Feedback Feed (Inherits Phase 1 details and reservations)
@@ -256,17 +283,9 @@ export default function Phase2BuildMVP({
       })
     }
 
-    // 3. Beta Cohort
+    // 3. Beta Cohort (Grouped & Deduplicated by backer email)
     if (Array.isArray(project.reservations) && project.reservations.length > 0) {
-      setBetaCohort(project.reservations.map(r => ({
-        id: r.id,
-        name: r.name,
-        email: r.email,
-        tier: r.tier || 'Founding Backer',
-        status: 'Active in Beta',
-        token: `beta_${(r.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6)}`,
-        lastActive: '1h ago'
-      })))
+      setBetaCohort(buildUniqueBetaCohort(project.reservations))
     } else {
       setBetaCohort([])
     }
@@ -1106,7 +1125,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
   const origin = getFrontendUrl()
   const productSlug = (project?.slug || project?.productName || 'product').toLowerCase().replace(/[^a-z0-9]/g, '-')
   const presalesRevenue = Number(project?.currentPresales || 0)
-  const backersCount = Array.isArray(project?.reservations) ? project.reservations.length : 0
+  const backersCount = Array.isArray(project?.reservations) ? new Set(project.reservations.map(r => (r.email || r.id || '').toLowerCase().trim())).size : 0
 
   // OS Progress calculation
   const completedCount = (engineeringTasks || []).filter(t => t.status === 'Completed').length
@@ -2620,7 +2639,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   <h3 className="text-sm font-black text-slate-900">Presale & Waitlist Beta Access Manager</h3>
                   <p className="text-xs text-slate-600">Provision private tokens to verified early backers and waitlist members.</p>
                 </div>
-                <span className="text-xs font-mono text-emerald-700 font-bold">${presalesRevenue.toLocaleString()} Total Pledged ({betaCohort.length} Backers)</span>
+                <span className="text-xs font-mono text-emerald-700 font-bold">${presalesRevenue.toLocaleString()} Total Pledged ({betaCohort.length} {betaCohort.length === 1 ? 'Backer' : 'Backers'})</span>
               </div>
 
               {/* Quick Invite New Backer Form */}
@@ -2629,14 +2648,31 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                   e.preventDefault()
                   const form = e.target
                   const name = form.name.value.trim()
-                  const email = form.email.value.trim()
+                  const email = form.email.value.trim().toLowerCase()
                   const tier = form.tier.value
                   if (!name || !email) return
+
+                  const existingIdx = betaCohort.findIndex(b => (b.email || '').trim().toLowerCase() === email)
+                  if (existingIdx >= 0) {
+                    const updated = [...betaCohort]
+                    const cur = updated[existingIdx]
+                    updated[existingIdx] = {
+                      ...cur,
+                      name: name || cur.name,
+                      tier: cur.tier.includes(tier) ? cur.tier : `${cur.tier} • ${tier}`
+                    }
+                    setBetaCohort(updated)
+                    form.reset()
+                    showToast(`Updated access tier for existing member ${name}!`)
+                    return
+                  }
+
                   const newBacker = {
                     id: `b-${Date.now()}`,
                     name,
                     email,
                     tier,
+                    totalAmount: 0,
                     status: 'Active in Beta',
                     token: `beta_${Math.random().toString(36).substring(2, 8)}`,
                     lastActive: 'Just now'
@@ -2690,41 +2726,58 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {betaCohort.map(backer => (
-                    <div key={backer.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900">{backer.name}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-300 font-bold">
-                            {backer.tier}
-                          </span>
+                  {betaCohort.map(backer => {
+                    const betaUrl = `${origin}/beta/${productSlug}?token=${backer.token}`
+                    return (
+                      <div key={backer.id || backer.email} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="font-bold text-slate-900">{backer.name}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-300 font-bold">
+                              {backer.tier}
+                            </span>
+                            {backer.totalAmount > 0 && (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+                                ${backer.totalAmount} Contributed
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-slate-500 font-mono block mt-0.5">{backer.email}</span>
                         </div>
-                        <span className="text-[11px] text-slate-500 font-mono block">{backer.email}</span>
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${
-                          backer.status === 'Active in Beta'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                        }`}>
-                          {backer.status}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${
+                            backer.status === 'Active in Beta'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          }`}>
+                            {backer.status}
+                          </span>
 
-                        <button
-                          onClick={() => {
-                            const url = `${origin}/beta/${productSlug}?token=${backer.token}`
-                            navigator.clipboard?.writeText(url)
-                            showToast(`Copied Beta Magic Link for ${backer.name}!`)
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
-                        >
-                          <Copy className="w-3 h-3" />
-                          <span>Copy Invite Link</span>
-                        </button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard?.writeText(betaUrl)
+                              showToast(`Copied Beta Magic Link for ${backer.name}!`)
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Copy className="w-3 h-3" />
+                            <span>Copy Invite Link</span>
+                          </button>
+
+                          <a
+                            href={betaUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-2xs font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <span>Open Beta Portal</span>
+                            <ExternalLink className="w-3 h-3 text-blue-100" />
+                          </a>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
