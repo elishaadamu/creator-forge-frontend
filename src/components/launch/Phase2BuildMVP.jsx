@@ -2583,7 +2583,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-lg font-black text-slate-900 font-mono flex items-center gap-1.5">
-                            <span className={isBug ? 'text-red-600' : isUX ? 'text-amber-600' : 'text-blue-600'}>
+                            <span className={isBug ? 'text-red-600' : isUX ? 'text-amber-600' : 'text-emerald-600'}>
                               {count} {count === 1 ? 'user' : 'users'}
                             </span>
                           </span>
@@ -2592,7 +2592,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                               ? 'bg-red-50 text-red-700 border border-red-200'
                               : severity === 'Medium'
                               ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                              : 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           }`}>
                             {category} • {severity}
                           </span>
@@ -2617,9 +2617,9 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
                         <button
                           onClick={() => handleConvertClusterToTask(cluster)}
-                          className="w-full py-2 rounded-xl bg-slate-900 hover:bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                          className="w-full py-2 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-[#C8FF3D] font-black text-[11px] flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3 h-3 text-[#C8FF3D]" />
                           <span>Convert to Sprint Task</span>
                         </button>
                       </div>
@@ -2749,7 +2749,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                           <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${
                             backer.status === 'Active in Beta'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'bg-amber-50 text-amber-800 border border-amber-200'
                           }`}>
                             {backer.status}
                           </span>
@@ -2769,10 +2769,15 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                             href={betaUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-2xs font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                            className="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#C8FF3D] hover:bg-[#b5ee2e] text-[#080A0C] font-black shadow-xs text-[11px] transition-all cursor-pointer group active:scale-95"
                           >
                             <span>Open Beta Portal</span>
-                            <ExternalLink className="w-3 h-3 text-blue-100" />
+                            <ExternalLink className="w-3 h-3 text-[#080A0C]" />
+                            {/* Signature Beacon */}
+                            <span className="absolute -top-1 -right-1 flex h-2 w-2 pointer-events-none">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white" />
+                            </span>
                           </a>
                         </div>
                       </div>
@@ -2815,9 +2820,9 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                 />
                 <button
                   type="submit"
-                  className="sm:col-span-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  className="sm:col-span-4 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-[#C8FF3D] font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                 >
-                  <Send className="w-3.5 h-3.5" />
+                  <Send className="w-3.5 h-3.5 text-[#C8FF3D]" />
                   <span>Log Feedback Item</span>
                 </button>
               </form>
