@@ -210,6 +210,10 @@ export default function CreatorPortal({ portalId }) {
   const cobuilderPrice = Number(
     project?.diyFee ??
     project?.diyPassPrice ??
+    project?.metadataInfo?.diy_fee ??
+    project?.metadataInfo?.diyFee ??
+    project?.metadataInfo?.diyPassPrice ??
+    project?.metadata_info?.diy_fee ??
     project?.diySubscription?.amount ??
     defaultPassPrice ??
     50
@@ -1161,7 +1165,7 @@ export default function CreatorPortal({ portalId }) {
                         </tr>
                         <tr>
                           <td className="py-3 pr-4 font-medium text-slate-700">Upfront Capital Commitment</td>
-                          <td className="py-3 px-4 font-mono font-bold text-slate-900">$50 One-Time Pass</td>
+                          <td className="py-3 px-4 font-mono font-bold text-slate-900">${cobuilderPrice} One-Time Pass</td>
                           <td className="py-3 pl-4 font-mono font-bold text-emerald-700">$0.00 Upfront</td>
                         </tr>
                       </tbody>
@@ -1211,7 +1215,7 @@ export default function CreatorPortal({ portalId }) {
                     <div className="flex items-center justify-between py-1 border-b border-slate-100">
                       <span className="text-slate-500">Upfront Investment</span>
                       <span className="font-mono font-extrabold text-slate-900">
-                        {selectedTrack === 'interactive' ? '$50.00 USD' : '$0.00 Upfront'}
+                        {selectedTrack === 'interactive' ? `$${cobuilderPrice.toFixed(2)} USD` : '$0.00 Upfront'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-1 border-b border-slate-100">
@@ -1246,7 +1250,7 @@ export default function CreatorPortal({ portalId }) {
                         }}
                         className="group w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-slate-900/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-slate-900"
                       >
-                        <span>{isDiyActive ? 'Access Co-Builder Workspace →' : 'Continue with Interactive Pass ($50)'}</span>
+                        <span>{isDiyActive ? 'Access Co-Builder Workspace →' : `Continue with Interactive Pass ($${cobuilderPrice})`}</span>
                         <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:translate-x-1 transition-transform" />
                       </button>
                     ) : (
@@ -1293,7 +1297,7 @@ export default function CreatorPortal({ portalId }) {
                       <span>Legal 50/50 Partnership Bound</span>
                     </div>
                     <p className="text-slate-500 leading-relaxed text-[10.5px]">
-                      Both tracks guarantee the exact same commercial payout structure. The $50 pass covers compute infrastructure and tooling licenses for self-execution.
+                      Both tracks guarantee the exact same commercial payout structure. The ${cobuilderPrice} pass covers compute infrastructure and tooling licenses for self-execution.
                     </p>
                   </div>
                 </div>
@@ -1396,7 +1400,7 @@ export default function CreatorPortal({ portalId }) {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-black text-slate-900">Want direct workbench & terminal access?</span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold border border-emerald-300">$50 USD</span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold border border-emerald-300">${cobuilderPrice} USD</span>
                       </div>
                       <p className="text-[11px] text-slate-600">
                         Unlock the Interactive Co-Builder Pass to trigger AI code generation, execute Phase 1–3 sprints yourself, and customize all specs.
@@ -1408,7 +1412,7 @@ export default function CreatorPortal({ portalId }) {
                       className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm hover:shadow-md cursor-pointer whitespace-nowrap active:scale-[0.98] flex items-center gap-2"
                     >
                       <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-                      <span>Unlock Interactive Pass ($50 USD) →</span>
+                      <span>Unlock Interactive Pass (${cobuilderPrice} USD) →</span>
                     </button>
                   </div>
                 )}
@@ -1983,7 +1987,7 @@ export default function CreatorPortal({ portalId }) {
                         className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                       >
                         <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-                        <span>Unlock Interactive Pass ($50 USD)</span>
+                        <span>Unlock Interactive Pass (${cobuilderPrice} USD)</span>
                       </button>
                     )}
 

@@ -106,6 +106,15 @@ export default function CreatorLaunchLayout({
   const [showSection1Menu, setShowSection1Menu] = useState(false)
   const [showSection1Sidebar, setShowSection1Sidebar] = useState(false)
 
+  const cobuilderPassPrice = (() => {
+    try {
+      const saved = localStorage.getItem('forge_cobuilder_pass_price')
+      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
+    } catch {
+      return 50
+    }
+  })()
+
   const SECTION1_STEPS = [
     { step: 1, label: '1. Campaign Setup', desc: 'Target Niches & Autonomous Engine', icon: Target, color: 'text-slate-900', bg: 'bg-slate-100' },
     { step: 2, label: '2. Find & Qualify', desc: 'Discover & Score Creator Candidates', icon: Search, color: 'text-slate-900', bg: 'bg-slate-100' },
@@ -1016,7 +1025,7 @@ export default function CreatorLaunchLayout({
               title="Dedicated Creator Participation & Co-Builder Console"
             >
               <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>Co-Builders ($50)</span>
+              <span>Co-Builders (${cobuilderPassPrice})</span>
               <ExternalLink className="w-3 h-3 text-slate-400" />
             </a>
           </div>
@@ -1267,7 +1276,7 @@ export default function CreatorLaunchLayout({
                 >
                   <span className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-amber-600" />
-                    <span>Co-Builder Passes ($50)</span>
+                    <span>Co-Builder Passes (${cobuilderPassPrice})</span>
                   </span>
                   <ExternalLink className="w-3 h-3 text-amber-500" />
                 </button>

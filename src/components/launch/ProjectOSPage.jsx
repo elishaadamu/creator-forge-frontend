@@ -32,6 +32,15 @@ export default function ProjectOSPage() {
   const [showDiyModal, setShowDiyModal] = useState(false)
   const [toast, setToast] = useState(null)
 
+  const cobuilderPassPrice = (() => {
+    try {
+      const saved = localStorage.getItem('forge_cobuilder_pass_price')
+      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
+    } catch {
+      return 50
+    }
+  })()
+
   const showToast = (type, title, message) => {
     setToast({ type, title, message, id: Date.now() })
     setTimeout(() => setToast(null), 4000)
@@ -474,7 +483,7 @@ export default function ProjectOSPage() {
             title="Open Dedicated Creator Participation & Co-Builder Console"
           >
             <Zap className="w-3.5 h-3.5 text-amber-700" />
-            <span>Co-Builder Passes ($50)</span>
+            <span>Co-Builder Passes (${cobuilderPassPrice})</span>
             <ExternalLink className="w-3 h-3 text-amber-700" />
           </a>
 

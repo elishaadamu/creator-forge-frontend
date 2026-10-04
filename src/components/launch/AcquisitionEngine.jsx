@@ -319,6 +319,15 @@ export default function AcquisitionEngine({
     return [];
   });
 
+  const cobuilderPassPrice = (() => {
+    try {
+      const saved = localStorage.getItem('forge_cobuilder_pass_price');
+      return saved && !isNaN(Number(saved)) ? Number(saved) : 50;
+    } catch {
+      return 50;
+    }
+  })();
+
   useEffect(() => {
     if (Array.isArray(allProjects) && allProjects.length > 0) {
       setDbProjects(allProjects);
@@ -5457,7 +5466,7 @@ export default function AcquisitionEngine({
       const tagline = concept?.tagline || "Tailored software venture";
       const problem = concept?.problem || "Monetizing and streamlining workflows for your community";
 
-      const kickoffSubject = `🚀 Action Required: Choose Your Co-Launch Track for ${prodName} (Full DIY $50 USD vs Studio-Managed)`;
+      const kickoffSubject = `🚀 Action Required: Choose Your Co-Launch Track for ${prodName} (Full DIY $${cobuilderPassPrice} USD vs Studio-Managed)`;
       const kickoffBody = `Hi ${firstName},
 
 Exciting milestone! We have officially finalized the architecture for **${prodName}** and initialized your venture workspace.
@@ -5466,10 +5475,10 @@ Before kickoff, please select which co-launch path best fits your goals:
 
 ---
 
-### 🚀 Track 1: Do-It-Yourself ProjectOS ($50 USD Flat Access Fee)
+### 🚀 Track 1: Do-It-Yourself ProjectOS ($${cobuilderPassPrice} USD Flat Access Fee)
 • **You run the whole process yourself**: Full execution authority over Phase 1 (Validation), Phase 2 (AI MVP Build Sprints), and Phase 3 (Launch & Scale).
 • **100% Revenue Ownership**: You keep 100% of all software revenue (0% studio revenue split).
-• Upon paying the one-time $50 USD access fee via Stripe or PayPal, your dedicated DIY ProjectOS Command Center URL will be dispatched to your email immediately.
+• Upon paying the one-time $${cobuilderPassPrice} USD access fee via Stripe or PayPal, your dedicated DIY ProjectOS Command Center URL will be dispatched to your email immediately.
 
 ### 🤝 Track 2: Studio-Managed Co-Launch Track (50/50 Revenue Split — Free Upfront)
 • **Zero upfront capital**: Creator Forge studio engineering handles 100% of technical development, cloud hosting, and payment infrastructure.
@@ -5478,7 +5487,7 @@ Before kickoff, please select which co-launch path best fits your goals:
 
 ---
 
-### 🔑 Click Below to Accept DIY ($50) or Choose Managed Track:
+### 🔑 Click Below to Accept DIY ($${cobuilderPassPrice}) or Choose Managed Track:
 Click your secure, passwordless link below to confirm your track:
 
 ${magicPortalUrl}&offer=track_choice
@@ -5613,8 +5622,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3001";
     const magicPortalUrl = `${origin}/portal/${portalSlug}?token=${portalToken}&offer=track_choice`;
 
-    const followUpSubject = `⏰ Reminder: Choose Your Co-Launch Track for ${prodName} ($50 DIY or Studio-Managed)`;
-    const followUpBody = `Hi ${firstName},\n\nJust following up on the co-launch offer for **${prodName}**!\n\nPlease let us know if you would like to proceed with:\n1. 🚀 Track 1: Do-It-Yourself ProjectOS ($50 USD one-time fee) with 100% revenue retention & full command control\n2. 🤝 Track 2: Studio-Managed Track (50/50 Revenue Split — Free Upfront)\n\nClick the link below to select your track or complete the $50 payment:\n${magicPortalUrl}\n\nFeel free to reply directly to this email with any questions!\n\nBest regards,\nCreator Forge Studio Team`;
+    const followUpSubject = `⏰ Reminder: Choose Your Co-Launch Track for ${prodName} ($${cobuilderPassPrice} DIY or Studio-Managed)`;
+    const followUpBody = `Hi ${firstName},\n\nJust following up on the co-launch offer for **${prodName}**!\n\nPlease let us know if you would like to proceed with:\n1. 🚀 Track 1: Do-It-Yourself ProjectOS ($${cobuilderPassPrice} USD one-time fee) with 100% revenue retention & full command control\n2. 🤝 Track 2: Studio-Managed Track (50/50 Revenue Split — Free Upfront)\n\nClick the link below to select your track or complete the $${cobuilderPassPrice} payment:\n${magicPortalUrl}\n\nFeel free to reply directly to this email with any questions!\n\nBest regards,\nCreator Forge Studio Team`;
 
     try {
       const { sendDirectEmail } = await import("../../services/opsApi");
@@ -11568,7 +11577,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       {selectedCreator.diyOfferStatus === 'accepted' || selectedCreator.isDIY ? (
                         <span className="h-9 px-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>💎 Paid DIY ProjectOS ($50 USD) Active</span>
+                          <span>💎 Paid DIY ProjectOS (${cobuilderPassPrice} USD) Active</span>
                         </span>
                       ) : selectedCreator.diyOfferStatus === 'declined' ? (
                         <span className="h-9 px-3 rounded-xl bg-purple-50 border border-purple-300 text-purple-800 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
@@ -11578,13 +11587,13 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         <>
                           <span className="h-9 px-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
                             <Lock className="w-3.5 h-3.5 text-amber-600" />
-                            <span>⏳ $50 DIY Offer Pending Reply</span>
+                            <span>⏳ ${cobuilderPassPrice} DIY Offer Pending Reply</span>
                           </span>
                           <button
                             type="button"
                             onClick={() => handleSendDiyFollowUpEmail(selectedCreator)}
                             className="h-9 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-semibold shadow-2xs cursor-pointer flex items-center gap-1.5 transition-all active:scale-95"
-                            title="Send follow-up reminder email asking creator to accept $50 DIY or decline"
+                            title={`Send follow-up reminder email asking creator to accept $${cobuilderPassPrice} DIY or decline`}
                           >
                             <Mail className="w-3.5 h-3.5 text-amber-600" />
                             <span>Send Follow-Up Email</span>
@@ -11623,7 +11632,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         }`}
                       title={
                         hasFullCommitment
-                          ? "Creator has confirmed full commitment. Promote to ProjectOS and dispatch $50 DIY / track offer email."
+                          ? `Creator has confirmed full commitment. Promote to ProjectOS and dispatch $${cobuilderPassPrice} DIY / track offer email.`
                           : "Locked: Creator must confirm full commitment (explicit concept selection or co-launch agreement) before promotion to ProjectOS"
                       }
                     >
@@ -11636,7 +11645,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       {hasFullCommitment ? (
                         <>
                           <Rocket className="w-3.5 h-3.5 text-emerald-300" />
-                          <span>Promote to ProjectOS & Send $50 DIY / Track Offer Email 🚀</span>
+                          <span>Promote to ProjectOS & Send ${cobuilderPassPrice} DIY / Track Offer Email 🚀</span>
                         </>
                       ) : (
                         <>
