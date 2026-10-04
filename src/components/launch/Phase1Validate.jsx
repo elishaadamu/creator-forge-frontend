@@ -676,6 +676,7 @@ export default function Phase1Validate({
   const generatePlan = async () => {
     setIsGenerating(true)
     setSaveStatus('saving')
+    showNotification('🤖 Architecting 30-day AI Validation Plan...')
     try {
       let generated = null
       if (api?.generateValidationPlan) {
@@ -700,12 +701,12 @@ export default function Phase1Validate({
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
 
         setSaveStatus('saved')
-        showNotification('AI Validation Plan generated & saved!')
+        showNotification('✓ AI Validation Plan generated & saved to database!')
         setTimeout(() => setSaveStatus('idle'), 2500)
       }
     } catch (err) {
       console.error('Validation plan error:', err)
-      showNotification('Failed to generate plan. Please verify AI API keys.')
+      showNotification(`❌ Failed to generate validation plan: ${err.message || 'Please verify AI keys.'}`)
       setSaveStatus('idle')
     } finally {
       setIsGenerating(false)
@@ -714,6 +715,7 @@ export default function Phase1Validate({
 
   const generateCampaign = async () => {
     setIsGeneratingCampaign(true)
+    showNotification('🚀 Generating AI Campaign Kit: tailored roadmap, video scripts & posts...')
     try {
       let projectForGen = project
       const hasPosts = (Array.isArray(project?.recentPosts) && project.recentPosts.length > 0) ||
@@ -812,7 +814,7 @@ export default function Phase1Validate({
           }).catch(e => console.warn(e))
         }
 
-        showNotification('Creator campaign assets generated with AI & saved to database!')
+        showNotification('✓ Creator campaign assets generated with AI & saved to database!')
 
         // Auto-generate post graphic (OpenAI) and video teaser (Veo 3.1) in parallel
         showNotification('🚀 Generating AI Campaign: image & video teaser...')
@@ -835,7 +837,7 @@ export default function Phase1Validate({
       }
     } catch (err) {
       console.error('Campaign generation error:', err)
-      showNotification('Failed to generate campaign assets.')
+      showNotification(`❌ Failed to generate campaign assets: ${err.message || 'Please retry.'}`)
     } finally {
       setIsGeneratingCampaign(false)
     }
@@ -1207,6 +1209,7 @@ export default function Phase1Validate({
 
   const handleGenerateSurvey = async () => {
     setIsGeneratingSurvey(true)
+    showNotification('🤖 Generating dynamic AI discovery survey questions...')
     try {
       const generated = await generateDiscoverySurveyAI(project)
       if (generated) {
@@ -1221,11 +1224,11 @@ export default function Phase1Validate({
             research_survey: generated
           }).catch(e => console.warn('[Phase1] DB survey sync warning:', e))
         }
-        showNotification('Dynamic AI discovery survey generated & saved!')
+        showNotification('✓ Dynamic AI discovery survey generated & saved!')
       }
     } catch (err) {
       console.error('Survey generation error:', err)
-      showNotification('Failed to generate survey questions.')
+      showNotification(`❌ Failed to generate survey questions: ${err.message || 'Please retry.'}`)
     } finally {
       setIsGeneratingSurvey(false)
     }
@@ -1879,14 +1882,20 @@ export default function Phase1Validate({
         </div>
       </div>
 
-      {/* Floating Notification */}
+      {/* Floating Notification Toast */}
       {feedbackNotice && (
-        <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between animate-fade-in">
-          <div className="flex items-center gap-2 font-medium">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{feedbackNotice}</span>
+        <div className="fixed bottom-6 right-6 z-50 max-w-md p-3.5 rounded-2xl bg-slate-900 border border-slate-700 text-white text-xs shadow-2xl flex items-center justify-between gap-3 animate-slide-up backdrop-blur-md">
+          <div className="flex items-center gap-2.5 font-medium">
+            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="leading-snug">{feedbackNotice}</span>
           </div>
-          <span className="text-[10px] text-emerald-400/80 font-mono">synced</span>
+          <button
+            type="button"
+            onClick={() => setFeedbackNotice('')}
+            className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 

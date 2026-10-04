@@ -3122,17 +3122,20 @@ export function buildSmartFallbackBetaFeedbackClusters(projectData, rawFeedbackL
 }
 
 export async function analyzeAndClusterBetaFeedbackAI(feedbackItems, projectData, signal = undefined) {
+  if (!feedbackItems || !Array.isArray(feedbackItems) || feedbackItems.length === 0) {
+    throw new Error('No customer feedback items provided to cluster. Collect real customer feedback first.')
+  }
   const product = projectData?.productName || 'Product'
   const creator = projectData?.creatorName || 'Creator'
   const niche = projectData?.niche || 'Software'
-  const rawList = Array.isArray(feedbackItems) ? feedbackItems.map(f => `[${f.type || 'Feedback'}] "${f.text || f.message}" (${f.author || 'User'})`).join('\n') : ''
+  const rawList = feedbackItems.map(f => `[${f.type || 'Feedback'}] "${f.text || f.message}" (${f.author || 'User'})`).join('\n')
 
   const system = `You are a Principal Product Manager and QA Lead. You analyze raw customer beta feedback, bugs, support tickets, and objections, grouping them into quantified, recurring thematic clusters with clear counts and severity. Return ONLY valid JSON.`
   const prompt = `Analyze and group recurring beta feedback for:
 Product: ${product} (${niche}) × ${creator}
 
 Incoming Raw Feedback Items:
-${rawList || 'Initial cohort usage notes and onboarding feedback.'}
+${rawList}
 
 Return JSON with exact structure:
 {

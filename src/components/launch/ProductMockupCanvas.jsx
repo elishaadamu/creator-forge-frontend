@@ -159,6 +159,7 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
   // Generate with OpenAI DALL-E 3
   const handleGenerateOpenAIImage = async () => {
     setIsGeneratingAI(true)
+    onShowNotification?.('🎨 Generating high-resolution product mockup with AI (DALL-E 3)...')
     try {
       const generated = await generateProductImageWithOpenAI({
         productName,
@@ -170,11 +171,11 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
         setConvertedImageUrl(generated)
         setViewMode('ai_generated')
         onSaveMockupImage?.(generated)
-        onShowNotification?.('AI generated high-resolution product visual mockup!')
+        onShowNotification?.('✨ AI generated high-resolution product visual mockup!')
       }
     } catch (err) {
       console.error('Image generation error:', err)
-      onShowNotification?.('AI image generation encountered an error. Please retry.')
+      onShowNotification?.(`❌ AI image generation failed: ${err.message || 'Please retry.'}`)
     } finally {
       setIsGeneratingAI(false)
     }
