@@ -1149,11 +1149,12 @@ export default function Phase1Validate({
   const [simulationState, setSimulationState] = useState(null)
   const [isStartingSimulation, setIsStartingSimulation] = useState(false)
 
-  // Poll autonomous simulation status periodically
+  // Poll autonomous simulation status periodically (tab-aware)
   useEffect(() => {
     if (!project?.id) return
     let timer = null
     const pollSim = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return
       try {
         const res = await getCampaignSimulationStatus(project.id)
         if (res?.simulation) {
@@ -1164,11 +1165,13 @@ export default function Phase1Validate({
       }
     }
     pollSim()
-    timer = setInterval(pollSim, 4000)
+    const isSimActive = simulationState?.status === 'running' || simulationState?.status === 'in_progress'
+    const intervalMs = isSimActive ? 10000 : 45000
+    timer = setInterval(pollSim, intervalMs)
     return () => {
       if (timer) clearInterval(timer)
     }
-  }, [project?.id])
+  }, [project?.id, simulationState?.status])
 
   const handleStartSimulation = async () => {
     if (!project?.id) return
@@ -1729,7 +1732,7 @@ export default function Phase1Validate({
         name,
         email,
         amount,
-        tier: amount === 99 ? 'Founding Annual ($99)' : amount === 199 ? 'VIP Founder Pass ($199)' : 'Refundable Deposit ($19)',
+        tier: amount === activeFoundingPrice ? `Founding Annual ($${activeFoundingPrice})` : amount === activeDepositPrice ? `Refundable Deposit ($${activeDepositPrice})` : `Pledge ($${amount})`,
         channel: 'creator_campaign'
       }).catch(e => console.warn('[Phase1] DB reservation sync warning:', e))
     }

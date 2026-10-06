@@ -392,12 +392,13 @@ export default function CreatorPortal({ portalId }) {
     return () => { isMounted = false }
   }, [project?.creatorId, project?.creatorHandle, project?.creatorEmail])
 
-  // Real-time polling for messages from the Admin Studio
+  // Real-time polling for messages from the Admin Studio (tab-aware)
   useEffect(() => {
     let isMounted = true
     if (!project?.id) return
 
     const pollProject = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return
       try {
         const fresh = await getCoLaunchProject(project.id)
         if (isMounted && fresh) {
@@ -410,10 +411,16 @@ export default function CreatorPortal({ portalId }) {
       } catch (e) {}
     }
 
-    const interval = setInterval(pollProject, 3000)
+    const interval = setInterval(pollProject, 25000)
+    const onVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) pollProject()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
     return () => {
       isMounted = false
       clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [project?.id, project?.messages?.length, project?.currentPresales])
 

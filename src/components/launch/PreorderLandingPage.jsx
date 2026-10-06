@@ -109,7 +109,7 @@ export default function PreorderLandingPage({ slug }) {
   const headline = project?.campaignKit?.landingPageCopy?.headline || `The ${productName} Workspace Built with ${creatorName}`
   const subheadline = project?.campaignKit?.landingPageCopy?.subheadline || tagline
   
-  const cfg = project?.campaignKit?.pricingConfig
+  const cfg = project?.campaignKit?.pricingConfig || project?.pricingConfig || project?.validationCampaign?.productAssets?.pricingConfig
   const sanitizedPricing = sanitizePricingConfig(
     cfg,
     project?.selectedConcept?.pricing ||

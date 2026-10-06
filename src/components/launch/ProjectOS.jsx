@@ -236,44 +236,51 @@ partnerships@creatorforge.com`
   const targetEmail = (project?.creatorEmail || project?.email_public || project?.email || '').trim()
 
   useEffect(() => {
-    // Background polling from PostgreSQL so cross-device and Vercel payments appear on localhost in real time
+    // Tab-aware background polling (pauses when minimized/hidden)
     let isCancelled = false
     const pollDb = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return
       try {
-        const { getCoLaunchProjects } = await import('../../services/opsApi')
-        const allProjs = await getCoLaunchProjects()
-        if (!isCancelled && Array.isArray(allProjs) && allProjs.length > 0) {
-          const matched = allProjs.find(p => p.id === project?.id) || allProjs[0]
-          if (matched) {
-            onUpdateProject?.(prev => {
-              const curRev = Number(prev?.currentPresales || 0)
-              const newRev = Number(matched.currentPresales || 0)
-              const curResCount = Array.isArray(prev?.reservations) ? prev.reservations.length : 0
-              const newResCount = Array.isArray(matched.reservations) ? matched.reservations.length : 0
-              const curActCount = Array.isArray(prev?.activityLogs) ? prev.activityLogs.length : 0
-              const newActCount = Array.isArray(matched.activityLogs) ? matched.activityLogs.length : 0
-              const curPhase = Number(prev?.currentPhase || prev?.current_phase || 1)
-              const newPhase = Number(matched.currentPhase || matched.current_phase || (matched.status === 'building' ? 2 : matched.status === 'launched' ? 3 : ((matched.gateDecisions?.length || 0) > 0 ? 2 : 1)))
-              const curVisitors = Number(prev?.visitors || 0)
-              const newVisitors = Number(matched.visitors || 0)
-              const curFilesCount = Array.isArray(prev?.projectFiles) ? prev.projectFiles.length : 0
-              const newFilesCount = Array.isArray(matched.projectFiles) ? matched.projectFiles.length : 0
-
-              if (curRev !== newRev || curVisitors !== newVisitors || curResCount !== newResCount || curActCount !== newActCount || curPhase !== newPhase || newFilesCount > curFilesCount) {
-                return {
-                  ...prev,
-                  ...matched,
-                  visitors: matched.visitors,
-                  conversionRate: matched.conversionRate,
-                  projectFiles: (matched.projectFiles && matched.projectFiles.length > 0) ? matched.projectFiles : (prev?.projectFiles || []),
-                  messages: (matched.messages && matched.messages.length > 0) ? matched.messages : (prev?.messages || []),
-                  currentPhase: newPhase,
-                  current_phase: newPhase
-                }
-              }
-              return prev
-            })
+        const { getCoLaunchProject, getCoLaunchProjects } = await import('../../services/opsApi')
+        let matched = null
+        if (project?.id) {
+          matched = await getCoLaunchProject(project.id)
+        } else {
+          const allProjs = await getCoLaunchProjects()
+          if (Array.isArray(allProjs) && allProjs.length > 0) {
+            matched = allProjs[0]
           }
+        }
+
+        if (!isCancelled && matched) {
+          onUpdateProject?.(prev => {
+            const curRev = Number(prev?.currentPresales || 0)
+            const newRev = Number(matched.currentPresales || 0)
+            const curResCount = Array.isArray(prev?.reservations) ? prev.reservations.length : 0
+            const newResCount = Array.isArray(matched.reservations) ? matched.reservations.length : 0
+            const curActCount = Array.isArray(prev?.activityLogs) ? prev.activityLogs.length : 0
+            const newActCount = Array.isArray(matched.activityLogs) ? matched.activityLogs.length : 0
+            const curPhase = Number(prev?.currentPhase || prev?.current_phase || 1)
+            const newPhase = Number(matched.currentPhase || matched.current_phase || (matched.status === 'building' ? 2 : matched.status === 'launched' ? 3 : ((matched.gateDecisions?.length || 0) > 0 ? 2 : 1)))
+            const curVisitors = Number(prev?.visitors || 0)
+            const newVisitors = Number(matched.visitors || 0)
+            const curFilesCount = Array.isArray(prev?.projectFiles) ? prev.projectFiles.length : 0
+            const newFilesCount = Array.isArray(matched.projectFiles) ? matched.projectFiles.length : 0
+
+            if (curRev !== newRev || curVisitors !== newVisitors || curResCount !== newResCount || curActCount !== newActCount || curPhase !== newPhase || newFilesCount > curFilesCount) {
+              return {
+                ...prev,
+                ...matched,
+                visitors: matched.visitors,
+                conversionRate: matched.conversionRate,
+                projectFiles: (matched.projectFiles && matched.projectFiles.length > 0) ? matched.projectFiles : (prev?.projectFiles || []),
+                messages: (matched.messages && matched.messages.length > 0) ? matched.messages : (prev?.messages || []),
+                currentPhase: newPhase,
+                current_phase: newPhase
+              }
+            }
+            return prev
+          })
         }
       } catch (err) {} finally {
         if (!isCancelled) setIsLoadingProject(false)
@@ -281,10 +288,16 @@ partnerships@creatorforge.com`
     }
 
     pollDb()
-    const timer = setInterval(pollDb, 4000)
+    const timer = setInterval(pollDb, 30000)
+    const onVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) pollDb()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
     return () => {
       isCancelled = true
       clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [project?.id])
 

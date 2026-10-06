@@ -215,6 +215,7 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
     if (!project?.id) return
 
     const pollMessages = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return
       try {
         const { getCoLaunchProject } = await import('../../services/opsApi')
         const fresh = await getCoLaunchProject(project.id)
@@ -230,10 +231,16 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
       } catch (err) {}
     }
 
-    const interval = setInterval(pollMessages, 3000)
+    const interval = setInterval(pollMessages, 25000)
+    const onVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) pollMessages()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
     return () => {
       isCancelled = true
       clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [project?.id, project?.messages?.length])
 

@@ -330,15 +330,22 @@ export default function CreatorParticipationManager() {
     }
   }, [])
 
-  // Mount & Real-Time 4-second Polling
+  // Mount & Real-Time Polling (Tab-Aware, 35-second interval)
   useEffect(() => {
     loadData()
     pollTimerRef.current = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return
       loadData(true)
-    }, 4000)
+    }, 35000)
+
+    const onVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) loadData(true)
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [loadData])
 

@@ -1698,10 +1698,18 @@ export default function AcquisitionEngine({
     };
 
     fetchGlobalState();
-    const pollTimer = setInterval(fetchGlobalState, 10000);
+    const pollTimer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchGlobalState();
+    }, 45000);
+    const onVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) fetchGlobalState();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
       isMounted = false;
       clearInterval(pollTimer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
 
@@ -6087,13 +6095,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     syncImapReplies();
   }, []);
 
-  // Poll regularly while on Step 4, Step 5, or Step 6 (debounced 25s interval)
+  // Poll regularly while on Step 4, Step 5, or Step 6 (debounced 45s interval, tab-aware)
   useEffect(() => {
     if (activeStep >= 4) {
       syncImapReplies();
       const pollTimer = setInterval(() => {
+        if (typeof document !== 'undefined' && document.hidden) return;
         syncImapReplies();
-      }, 25000);
+      }, 45000);
       return () => clearInterval(pollTimer);
     }
   }, [activeStep]);
