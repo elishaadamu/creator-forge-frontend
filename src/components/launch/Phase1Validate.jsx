@@ -32,7 +32,10 @@ import {
   generateCampaignSocialImage,
   generateCampaignVideo,
   sendCampaignPostEmail,
-  toggleAutonomousCampaignDelivery
+  toggleAutonomousCampaignDelivery,
+  startCampaignSimulation,
+  getCampaignSimulationStatus,
+  stopCampaignSimulation
 } from '../../services/opsApi'
 import {
   parseMainPricingAmount,
@@ -223,8 +226,14 @@ export default function Phase1Validate({
   })
 
   // Dynamic pricing resolution
-  const dynamicMainPrice = parseMainPricingAmount(plan?.pricing || project?.pricing || 49)
-  const dynamicDepositPrice = parseDepositPricingAmount(plan?.pricing || project?.pricing, dynamicMainPrice)
+  const dynamicPricingSource =
+    project?.selectedConcept?.pricing ||
+    project?.pricing ||
+    plan?.pricing ||
+    project?.validationPlan?.pricing ||
+    49
+  const dynamicMainPrice = parseMainPricingAmount(dynamicPricingSource, 49)
+  const dynamicDepositPrice = parseDepositPricingAmount(dynamicPricingSource, dynamicMainPrice)
   const dynamicVipPrice = Math.round(dynamicMainPrice * 2)
 
   // Dynamic presale target derived from validation plan threshold or project
@@ -275,10 +284,10 @@ export default function Phase1Validate({
   // Sanitized dynamic pricing configuration
   const sanitizedPricingConfig = sanitizePricingConfig(
     campaignKit?.pricingConfig,
-    plan?.pricing ||
+    project?.selectedConcept?.pricing ||
     project?.pricing ||
     project?.validationPlan?.pricing ||
-    project?.selectedConcept?.pricing ||
+    plan?.pricing ||
     project?.concepts?.find(c => c.selected)?.pricing
   )
   const activeFoundingPrice = sanitizedPricingConfig.foundingPrice
@@ -383,7 +392,7 @@ export default function Phase1Validate({
         customer: project.customer || project.targetAudience || '',
         problem: project.problem || '',
         offer: `${project.productName || 'Product'} Founding Access: ${project.productTagline || ''}`,
-        pricing: project.pricing || '$29/mo Starter • $79/mo Pro',
+        pricing: project.selectedConcept?.pricing || project.pricing || '$29/mo Starter • $79/mo Pro',
         testMethod: '1) Co-founder video announcement, 2) 10 user interviews, 3) 48-hour Founding Pre-Order sprint',
         period: '14 days',
         threshold: '$5,000 in pre-sales or 50 paid founding reservations'
@@ -821,7 +830,7 @@ export default function Phase1Validate({
         handleGeneratePostImage(null, generated).catch(e => console.warn('Auto image gen warning:', e))
         handleGenerateCampaignVideo(null, generated).catch(e => console.warn('Auto video gen warning:', e))
 
-        // Auto-configure autonomous email delivery at 12:00 AM in creator timezone
+        // Auto-configure autonomous email delivery every 24 hours in creator timezone
         const creatorEmailAddr = autonomousEmail || project?.creatorEmail || project?.creator_email || ''
         const tzToUse = creatorTimezone || detectedTimezone
         const countryToUse = creatorCountry || 'United States'
@@ -1119,17 +1128,77 @@ export default function Phase1Validate({
             enabled,
             recipientEmail: autonomousEmail,
             preferredHour: 0,
+            intervalHours: 24,
+            intervalSeconds: 86400,
+            cadence: '24_hours',
             timezone: tzToUse,
             country: countryToUse,
-            dispatchSchedule: `12:00 AM (${tzToUse})`
+            dispatchTime: 'Every 24 Hours',
+            dispatchSchedule: `Every 24 Hours (${tzToUse})`
           }
         }))
-        showNotification(enabled ? `✅ Autonomous post delivery active: 12:00 AM (${tzToUse.split('/')[1] || tzToUse})!` : '⏸️ Daily delivery paused.')
+        showNotification(enabled ? '✅ Autonomous post delivery active: Every 24 hours!' : '⏸️ 24-Hour delivery paused.')
       }
     } catch (err) {
       showNotification(`❌ Failed to update delivery settings: ${err.message}`)
     } finally {
       setIsSavingAutonomousConfig(false)
+    }
+  }
+
+  const [simulationState, setSimulationState] = useState(null)
+  const [isStartingSimulation, setIsStartingSimulation] = useState(false)
+
+  // Poll autonomous simulation status periodically
+  useEffect(() => {
+    if (!project?.id) return
+    let timer = null
+    const pollSim = async () => {
+      try {
+        const res = await getCampaignSimulationStatus(project.id)
+        if (res?.simulation) {
+          setSimulationState(res.simulation)
+        }
+      } catch (e) {
+        // quiet fallback
+      }
+    }
+    pollSim()
+    timer = setInterval(pollSim, 4000)
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [project?.id])
+
+  const handleStartSimulation = async () => {
+    if (!project?.id) return
+    setIsStartingSimulation(true)
+    try {
+      const res = await startCampaignSimulation(project.id, {
+        recipientEmail: autonomousEmail || undefined,
+        intervalSeconds: 42
+      })
+      if (res?.success) {
+        showNotification(`🚀 5-Minute autonomous dispatch started! Delivering posts every 42s to ${autonomousEmail || 'creator inbox'}.`)
+        setSimulationState(res.status)
+      } else {
+        throw new Error(res?.detail || res?.message || 'Failed to start simulation')
+      }
+    } catch (err) {
+      showNotification(`❌ Error starting simulation: ${err.message}`)
+    } finally {
+      setIsStartingSimulation(false)
+    }
+  }
+
+  const handleStopSimulation = async () => {
+    if (!project?.id) return
+    try {
+      await stopCampaignSimulation(project.id)
+      showNotification('🛑 Autonomous test stopped.')
+      setSimulationState(prev => prev ? { ...prev, running: false, status: 'cancelled' } : null)
+    } catch (err) {
+      showNotification(`❌ Error stopping simulation: ${err.message}`)
     }
   }
 
@@ -2386,7 +2455,7 @@ export default function Phase1Validate({
                     </span>
                   </div>
                   <div className="text-xl font-extrabold text-slate-900 font-display">
-                    $19 <span className="text-xs text-slate-500 font-normal">Deposit Model</span>
+                    ${activeDepositPrice} <span className="text-xs text-slate-500 font-normal">Deposit Model</span>
                   </div>
                   <p className="text-xs text-slate-600 leading-relaxed">
                     Captures high-intent buyers with refundable reservation pass before full MVP build.
@@ -2499,7 +2568,7 @@ export default function Phase1Validate({
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1 shadow-2xs">
-                    <span className="text-[9px] uppercase font-bold text-slate-500 block">Pricing Viability ($99)</span>
+                    <span className="text-[9px] uppercase font-bold text-slate-500 block">Pricing Viability (${activeFoundingPrice})</span>
                     <div className="text-2xl font-black text-indigo-600 font-display">
                       {surveyAnalysis?.pricingViabilityScore !== undefined ? `${surveyAnalysis.pricingViabilityScore}%` : '—'}
                     </div>
@@ -3281,18 +3350,18 @@ export default function Phase1Validate({
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="text-sm font-extrabold text-slate-900 tracking-wide font-sans">
-                              Autonomous Daily Post Dispatcher
+                              Autonomous 24-Hour Post Dispatcher
                             </h4>
                             <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold font-mono border ${
                               isAutonomousEnabled
                                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-2xs'
                                 : 'bg-slate-200 text-slate-700 border-slate-300'
                             }`}>
-                              {isAutonomousEnabled ? '● AUTO-DELIVERY ACTIVE (8:00 AM)' : 'PAUSED'}
+                              {isAutonomousEnabled ? '● AUTO-DELIVERY ACTIVE (EVERY 24 HOURS)' : 'PAUSED'}
                             </span>
                           </div>
                           <p className="text-[11px] text-slate-600 leading-relaxed max-w-2xl font-normal">
-                            Zero friction. Creator Forge automatically emails each day's ready-to-post caption + direct download link for the high-res graphic or video directly to the creator's inbox on schedule. No app login required.
+                            Zero friction. Creator Forge automatically emails each day's ready-to-post caption + direct download link for the high-res graphic or video directly to the creator's inbox every 24 hours on schedule. No app login required.
                           </p>
                         </div>
                       </div>
@@ -3326,7 +3395,7 @@ export default function Phase1Validate({
                           className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-2xs"
                         />
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
                         <button
                           type="button"
                           onClick={() => handleToggleAutonomousEmail(!isAutonomousEnabled)}
@@ -3337,10 +3406,61 @@ export default function Phase1Validate({
                               : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs font-bold'
                           }`}
                         >
-                          {isAutonomousEnabled ? 'Pause Daily Dispatch' : 'Enable Daily Dispatch'}
+                          {isAutonomousEnabled ? 'Pause 24-Hour Dispatch' : 'Enable 24-Hour Dispatch'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={simulationState?.running ? handleStopSimulation : handleStartSimulation}
+                          disabled={isStartingSimulation}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            simulationState?.running
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 shadow-2xs'
+                              : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs'
+                          }`}
+                        >
+                          {simulationState?.running ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                              <span>Stop 5-Min Test ({simulationState?.completed || 0}/{simulationState?.total || 7})</span>
+                            </>
+                          ) : (
+                            <>
+                              <Zap className="w-3.5 h-3.5 text-amber-300" />
+                              <span>Test 5-Min Dispatch</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
+
+                    {simulationState?.logs?.length > 0 && (
+                      <div className="mt-3 p-3 bg-white/90 rounded-xl border border-indigo-100 shadow-2xs text-xs">
+                        <div className="flex items-center justify-between font-bold text-slate-800 mb-1.5">
+                          <span className="flex items-center gap-1.5">
+                            {simulationState.running ? (
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            ) : simulationState.status === 'completed' ? (
+                              <span>✅</span>
+                            ) : (
+                              <span>🛑</span>
+                            )}
+                            Autonomous 5-Min Dispatch Sequence {simulationState.running ? 'Running' : simulationState.status === 'completed' ? 'Completed' : 'Stopped'}
+                          </span>
+                          <span className="text-[11px] font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 font-bold">
+                            {simulationState.completed} / {simulationState.total} Delivered
+                          </span>
+                        </div>
+                        <div className="flex gap-1.5 overflow-x-auto py-1">
+                          {simulationState.logs.map((log, lIdx) => (
+                            <div key={lIdx} className="shrink-0 bg-slate-50 border border-slate-200/80 rounded-lg px-2.5 py-1 text-[11px] flex items-center gap-1.5">
+                              <span className="font-bold text-slate-700">Day {log.day}:</span>
+                              <span className="text-slate-600 truncate max-w-[130px]">{log.title}</span>
+                              <span className="text-emerald-600 font-bold">✓</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Header & Progress */}

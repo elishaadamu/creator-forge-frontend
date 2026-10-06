@@ -398,3 +398,12 @@ export const sendCampaignPostEmail = (projectId, payload = {}) =>
 export const toggleAutonomousCampaignDelivery = (projectId, payload = {}) =>
   req('POST', `/projects/${projectId}/campaign/toggle-autonomous-delivery`, payload)
 
+export const startCampaignSimulation = (projectId, payload = {}) =>
+  req('POST', `/projects/${projectId}/campaign/start-simulation`, payload)
+
+export const getCampaignSimulationStatus = (projectId) =>
+  req('GET', `/projects/${projectId}/campaign/simulation-status`)
+
+export const stopCampaignSimulation = (projectId) =>
+  req('POST', `/projects/${projectId}/campaign/stop-simulation`)
+

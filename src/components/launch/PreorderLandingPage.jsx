@@ -112,14 +112,14 @@ export default function PreorderLandingPage({ slug }) {
   const cfg = project?.campaignKit?.pricingConfig
   const sanitizedPricing = sanitizePricingConfig(
     cfg,
+    project?.selectedConcept?.pricing ||
     project?.pricing ||
     project?.validationPlan?.pricing ||
-    project?.selectedConcept?.pricing ||
     project?.concepts?.find(c => c.selected)?.pricing
   )
   const foundingPrice = sanitizedPricing.foundingPrice
   const depositPrice = sanitizedPricing.depositPrice
-  const perksText = cfg?.perks || '50% Lifetime Price Lock & VIP Alpha Perks'
+  const perksText = cfg?.perks || `50% Lifetime Price Lock ($${foundingPrice}/yr) & VIP Alpha Perks`
 
   useEffect(() => {
     setSelectedTier(prev => {
@@ -373,7 +373,7 @@ export default function PreorderLandingPage({ slug }) {
             </div>
             <h3 className="text-sm font-bold text-[#F5F3EA]">Lifetime Founder Perks</h3>
             <p className="text-xs text-[#969DA6] leading-relaxed">
-              Lock in 50% lifetime pricing and priority feature requests forever on day one.
+              Lock in 50% lifetime pricing (${foundingPrice > 0 ? `$${foundingPrice}/yr` : 'exclusive founder rate'}) and priority feature requests forever on day one.
             </p>
           </div>
 

@@ -24,6 +24,7 @@ import {
   AlertCircle,
   Download
 } from 'lucide-react'
+import { sanitizePricingConfig } from '../../utils/pricing'
 
 export function XLogo({ className = 'w-4 h-4' }) {
   return (
@@ -80,9 +81,12 @@ export default function PostVisualMockup({
   const productTagline = project?.productTagline || project?.tagline || 'The high-leverage workspace'
   const niche = project?.niche || 'Software Engineering'
 
-  const pricingConfig = project?.campaignKit?.pricingConfig || project?.pricingConfig || {}
-  const foundingPrice = pricingConfig.foundingPrice || 99
-  const depositPrice = pricingConfig.depositPrice || 19
+  const sanitizedPricing = sanitizePricingConfig(
+    project?.campaignKit?.pricingConfig || project?.pricingConfig,
+    project?.selectedConcept?.pricing || project?.pricing || project?.validationPlan?.pricing
+  )
+  const foundingPrice = sanitizedPricing.foundingPrice
+  const depositPrice = sanitizedPricing.depositPrice
 
   // Detect recent video upload title for authentic grounding
   const recentVideoTitle =

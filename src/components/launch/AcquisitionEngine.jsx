@@ -92,8 +92,9 @@ import {
 } from "./Section2Skeletons";
 import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from "../../utils/expiringStorage";
 import { fetchCreatorComments } from "../../services/scraper";
+import { formatConceptPricing } from "../../utils/pricing";
 
-export const PARTNERSHIP_EMAIL = import.meta.env.VITE_PARTNERSHIP_EMAIL || "creatorforgeweb@12019303.brevosend.com";
+export const PARTNERSHIP_EMAIL = import.meta.env.VITE_PARTNERSHIP_EMAIL || "creatorforgeweb@gmail.com";
 
 // Category-tailored high-res visual mockup screenshots for creator proposals
 export const CONCEPT_CATEGORY_IMAGES = {
@@ -2045,13 +2046,18 @@ export default function AcquisitionEngine({
     let hasDuplicate = false;
     for (const c of concepts) {
       const p = (c.pricing || "").trim();
-      if (!p || seen.has(p)) {
+      if (!p || p.startsWith("/mo") || !p.includes("$") || seen.has(p)) {
         hasDuplicate = true;
         break;
       }
       seen.add(p);
     }
-    if (!hasDuplicate) return concepts;
+    if (!hasDuplicate) {
+      return concepts.map((c) => ({
+        ...c,
+        pricing: formatConceptPricing(c.pricing),
+      }));
+    }
     return concepts.map((c, idx) => ({
       ...c,
       pricing: defaultArchetypePricings[idx % defaultArchetypePricings.length],
@@ -11044,7 +11050,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                     Pricing Tiers
                                   </span>
                                   <span className="text-emerald-700 font-bold font-mono">
-                                    {concept.pricing}
+                                    {formatConceptPricing(concept.pricing)}
                                   </span>
                                 </div>
                                 <p className="text-[10px] text-slate-500 leading-tight">
@@ -11909,7 +11915,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                   {chosenConcept?.name}
                                 </h3>
                                 <span className="text-xs font-bold text-emerald-700 font-mono bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                                  {chosenConcept?.pricing}
+                                  {formatConceptPricing(chosenConcept?.pricing)}
                                 </span>
                               </div>
                               <p className="text-xs text-slate-800 font-semibold">

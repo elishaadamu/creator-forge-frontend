@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Layers,
   ArrowLeft,
@@ -37,6 +37,7 @@ import {
 import {
   getCoLaunchProjects,
   updateCoLaunchProject,
+  createCoLaunchProject,
   deleteCoLaunchProject,
   deleteAllProjects,
   sendDirectEmail,
@@ -200,6 +201,8 @@ export default function CreatorParticipationManager() {
     try {
       // 1. Persist to MongoDB Atlas via WorkflowState
       await updateWorkflowState({
+        default_pass_price: numericFee,
+        cobuilder_pass_price: numericFee,
         extra_state: {
           default_pass_price: numericFee,
           cobuilder_pass_price: numericFee
@@ -568,6 +571,8 @@ export default function CreatorParticipationManager() {
 
   // Filter & Search Logic
   const filteredProjects = projects.filter((p) => {
+    if (filterTrack === 'pipeline') return false
+
     const isCoBuilder = p.isDIY || p.diySubscription?.active
     const isDeclined = p.diyOfferStatus === 'declined'
     const isPending = !isCoBuilder && !isDeclined
@@ -589,6 +594,124 @@ export default function CreatorParticipationManager() {
     }
     return true
   })
+
+  // Compute Unlaunched Pipeline Creators (creators in CRM without an active co-launch project)
+  const [isInitializingCreator, setIsInitializingCreator] = useState(null)
+
+  const unlaunchedCreators = useMemo(() => {
+    const launchedCreatorIds = new Set(
+      projects.map((p) => String(p.creatorId || p.creator_id || '')).filter(Boolean)
+    )
+    const launchedHandles = new Set(
+      projects.map((p) => (p.creatorHandle || p.creator_handle || '').replace(/^@/, '').toLowerCase()).filter(Boolean)
+    )
+
+    return creators.filter((c) => {
+      const cId = String(c.id || '')
+      const cHandle = (c.handle || '').replace(/^@/, '').toLowerCase()
+      const isLaunchedInProjects = launchedCreatorIds.has(cId) || (Boolean(cHandle) && launchedHandles.has(cHandle))
+      if (isLaunchedInProjects) {
+        return false
+      }
+      const projId = c.project_id || c.projectId
+      if (projId && projects.some(p => p.id === projId)) {
+        return false
+      }
+      return true
+    })
+  }, [creators, projects])
+
+  const filteredUnlaunchedCreators = useMemo(() => {
+    if (!searchQuery.trim()) return unlaunchedCreators
+    const q = searchQuery.toLowerCase()
+    return unlaunchedCreators.filter((c) => {
+      const name = (c.display_name || c.name || '').toLowerCase()
+      const handle = (c.handle || '').toLowerCase()
+      const email = (c.email_public || c.email || '').toLowerCase()
+      const niche = Array.isArray(c.niche) ? c.niche.join(' ').toLowerCase() : (c.niche || '').toLowerCase()
+      return name.includes(q) || handle.includes(q) || email.includes(q) || niche.includes(q)
+    })
+  }, [unlaunchedCreators, searchQuery])
+
+  // 1-Click Initialize Co-Launch Venture for any unlaunched pipeline creator
+  const handleInitializeCreatorVenture = async (creator) => {
+    if (!creator) return
+    setIsInitializingCreator(creator.id)
+    try {
+      const cleanHandle = (creator.handle || creator.display_name || 'creator').replace(/^@/, '')
+      const creatorName = creator.display_name || creator.name || creator.handle || 'Creator Partner'
+      const followerCountFormatted = creator.follower_count 
+        ? `${Number(creator.follower_count).toLocaleString()}` 
+        : (creator.followers || '100K+')
+      const nicheStr = Array.isArray(creator.niche) ? creator.niche.join(', ') : (creator.niche || 'Software & Tech')
+
+      let selectedConcept = creator.selected_concept || creator.selectedConcept || (creator.product_concepts && creator.product_concepts[0]) || {}
+      if ((!selectedConcept || !selectedConcept.name) && creator.discovery_notes) {
+        try {
+          const dn = typeof creator.discovery_notes === 'string' ? JSON.parse(creator.discovery_notes) : creator.discovery_notes
+          if (dn?.selected_concept) selectedConcept = dn.selected_concept
+        } catch (e) {}
+      }
+
+      const prodName = selectedConcept.title || selectedConcept.name || `${creatorName.toUpperCase()} OS`
+      const prodTagline = selectedConcept.tagline || selectedConcept.description || `The complete software toolkit and automated operating system for ${creatorName}'s audience.`
+      const prodFeatures = selectedConcept.features || selectedConcept.keyFeatures || [
+        'Proprietary technical documentation vault',
+        'AI-assisted workflow automations',
+        'Exclusive masterclass content library',
+        'VIP community access and live sessions'
+      ]
+
+      const newProjPayload = {
+        creatorId: creator.id,
+        creator_id: creator.id,
+        creatorName,
+        creator_name: creatorName,
+        creatorHandle: cleanHandle,
+        creator_handle: cleanHandle,
+        creatorAvatar: creator.avatar_url || creator.avatar || '',
+        creator_avatar: creator.avatar_url || creator.avatar || '',
+        creatorEmail: creator.email_public || creator.email || '',
+        creator_email: creator.email_public || creator.email || '',
+        niche: nicheStr,
+        followers: followerCountFormatted,
+        productName: prodName,
+        product_name: prodName,
+        title: prodName,
+        productTagline: prodTagline,
+        product_tagline: prodTagline,
+        targetAudience: selectedConcept.customer || `Audience members and power users following ${creatorName}.`,
+        target_audience: selectedConcept.customer || `Audience members and power users following ${creatorName}.`,
+        problem: selectedConcept.problem || 'Lack of unified, professional workflow tools built specifically for this community.',
+        keyFeatures: prodFeatures,
+        pricing: selectedConcept.pricing || '$29/mo Starter • $79/mo Pro',
+        revenueModel: selectedConcept.revenueModel || selectedConcept.revenue_model || 'SaaS & Membership',
+        revenue_model: selectedConcept.revenueModel || selectedConcept.revenue_model || 'SaaS & Membership',
+        selectedConcept: selectedConcept,
+        selectedConceptId: selectedConcept.id || 'p1',
+        currentPhase: 1,
+        current_phase: 1,
+        status: 'validating',
+        presaleTarget: selectedConcept.presaleTarget || 7000,
+        currentPresales: 0,
+        diyFee: defaultPassPrice || 50,
+        diyPassPrice: defaultPassPrice || 50,
+        diyOfferStatus: 'pending',
+        portalLinkSent: true,
+        skipCreatorEmail: true
+      }
+
+      await createCoLaunchProject(newProjPayload)
+      showToast('success', 'Co-Launch Venture Initialized', `Successfully created ${prodName} for ${creatorName}!`)
+      setFilterTrack('all')
+      await loadData(true)
+    } catch (err) {
+      console.error('[CreatorParticipationManager] Failed to initialize venture:', err)
+      showToast('error', 'Initialization Failed', err.message || 'Could not create project')
+    } finally {
+      setIsInitializingCreator(null)
+    }
+  }
 
   // Compute Metrics
   const totalProjects = projects.length
@@ -864,6 +987,18 @@ export default function CreatorParticipationManager() {
               <Rocket className="w-3 h-3" />
               <span>Studio-Managed ({managedCount})</span>
             </button>
+
+            <button
+              onClick={() => setFilterTrack('pipeline')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                filterTrack === 'pipeline'
+                  ? isLight ? 'bg-indigo-600 text-white shadow-2xs' : 'bg-indigo-500 text-white shadow-md'
+                  : isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70' : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
+              }`}
+            >
+              <Users className="w-3 h-3" />
+              <span>Pipeline Partners ({unlaunchedCreators.length})</span>
+            </button>
           </div>
 
           {/* Search Box & Actions */}
@@ -898,15 +1033,163 @@ export default function CreatorParticipationManager() {
             <RefreshCw className="w-6 h-6 text-amber-500 animate-spin mx-auto" />
             <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Loading real-time participation records and payment links…</p>
           </div>
+        ) : filterTrack === 'pipeline' ? (
+          filteredUnlaunchedCreators.length === 0 ? (
+            <div className={`py-12 px-6 text-center space-y-2 rounded-2xl border ${isLight ? 'border-slate-200 bg-white shadow-2xs' : 'border-white/[0.05] bg-white/[0.01]'}`}>
+              <Users className={`w-8 h-8 ${isLight ? 'text-slate-300' : 'text-slate-500'} mx-auto`} />
+              <h3 className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>No pipeline creators found</h3>
+              <p className={`text-xs ${isLight ? 'text-slate-400' : 'text-slate-400'} max-w-sm mx-auto leading-relaxed`}>
+                {searchQuery
+                  ? 'No pipeline creators match your search query.'
+                  : 'All qualified creators have active co-launch ventures initialized!'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className={`p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+                isLight ? 'bg-indigo-50/70 border-indigo-200/80 text-indigo-950' : 'bg-indigo-950/20 border-indigo-500/20 text-indigo-200'
+              }`}>
+                <div className="flex items-center gap-2.5 text-xs">
+                  <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <span>
+                    <strong>CRM Pipeline Partners:</strong> These creators are vetted in Section 1 and ready to be initialized into 50/50 co-launch ventures with Co-Builder passes.
+                  </span>
+                </div>
+                <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+                  {filteredUnlaunchedCreators.length} Available
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {filteredUnlaunchedCreators.map((creator) => {
+                  const cName = creator.display_name || creator.name || creator.handle || 'Creator Partner'
+                  const cHandle = (creator.handle || '').replace(/^@/, '')
+                  const avatar = creator.avatar_url || creator.avatar
+                  const followers = creator.follower_count
+                    ? `${Number(creator.follower_count).toLocaleString()} followers`
+                    : (creator.followers || '')
+                  const status = creator.status || 'discovered'
+                  const niche = Array.isArray(creator.niche) ? creator.niche.join(', ') : (creator.niche || 'Software & Tech')
+                  const isInitThis = isInitializingCreator === creator.id
+
+                  return (
+                    <div
+                      key={creator.id}
+                      className={`p-4 rounded-2xl border transition-all duration-200 relative overflow-hidden flex flex-col justify-between gap-3 ${
+                        isLight
+                          ? 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-xs'
+                          : 'bg-[#0d1017] border-white/[0.08] hover:border-white/[0.15]'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {avatar ? (
+                            <img
+                              src={avatar}
+                              alt={cName}
+                              className={`w-11 h-11 rounded-xl object-cover border ${isLight ? 'border-slate-200' : 'border-white/[0.1]'} shrink-0`}
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className={`w-11 h-11 rounded-xl ${isLight ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-indigo-950/40 text-indigo-300 border-indigo-500/30'} border flex items-center justify-center text-sm font-bold shrink-0`}>
+                              {cName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                {cName}
+                              </h3>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                                status === 'partnered' || status === 'qualified'
+                                  ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                                  : status === 'contacted'
+                                  ? isLight ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-blue-500/10 text-blue-300 border-blue-500/30'
+                                  : isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-white/[0.05] text-slate-300 border-white/[0.1]'
+                              }`}>
+                                {status}
+                              </span>
+                            </div>
+
+                            <div className={`flex flex-wrap items-center gap-2 mt-0.5 text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <span className="font-mono">@{cHandle}</span>
+                              {followers && (
+                                <>
+                                  <span>•</span>
+                                  <span>{followers}</span>
+                                </>
+                              )}
+                              {niche && (
+                                <>
+                                  <span>•</span>
+                                  <span className="truncate max-w-[140px]">{niche}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t flex items-center justify-between gap-2 border-slate-100 dark:border-white/[0.06]">
+                        <span className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          {creator.email_public || creator.email || 'Email via CRM'}
+                        </span>
+
+                        <button
+                          type="button"
+                          disabled={isInitThis}
+                          onClick={() => handleInitializeCreatorVenture(creator)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95 ${
+                            isLight
+                              ? 'bg-slate-900 hover:bg-slate-800 text-white'
+                              : 'bg-white hover:bg-slate-100 text-slate-950'
+                          } ${isInitThis ? 'opacity-70 cursor-wait' : ''}`}
+                        >
+                          {isInitThis ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Initializing…</span>
+                            </>
+                          ) : (
+                            <>
+                              <Rocket className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Initialize Co-Launch</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
         ) : filteredProjects.length === 0 ? (
-          <div className={`py-10 px-6 text-center space-y-2 rounded-xl border ${isLight ? 'border-slate-200 bg-white shadow-2xs' : 'border-white/[0.05] bg-white/[0.01]'}`}>
-            <Users className={`w-7 h-7 ${isLight ? 'text-slate-300' : 'text-slate-500'} mx-auto`} />
-            <h3 className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>No co-launch ventures found</h3>
-            <p className={`text-[11px] ${isLight ? 'text-slate-400' : 'text-slate-400'} max-w-xs mx-auto leading-relaxed`}>
-              {searchQuery || filterTrack !== 'all'
-                ? 'Try adjusting your filters or search query.'
-                : 'Approved Step 6 co-launch creators will automatically appear here with their participation status.'}
-            </p>
+          <div className={`py-12 px-6 text-center space-y-4 rounded-2xl border ${isLight ? 'border-slate-200 bg-white shadow-2xs' : 'border-white/[0.05] bg-white/[0.01]'}`}>
+            <Users className={`w-8 h-8 ${isLight ? 'text-slate-300' : 'text-slate-500'} mx-auto`} />
+            <div className="space-y-1">
+              <h3 className={`text-sm sm:text-base font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>No co-launch ventures found</h3>
+              <p className={`text-xs ${isLight ? 'text-slate-400' : 'text-slate-400'} max-w-sm mx-auto leading-relaxed`}>
+                {searchQuery || filterTrack !== 'all'
+                  ? 'Try adjusting your filters or search query.'
+                  : 'Approved Step 6 co-launch creators will automatically appear here with their participation status.'}
+              </p>
+            </div>
+            {unlaunchedCreators.length > 0 && filterTrack !== 'pipeline' && (
+              <button
+                type="button"
+                onClick={() => setFilterTrack('pipeline')}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                  isLight
+                    ? 'bg-slate-900 text-white hover:bg-slate-800'
+                    : 'bg-white text-slate-950 hover:bg-slate-100'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>View {unlaunchedCreators.length} Pipeline Partners Awaiting Ventures</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">

@@ -8,6 +8,7 @@
  */
 
 import { getProjectAudienceGrounding, enrichTasksWithGrounding } from "../utils/audienceGrounding";
+import { parseConceptPricing } from "../utils/pricing";
 
 // ── Key management ─────────────────────────────────────────────────────────────
 
@@ -1345,10 +1346,10 @@ export function buildSmartFallbackPlan(source) {
     followerCount = Number(rawFollowers.replace(/[^0-9]/g, '')) || 250000;
   }
 
-  const rawPricing = String(source?.pricing || source?.revenueModel || "$89");
-  const priceMatch = rawPricing.match(/\$(\d+)/);
-  const unitPrice = priceMatch ? Number(priceMatch[1]) : 89;
-  const depositVal = Math.max(9, Math.round(unitPrice * 0.2));
+  const rawPricing = String(source?.selectedConcept?.pricing || source?.pricing || source?.revenueModel || "$89");
+  const parsedPricing = parseConceptPricing(rawPricing, 89);
+  const unitPrice = parsedPricing.foundingPrice;
+  const depositVal = parsedPricing.depositPrice;
 
   // Determine backer target based on audience magnitude (0.05% - 0.1% early adopter conversion rate)
   let targetBackers = 50;
@@ -1575,21 +1576,16 @@ export function buildSmartFallbackCampaignKit(source, options = {}) {
   );
   const primaryVideoTitle = rawPosts[0]?.title || `Recent Channel Upload`;
 
-  const rawPricing = String(source?.pricing || source?.revenueModel || source?.validationPlan?.pricing || "$89");
-  const priceMatch = rawPricing.match(/\$(\d+)/);
-  const unitPrice = priceMatch ? Number(priceMatch[1]) : 89;
+  const rawPricing = String(source?.selectedConcept?.pricing || source?.pricing || source?.revenueModel || source?.validationPlan?.pricing || "$89");
+  const parsedPricing = parseConceptPricing(rawPricing, 89);
+  const unitPrice = parsedPricing.foundingPrice;
 
-  let depositVal = Math.max(9, Math.round(unitPrice * 0.2));
+  let depositVal = parsedPricing.depositPrice;
   const depMatch =
     rawPricing.match(/(?:deposit|reservation)[^\d$]*\$(\d+)/i) ||
     rawPricing.match(/\$(\d+)[^\d$]*(?:refundable|reservation|deposit)/i);
   if (depMatch) {
     depositVal = Number(depMatch[1]);
-  } else {
-    const allPrices = Array.from(rawPricing.matchAll(/\$(\d+)/g)).map((m) => Number(m[1]));
-    if (allPrices.length >= 2 && allPrices[1] < allPrices[0]) {
-      depositVal = allPrices[1];
-    }
   }
 
   const pacing = options.pacing || source?.pacing || 'low_burden';
