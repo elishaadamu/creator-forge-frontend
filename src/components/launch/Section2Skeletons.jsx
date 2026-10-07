@@ -629,39 +629,49 @@ export function CreatorPortalSkeleton() {
 }
 
 /**
- * 10. Pre-Order Landing Page Skeleton
+ * 10. Pre-Order Landing Page Skeleton with Live API Loader
  */
 export function PreorderLandingSkeleton() {
   return (
-    <div className="min-h-screen bg-[#07090e] text-white flex flex-col animate-fade-in">
-      {/* Top Navbar */}
-      <div className="p-4 border-b border-white/[0.08] flex items-center justify-between max-w-5xl w-full mx-auto">
+    <div className="min-h-screen bg-[#080A0C] text-white flex flex-col animate-fade-in relative selection:bg-[#C8FF3D]">
+      {/* Top Animated Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 z-[9999] h-1 bg-gradient-to-r from-[#C8FF3D] via-[#78E08F] to-[#C8FF3D] animate-pulse shadow-sm" />
+
+      {/* Top Navbar Skeleton */}
+      <div className="p-4 sm:p-5 border-b border-[#252B32] flex items-center justify-between max-w-6xl w-full mx-auto">
         <div className="flex items-center gap-3">
-          <SkeletonCircle size={32} variant="default" />
-          <Skeleton rounded="rounded-full" className="w-36 h-4" />
+          <div className="w-9 h-9 rounded-xl bg-[#171C22] border border-[#252B32] animate-pulse" />
+          <div className="space-y-1">
+            <div className="w-36 h-4 rounded-full bg-slate-800 animate-pulse" />
+            <div className="w-24 h-2.5 rounded-full bg-slate-800/60 animate-pulse" />
+          </div>
         </div>
-        <SkeletonButton width={120} height={34} variant="default" />
+        <div className="w-32 h-9 rounded-xl bg-[#C8FF3D]/20 animate-pulse" />
       </div>
 
-      {/* Hero Body */}
-      <main className="flex-1 max-w-3xl w-full mx-auto p-6 sm:p-12 text-center space-y-6">
-        <Skeleton rounded="rounded-full" className="w-40 h-5 mx-auto" variant="emerald" />
-        <Skeleton rounded="rounded-2xl" className="w-full h-12 max-w-xl mx-auto" />
-        <Skeleton rounded="rounded-full" className="w-4/5 h-4 mx-auto" />
+      {/* Hero Body Skeleton with Animated Spinner */}
+      <main className="flex-1 max-w-4xl w-full mx-auto p-6 sm:p-12 text-center space-y-6 flex flex-col items-center justify-center">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#101419] border border-[#252B32] text-[#C8FF3D] text-xs font-mono font-bold shadow-sm">
+          <Loader2 className="w-4 h-4 animate-spin text-[#C8FF3D]" />
+          <span>Loading Live Project Workspace...</span>
+        </div>
 
-        {/* Pricing pass cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 max-w-xl mx-auto">
-          <div className="p-5 rounded-2xl bg-[#0e1117] border border-slate-700/60 space-y-3">
-            <Skeleton rounded="rounded-full" className="w-28 h-3.5" />
-            <Skeleton rounded="rounded-lg" className="w-20 h-7" variant="emerald" />
-            <SkeletonText lines={2} />
-            <SkeletonButton width="100%" height={38} variant="default" />
+        <div className="w-full max-w-2xl h-14 rounded-2xl bg-slate-800/80 animate-pulse mx-auto" />
+        <div className="w-4/5 max-w-lg h-4 rounded-full bg-slate-800/60 animate-pulse mx-auto" />
+
+        {/* Pricing pass cards skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 max-w-xl w-full mx-auto">
+          <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] space-y-3">
+            <div className="w-28 h-3.5 rounded bg-slate-800 animate-pulse" />
+            <div className="w-20 h-7 rounded bg-[#C8FF3D]/20 animate-pulse" />
+            <div className="w-full h-3 rounded bg-slate-800/60 animate-pulse" />
+            <div className="w-full h-10 rounded-xl bg-[#C8FF3D]/20 animate-pulse mt-2" />
           </div>
-          <div className="p-5 rounded-2xl bg-[#0e1117] border border-white/[0.08] space-y-3">
-            <Skeleton rounded="rounded-full" className="w-24 h-3.5" />
-            <Skeleton rounded="rounded-lg" className="w-16 h-7" />
-            <SkeletonText lines={2} />
-            <SkeletonButton width="100%" height={38} variant="default" />
+          <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] space-y-3">
+            <div className="w-24 h-3.5 rounded bg-slate-800 animate-pulse" />
+            <div className="w-16 h-7 rounded bg-slate-800 animate-pulse" />
+            <div className="w-full h-3 rounded bg-slate-800/60 animate-pulse" />
+            <div className="w-full h-10 rounded-xl bg-slate-800/60 animate-pulse mt-2" />
           </div>
         </div>
       </main>

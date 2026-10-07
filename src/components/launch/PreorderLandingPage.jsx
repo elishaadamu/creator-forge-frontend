@@ -43,6 +43,7 @@ export default function PreorderLandingPage({ slug }) {
   const [cardCvc, setCardCvc] = useState('')
   
   const [isProcessing, setIsProcessing] = useState(false)
+  const [processingStep, setProcessingStep] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
   const [successReceipt, setSuccessReceipt] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
@@ -116,7 +117,7 @@ export default function PreorderLandingPage({ slug }) {
     return <PreorderLandingSkeleton />
   }
 
-  const handleCheckoutSubmit = (e) => {
+  const handleCheckoutSubmit = async (e) => {
     e?.preventDefault()
     setErrorMessage('')
 
@@ -130,31 +131,17 @@ export default function PreorderLandingPage({ slug }) {
     }
 
     setIsProcessing(true)
+    setProcessingStep('Authorizing secure transaction...')
 
-    // Simulate Payment Gateway Processing (Stripe / PayPal)
-    setTimeout(async () => {
-      setIsProcessing(false)
-      setIsSuccess(true)
+    try {
+      // 1. Handshake & payment verification simulation
+      await new Promise(r => setTimeout(r, 600))
+      setProcessingStep('Securing reservation & recording payment on database...')
 
       const txId = paymentMethod === 'stripe' 
         ? `tx_stripe_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
         : `tx_paypal_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
 
-      const receipt = {
-        txId,
-        name: buyerName.trim(),
-        email: buyerEmail.trim(),
-        amount: selectedTier.price,
-        tier: selectedTier.name,
-        paymentMethod: paymentMethod === 'stripe' ? 'Stripe (Credit / Debit Card)' : 'PayPal Express',
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        status: 'Paid & Confirmed'
-      }
-
-      setSuccessReceipt(receipt)
-
-      // 1. Record to local project state dynamically for instantaneous tab sync
       const urlParams = new URLSearchParams(window.location.search)
       const refQuery = (urlParams.get('ref') || urlParams.get('utm_source') || urlParams.get('utm') || urlParams.get('source') || urlParams.get('channel') || '').toLowerCase()
       let attributedChannel = 'Direct / Other'
@@ -187,49 +174,67 @@ export default function PreorderLandingPage({ slug }) {
         experimentVariant: activeExpVariant
       }
 
-      try {
-        const current = project || {}
-        const existingReservations = Array.isArray(current.reservations) ? current.reservations : []
-        const nextReservations = [newReservation, ...existingReservations]
-        const nextTotalRevenue = nextReservations.reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
-        const totalUniqueVisitors = Number(current.visitors || 1)
-        const nextConversionRate = totalUniqueVisitors > 0 ? ((nextReservations.length / totalUniqueVisitors) * 100).toFixed(1) : 0
+      // Optimistic Local State Sync
+      const current = project || {}
+      const existingReservations = Array.isArray(current.reservations) ? current.reservations : []
+      const nextReservations = [newReservation, ...existingReservations]
+      const nextTotalRevenue = nextReservations.reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
+      const totalUniqueVisitors = Number(current.visitors || 1)
+      const nextConversionRate = totalUniqueVisitors > 0 ? ((nextReservations.length / totalUniqueVisitors) * 100).toFixed(1) : 0
 
-        const updated = {
-          ...current,
-          reservations: nextReservations,
-          currentPresales: nextTotalRevenue,
-          conversionRate: Number(nextConversionRate)
-        }
-
-        setProject(updated)
-        window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-      } catch (err) {}
-
-      // 2. Persist to MongoDB Atlas via backend API for cross-device & cross-browser synchronization
-      try {
-        const { recordPreorderUniversal } = await import('../../services/opsApi')
-        const dbResult = await recordPreorderUniversal({
-          projectId: project?.id,
-          slug: slug,
-          creatorHandle: project?.creatorHandle,
-          name: buyerName.trim(),
-          email: buyerEmail.trim(),
-          amount: selectedTier.price,
-          tier: selectedTier.name,
-          paymentMethod: paymentMethod === 'stripe' ? 'Stripe' : 'PayPal',
-          channel: attributedChannel,
-          txId: txId,
-          experimentVariant: activeExpVariant
-        })
-        if (dbResult) {
-          setProject(dbResult)
-          window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: dbResult }))
-        }
-      } catch (dbErr) {
-        console.warn('[Preorder] DB persistence completed or logged:', dbErr)
+      const updated = {
+        ...current,
+        reservations: nextReservations,
+        currentPresales: nextTotalRevenue,
+        conversionRate: Number(nextConversionRate)
       }
-    }, 1200)
+
+      setProject(updated)
+      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
+
+      // 2. Real API Persistence Call to DB
+      setProcessingStep('Provisioning private access token & syncing project...')
+      const { recordPreorderUniversal } = await import('../../services/opsApi')
+      const dbResult = await recordPreorderUniversal({
+        projectId: project?.id,
+        slug: slug,
+        creatorHandle: project?.creatorHandle,
+        name: buyerName.trim(),
+        email: buyerEmail.trim(),
+        amount: selectedTier.price,
+        tier: selectedTier.name,
+        paymentMethod: paymentMethod === 'stripe' ? 'Stripe' : 'PayPal',
+        channel: attributedChannel,
+        txId: txId,
+        experimentVariant: activeExpVariant
+      })
+
+      if (dbResult) {
+        setProject(dbResult)
+        window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: dbResult }))
+      }
+
+      const receipt = {
+        txId,
+        name: buyerName.trim(),
+        email: buyerEmail.trim(),
+        amount: selectedTier.price,
+        tier: selectedTier.name,
+        paymentMethod: paymentMethod === 'stripe' ? 'Stripe (Credit / Debit Card)' : 'PayPal Express',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        status: 'Paid & Confirmed'
+      }
+
+      setSuccessReceipt(receipt)
+      setIsSuccess(true)
+    } catch (err) {
+      console.warn('[Preorder] Payment API warning:', err)
+      setErrorMessage(err.message || 'Payment processing failed. Please check your details and try again.')
+    } finally {
+      setIsProcessing(false)
+      setProcessingStep('')
+    }
   }
 
   const openCheckout = (tier) => {
@@ -241,7 +246,11 @@ export default function PreorderLandingPage({ slug }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#080A0C] text-[#F5F3EA] selection:bg-[#C8FF3D] selection:text-[#080A0C] font-sans antialiased overflow-x-hidden">
+    <div className="min-h-screen bg-[#080A0C] text-[#F5F3EA] selection:bg-[#C8FF3D] selection:text-[#080A0C] font-sans antialiased overflow-x-hidden relative">
+      {/* Top Dynamic API Loading Indicator Bar */}
+      {isLoading && (
+        <div className="fixed top-0 left-0 right-0 z-[9999] h-1 bg-gradient-to-r from-[#C8FF3D] via-[#78E08F] to-[#C8FF3D] animate-pulse shadow-sm" />
+      )}
       {/* Top Launch Notification Banner */}
       <div className="bg-[#0D1014] border-b border-[#252B32] py-2.5 px-3 sm:px-4 text-center text-xs">
         <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-medium flex-wrap">
@@ -612,7 +621,7 @@ export default function PreorderLandingPage({ slug }) {
                     {isProcessing ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin text-[#080A0C]" />
-                        <span>Processing Payment...</span>
+                        <span>{processingStep || 'Processing Payment...'}</span>
                       </>
                     ) : paymentMethod === 'paypal' ? (
                       <span>Pay ${selectedTier.price} with PayPal</span>
