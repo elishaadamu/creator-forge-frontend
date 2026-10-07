@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  Rocket, TrendingUp, Sparkles, CheckCircle2, ShieldCheck, DollarSign,
+  Rocket, TrendingUp, Sparkles, CheckCircle, CheckCircle2, ShieldCheck, DollarSign,
   Users, Activity, ArrowRight, ExternalLink, FileText, Check, Plus,
   Trash2, RefreshCw, Loader2, Copy, Send, Zap, AlertTriangle, XCircle,
   BarChart3, Video, MessageSquare, Mail, Layers, Globe, ShieldAlert,
@@ -268,11 +268,62 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
     }
   }
 
-  const handleDispatchAction = async (actionId) => {
+  const handleDispatchAction = async (action, idx) => {
+    const actionId = action?.id || `action-${idx}`
+    if (dispatchedActions.includes(actionId)) return
     const next = [...dispatchedActions, actionId]
     setDispatchedActions(next)
-    await handleSaveState({ dispatchedActions: next })
-    showToast('Autonomous action dispatched and verified!')
+
+    const isCreatorTask = action.targetRole === 'Creator' || (action.type || '').toLowerCase().includes('marketing') || (action.type || '').toLowerCase().includes('creator')
+
+    let updatedStrategy = strategy ? { ...strategy } : null
+    if (updatedStrategy) {
+      if (isCreatorTask) {
+        const creatorList = updatedStrategy.creatorChecklist || []
+        const taskTitle = action.title || 'Creator Follow-up Action'
+        if (!creatorList.some(t => t.title === taskTitle)) {
+          updatedStrategy.creatorChecklist = [
+            ...creatorList,
+            {
+              id: `action-${Date.now()}`,
+              title: taskTitle,
+              done: false,
+              time: 'AI Launch Manager Recommendation',
+              generatedContent: action.generatedContent || null
+            }
+          ]
+        }
+      } else {
+        const opsList = updatedStrategy.opsChecklist || []
+        const taskTitle = action.title || 'Technical CRO Sprint Fix'
+        if (!opsList.some(t => t.title === taskTitle)) {
+          updatedStrategy.opsChecklist = [
+            ...opsList,
+            {
+              id: `action-ops-${Date.now()}`,
+              title: taskTitle,
+              done: false,
+              time: 'Technical CRO Sprint',
+              generatedContent: action.generatedContent || null
+            }
+          ]
+        }
+      }
+      setStrategy(updatedStrategy)
+    }
+
+    const updates = {
+      dispatchedActions: next,
+      ...(updatedStrategy ? { launchStrategy: updatedStrategy } : {})
+    }
+
+    await handleSaveState(updates)
+
+    if (isCreatorTask) {
+      showToast(`Assigned to ${project?.creatorName || 'Creator'}'s launch checklist with ready-to-post copy!`)
+    } else {
+      showToast('Assigned to Engineering Ops checklist & CRO sprint!')
+    }
   }
 
   // AI 4: Launch Decision Report
@@ -2056,14 +2107,21 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
           ) : (
             <div className="space-y-4 animate-fade-in">
               {/* AI Executive Diagnosis Card */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 shadow-2xs space-y-2">
-                <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">
-                  AI Real-Time Performance Diagnosis
-                </span>
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 shadow-2xs space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">
+                    AI Real-Time Performance Diagnosis
+                  </span>
+                  {launchManager.overallHealth && (
+                    <span className="text-[10px] font-bold text-slate-700 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 shadow-2xs">
+                      {launchManager.overallHealth}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-slate-800 leading-relaxed font-semibold">
-                  "{launchManager.diagnosis}"
+                  "{launchManager.executiveSummary || launchManager.diagnosis || launchManager.overallHealth || 'Active launch telemetry analyzed. Automated optimization actions ready for execution.'}"
                 </p>
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex flex-wrap items-center gap-2 pt-1">
                   <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
                     Highest-Converting: {launchManager.topPerformingChannel || 'Creator Stories'}
                   </span>
@@ -2087,53 +2145,112 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {(launchManager.automatedActions || []).map((action, idx) => {
-                    const isDispatched = dispatchedActions.includes(action.id || idx)
+                    const actionId = action.id || `action-${idx}`
+                    const isDispatched = dispatchedActions.includes(actionId)
+                    const isCreatorTask = action.targetRole === 'Creator' || (action.type || '').toLowerCase().includes('marketing') || (action.type || '').toLowerCase().includes('creator')
+                    const insightText = action.insight || action.description || ''
+                    const contentText = action.generatedContent || ''
 
                     return (
                       <div
                         key={idx}
-                        className={`p-4 rounded-xl border transition-all flex flex-col justify-between space-y-3 ${
+                        className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-3.5 shadow-2xs ${
                           isDispatched
-                            ? 'bg-emerald-50/70 border-emerald-200'
-                            : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                            ? 'bg-emerald-50/50 border-emerald-300 ring-1 ring-emerald-200'
+                            : 'bg-white border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
+                          {/* Top Badges */}
                           <div className="flex items-start justify-between gap-2">
-                            <span className="font-bold text-slate-900 text-xs">{action.title}</span>
-                            <span className={`text-[9px] px-2 py-0.5 rounded font-bold shrink-0 ${
-                              action.type === 'marketing'
-                                ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
-                                : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                            }`}>
-                              {action.type}
-                            </span>
+                            <h4 className="font-bold text-slate-900 text-xs leading-snug">{action.title}</h4>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                                isCreatorTask
+                                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                  : 'bg-blue-100 text-blue-800 border border-blue-200'
+                              }`}>
+                                {action.targetRole || (isCreatorTask ? 'Creator Marketing' : 'Technical CRO')}
+                              </span>
+                              {action.severity && (
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                                  action.severity.toLowerCase().includes('critical') || action.severity.toLowerCase().includes('high')
+                                    ? 'bg-rose-100 text-rose-800'
+                                    : 'bg-slate-100 text-slate-700'
+                                }`}>
+                                  {action.severity}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-[11px] text-slate-600 leading-relaxed">{action.description}</p>
-                          {action.impact && (
-                            <div className="text-[10px] text-indigo-700 font-medium">
-                              📈 Expected Impact: {action.impact}
+
+                          {/* Insight / Rationale */}
+                          {insightText && (
+                            <p className="text-[11px] text-slate-600 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                              <strong className="text-slate-800 font-bold">Telemetry Insight:</strong> {insightText}
+                            </p>
+                          )}
+
+                          {/* Ready-to-Use Content / Code Box */}
+                          {contentText && (
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                                <span>{isCreatorTask ? 'Ready-To-Post Action Script' : 'Technical Sprint Implementation'}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard?.writeText(contentText)
+                                    showToast('Copied action content to clipboard!')
+                                  }}
+                                  className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer font-bold lowercase"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  <span>copy</span>
+                                </button>
+                              </div>
+                              <div className="p-3 rounded-xl bg-slate-950 text-slate-200 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap max-h-36 overflow-y-auto border border-slate-800">
+                                {contentText}
+                              </div>
                             </div>
                           )}
                         </div>
 
-                        <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            Auto-Fix Dispatch
-                          </span>
+                        {/* Card Footer with Functional Dispatch Button */}
+                        <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+                            {isDispatched ? (
+                              <span className="text-emerald-700 font-bold flex items-center gap-1">
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span>Active in Step 1 Checklist</span>
+                              </span>
+                            ) : (
+                              <span>Target: {action.targetRole || (isCreatorTask ? 'Creator Roster' : 'Engineering Sprint')}</span>
+                            )}
+                          </div>
+
                           <button
                             type="button"
                             disabled={isDispatched}
-                            onClick={() => handleDispatchAction(action.id || idx)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            onClick={() => handleDispatchAction(action, idx)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
                               isDispatched
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-default'
-                                : 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs cursor-pointer active:scale-95'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 cursor-default'
+                                : 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer active:scale-95'
                             }`}
                           >
-                            {isDispatched ? 'Dispatched ✓' : 'Dispatch Action'}
+                            {isDispatched ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-700" />
+                                <span>Dispatched to {isCreatorTask ? 'Creator' : 'Engineering'} ✓</span>
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-3.5 h-3.5 text-slate-300" />
+                                <span>{action.actionLabel || (isCreatorTask ? 'Assign to Creator Task Roster' : 'Deploy Engineering Task')}</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>

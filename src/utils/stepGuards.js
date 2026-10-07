@@ -257,18 +257,36 @@ export function getPhase3StepGuards(project = {}, { strategy, telemetry, launchM
     strat?.strategyLocked === true ||
     strat?.approved === true ||
     project?.phase3Prepared === true ||
-    allTasksDone
+    allTasksDone ||
+    strat?.overview ||
+    strat?.targetAudience ||
+    project?.launchStrategy ||
+    project?.status === 'launched' ||
+    project?.currentPhase === 3 ||
+    project?.current_phase === 3
   );
 
   // Step 2: Launch + Monitor - Requires Step 1
-  const telRev = telemetry?.revenue ?? project?.launchTelemetry?.revenue ?? 0;
-  const telCust = telemetry?.customers ?? project?.launchTelemetry?.customers ?? 0;
+  const telVis = telemetry?.visitors ?? project?.launchTelemetry?.visitors ?? project?.visitors ?? 0;
+  const telRev = telemetry?.revenue ?? project?.launchTelemetry?.revenue ?? project?.currentPresales ?? 0;
+  const telCust = telemetry?.customers ?? project?.launchTelemetry?.customers ?? (Array.isArray(project?.reservations) ? project.reservations.length : 0);
   const isStep2Done = Boolean(
     isStep1Done && (
-      (isLive && (telRev > 0 || telCust > 0 || project?.isLive === true)) ||
-      (project?.launchStatus === 'LIVE') ||
+      telVis > 0 ||
+      telRev > 0 ||
+      telCust > 0 ||
+      isLive ||
+      project?.launchTelemetry ||
       project?.step2Done === true ||
-      project?.phase3Monitored === true
+      project?.phase3Monitored === true ||
+      project?.currentStep === 'monitor' ||
+      project?.current_step === 'monitor' ||
+      project?.currentStep === 'manager' ||
+      project?.current_step === 'manager' ||
+      project?.currentStep === 'report' ||
+      project?.current_step === 'report' ||
+      Boolean(project?.channelStats) ||
+      Boolean(project?.status === 'launched')
     )
   );
 
@@ -281,12 +299,13 @@ export function getPhase3StepGuards(project = {}, { strategy, telemetry, launchM
       project?.launchManagerDone === true ||
       project?.step3Done === true ||
       dispatched.length > 0 ||
-      (autoActions.length > 0 && autoActions.every(a => dispatched.includes(a.id)))
+      (autoActions.length > 0 && autoActions.every(a => dispatched.includes(a.id))) ||
+      Boolean(lm)
     )
   );
 
   // Step 4: Launch Report + Decision - Requires Step 1, 2, and 3
-  const allPriorStepsDone = Boolean(isStep1Done && isStep2Done && isStep3Done);
+  const allPriorStepsDone = Boolean(isStep1Done && isStep2Done);
   const rep = launchReport || project?.launchReport;
   const dec = decisionNotice || project?.decisionNotice;
 

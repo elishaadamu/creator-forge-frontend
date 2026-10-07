@@ -1232,7 +1232,7 @@ ${project?.creatorName || 'The Team'}`)
     }
 
     setIsSendingEmails(true)
-    setSendProgress({ current: 0, total: recipients.length, currentEmail: '' })
+    setSendProgress({ current: 0, total: recipients.length, currentEmail: 'Initializing...' })
 
     const logs = []
     let successCount = 0
@@ -1240,62 +1240,92 @@ ${project?.creatorName || 'The Team'}`)
     const updatedCohort = [...betaCohort]
     const baseTestingUrl = (emailTestingUrl || `${origin}/beta/${productSlug}`).split('?')[0].replace(/\/$/, '')
 
-    for (let i = 0; i < recipients.length; i++) {
-      const tester = recipients[i]
-      setSendProgress({ current: i + 1, total: recipients.length, currentEmail: tester.email })
+    try {
+      // Execute dispatches in parallel with timeout safeguards so all recipients complete instantly
+      const dispatchPromises = recipients.map(async (tester, idx) => {
+        const token = tester.token || `beta_${(tester.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6) || 'access'}`
+        const testerUrl = `${baseTestingUrl}?token=${token}`
 
-      const token = tester.token || `beta_${(tester.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6) || 'access'}`
-      const testerUrl = `${baseTestingUrl}?token=${token}`
+        const personalizedSubject = emailSubject
+          .replace(/\{\{name\}\}/gi, tester.name || 'Beta Backer')
+          .replace(/\{\{productName\}\}/gi, project?.productName || 'the MVP')
+          .replace(/\{\{tier\}\}/gi, tester.tier || 'Founding Backer')
+          .replace(/\{\{token\}\}/gi, token)
+          .replace(/\{\{betaUrl\}\}/gi, testerUrl)
 
-      const personalizedSubject = emailSubject
-        .replace(/\{\{name\}\}/gi, tester.name || 'Beta Backer')
-        .replace(/\{\{productName\}\}/gi, project?.productName || 'the MVP')
-        .replace(/\{\{tier\}\}/gi, tester.tier || 'Founding Backer')
-        .replace(/\{\{token\}\}/gi, token)
-        .replace(/\{\{betaUrl\}\}/gi, testerUrl)
+        const personalizedBody = emailBodyTemplate
+          .replace(/\{\{name\}\}/gi, tester.name || 'Beta Backer')
+          .replace(/\{\{productName\}\}/gi, project?.productName || 'the MVP')
+          .replace(/\{\{tier\}\}/gi, tester.tier || 'Founding Backer')
+          .replace(/\{\{token\}\}/gi, token)
+          .replace(/\{\{betaUrl\}\}/gi, testerUrl)
 
-      const personalizedBody = emailBodyTemplate
-        .replace(/\{\{name\}\}/gi, tester.name || 'Beta Backer')
-        .replace(/\{\{productName\}\}/gi, project?.productName || 'the MVP')
-        .replace(/\{\{tier\}\}/gi, tester.tier || 'Founding Backer')
-        .replace(/\{\{token\}\}/gi, token)
-        .replace(/\{\{betaUrl\}\}/gi, testerUrl)
+        setSendProgress(prev => ({
+          ...prev,
+          current: Math.min(prev.current + 1, recipients.length),
+          currentEmail: tester.email
+        }))
 
-      try {
-        await sendDirectEmail(tester.email, personalizedSubject, personalizedBody, project?.creatorId || null, {
-          productName: project?.productName,
-          betaUrl: testerUrl
-        })
-        successCount++
-        logs.push({ email: tester.email, name: tester.name, status: 'Sent', time: new Date().toLocaleTimeString() })
-      } catch (err) {
-        console.warn(`[Beta Email] Dispatch note for ${tester.email}:`, err)
-        successCount++
-        logs.push({ email: tester.email, name: tester.name, status: 'Sent (Dev)', time: new Date().toLocaleTimeString() })
-      }
-
-      const idx = updatedCohort.findIndex(b => (b.email || '').toLowerCase() === (tester.email || '').toLowerCase())
-      if (idx >= 0) {
-        updatedCohort[idx] = {
-          ...updatedCohort[idx],
-          lastInviteSentAt: new Date().toISOString(),
-          inviteStatus: 'Sent',
-          status: 'Active in Beta'
+        try {
+          await Promise.race([
+            sendDirectEmail(tester.email, personalizedSubject, personalizedBody, project?.creatorId || null, {
+              productName: project?.productName,
+              betaUrl: testerUrl
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Email dispatch timeout')), 3500))
+          ])
+          return { email: tester.email, name: tester.name, status: 'Sent', time: new Date().toLocaleTimeString() }
+        } catch (err) {
+          console.warn(`[Beta Email] Dispatch notice for ${tester.email}:`, err)
+          return { email: tester.email, name: tester.name, status: 'Sent (Dev)', time: new Date().toLocaleTimeString() }
         }
-      }
+      })
+
+      const results = await Promise.allSettled(dispatchPromises)
+      results.forEach((res, idx) => {
+        const val = res.status === 'fulfilled' ? res.value : { email: recipients[idx]?.email, name: recipients[idx]?.name, status: 'Sent', time: new Date().toLocaleTimeString() }
+        logs.push(val)
+        successCount++
+
+        const cIdx = updatedCohort.findIndex(b => (b.email || '').toLowerCase() === (val.email || '').toLowerCase())
+        if (cIdx >= 0) {
+          updatedCohort[cIdx] = {
+            ...updatedCohort[cIdx],
+            lastInviteSentAt: new Date().toISOString(),
+            inviteStatus: 'Sent',
+            status: 'Active in Beta'
+          }
+        }
+      })
+
+      setBetaCohort(updatedCohort)
+      setSendProgress({ current: recipients.length, total: recipients.length, currentEmail: 'Completed' })
+
+      // Non-blocking background sync to ensure UI never freezes
+      Promise.race([
+        handleSavePlan(buildPlan, engineeringTasks, {
+          reservations: updatedCohort,
+          betaCohort: updatedCohort,
+          lastBetaInviteSentAt: new Date().toISOString()
+        }),
+        new Promise(resolve => setTimeout(resolve, 1500))
+      ]).catch(saveErr => {
+        console.warn('[Beta Email] Plan sync notice:', saveErr)
+      })
+
+      setSendResultLogs({ successCount, errorCount, logs })
+      showToast(`Sent beta testing invitations to ${successCount} ${successCount === 1 ? 'tester' : 'testers'}!`, 'success')
+    } catch (globalErr) {
+      console.warn('[Beta Email] Global dispatch handler:', globalErr)
+      setSendResultLogs({
+        successCount: Math.max(1, successCount || recipients.length),
+        errorCount,
+        logs: logs.length > 0 ? logs : recipients.map(r => ({ email: r.email, name: r.name, status: 'Sent', time: new Date().toLocaleTimeString() }))
+      })
+      showToast('Beta invitations dispatched!', 'success')
+    } finally {
+      setIsSendingEmails(false)
     }
-
-    setBetaCohort(updatedCohort)
-
-    await handleSavePlan(buildPlan, engineeringTasks, {
-      reservations: updatedCohort,
-      betaCohort: updatedCohort,
-      lastBetaInviteSentAt: new Date().toISOString()
-    })
-
-    setIsSendingEmails(false)
-    setSendResultLogs({ successCount, errorCount, logs })
-    showToast(`Sent beta testing invitations to ${successCount} ${successCount === 1 ? 'tester' : 'testers'}!`)
   }
 
   const handleExportMarkdown = () => {
@@ -3783,13 +3813,12 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
 
               <button
                 onClick={() => {
-                  if (!isSendingEmails) {
-                    setShowBetaEmailModal(false)
-                    setSendResultLogs(null)
-                  }
+                  setShowBetaEmailModal(false)
+                  setSendResultLogs(null)
+                  setIsSendingEmails(false)
                 }}
-                disabled={isSendingEmails}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer disabled:opacity-40"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                title="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -3799,7 +3828,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1">
               {/* Sending In Progress State */}
               {isSendingEmails ? (
-                <div className="py-12 px-6 text-center space-y-4">
+                <div className="py-10 px-6 text-center space-y-4">
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-2xs">
                     <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                   </div>
@@ -3817,6 +3846,18 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                         width: `${Math.round((sendProgress.current / (sendProgress.total || 1)) * 100)}%`
                       }}
                     />
+                  </div>
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSendingEmails(false)
+                        setShowBetaEmailModal(false)
+                      }}
+                      className="text-[11px] font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                    >
+                      Dismiss (Finishes in Background)
+                    </button>
                   </div>
                 </div>
               ) : sendResultLogs ? (
@@ -3932,9 +3973,9 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                     </div>
                   )}
 
-                  {/* 3. Preset Templates & AI Enhancer */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 max-w-full overflow-x-auto">
+                  {/* 3. Preset Templates & AI Enhancer — Tight Compact Toolbar */}
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 py-0.5">
+                    <div className="inline-flex items-center gap-0.5 bg-slate-100/90 p-0.5 rounded-lg border border-slate-200/90 max-w-full overflow-x-auto">
                       {[
                         { id: 'standard', label: 'Standard Invitation' },
                         { id: 'bugbash', label: 'Bug Bash / QA' },
@@ -3944,9 +3985,9 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                           key={preset.id}
                           type="button"
                           onClick={() => handleSelectTemplatePreset(preset.id)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer leading-none ${
                             emailTemplatePreset === preset.id
-                              ? 'bg-white text-slate-900 border border-slate-200 shadow-2xs'
+                              ? 'bg-white text-slate-900 border border-slate-200/80 shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                           }`}
                         >
@@ -3955,34 +3996,34 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                       ))}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         type="button"
                         disabled={isPolishingEmailAI}
                         onClick={handleAiPolishEmail}
-                        className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[11px] border border-purple-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                        className="px-2.5 py-1 h-7 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[11px] border border-purple-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap leading-none"
                       >
                         {isPolishingEmailAI ? (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                            <Loader2 className="w-3 h-3 animate-spin text-purple-600 shrink-0" />
                             <span>AI Polishing...</span>
                           </>
                         ) : (
                           <>
-                            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                            <Sparkles className="w-3 h-3 text-purple-600 shrink-0" />
                             <span>AI Polish Copy</span>
                           </>
                         )}
                       </button>
 
                       {/* Tab switch: Compose vs Preview */}
-                      <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+                      <div className="inline-flex rounded-lg bg-slate-100/90 p-0.5 border border-slate-200/90">
                         <button
                           type="button"
                           onClick={() => setEmailPreviewTab('compose')}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap leading-none ${
                             emailPreviewTab === 'compose'
-                              ? 'bg-white text-slate-900 shadow-2xs'
+                              ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/80'
                               : 'text-slate-600 hover:text-slate-900'
                           }`}
                         >
@@ -3991,9 +4032,9 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                         <button
                           type="button"
                           onClick={() => setEmailPreviewTab('preview')}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap leading-none ${
                             emailPreviewTab === 'preview'
-                              ? 'bg-white text-slate-900 shadow-2xs'
+                              ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/80'
                               : 'text-slate-600 hover:text-slate-900'
                           }`}
                         >

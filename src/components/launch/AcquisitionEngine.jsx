@@ -4700,7 +4700,7 @@ export default function AcquisitionEngine({
         `Step 6 proposal delivered to ${creatorName} (${targetEmail}).`,
         5000,
       );
-      await syncImapReplies();
+      syncImapReplies().catch((err) => console.warn("[AcquisitionEngine] Background IMAP sync:", err));
     } catch (e) {
       console.warn(
         "[AcquisitionEngine] Failed to dispatch opportunity pitch:",
@@ -5059,7 +5059,7 @@ export default function AcquisitionEngine({
         `Sent simplified terms and partnership clarification to ${creatorName}.`,
         4500
       );
-      await syncImapReplies();
+      syncImapReplies().catch((err) => console.warn("[AcquisitionEngine] Background IMAP sync:", err));
     } catch (e) {
       console.warn("Persuasion dispatch error:", e);
     } finally {
@@ -6591,7 +6591,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         `Dispatched 60-second concept preview to ${creator.name || creator.handle}.`,
         4500
       );
-      await syncImapReplies();
+      syncImapReplies().catch((err) => console.warn("[AcquisitionEngine] Background IMAP sync:", err));
     } catch (e) {
       console.warn("Resend error:", e);
     } finally {
@@ -6738,7 +6738,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         `Sent detailed answers addressing inquiries for ${creatorName}.`,
         4500
       );
-      await syncImapReplies();
+      syncImapReplies().catch((err) => console.warn("[AcquisitionEngine] Background IMAP sync:", err));
     } catch (e) {
       console.warn("Answer email dispatch error:", e);
     } finally {
