@@ -33,13 +33,21 @@ export default function ProjectOSPage() {
   const [showDiyModal, setShowDiyModal] = useState(false)
   const [toast, setToast] = useState(null)
 
-  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(50)
+  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(() => {
+    try {
+      const saved = localStorage.getItem('forge_cobuilder_pass_price')
+      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
+    } catch {
+      return 50
+    }
+  })
 
   useEffect(() => {
     getWorkflowState().then((wf) => {
       const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price
       if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
         setCobuilderPassPrice(Number(dbFee))
+        try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
       }
     }).catch(() => {})
   }, [])

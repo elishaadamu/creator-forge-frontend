@@ -114,7 +114,7 @@ export default function CreatorParticipationManager() {
 
   // Helper to resolve pass price for any project (custom or default)
   const getProjectPassPrice = useCallback((proj) => {
-    if (!proj) return defaultPassPrice || 199
+    if (!proj) return defaultPassPrice || 50
     if (proj.diySubscription?.amount && !isNaN(Number(proj.diySubscription.amount))) {
       return Number(proj.diySubscription.amount)
     }
@@ -135,7 +135,7 @@ export default function CreatorParticipationManager() {
         return Number(metaFee)
       }
     }
-    return defaultPassPrice || 199
+    return defaultPassPrice || 50
   }, [defaultPassPrice])
 
   // Open custom price modal for a project

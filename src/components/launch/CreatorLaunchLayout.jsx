@@ -95,7 +95,14 @@ export default function CreatorLaunchLayout({
   const [showSection1Menu, setShowSection1Menu] = useState(false)
   const [showSection1Sidebar, setShowSection1Sidebar] = useState(false)
 
-  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(50)
+  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(() => {
+    try {
+      const saved = localStorage.getItem('forge_cobuilder_pass_price')
+      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
+    } catch {
+      return 50
+    }
+  })
 
   const SECTION1_STEPS = [
     { step: 1, label: '1. Campaign Setup', desc: 'Target Niches & Autonomous Engine', icon: Target, color: 'text-slate-900', bg: 'bg-slate-100' },
@@ -606,6 +613,7 @@ export default function CreatorLaunchLayout({
           const dbFee = ws?.default_pass_price ?? ws?.cobuilder_pass_price ?? ws?.extra_state?.default_pass_price ?? ws?.extra_state?.cobuilder_pass_price
           if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
             setCobuilderPassPrice(Number(dbFee))
+            try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
           }
           const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
           const urlSec = searchParams?.get('section')

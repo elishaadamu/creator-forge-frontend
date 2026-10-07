@@ -198,13 +198,21 @@ export default function CreatorPortal({ portalId }) {
     }
   }, [project?.id, project?.creatorHandle, portalId])
 
-  const [defaultPassPrice, setDefaultPassPrice] = useState(199)
+  const [defaultPassPrice, setDefaultPassPrice] = useState(() => {
+    try {
+      const saved = localStorage.getItem('forge_cobuilder_pass_price')
+      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
+    } catch {
+      return 50
+    }
+  })
 
   useEffect(() => {
     getWorkflowState().then((wf) => {
       const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price
       if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
         setDefaultPassPrice(Number(dbFee))
+        try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
       }
     }).catch(() => {})
   }, [])
@@ -225,14 +233,14 @@ export default function CreatorPortal({ portalId }) {
          project?.metadata_info?.diy_fee ??
          project?.diySubscription?.amount ??
          defaultPassPrice ??
-         199)
+         50)
       : (defaultPassPrice ??
          project?.diyFee ??
          project?.diyPassPrice ??
          project?.metadataInfo?.diy_fee ??
          project?.metadataInfo?.diyFee ??
          project?.metadataInfo?.diyPassPrice ??
-         199)
+         50)
   )
 
   // When creator has paid, projectOS is the default view (unless explicitly overridden by URL)

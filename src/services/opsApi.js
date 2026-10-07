@@ -324,9 +324,66 @@ export const generateStep6Response = (params) =>
   req('POST', '/autonomous/generate-step6-response', params)
 
 // ── Global Cross-Device Workflow State Sync ─────────────────────────────────
-export const getWorkflowState = () => req('GET', '/workflow-state')
-export const updateWorkflowState = (data) => req('POST', '/workflow-state', data)
-export const resetWorkflowState = () => req('DELETE', '/workflow-state')
+let _cachedWorkflowState = null
+let _workflowStatePromise = null
+
+export const getWorkflowState = async (forceRefresh = false) => {
+  if (!forceRefresh && _cachedWorkflowState) {
+    // SWR: return cached immediately, refresh in background silently
+    req('GET', '/workflow-state').then(ws => {
+      if (ws) {
+        _cachedWorkflowState = ws
+        const dbFee = ws?.default_pass_price ?? ws?.cobuilder_pass_price ?? ws?.extra_state?.default_pass_price ?? ws?.extra_state?.cobuilder_pass_price
+        if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
+          try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
+        }
+      }
+    }).catch(() => {})
+    return _cachedWorkflowState
+  }
+
+  if (_workflowStatePromise) {
+    return _workflowStatePromise
+  }
+
+  _workflowStatePromise = (async () => {
+    try {
+      const res = await req('GET', '/workflow-state')
+      if (res) {
+        _cachedWorkflowState = res
+        const dbFee = res?.default_pass_price ?? res?.cobuilder_pass_price ?? res?.extra_state?.default_pass_price ?? res?.extra_state?.cobuilder_pass_price
+        if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
+          try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
+        }
+      }
+      return res
+    } finally {
+      _workflowStatePromise = null
+    }
+  })()
+
+  return _workflowStatePromise
+}
+
+export const updateWorkflowState = async (data) => {
+  if (_cachedWorkflowState && typeof data === 'object') {
+    _cachedWorkflowState = { ..._cachedWorkflowState, ...data }
+  }
+  const dbFee = data?.default_pass_price ?? data?.cobuilder_pass_price ?? data?.extra_state?.default_pass_price ?? data?.extra_state?.cobuilder_pass_price
+  if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
+    try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
+  }
+  const res = await req('POST', '/workflow-state', data)
+  if (res) {
+    _cachedWorkflowState = res
+  }
+  return res
+}
+
+export const resetWorkflowState = async () => {
+  _cachedWorkflowState = null
+  return req('DELETE', '/workflow-state')
+}
 
 export const uploadMediaToCloudinary = (data) => req('POST', '/upload', data)
 
