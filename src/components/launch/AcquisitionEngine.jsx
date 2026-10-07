@@ -320,14 +320,26 @@ export default function AcquisitionEngine({
     return [];
   });
 
-  const cobuilderPassPrice = (() => {
+  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(() => {
     try {
       const saved = localStorage.getItem('forge_cobuilder_pass_price');
       return saved && !isNaN(Number(saved)) ? Number(saved) : 50;
     } catch {
       return 50;
     }
-  })();
+  });
+
+  useEffect(() => {
+    import("../../services/opsApi").then(({ getWorkflowState }) => {
+      getWorkflowState().then((wf) => {
+        const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price;
+        if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
+          setCobuilderPassPrice(Number(dbFee));
+          try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)); } catch (e) {}
+        }
+      }).catch(() => {});
+    });
+  }, []);
 
   useEffect(() => {
     if (Array.isArray(allProjects) && allProjects.length > 0) {
@@ -5584,7 +5596,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       skipCreatorEmail: true,
       diyOfferStatus: 'offer_sent',
       diyOfferSentAt: new Date().toISOString(),
-      diyFee: 50,
+      diyFee: cobuilderPassPrice || 50,
+      diyPassPrice: cobuilderPassPrice || 50,
+      hasCustomFee: true,
       isDIY: false,
     });
 

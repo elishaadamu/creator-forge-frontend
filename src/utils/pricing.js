@@ -225,6 +225,11 @@ export function sanitizePricingConfig(cfg, pricingSource) {
   const rawPricingStr = String(pricingSource || '')
   const rawConcat = Number(rawPricingStr.replace(/[^0-9]/g, '')) || 0
 
+  const isSubTierRatherThanFounding =
+    dynamicMain > 0 &&
+    founding < dynamicMain &&
+    parsed.tiers.some(t => t.price === founding && t.period !== 'annual' && t.period !== 'lifetime')
+
   const isCorruptedFounding =
     !founding ||
     founding <= 0 ||
@@ -233,13 +238,15 @@ export function sanitizePricingConfig(cfg, pricingSource) {
     founding === 2979 ||
     founding === 49129 ||
     (rawConcat > 0 && founding === rawConcat && founding !== dynamicMain) ||
-    (dynamicMain > 0 && founding !== dynamicMain && (founding === 89 || founding === 177 || founding === 29 || founding === 99))
+    isSubTierRatherThanFounding ||
+    (dynamicMain > 0 && founding !== dynamicMain && (founding === 89 || founding === 177 || founding === 29 || founding === 99 || founding === 59))
 
   if (isCorruptedFounding) {
     founding = dynamicMain
   }
 
   const isCorruptedDeposit =
+    isCorruptedFounding ||
     !deposit ||
     deposit <= 0 ||
     deposit >= founding ||
@@ -247,7 +254,8 @@ export function sanitizePricingConfig(cfg, pricingSource) {
     deposit === 1984 ||
     deposit === Math.round(9919 * 0.2) ||
     (rawConcat > 0 && deposit === Math.round(rawConcat * 0.2) && deposit !== dynamicDeposit) ||
-    (dynamicDeposit > 0 && deposit !== dynamicDeposit && (deposit === 18 || deposit === 35 || deposit === 6 || (deposit === 19 && dynamicDeposit !== 19)))
+    (deposit < Math.round(founding * 0.15) && dynamicDeposit > 0) ||
+    (dynamicDeposit > 0 && deposit !== dynamicDeposit && (deposit === 18 || deposit === 35 || deposit === 12 || deposit === 6 || (deposit === 19 && dynamicDeposit !== 19)))
 
   if (isCorruptedDeposit) {
     deposit = dynamicDeposit

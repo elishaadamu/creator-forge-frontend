@@ -462,6 +462,9 @@ export default function CreatorLaunchLayout({
         status: 'validating',
         selectedConcept: primaryConcept,
         selectedConceptId: primaryConcept.id,
+        diyFee: cobuilderPassPrice,
+        diyPassPrice: cobuilderPassPrice,
+        hasCustomFee: true,
         channelUrl,
         channelDescription: channelBio,
         creatorBio: channelBio,
@@ -630,12 +633,6 @@ export default function CreatorLaunchLayout({
           // Clean /launch must remain on Section 1 unless an explicit ?section=section2 query param was opened.
           if (urlSec === 'section2' && ws.active_section === 'section2') {
             setActiveSection('section2')
-          }
-          // If the backend workflow state still references a phantom raw UUID, wipe it
-          if (ws.selected_creator_id && isUuid(ws.selected_creator_id)) {
-            import('../../services/opsApi').then(({ resetWorkflowState }) => {
-              resetWorkflowState().catch(() => { })
-            })
           }
         }
 
@@ -806,10 +803,19 @@ export default function CreatorLaunchLayout({
       (Array.isArray(cachedVideos) && cachedVideos.length > 0 ? cachedVideos : null) ||
       []
 
+    const feeToSet = (newProjData.diyFee !== undefined && newProjData.diyFee !== null)
+      ? newProjData.diyFee
+      : (newProjData.diyPassPrice !== undefined && newProjData.diyPassPrice !== null)
+        ? newProjData.diyPassPrice
+        : cobuilderPassPrice
+
     const cleanProject = {
       id: projId,
       createdAt: new Date().toISOString(),
       currentPhase: newProjData.currentPhase || 1,
+      diyFee: feeToSet,
+      diyPassPrice: feeToSet,
+      hasCustomFee: true,
       ...newProjData,
       recentPosts: resolvedPosts,
       videos: resolvedPosts,
@@ -851,6 +857,9 @@ export default function CreatorLaunchLayout({
     // Persist to backend database tables in SQLite
     try {
       const dbProj = await createCoLaunchProject({
+        diyFee: feeToSet,
+        diyPassPrice: feeToSet,
+        hasCustomFee: true,
         ...newProjData,
         id: projId,
         portalLinkSent: true,
