@@ -184,8 +184,7 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
       return acc
     }, {})
 
-    const updatedProject = {
-      ...activeProject,
+    const telemetryPayload = {
       visitors: uniqueCount,
       uniqueVisitors: updatedVisitors,
       conversionRate: Number(conversionRate),
@@ -195,7 +194,7 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
     }
 
     try {
-      window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProject }))
+      window.dispatchEvent(new CustomEvent('forge_visitor_tracked', { detail: telemetryPayload }))
     } catch (e) {}
 
     // Persist visit to backend database with client deduplication tokens
@@ -221,7 +220,14 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
     }).catch(() => {})
 
     if (onProjectUpdate) {
-      onProjectUpdate(updatedProject)
+      onProjectUpdate(prev => {
+        if (typeof prev === 'function') return prev
+        if (!prev) return telemetryPayload
+        return {
+          ...prev,
+          ...telemetryPayload
+        }
+      })
     }
 
     return {
@@ -273,8 +279,7 @@ export function simulateUniqueDeviceVisit(deviceType = 'mobile', onProjectUpdate
       { desktop: 0, mobile: 0, tablet: 0 }
     )
 
-    const updatedProject = {
-      ...activeProject,
+    const telemetryPayload = {
       visitors: uniqueCount,
       uniqueVisitors: updatedVisitors,
       conversionRate: Number(conversionRate),
@@ -282,9 +287,17 @@ export function simulateUniqueDeviceVisit(deviceType = 'mobile', onProjectUpdate
       lastVisitorTimestamp: Date.now()
     }
 
-    if (onProjectUpdate) onProjectUpdate(updatedProject)
+    if (onProjectUpdate) {
+      onProjectUpdate(prev => {
+        if (!prev) return telemetryPayload
+        return {
+          ...prev,
+          ...telemetryPayload
+        }
+      })
+    }
 
-    return updatedProject
+    return telemetryPayload
   } catch (e) {
     console.error('Simulate visitor error', e)
   }

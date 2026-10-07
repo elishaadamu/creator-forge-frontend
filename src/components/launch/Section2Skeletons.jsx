@@ -631,45 +631,74 @@ export function CreatorPortalSkeleton() {
 /**
  * 10. Pre-Order Landing Page Skeleton with Live API Loader
  */
-export function PreorderLandingSkeleton() {
+export function PreorderLandingSkeleton({ slug }) {
+  const displaySlug = slug ? `@${slug.replace(/^@/, '')}` : 'Active Co-Launch Project'
   return (
     <div className="min-h-screen bg-[#080A0C] text-white flex flex-col animate-fade-in relative selection:bg-[#C8FF3D]">
       {/* Top Animated Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 z-[9999] h-1 bg-gradient-to-r from-[#C8FF3D] via-[#78E08F] to-[#C8FF3D] animate-pulse shadow-sm" />
+      <div className="fixed top-0 left-0 right-0 z-[9999] h-1.5 bg-gradient-to-r from-[#C8FF3D] via-[#78E08F] to-[#C8FF3D] animate-pulse shadow-md shadow-[#C8FF3D]/20" />
 
       {/* Top Navbar Skeleton */}
       <div className="p-4 sm:p-5 border-b border-[#252B32] flex items-center justify-between max-w-6xl w-full mx-auto">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#171C22] border border-[#252B32] animate-pulse" />
+          <div className="w-9 h-9 rounded-xl bg-[#171C22] border border-[#252B32] flex items-center justify-center text-[#C8FF3D] text-xs font-bold font-mono animate-pulse">
+            CF
+          </div>
           <div className="space-y-1">
             <div className="w-36 h-4 rounded-full bg-slate-800 animate-pulse" />
             <div className="w-24 h-2.5 rounded-full bg-slate-800/60 animate-pulse" />
           </div>
         </div>
-        <div className="w-32 h-9 rounded-xl bg-[#C8FF3D]/20 animate-pulse" />
+        <div className="w-32 h-9 rounded-xl bg-[#C8FF3D]/20 border border-[#C8FF3D]/30 animate-pulse flex items-center justify-center">
+          <Loader2 className="w-4 h-4 animate-spin text-[#C8FF3D]" />
+        </div>
       </div>
 
-      {/* Hero Body Skeleton with Animated Spinner */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-6 sm:p-12 text-center space-y-6 flex flex-col items-center justify-center">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#101419] border border-[#252B32] text-[#C8FF3D] text-xs font-mono font-bold shadow-sm">
+      {/* Hero Body Skeleton with Animated Spinner & Status Badges */}
+      <main className="flex-1 max-w-4xl w-full mx-auto p-6 sm:p-12 text-center space-y-7 flex flex-col items-center justify-center my-auto">
+        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#101419] border border-[#C8FF3D]/30 text-[#C8FF3D] text-xs font-mono font-bold shadow-lg shadow-[#C8FF3D]/5">
           <Loader2 className="w-4 h-4 animate-spin text-[#C8FF3D]" />
-          <span>Loading Live Project Workspace...</span>
+          <span>Connecting to Creator Forge Registry for {displaySlug}...</span>
         </div>
 
-        <div className="w-full max-w-2xl h-14 rounded-2xl bg-slate-800/80 animate-pulse mx-auto" />
-        <div className="w-4/5 max-w-lg h-4 rounded-full bg-slate-800/60 animate-pulse mx-auto" />
+        <div className="space-y-3 w-full max-w-2xl mx-auto">
+          <div className="w-full h-12 sm:h-14 rounded-2xl bg-gradient-to-r from-[#171C22] via-[#252B32] to-[#171C22] animate-pulse mx-auto border border-[#252B32]" />
+          <div className="w-3/4 max-w-md h-4 rounded-full bg-slate-800/80 animate-pulse mx-auto" />
+        </div>
+
+        {/* Live Loading Steps Pill */}
+        <div className="p-4 rounded-2xl bg-[#101419]/90 border border-[#252B32] max-w-md w-full space-y-2 text-left">
+          <div className="flex items-center justify-between text-[11px] font-mono border-b border-[#252B32] pb-2">
+            <span className="text-[#969DA6]">Backend Initialization</span>
+            <span className="text-[#78E08F] font-bold">Synchronizing...</span>
+          </div>
+          <div className="space-y-1.5 text-xs text-[#969DA6]">
+            <div className="flex items-center gap-2 text-[#F5F3EA]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#78E08F] animate-ping" />
+              <span>Fetching verified creator concept & dynamic pricing</span>
+            </div>
+            <div className="flex items-center gap-2 text-[#969DA6]">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-700" />
+              <span>Building customized product mockup canvas</span>
+            </div>
+            <div className="flex items-center gap-2 text-[#969DA6]">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-700" />
+              <span>Mounting Stripe & PayPal secure reservation gateway</span>
+            </div>
+          </div>
+        </div>
 
         {/* Pricing pass cards skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 max-w-xl w-full mx-auto">
-          <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 max-w-xl w-full mx-auto">
+          <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] space-y-3 text-left">
             <div className="w-28 h-3.5 rounded bg-slate-800 animate-pulse" />
-            <div className="w-20 h-7 rounded bg-[#C8FF3D]/20 animate-pulse" />
+            <div className="w-24 h-7 rounded bg-[#C8FF3D]/20 animate-pulse" />
             <div className="w-full h-3 rounded bg-slate-800/60 animate-pulse" />
             <div className="w-full h-10 rounded-xl bg-[#C8FF3D]/20 animate-pulse mt-2" />
           </div>
-          <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] space-y-3">
+          <div className="p-5 rounded-2xl bg-[#101419] border border-[#252B32] space-y-3 text-left">
             <div className="w-24 h-3.5 rounded bg-slate-800 animate-pulse" />
-            <div className="w-16 h-7 rounded bg-slate-800 animate-pulse" />
+            <div className="w-20 h-7 rounded bg-slate-800 animate-pulse" />
             <div className="w-full h-3 rounded bg-slate-800/60 animate-pulse" />
             <div className="w-full h-10 rounded-xl bg-slate-800/60 animate-pulse mt-2" />
           </div>
