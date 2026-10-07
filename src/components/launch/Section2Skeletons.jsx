@@ -1,6 +1,6 @@
 import React from 'react'
 import { Skeleton, SkeletonText, SkeletonCircle, SkeletonButton, SkeletonCard } from '../common/Skeleton'
-import { Layers, Sparkles, Rocket, RefreshCw, Megaphone, TrendingUp, Flag, Layout, FileText, Code, CheckCircle2 } from 'lucide-react'
+import { Layers, Sparkles, Rocket, RefreshCw, Megaphone, TrendingUp, Flag, Layout, FileText, Code, CheckCircle2, Loader2 } from 'lucide-react'
 
 /**
  * 1. Project OS Section 2 Full Overview Skeleton — Light Mode Command Center
