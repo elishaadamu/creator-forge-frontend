@@ -23,17 +23,12 @@ export function getPhase1StepGuards(project = {}) {
     project.p1Complete === true ||
     project.phase1Passed === true ||
     project.planLocked === true ||
+    project.phase1Step1Done === true ||
     project.validationPlan?.locked === true ||
     project.validationPlan?.approved === true ||
     project.validationPlan?.status === 'approved' ||
     project.validationPlan?.status === 'locked' ||
-    project.validationPlan?.status === 'ready' ||
-    project.assetsApproved === true ||
-    project.landingPageApproved === true ||
-    project.validationCampaign?.reviewStatus === 'approved' ||
-    project.validationCampaign?.review_status === 'approved' ||
-    Boolean(project.validationPlan?.threshold && project.validationPlan?.offer) ||
-    Boolean(project.validationPlan?.threshold && project.validationPlan?.customer)
+    project.validationPlan?.status === 'ready'
   );
 
   // Step 2: Build Validation Assets (Requires Step 1 to be done)
@@ -41,15 +36,12 @@ export function getPhase1StepGuards(project = {}) {
     projectCurrentPhase > 1 ||
     project.p1Complete === true ||
     project.phase1Passed === true ||
-    project.assetsApproved === true ||
-    project.landingPageApproved === true ||
-    project.validationCampaign?.reviewStatus === 'approved' ||
-    project.validationCampaign?.review_status === 'approved' ||
     (isStep1Done && (
-      project.validationCampaign?.reviewStatus === 'approved' ||
-      project.validationCampaign?.review_status === 'approved' ||
       project.assetsApproved === true ||
-      project.landingPageApproved === true
+      project.phase1Step2Done === true ||
+      project.landingPageApproved === true ||
+      project.validationCampaign?.reviewStatus === 'approved' ||
+      project.validationCampaign?.review_status === 'approved'
     ))
   );
 
@@ -61,7 +53,7 @@ export function getPhase1StepGuards(project = {}) {
     project.phase1Passed === true ||
     (isStep1Done && isStep2Done && (
       project.campaignApproved === true ||
-      project.step3Done === true ||
+      project.phase1Step3Done === true ||
       (resolvedKit && (
         (Array.isArray(resolvedKit.postingSchedule) && resolvedKit.postingSchedule.length > 0) ||
         Boolean(resolvedKit.announcementPost?.trim()) ||
@@ -77,19 +69,10 @@ export function getPhase1StepGuards(project = {}) {
     projectCurrentPhase > 1 ||
     project.p1Complete === true ||
     project.phase1Passed === true ||
-    project.status === 'building' ||
-    project.status === 'launched' ||
     (isStep1Done && isStep2Done && isStep3Done && (
-      project.step4Done === true ||
       project.validationOptimized === true ||
       project.telemetryReviewed === true ||
-      (Array.isArray(project.reservations) && project.reservations.length > 0) ||
-      (presaleGoal > 0 && currentPresales > 0) ||
-      (Array.isArray(project.experiments) && project.experiments.length > 0) ||
-      (project.telemetry && (project.telemetry.experimentsRun > 0 || project.telemetry.visitors > 0 || project.telemetry.presalesCount > 0)) ||
-      Boolean(project.visitors > 0) ||
-      project.currentStep === 'gate' ||
-      project.step === 'gate'
+      project.phase1Step4Done === true
     ))
   );
 
@@ -98,7 +81,6 @@ export function getPhase1StepGuards(project = {}) {
     projectCurrentPhase > 1 ||
     project.p1Complete === true ||
     project.phase1Passed === true ||
-    project.status === 'building' ||
     (isStep1Done && isStep2Done && isStep3Done && isStep4Done)
   );
 
@@ -106,24 +88,21 @@ export function getPhase1StepGuards(project = {}) {
     projectCurrentPhase > 1 ||
     project.p1Complete === true ||
     project.phase1Passed === true ||
-    project.status === 'building' ||
-    project.status === 'launched' ||
-    project.status === 'LIVE' ||
     (Array.isArray(project.gateDecisions) && project.gateDecisions.some(d => (d.decision === 'pass_to_phase2' || d.gateStatus === 'passed' || d.decision === 'pass') && d.phase !== 3)) ||
     (allPriorStepsDone && (
-      project.step5Done === true ||
+      project.phase1Step5Done === true ||
       (Array.isArray(project.gateDecisions) && project.gateDecisions.length > 0) ||
       (presaleGoal > 0 && currentPresales >= presaleGoal)
     ))
   );
 
-  const isStep5Done = Boolean(isGatePassed || project.step5Done === true || projectCurrentPhase > 1);
+  const isStep5Done = Boolean(isGatePassed || projectCurrentPhase > 1);
 
   // Step access unlock status (each step requires the preceding step to be completed)
   const canAccessStep1 = true;
-  const canAccessStep2 = isStep1Done;
-  const canAccessStep3 = isStep1Done && isStep2Done;
-  const canAccessStep4 = isStep1Done && isStep2Done && isStep3Done;
+  const canAccessStep2 = isStep1Done || Boolean(project.validationPlan?.threshold || project.validationPlan?.offer);
+  const canAccessStep3 = isStep1Done && (isStep2Done || Boolean(project.landingPageApproved || project.assetsApproved));
+  const canAccessStep4 = isStep1Done && isStep2Done && (isStep3Done || Boolean(resolvedKit));
   const canAccessStep5 = allPriorStepsDone || isStep4Done;
 
   return {
@@ -152,60 +131,35 @@ export function getPhase2StepGuards(project = {}, { buildPlan, engineeringTasks,
 
   // Step 1: Product + Build Plan
   const isStep1Done = Boolean(
-    (plan && (plan.productSpec || plan.technicalPlan || (Array.isArray(plan.features) && plan.features.length > 0))) ||
-    (project?.mvpBuildPlan && (project.mvpBuildPlan.productSpec || project.mvpBuildPlan.technicalPlan)) ||
+    projectCurrentPhase > 2 ||
     project?.buildPlanApproved === true ||
     project?.mvpBuildPlan?.approved === true ||
     project?.mvpBuildPlan?.status === 'approved' ||
     project?.mvpBuildPlan?.locked === true ||
-    project?.currentStep === 'build' ||
-    project?.currentStep === 'beta' ||
-    project?.currentStep === 'gate' ||
-    project?.current_step === 'build' ||
-    project?.current_step === 'beta' ||
-    project?.current_step === 'gate' ||
-    (Array.isArray(tasks) && tasks.length > 0) ||
-    projectCurrentPhase > 2
+    project?.phase2Step1Done === true
   );
 
   // Step 2: Build MVP (Engineering Build) - Requires Step 1
-  const hasCodeFiles = Array.isArray(project?.projectFiles) && project.projectFiles.some(f =>
-    !f.category || f.category === 'Code' || f.category === 'Frontend' || f.category === 'Backend' ||
-    (f.path && (f.path.endsWith('.jsx') || f.path.endsWith('.py') || f.path.endsWith('.js') || f.path.endsWith('.ts')))
-  );
-
   const isStep2Done = Boolean(
-    isStep1Done && (
+    projectCurrentPhase > 2 ||
+    (isStep1Done && (
       (Array.isArray(tasks) && tasks.length > 0 && tasks.every(t => t.status === 'Completed' || t.status === 'done')) ||
       project?.buildCompleted === true ||
       project?.mvpBuildDone === true ||
-      project?.step2Done === true ||
-      project?.metadataInfo?.buildCompleted === true ||
-      project?.metadataInfo?.mvpBuildDone === true ||
-      project?.metadataInfo?.step2Done === true ||
-      project?.currentStep === 'beta' ||
-      project?.currentStep === 'gate' ||
-      project?.current_step === 'beta' ||
-      project?.current_step === 'gate' ||
-      hasCodeFiles ||
-      projectCurrentPhase > 2
-    )
+      project?.phase2Step2Done === true
+    ))
   );
 
   // Step 3: Beta Test - Requires Step 1 and Step 2
   const isStep3Done = Boolean(
-    isStep1Done && isStep2Done && (
+    projectCurrentPhase > 2 ||
+    (isStep1Done && isStep2Done && (
       project?.betaTestingCompleted === true ||
       project?.betaApproved === true ||
       project?.phase2BetaDone === true ||
-      project?.step3Done === true ||
-      project?.metadataInfo?.betaApproved === true ||
-      project?.metadataInfo?.betaTestingCompleted === true ||
-      project?.currentStep === 'gate' ||
-      project?.current_step === 'gate' ||
-      (Array.isArray(clusters) && clusters.length > 0 && Array.isArray(project?.betaFeedback) && project.betaFeedback.some(f => f.approved || f.resolved)) ||
-      projectCurrentPhase > 2
-    )
+      project?.phase2Step3Done === true ||
+      (Array.isArray(clusters) && clusters.length > 0 && Array.isArray(project?.betaFeedback) && project.betaFeedback.some(f => f.approved || f.resolved))
+    ))
   );
 
   // Step 4: Iterate + Launch Gate - Requires Step 1, 2, and 3
@@ -215,18 +169,18 @@ export function getPhase2StepGuards(project = {}, { buildPlan, engineeringTasks,
     projectCurrentPhase > 2 ||
     project?.p2Complete === true ||
     project?.phase2Passed === true ||
-    project?.status === 'launched' ||
     (allPriorStepsDone && (
       (project?.launchReadinessReport && project?.status === 'ready_for_phase3') ||
-      Boolean(project?.readinessReport?.greenlight)
+      Boolean(project?.readinessReport?.greenlight) ||
+      project?.gateDecisions?.some(d => d.decision === 'pass_to_phase3' || d.decision === 'greenlight_launch')
     ))
   );
 
   const isStep4Done = isP2Done;
 
   const canAccessStep1 = true;
-  const canAccessStep2 = isStep1Done;
-  const canAccessStep3 = isStep1Done && isStep2Done;
+  const canAccessStep2 = Boolean(isStep1Done || plan?.productSpec || plan?.technicalPlan);
+  const canAccessStep3 = Boolean(isStep2Done || isStep1Done);
   const canAccessStep4 = allPriorStepsDone;
 
   return {
@@ -257,36 +211,17 @@ export function getPhase3StepGuards(project = {}, { strategy, telemetry, launchM
     strat?.strategyLocked === true ||
     strat?.approved === true ||
     project?.phase3Prepared === true ||
-    allTasksDone ||
-    strat?.overview ||
-    strat?.targetAudience ||
-    project?.launchStrategy ||
-    project?.status === 'launched' ||
-    project?.currentPhase === 3 ||
-    project?.current_phase === 3
+    project?.phase3Step1Done === true ||
+    allTasksDone
   );
 
   // Step 2: Launch + Monitor - Requires Step 1
-  const telVis = telemetry?.visitors ?? project?.launchTelemetry?.visitors ?? project?.visitors ?? 0;
-  const telRev = telemetry?.revenue ?? project?.launchTelemetry?.revenue ?? project?.currentPresales ?? 0;
-  const telCust = telemetry?.customers ?? project?.launchTelemetry?.customers ?? (Array.isArray(project?.reservations) ? project.reservations.length : 0);
   const isStep2Done = Boolean(
     isStep1Done && (
-      telVis > 0 ||
-      telRev > 0 ||
-      telCust > 0 ||
-      isLive ||
-      project?.launchTelemetry ||
-      project?.step2Done === true ||
       project?.phase3Monitored === true ||
-      project?.currentStep === 'monitor' ||
-      project?.current_step === 'monitor' ||
-      project?.currentStep === 'manager' ||
-      project?.current_step === 'manager' ||
-      project?.currentStep === 'report' ||
-      project?.current_step === 'report' ||
-      Boolean(project?.channelStats) ||
-      Boolean(project?.status === 'launched')
+      project?.phase3Step2Done === true ||
+      project?.phase3LaunchLive === true ||
+      isLive
     )
   );
 
@@ -294,18 +229,25 @@ export function getPhase3StepGuards(project = {}, { strategy, telemetry, launchM
   const lm = launchManager || project?.launchManagerData;
   const dispatched = lm?.dispatchedActions || project?.dispatchedActions || [];
   const autoActions = lm?.automatedActions || [];
+  const hasDiagnosticData = Boolean(
+    lm && (
+      lm.overallHealth ||
+      lm.executiveSummary ||
+      lm.diagnosis ||
+      (Array.isArray(autoActions) && autoActions.length > 0)
+    )
+  );
   const isStep3Done = Boolean(
     isStep1Done && isStep2Done && (
       project?.launchManagerDone === true ||
-      project?.step3Done === true ||
+      project?.phase3Step3Done === true ||
       dispatched.length > 0 ||
-      (autoActions.length > 0 && autoActions.every(a => dispatched.includes(a.id))) ||
-      Boolean(lm)
+      hasDiagnosticData
     )
   );
 
   // Step 4: Launch Report + Decision - Requires Step 1, 2, and 3
-  const allPriorStepsDone = Boolean(isStep1Done && isStep2Done);
+  const allPriorStepsDone = Boolean(isStep1Done && isStep2Done && isStep3Done);
   const rep = launchReport || project?.launchReport;
   const dec = decisionNotice || project?.decisionNotice;
 
@@ -317,8 +259,8 @@ export function getPhase3StepGuards(project = {}, { strategy, telemetry, launchM
   );
 
   const canAccessStep1 = true;
-  const canAccessStep2 = isStep1Done;
-  const canAccessStep3 = isStep1Done && isStep2Done;
+  const canAccessStep2 = Boolean(isStep1Done || strat?.overview || project?.launchStrategy);
+  const canAccessStep3 = Boolean(isStep2Done || isStep1Done || isLive);
   const canAccessStep4 = allPriorStepsDone;
 
   return {

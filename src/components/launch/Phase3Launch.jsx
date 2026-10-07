@@ -203,13 +203,13 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
     try {
       const generated = await generatePhase3LaunchStrategyAI(project, { apiKey: api })
       setStrategy(generated)
-      await handleSaveState({ launchStrategy: generated, phase3Prepared: true })
+      await handleSaveState({ launchStrategy: generated })
       showToast('AI Launch Strategy, Distribution Plan & Schedule generated!')
     } catch (err) {
       console.warn('[Phase3] AI Strategy error, loading tailored smart fallback:', err)
       const fallback = buildSmartFallbackPhase3Strategy(project)
       setStrategy(fallback)
-      await handleSaveState({ launchStrategy: fallback, phase3Prepared: true })
+      await handleSaveState({ launchStrategy: fallback })
       showToast('Generated tailored Launch Strategy baseline!')
     } finally {
       setIsGeneratingStrategy(false)
@@ -1828,7 +1828,10 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
             <button
               type="button"
               disabled={!p3Guards.canAccessStep2}
-              onClick={() => setActiveStep('monitor')}
+              onClick={async () => {
+                await handleSaveState({ phase3Prepared: true, phase3Step1Done: true })
+                setActiveStep('monitor')
+              }}
               className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
                 p3Guards.canAccessStep2
                   ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs cursor-pointer'
@@ -2018,7 +2021,10 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
             <button
               type="button"
               disabled={!p3Guards.canAccessStep3}
-              onClick={() => setActiveStep('manager')}
+              onClick={async () => {
+                await handleSaveState({ phase3Monitored: true, phase3Step2Done: true })
+                setActiveStep('manager')
+              }}
               className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
                 p3Guards.canAccessStep3
                   ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs cursor-pointer'
@@ -2296,7 +2302,10 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
             <button
               type="button"
               disabled={!p3Guards.canAccessStep4}
-              onClick={() => setActiveStep('report')}
+              onClick={async () => {
+                await handleSaveState({ launchManagerDone: true, phase3Step3Done: true })
+                setActiveStep('report')
+              }}
               className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
                 p3Guards.canAccessStep4
                   ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs cursor-pointer'

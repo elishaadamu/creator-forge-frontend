@@ -5497,6 +5497,7 @@ export default function Phase1Validate({
                   const updated = {
                     ...(project || {}),
                     step4Done: true,
+                    phase1Step4Done: true,
                     validationOptimized: true,
                     telemetryReviewed: true
                   }
@@ -5504,6 +5505,7 @@ export default function Phase1Validate({
                   if (project?.id) {
                     updateCoLaunchProject(project.id, {
                       step4Done: true,
+                      phase1Step4Done: true,
                       validationOptimized: true,
                       telemetryReviewed: true
                     }).catch(e => console.warn(e))
@@ -5595,11 +5597,15 @@ export default function Phase1Validate({
                     const updated = {
                       ...(project || {}),
                       planLocked: true,
+                      phase1Step1Done: true,
                       assetsApproved: true,
                       landingPageApproved: true,
+                      phase1Step2Done: true,
                       campaignApproved: true,
+                      phase1Step3Done: true,
                       step3Done: true,
                       step4Done: true,
+                      phase1Step4Done: true,
                       validationOptimized: true,
                       telemetryReviewed: true
                     }
@@ -5607,11 +5613,15 @@ export default function Phase1Validate({
                     if (project?.id) {
                       updateCoLaunchProject(project.id, {
                         planLocked: true,
+                        phase1Step1Done: true,
                         assetsApproved: true,
                         landingPageApproved: true,
+                        phase1Step2Done: true,
                         campaignApproved: true,
+                        phase1Step3Done: true,
                         step3Done: true,
                         step4Done: true,
+                        phase1Step4Done: true,
                         validationOptimized: true,
                         telemetryReviewed: true
                       }).catch(e => console.warn(e))
