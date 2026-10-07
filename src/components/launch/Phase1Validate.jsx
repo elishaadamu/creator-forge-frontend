@@ -5847,7 +5847,7 @@ export default function Phase1Validate({
                     setIsAdvancingPhase(false)
                   }
                 }}
-                className={`py-3.5 px-4 rounded-xl font-extrabold text-xs flex flex-col items-center justify-center gap-1.5 shadow-sm transition-all border cursor-pointer ${
+                className={`py-2 px-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-0.5 shadow-2xs transition-all border cursor-pointer ${
                   isAdvancingPhase
                     ? 'bg-emerald-700 text-white cursor-wait border-emerald-600'
                     : isGatePassed
@@ -5856,22 +5856,22 @@ export default function Phase1Validate({
                 }`}
                 title="Advance to Phase 2 Sprints"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-1.5 flex-wrap">
                   {isAdvancingPhase ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white shrink-0" />
                   ) : (
-                    <CheckCircle2 className={`w-4 h-4 ${isGatePassed ? 'text-white' : 'text-emerald-400'}`} />
+                    <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${isGatePassed ? 'text-white' : 'text-emerald-400'}`} />
                   )}
-                  <span className="font-extrabold text-white text-xs">
+                  <span className="font-extrabold text-white text-xs whitespace-nowrap">
                     {isAdvancingPhase ? 'Advancing to Phase 2...' : isGatePassed ? 'Build MVP (PASS)' : 'Build MVP (Advance to Phase 2)'}
                   </span>
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide ${
-                    isGatePassed ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-300'
+                  <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-extrabold uppercase tracking-wide whitespace-nowrap shrink-0 ${
+                    isGatePassed ? 'bg-white/20 text-white' : 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/30'
                   }`}>
                     {isGatePassed ? 'RECOMMENDED' : 'PASS & ADVANCE'}
                   </span>
                 </div>
-                <span className="text-[10px] font-normal text-slate-300">
+                <span className="text-[10px] font-normal text-slate-300 text-center leading-tight">
                   {isAdvancingPhase
                     ? 'Setting up Phase 2 Engineering Workspace...'
                     : 'Advance to Phase 2 Sprints & Mark Phase 1 Done'}
@@ -5915,22 +5915,22 @@ export default function Phase1Validate({
                     setIsIteratingGate(false)
                   }
                 }}
-                className="py-3.5 px-4 rounded-xl bg-white hover:bg-amber-50 text-slate-900 border border-amber-300 hover:border-amber-400 shadow-2xs font-extrabold text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="py-2 px-3 rounded-xl bg-white hover:bg-amber-50 text-slate-900 border border-amber-300 hover:border-amber-400 shadow-2xs font-bold text-xs flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-1.5 flex-wrap">
                   {isIteratingGate ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600 shrink-0" />
                   ) : (
-                    <RefreshCw className="w-4 h-4 text-amber-600" />
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                   )}
-                  <span className="font-extrabold text-slate-900 text-xs">
+                  <span className="font-extrabold text-slate-900 text-xs whitespace-nowrap">
                     {isIteratingGate ? 'Resetting Sprint...' : 'Test Again (Iterate)'}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[9px] font-extrabold uppercase tracking-wide">
+                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 text-[8.5px] font-extrabold uppercase tracking-wide whitespace-nowrap shrink-0">
                     {!isGatePassed ? 'RECOMMENDED' : 'ITERATE'}
                   </span>
                 </div>
-                <span className="text-[10px] font-normal text-slate-600">
+                <span className="text-[10px] font-normal text-slate-600 text-center leading-tight">
                   {isIteratingGate ? 'Preparing fresh experiments...' : 'Run fresh messaging/pricing'}
                 </span>
               </button>
@@ -5973,22 +5973,22 @@ export default function Phase1Validate({
                     }
                   }
                 }}
-                className="py-3.5 px-4 rounded-xl bg-white hover:bg-rose-50 text-slate-900 border border-rose-300 hover:border-rose-400 shadow-2xs font-extrabold text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="py-2 px-3 rounded-xl bg-white hover:bg-rose-50 text-slate-900 border border-rose-300 hover:border-rose-400 shadow-2xs font-bold text-xs flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-1.5 flex-wrap">
                   {isArchivingProject ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-rose-600" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600 shrink-0" />
                   ) : (
-                    <Trash2 className="w-4 h-4 text-rose-600" />
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                   )}
-                  <span className="font-extrabold text-slate-900 text-xs">
+                  <span className="font-extrabold text-slate-900 text-xs whitespace-nowrap">
                     {isArchivingProject ? 'Archiving Venture...' : 'Kill (Archive)'}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[9px] font-extrabold uppercase tracking-wide">
+                  <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200 text-[8.5px] font-extrabold uppercase tracking-wide whitespace-nowrap shrink-0">
                     ARCHIVE
                   </span>
                 </div>
-                <span className="text-[10px] font-normal text-slate-600">
+                <span className="text-[10px] font-normal text-slate-600 text-center leading-tight">
                   {isArchivingProject ? 'Logging audit & refund logs...' : 'Wind down & refund backers'}
                 </span>
               </button>
