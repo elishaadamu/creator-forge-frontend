@@ -3418,6 +3418,8 @@ export default function Phase1Validate({
                           type="email"
                           value={autonomousEmail}
                           onChange={(e) => setAutonomousEmail(e.target.value)}
+                          onBlur={() => handleToggleAutonomousEmail(isAutonomousEnabled)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleToggleAutonomousEmail(isAutonomousEnabled) }}
                           placeholder="creator@email.com"
                           className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-2xs"
                         />
