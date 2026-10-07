@@ -316,21 +316,34 @@ export function getPhase3StepGuards(project = {}, { strategy, telemetry, launchM
 }
 
 export function getProjectActiveStep(project = {}, phase) {
-  const currentPhase = Number(phase || project.currentPhase || project.current_phase || (project.status === 'building' ? 2 : project.status === 'launched' ? 3 : 1));
+  const currentPhase = Number(
+    phase ||
+    project.currentPhase ||
+    project.current_phase ||
+    (project.status === 'launched' || project.phase2Passed || project.p2Complete
+      ? 3
+      : project.status === 'building' || project.phase1Passed || project.p1Complete
+      ? 2
+      : project.gateDecisions?.some(d => d.decision === 'pass_to_phase3' || d.decision === 'launch_product')
+      ? 3
+      : project.gateDecisions?.some(d => d.decision === 'pass_to_phase2')
+      ? 2
+      : 1)
+  );
   const dbStep = project.currentStep || project.current_step;
 
   if (currentPhase === 3) {
     const guards = getPhase3StepGuards(project);
-    if (dbStep && ['prep', 'launch', 'review', 'scale'].includes(dbStep)) {
-      if (dbStep === 'scale' && guards.canAccessStep4) return 'scale';
-      if (dbStep === 'review' && guards.canAccessStep3) return 'review';
-      if (dbStep === 'launch' && guards.canAccessStep2) return 'launch';
+    if (dbStep && ['prep', 'monitor', 'manager', 'report'].includes(dbStep)) {
+      if (dbStep === 'report' && guards.canAccessStep4) return 'report';
+      if (dbStep === 'manager' && guards.canAccessStep3) return 'manager';
+      if (dbStep === 'monitor' && guards.canAccessStep2) return 'monitor';
       if (dbStep === 'prep') return 'prep';
     }
     if (!guards.isStep1Done) return 'prep';
-    if (!guards.isStep2Done) return 'launch';
-    if (!guards.isStep3Done) return 'review';
-    return 'scale';
+    if (!guards.isStep2Done) return 'monitor';
+    if (!guards.isStep3Done) return 'manager';
+    return 'report';
   }
   if (currentPhase === 2) {
     const guards = getPhase2StepGuards(project);

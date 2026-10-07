@@ -799,26 +799,26 @@
   color: #1e293b !important;
 }
 
-/* Headings and labels outside buttons and dark containers */
-.phase-modal-white-theme h1:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
-.phase-modal-white-theme h2:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
-.phase-modal-white-theme h3:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
-.phase-modal-white-theme h4:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
-.phase-modal-white-theme h5:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
-.phase-modal-white-theme p:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *),
-.phase-modal-white-theme label:not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *) {
+/* Headings and labels outside buttons, dark containers, and toast notifications */
+.phase-modal-white-theme h1:not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme h2:not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme h3:not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme h4:not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme h5:not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme p:not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *),
+.phase-modal-white-theme label:not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *) {
   color: #0f172a !important;
 }
 
-.phase-modal-white-theme div:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-slate-9"] *):not([class*="bg-slate-8"]):not([class*="bg-slate-8"] *):not([class*="bg-emerald-"]):not([class*="bg-emerald-"] *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-white"],
-.phase-modal-white-theme span:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-slate-9"] *):not([class*="bg-slate-8"]):not([class*="bg-slate-8"] *):not([class*="bg-emerald-"]):not([class*="bg-emerald-"] *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-white"] {
+.phase-modal-white-theme div:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-slate-9"] *):not([class*="bg-slate-8"]):not([class*="bg-slate-8"] *):not([class*="bg-emerald-"]):not([class*="bg-emerald-"] *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-white"],
+.phase-modal-white-theme span:not(button):not(button *):not(a):not(a *):not([class*="bg-slate-9"]):not([class*="bg-slate-9"] *):not([class*="bg-slate-8"]):not([class*="bg-slate-8"] *):not([class*="bg-emerald-"]):not([class*="bg-emerald-"] *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-white"] {
   color: #0f172a !important;
 }
 
-.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-200"],
-.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-300"],
-.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-200"],
-.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-300"] {
+.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-200"],
+.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-300"],
+.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-200"],
+.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-300"] {
   color: #334155 !important;
 }
 
@@ -830,16 +830,32 @@
   color: #ffffff !important;
 }
 
-.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-400"],
-.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-400"] {
+.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-400"],
+.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-slate-400"] {
   color: #64748b !important;
 }
 
-.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-200"],
-.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-300"],
-.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-200"],
-.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-300"] {
+.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-200"],
+.phase-modal-white-theme div:not(button):not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-300"],
+.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-200"],
+.phase-modal-white-theme span:not(button):not(button *):not(.keep-dark *):not(.toast-notification *):not([data-toast] *):not(.product-mockup-display *):not(.post-visual-mockup *)[class*="text-emerald-300"] {
   color: #065f46 !important;
+}
+
+/* Toast Notifications: Always sleek dark background with crisp white text */
+.toast-notification,
+[data-toast="true"],
+.phase-modal-white-theme .toast-notification,
+.phase-modal-white-theme [data-toast="true"] {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+.toast-notification p,
+[data-toast="true"] p,
+.phase-modal-white-theme .toast-notification p,
+.phase-modal-white-theme [data-toast="true"] p {
+  color: #ffffff !important;
 }
 
 .phase-modal-white-theme input:not(.keep-dark *):not(.cloud-code-studio *),

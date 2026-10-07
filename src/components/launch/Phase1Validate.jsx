@@ -7,7 +7,7 @@ import {
   Flag, ArrowRight, Layers, HelpCircle, BarChart3, Radio, ShieldCheck,
   Palette, Smartphone, Send, Mail, Image, Monitor, Zap, Compass, PieChart, Activity, Tablet, Calendar, Eye, X, Bell, Lock, RotateCcw,
   Youtube, Shield, Sliders, Trophy, Flame, Coins, Award, Crown, Radar, MousePointerClick, Camera, ShoppingBag, Gauge, Rocket, Clock, ShieldAlert,
-  Download, Play
+  Download, Play, ChevronDown, ChevronUp
 } from 'lucide-react'
 import {
   generateValidationPlanAI,
@@ -284,6 +284,7 @@ export default function Phase1Validate({
   const [simBuyerName, setSimBuyerName] = useState('')
   const [simBuyerEmail, setSimBuyerEmail] = useState('')
   const [simBuyerTier, setSimBuyerTier] = useState(() => activeFoundingPrice)
+  const [showRecordForm, setShowRecordForm] = useState(false)
 
   useEffect(() => {
     setSimBuyerTier(activeFoundingPrice)
@@ -1409,7 +1410,35 @@ export default function Phase1Validate({
     }
   }
 
-
+  const handleSimulateSurveyResponse = async () => {
+    const sampleNames = ['Marcus Vance', 'Sarah Jenkins', 'Elena Rostova', 'David Chen', 'Amara Okafor']
+    const sampleProblems = [
+      'Current tools take 3+ hours daily. Need direct automation for creators.',
+      'Manual multi-step workflow is broken. Would gladly pay for an integrated suite.',
+      'Excited for this co-founder collaboration. Ready to test early beta and pre-order.'
+    ]
+    const randomName = sampleNames[Math.floor(Math.random() * sampleNames.length)]
+    const randomEmail = `${randomName.toLowerCase().replace(' ', '.')}@gmail.com`
+    const sampleResp = {
+      id: `resp-${Date.now()}`,
+      name: randomName,
+      email: randomEmail,
+      rating: Math.floor(Math.random() * 3) + 8, // 8, 9, 10
+      answers: {
+        'Workflow Bottleneck': sampleProblems[Math.floor(Math.random() * sampleProblems.length)],
+        'Pricing Viability': `$${activeFoundingPrice}/year is fair for this value.`
+      },
+      submittedAt: 'Just now',
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    }
+    const nextResponses = [sampleResp, ...surveyResponses]
+    setSurveyResponses(nextResponses)
+    if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), surveyResponses: nextResponses }))
+    if (project?.id) {
+      addProjectSurveyResponse(project.id, sampleResp).catch(e => console.warn(e))
+    }
+    showNotification(`Discovery feedback recorded from ${randomName}!`)
+  }
 
   const handleRunExperimentsAI = async () => {
     setIsAnalyzingExperiments(true)
@@ -1458,44 +1487,48 @@ export default function Phase1Validate({
     let appliedMessage = `Experiment "${exp.title}" applied!`
     let updatedPlanPricing = null
 
-    // 1. Messaging Variant
+    // 1. Messaging Variant -> Step 2 Campaign Kit & Step 3 Social Post Draft
     if (exp.category === 'messaging' || exp.targetField === 'announcementPost') {
       updatedCampaign.announcementPost = exp.variant
+      updatedCampaign.activeMessagingExperiment = { id: exp.id, title: exp.title, variant: exp.variant, expectedUplift: exp.expectedUplift }
       if (Array.isArray(updatedCampaign.postingSchedule)) {
         updatedCampaign.postingSchedule = updatedCampaign.postingSchedule.map(t => {
           if (t.day === 1 || t.title?.toLowerCase().includes('announcement')) {
-            return { ...t, description: `[AI Experiment Variant Active] ${exp.variant}` }
+            return { ...t, description: `[AI Experiment Variant Active: ${exp.title}] ${exp.variant}` }
           }
           return t
         })
       }
       appliedMessage = `Messaging variant applied to Step 2 Campaign Kit & Step 3 Social Announcement!`
     }
-    // 2. Creator Content Variant
+    // 2. Creator Content Variant -> Step 3 Creator Story Sprints & Tasks
     else if (exp.category === 'creator_content' || exp.targetField === 'storySequence') {
       updatedCampaign.storySequence = exp.variant
+      updatedCampaign.activeStoryExperiment = { id: exp.id, title: exp.title, variant: exp.variant, expectedUplift: exp.expectedUplift }
       if (Array.isArray(updatedCampaign.postingSchedule)) {
         updatedCampaign.postingSchedule = updatedCampaign.postingSchedule.map(t => {
           if (t.day === 2 || t.day === 3 || t.title?.toLowerCase().includes('story')) {
-            return { ...t, description: `[AI Experiment Variant Active] ${exp.variant}` }
+            return { ...t, description: `[AI Experiment Variant Active: ${exp.title}] ${exp.variant}` }
           }
           return t
         })
       }
       appliedMessage = `Creator story sequence & sprint tasks updated with AI variant in Step 3!`
     }
-    // 3. Landing Page Variant (Headline / Hero / Subheadline)
+    // 3. Landing Page Variant -> Step 2 Live Landing Page Hero & Headline
     else if (exp.category === 'landing_page' || exp.targetField === 'landingPageHero') {
       const existingLP = updatedCampaign.landingPageCopy || {}
+      const isMockupVariant = exp.variant?.toLowerCase().includes('mockup') || exp.variant?.toLowerCase().includes('frame') || exp.title?.toLowerCase().includes('mockup')
       updatedCampaign.landingPageCopy = {
         ...existingLP,
-        headline: exp.variant,
-        subheadline: existingLP.subheadline || project?.productTagline || 'Reserve early founding access and lock in lifetime benefits.',
-        activeExperimentTitle: exp.title
+        headline: !isMockupVariant ? exp.variant : existingLP.headline || `The ${project?.productName || 'Product'} Workspace Built with ${project?.creatorName || 'Co-Founder'}`,
+        heroStyle: isMockupVariant ? 'mockup_first' : 'standard',
+        activeExperimentTitle: exp.title,
+        activeExperimentVariant: exp.variant
       }
-      appliedMessage = `Landing page hero & headline updated with AI variant in Step 2 Funnel!`
+      appliedMessage = `Landing page hero variant applied to Step 2 Funnel & Public Pre-Order Page!`
     }
-    // 4. Pricing Variant
+    // 4. Pricing Variant -> Step 1 Validation Plan & Step 2 Pre-Order Checkout
     else if (exp.category === 'pricing' || exp.targetField === 'pricingTier') {
       const priceMatches = exp.variant.match(/\$(\d+)/g)
       let parsedDeposit = null
@@ -1595,14 +1628,34 @@ export default function Phase1Validate({
 
     if (exp.category === 'messaging' || exp.targetField === 'announcementPost') {
       updatedCampaign.announcementPost = exp.control || ''
+      updatedCampaign.activeMessagingExperiment = null
+      if (Array.isArray(updatedCampaign.postingSchedule)) {
+        updatedCampaign.postingSchedule = updatedCampaign.postingSchedule.map(t => {
+          if (t.day === 1 || t.title?.toLowerCase().includes('announcement')) {
+            return { ...t, description: exp.control || t.description?.replace(/\[AI Experiment Variant Active:.*?\]\s*/, '') }
+          }
+          return t
+        })
+      }
     } else if (exp.category === 'creator_content' || exp.targetField === 'storySequence') {
       updatedCampaign.storySequence = exp.control || ''
+      updatedCampaign.activeStoryExperiment = null
+      if (Array.isArray(updatedCampaign.postingSchedule)) {
+        updatedCampaign.postingSchedule = updatedCampaign.postingSchedule.map(t => {
+          if (t.day === 2 || t.day === 3 || t.title?.toLowerCase().includes('story')) {
+            return { ...t, description: exp.control || t.description?.replace(/\[AI Experiment Variant Active:.*?\]\s*/, '') }
+          }
+          return t
+        })
+      }
     } else if (exp.category === 'landing_page' || exp.targetField === 'landingPageHero') {
       const existingLP = updatedCampaign.landingPageCopy || {}
       updatedCampaign.landingPageCopy = {
         ...existingLP,
         headline: exp.control || `The ${project?.productName || 'Product'} System`,
-        activeExperimentTitle: null
+        heroStyle: 'standard',
+        activeExperimentTitle: null,
+        activeExperimentVariant: null
       }
     } else if (exp.category === 'pricing' || exp.targetField === 'pricingTier') {
       const origFounding = parseMainPricingAmount(project?.pricing || 49)
@@ -3541,6 +3594,13 @@ export default function Phase1Validate({
                                       {task.channel}
                                     </span>
 
+                                    {task.description?.includes('[AI Experiment Variant Active') && (
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono flex items-center gap-1 shadow-2xs">
+                                        <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                                        <span>AI Variant Active</span>
+                                      </span>
+                                    )}
+
                                     {task.emailed && (
                                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono flex items-center gap-1">
                                         <Mail className="w-2.5 h-2.5 text-indigo-500" />
@@ -3835,6 +3895,22 @@ export default function Phase1Validate({
 
                   {/* Right: Copy & Caption Editor */}
                   <div className="lg:col-span-5 space-y-2">
+                    {campaignKit?.activeMessagingExperiment && (
+                      <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex items-center justify-between gap-2 shadow-2xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold text-emerald-900 block truncate">
+                              AI Variant Active: {campaignKit.activeMessagingExperiment.title}
+                            </span>
+                            <span className="text-[9px] text-emerald-700">Applied from Step 4 Funnel Experiments</span>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0 font-mono">
+                          {campaignKit.activeMessagingExperiment.expectedUplift || '+28% CTR'}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Social Announcement Post Copy</span>
                       <button
@@ -3888,6 +3964,22 @@ export default function Phase1Validate({
 
                   {/* Right: 3-Story Sequence Editor */}
                   <div className="lg:col-span-7 space-y-2">
+                    {campaignKit?.activeStoryExperiment && (
+                      <div className="p-2.5 rounded-xl bg-pink-50 border border-pink-300 text-pink-950 flex items-center justify-between gap-2 shadow-2xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold text-pink-900 block truncate">
+                              AI Variant Active: {campaignKit.activeStoryExperiment.title}
+                            </span>
+                            <span className="text-[9px] text-pink-700">Applied from Step 4 Funnel Experiments</span>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-pink-100 text-pink-800 border border-pink-300 shrink-0 font-mono">
+                          {campaignKit.activeStoryExperiment.expectedUplift || '+2.1x Engagement'}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Instagram / TikTok 3-Story Sequence & Polls</span>
                       <button
@@ -4578,232 +4670,210 @@ export default function Phase1Validate({
         const maxTraffic = Math.max(1, ...rawChannels.map(c => c.traffic))
 
         return (
-          <div className="space-y-3.5">
-            {/* CLEAN VALIDATION FUNNEL HERO */}
-            <div className="p-3 sm:p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                {/* Left: Icon Badge & Stage Details */}
-                <div className="flex items-center gap-3.5">
+          <div className="space-y-2">
+            {/* TIGHT VALIDATION FUNNEL HERO */}
+            <div className="p-2 sm:p-2.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                {/* Left: Crest Badge, Stage & Progress */}
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div className="relative shrink-0" data-testid="mission-level-crest">
-                    <div className="w-11 h-11 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-white shadow-xs">
-                      <Rocket className="w-5 h-5 text-emerald-400" />
+                    <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-white shadow-2xs">
+                      <Rocket className="w-4 h-4 text-emerald-400" />
                     </div>
-                    <div className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-emerald-500 text-slate-950 shadow-2xs border border-white">
+                    <div className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded-full text-[7px] font-mono font-bold bg-emerald-500 text-slate-950 shadow-2xs border border-white">
                       LVL {currentLevelData.level}
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold uppercase tracking-wider border shadow-2xs ${currentLevelData.badgeColor}`}>
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`px-1.5 py-0.2 rounded text-[8px] font-mono font-bold uppercase tracking-wider border shadow-2xs ${currentLevelData.badgeColor}`}>
                         Stage {currentLevelData.level}: {currentLevelData.title}
                       </span>
-                      <span className="text-[11px] font-medium text-emerald-700 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>Validation Telemetry Active</span>
-                      </span>
+                      <h3 className="text-xs font-bold text-slate-900 tracking-tight truncate">
+                        4. Run + Optimize Validation Engine
+                      </h3>
                     </div>
 
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                      4. Run + Optimize Validation Engine
-                    </h3>
-
-                    <p className="text-xs text-slate-500 max-w-xl leading-relaxed">
-                      {currentLevelData.subtitle}
-                    </p>
-
-                    {/* Compact Target Progress Bar */}
-                    <div className="pt-0.5 space-y-1 max-w-md">
-                      <div className="flex items-center justify-between text-[10px] font-mono">
-                        <span className="text-slate-500">Cohort Progress: <strong className="text-slate-900">{reservations.length} / 50 Backers</strong></span>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500 min-w-0">
+                      <span className="truncate max-w-xs sm:max-w-md">{currentLevelData.subtitle}</span>
+                      <span className="text-slate-300 hidden sm:inline">•</span>
+                      <div className="hidden sm:flex items-center gap-1.5 shrink-0 font-mono text-[9px]">
+                        <span className="text-slate-500">Cohort: <strong className="text-slate-900">{reservations.length}/50</strong></span>
+                        <div className="w-16 bg-slate-100 h-1 rounded-full overflow-hidden border border-slate-200/60 inline-block align-middle">
+                          <div
+                            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(100, Math.max(8, (reservations.length / 50) * 100))}%` }}
+                          />
+                        </div>
                         <span className="text-emerald-700 font-semibold">{currentLevelData.nextTarget}</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/60">
-                        <div
-                          className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(100, Math.max(8, (reservations.length / 50) * 100))}%` }}
-                        />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Right: Actions & Live Status */}
-                <div className="flex flex-col sm:flex-row md:flex-col items-start sm:items-center md:items-end gap-2 shrink-0">
+                {/* Right: Actions */}
+                <div className="flex items-center justify-between sm:justify-end gap-1.5 shrink-0">
                   <button
                     onClick={handleRunExperimentsAI}
                     disabled={isAnalyzingExperiments}
-                    className="w-full sm:w-auto px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors disabled:opacity-50 shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-semibold transition-colors disabled:opacity-50 shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer h-6.5"
                   >
                     {isAnalyzingExperiments ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
-                        <span>Analyzing Telemetry...</span>
+                        <Loader2 className="w-3 h-3 animate-spin text-emerald-400" />
+                        <span>Analyzing...</span>
                       </>
                     ) : (
                       <>
-                        <Sliders className="w-3.5 h-3.5 text-slate-300" />
+                        <Sliders className="w-3 h-3 text-slate-300" />
                         <span>Run Optimization</span>
                       </>
                     )}
                   </button>
 
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-mono font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>Live Attribution Pulse</span>
-                    </span>
-                  </div>
+                  <span className="text-[8px] font-mono font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1 h-6.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Live Pulse</span>
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* SECTION 1: COMPACT TELEMETRY GRID */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-emerald-600" />
+            {/* SECTION 1: TIGHT TELEMETRY GRID */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between px-0.5">
+                <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                  <Activity className="w-3 h-3 text-emerald-600" />
                   <span>Validation Engine Telemetry</span>
                 </span>
-                <span className="text-[11px] font-mono text-slate-500 font-medium">Target: 50 Presales ($1,000 Milestone)</span>
+                <span className="text-[9px] font-mono text-slate-500 font-medium">Target: 50 Presales ($1,000 Milestone)</span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 text-xs">
                 {/* 1. Traffic */}
-                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-1 shadow-2xs">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-0.5 shadow-2xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Traffic</span>
-                    <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-600">
-                      <Radar className="w-3 h-3" />
-                    </div>
+                    <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Traffic</span>
+                    <Radar className="w-3 h-3 text-slate-400" />
                   </div>
-                  <div className="text-xl font-bold text-slate-900 tracking-tight leading-tight">{totalTraffic.toLocaleString()}</div>
-                  <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
-                    <span>Unique visitors</span>
-                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">Live</span>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 tracking-tight leading-none py-0.5">{totalTraffic.toLocaleString()}</div>
+                  <div className="text-[8px] text-slate-400 flex items-center justify-between pt-0.5 border-t border-slate-100">
+                    <span>Unique</span>
+                    <span className="font-mono font-medium px-1 py-0.2 rounded bg-slate-100 text-slate-600">Live</span>
                   </div>
                 </div>
 
                 {/* 2. CTR */}
-                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-1 shadow-2xs">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-0.5 shadow-2xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">CTR</span>
-                    <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-600">
-                      <MousePointerClick className="w-3 h-3" />
-                    </div>
+                    <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">CTR</span>
+                    <MousePointerClick className="w-3 h-3 text-slate-400" />
                   </div>
-                  <div className="text-xl font-bold text-slate-900 tracking-tight leading-tight">{dynamicCTR.toFixed(1)}%</div>
-                  <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
-                    <span>Click-through</span>
-                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">Funnel</span>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 tracking-tight leading-none py-0.5">{dynamicCTR.toFixed(1)}%</div>
+                  <div className="text-[8px] text-slate-400 flex items-center justify-between pt-0.5 border-t border-slate-100">
+                    <span>Clicks</span>
+                    <span className="font-mono font-medium px-1 py-0.2 rounded bg-slate-100 text-slate-600">Funnel</span>
                   </div>
                 </div>
 
                 {/* 3. Signups */}
-                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-1 shadow-2xs">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-0.5 shadow-2xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Signups</span>
-                    <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-600">
-                      <Flame className="w-3 h-3" />
-                    </div>
+                    <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Signups</span>
+                    <Flame className="w-3 h-3 text-slate-400" />
                   </div>
-                  <div className="text-xl font-bold text-slate-900 tracking-tight leading-tight">{totalSignups.toLocaleString()}</div>
-                  <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
-                    <span>Waitlist tribe</span>
-                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">Leads</span>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 tracking-tight leading-none py-0.5">{totalSignups.toLocaleString()}</div>
+                  <div className="text-[8px] text-slate-400 flex items-center justify-between pt-0.5 border-t border-slate-100">
+                    <span>Waitlist</span>
+                    <span className="font-mono font-medium px-1 py-0.2 rounded bg-slate-100 text-slate-600">Leads</span>
                   </div>
                 </div>
 
                 {/* 4. Presales */}
-                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-1 shadow-2xs">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-0.5 shadow-2xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Presales</span>
-                    <div className="w-5 h-5 rounded-md bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
-                      <Crown className="w-3 h-3" />
-                    </div>
+                    <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Presales</span>
+                    <Crown className="w-3 h-3 text-amber-500" />
                   </div>
-                  <div className="text-xl font-bold text-amber-700 tracking-tight leading-tight">{reservations.length} <span className="text-xs font-normal text-slate-400">/ 50</span></div>
-                  <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
-                    <span>Paid orders</span>
-                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200/80">{Math.round((reservations.length / 50) * 100)}%</span>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-amber-700 tracking-tight leading-none py-0.5">{reservations.length} <span className="text-[9px] font-normal text-slate-400">/ 50</span></div>
+                  <div className="text-[8px] text-slate-400 flex items-center justify-between pt-0.5 border-t border-slate-100">
+                    <span>Orders</span>
+                    <span className="font-mono font-medium px-1 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200/80">{Math.round((reservations.length / 50) * 100)}%</span>
                   </div>
                 </div>
 
                 {/* 5. Revenue */}
-                <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200 hover:border-emerald-300 transition-all space-y-1 shadow-2xs">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-50/40 border border-emerald-200/90 hover:border-emerald-300 transition-all space-y-0.5 shadow-2xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-emerald-800 font-semibold uppercase tracking-wider">Revenue</span>
-                    <div className="w-5 h-5 rounded-md bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700">
-                      <Coins className="w-3 h-3" />
-                    </div>
+                    <span className="text-[8px] text-emerald-800 font-bold uppercase tracking-wider">Revenue</span>
+                    <Coins className="w-3 h-3 text-emerald-600" />
                   </div>
-                  <div className="text-xl font-bold text-emerald-700 tracking-tight leading-tight">${presalesRevenue.toLocaleString()}</div>
-                  <div className="text-[10px] text-emerald-800/90 flex items-center justify-between pt-0.5">
-                    <span>Target: ${presaleTarget.toLocaleString()}</span>
-                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-200/80">{presalesRevenue >= 1000 ? 'Unlocked' : 'In Progress'}</span>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-700 tracking-tight leading-none py-0.5">${presalesRevenue.toLocaleString()}</div>
+                  <div className="text-[8px] text-emerald-800/80 flex items-center justify-between pt-0.5 border-t border-emerald-200/60">
+                    <span>${presaleTarget.toLocaleString()} goal</span>
+                    <span className="font-mono font-medium px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-200/80">{presalesRevenue >= 1000 ? 'Unlocked' : 'Tracking'}</span>
                   </div>
                 </div>
 
                 {/* 6. Conversion */}
-                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-1 shadow-2xs">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-0.5 shadow-2xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Conversion</span>
-                    <div className="w-5 h-5 rounded-md bg-teal-50 border border-teal-200/60 flex items-center justify-center text-teal-600">
-                      <Gauge className="w-3 h-3" />
-                    </div>
+                    <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Conversion</span>
+                    <Gauge className="w-3 h-3 text-teal-500" />
                   </div>
-                  <div className="text-xl font-bold text-slate-900 tracking-tight leading-tight">{dynamicConversionRate.toFixed(1)}%</div>
-                  <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
-                    <span>Visitor-to-paid</span>
-                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-teal-50 text-teal-800 border border-teal-200/80">{dynamicConversionRate >= 3 ? 'Healthy' : 'Tracking'}</span>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 tracking-tight leading-none py-0.5">{dynamicConversionRate.toFixed(1)}%</div>
+                  <div className="text-[8px] text-slate-400 flex items-center justify-between pt-0.5 border-t border-slate-100">
+                    <span>Paid rate</span>
+                    <span className="font-mono font-medium px-1 py-0.2 rounded bg-teal-50 text-teal-800 border border-teal-200/80">{dynamicConversionRate >= 3 ? 'Healthy' : 'Tracking'}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* VALIDATION MILESTONES & TROPHY RACK */}
-            <div className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-2.5 shadow-2xs">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 shadow-2xs" data-testid="quest-target-medallion">
-                    <Target className="w-4 h-4 text-slate-700" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <Award className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Phase 1 Validation Quests & Trophy Rack</span>
-                    </span>
-                    <p className="text-[11px] text-slate-500">
-                      Complete founder milestones to validate commercial demand and de-risk Phase 2 MVP Engineering.
-                    </p>
-                  </div>
+            <div className="p-2 sm:p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2 px-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Award className="w-3 h-3 text-amber-500 shrink-0" />
+                  <span className="text-xs font-bold text-slate-900">
+                    Phase 1 Validation Quests & Trophy Rack
+                  </span>
+                  <span className="text-[9px] text-slate-400 hidden sm:inline">
+                    • De-risk commercial demand before Phase 2
+                  </span>
                 </div>
-                <span className="text-[10px] font-mono font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 shrink-0">
+                <span className="text-[8px] font-mono font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
                   {validationTrophies.filter(t => t.unlocked).length} / {validationTrophies.length} Milestones Achieved
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5">
                 {validationTrophies.map(trophy => {
                   const Icon = trophy.icon
                   return (
                     <div
                       key={trophy.id}
-                      className={`p-2.5 rounded-lg border transition-all text-xs space-y-1.5 relative ${
+                      className={`p-1.5 sm:p-2 rounded-lg border transition-all flex flex-col justify-between h-[76px] relative ${
                         trophy.unlocked
                           ? 'bg-emerald-50/20 border-emerald-300 text-slate-900 shadow-2xs'
-                          : 'bg-slate-50/50 border-slate-200/80 text-slate-500'
+                          : 'bg-slate-50/50 border-slate-200/70 text-slate-500'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
-                          trophy.unlocked
-                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-2xs'
-                            : 'bg-slate-100 text-slate-400 border border-slate-200'
-                        }`}>
-                          <Icon className="w-3.5 h-3.5" />
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className={`w-4.5 h-4.5 rounded flex items-center justify-center shrink-0 ${
+                            trophy.unlocked
+                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                              : 'bg-slate-100 text-slate-400 border border-slate-200'
+                          }`}>
+                            <Icon className="w-2.5 h-2.5" />
+                          </div>
+                          <span className="font-bold text-[10px] sm:text-[11px] truncate text-slate-900 leading-tight">
+                            {trophy.title}
+                          </span>
                         </div>
-                        <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded ${
+                        <span className={`text-[7px] font-mono font-semibold px-1 py-0.2 rounded shrink-0 ${
                           trophy.unlocked
                             ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                             : 'bg-slate-100 text-slate-500 border border-slate-200'
@@ -4811,9 +4881,12 @@ export default function Phase1Validate({
                           {trophy.unlocked ? 'Unlocked ✓' : 'Locked'}
                         </span>
                       </div>
-                      <div className="font-bold text-xs truncate text-slate-900">{trophy.title}</div>
-                      <div className="text-[10px] text-slate-500 line-clamp-1">{trophy.desc}</div>
-                      <div className="text-[9px] font-mono text-slate-500 font-medium flex items-center justify-between pt-1 border-t border-slate-100">
+
+                      <div className="text-[9px] text-slate-400 truncate leading-tight">
+                        {trophy.desc}
+                      </div>
+
+                      <div className="text-[8px] font-mono text-slate-500 font-medium flex items-center justify-between pt-0.5 border-t border-slate-100">
                         <span className={trophy.unlocked ? 'text-emerald-700 font-semibold' : 'text-slate-400'}>{trophy.reward}</span>
                         {trophy.current && <span className="text-slate-400 font-normal">{trophy.current}</span>}
                       </div>
@@ -4824,23 +4897,21 @@ export default function Phase1Validate({
             </div>
 
             {/* SECTION 2: ATTRIBUTION CHANNEL MATRIX & LEADERBOARD */}
-            <div className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-2.5 shadow-2xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-sky-500" />
-                    <span>Channel Attribution & Conversion Leaderboard</span>
+            <div className="p-2 sm:p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2 px-0.5 border-b border-slate-100 pb-1">
+                <div className="flex items-center gap-1.5">
+                  <Globe className="w-3 h-3 text-sky-500" />
+                  <h4 className="text-xs font-bold text-slate-900">
+                    Channel Attribution & Conversion Leaderboard
                   </h4>
-                  <p className="text-[11px] text-slate-500">
-                    Live channel CTR and paid preorder attribution originating from creator links.
-                  </p>
+                  <span className="text-[9px] text-slate-400 hidden sm:inline">• Live CTR & conversions from creator links</span>
                 </div>
-                <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0 font-medium">
+                <span className="text-[8px] font-mono text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0 font-medium">
                   Real-time Attribution
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5">
                 {rankedChannels.map((ch, idx) => {
                   const Icon = ch.icon
                   const ctr = ch.traffic > 0 ? `${((ch.conversions / ch.traffic) * 100).toFixed(1)}%` : '0.0%'
@@ -4849,31 +4920,31 @@ export default function Phase1Validate({
                   return (
                     <div
                       key={ch.id}
-                      className="p-2.5 rounded-lg bg-slate-50/70 border border-slate-200/70 hover:border-slate-300 hover:bg-white transition-all space-y-2 shadow-2xs"
+                      className="p-1.5 sm:p-2 rounded-lg bg-slate-50/60 border border-slate-200/70 hover:border-slate-300 hover:bg-white transition-all space-y-1 shadow-2xs"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center border shadow-2xs ${ch.iconColor}`}>
-                            {ch.isXLogo ? <XLogo className="w-3 h-3" /> : <Icon className="w-3.5 h-3.5" />}
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className={`w-5 h-5 rounded flex items-center justify-center border shadow-2xs shrink-0 ${ch.iconColor}`}>
+                            {ch.isXLogo ? <XLogo className="w-2.5 h-2.5" /> : <Icon className="w-2.5 h-2.5" />}
                           </div>
-                          <div>
-                            <span className="text-xs font-bold text-slate-900 block leading-tight">{ch.name}</span>
-                            <span className="text-[9px] text-slate-400 font-mono">{ch.badge}</span>
+                          <div className="min-w-0">
+                            <span className="text-[10px] sm:text-[11px] font-bold text-slate-900 block leading-tight truncate">{ch.name}</span>
+                            <span className="text-[8px] text-slate-400 font-mono truncate block">{ch.badge}</span>
                           </div>
                         </div>
 
-                        <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded ${
+                        <span className={`text-[8px] font-mono font-semibold px-1 py-0.2 rounded shrink-0 ${
                           idx === 0 && ch.traffic > 0
                             ? 'bg-amber-100 text-amber-800 border border-amber-300'
                             : 'bg-white text-slate-600 border border-slate-200'
                         }`}>
-                          {idx === 0 && ch.traffic > 0 ? '#1 Top Driver' : `#${idx + 1}`}
+                          {idx === 0 && ch.traffic > 0 ? '#1 Top' : `#${idx + 1}`}
                         </span>
                       </div>
 
                       {/* Mini Traffic Bar */}
                       <div className="space-y-0.5">
-                        <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                        <div className="flex items-center justify-between text-[8px] text-slate-500 font-mono">
                           <span>Traffic: <strong className="text-slate-900">{ch.traffic}</strong></span>
                           <span>CTR: <strong className="text-emerald-700">{ctr}</strong></span>
                         </div>
@@ -4885,14 +4956,14 @@ export default function Phase1Validate({
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-[10px] pt-1 border-t border-slate-200/50">
+                      <div className="flex items-center justify-between text-[8px] pt-0.5 border-t border-slate-200/50">
                         <span className="text-slate-500">Pre-orders: <strong className="text-emerald-700 font-mono font-bold">{ch.conversions}</strong></span>
                         {ch.conversions > 0 ? (
-                          <span className="text-[9px] font-mono font-semibold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200">
+                          <span className="font-mono font-semibold text-emerald-800 bg-emerald-100 px-1 py-0.2 rounded border border-emerald-200">
                             High Intent
                           </span>
                         ) : (
-                          <span className="text-[9px] font-mono text-slate-400">Tracking</span>
+                          <span className="font-mono text-slate-400">Tracking</span>
                         )}
                       </div>
                     </div>
@@ -4902,44 +4973,44 @@ export default function Phase1Validate({
             </div>
 
             {/* SECTION 3: RECORDED PRE-ORDERS & FOUNDING MEMBERS LEDGER */}
-            <div className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-3 shadow-2xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0 shadow-2xs">
-                    <Trophy className="w-3.5 h-3.5" />
+            <div className="p-2 sm:p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-100 pb-1">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0 shadow-2xs">
+                    <Trophy className="w-2.5 h-2.5" />
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                       <span>Founding Members Ledger ({reservations.length} / 50 Claimed)</span>
                     </h4>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      Target Validation Cohort · 50% Lifetime Price Lock
+                    <span className="text-[8px] text-slate-400 font-mono">
+                      Target Validation Cohort • 50% Lifetime Price Lock
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <a
                     href={`${origin}/preorder/${productSlug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+                    className="text-[10px] text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer h-6"
                   >
                     <span>Open Preorder Checkout</span>
-                    <ExternalLink className="w-3 h-3 text-slate-400" />
+                    <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
                   </a>
 
-                  <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                  <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 h-6 flex items-center">
                     ${presalesRevenue.toLocaleString()} Collected
                   </span>
 
                   {reservations.length > 0 && (
                     <button
                       onClick={handleClearAllReservations}
-                      className="text-xs text-red-600 hover:text-red-700 font-medium bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-200 flex items-center gap-1 transition-colors cursor-pointer"
+                      className="text-[10px] text-red-600 hover:text-red-700 font-medium bg-red-50 hover:bg-red-100 px-1.5 py-0.5 rounded-md border border-red-200 flex items-center gap-1 transition-colors cursor-pointer h-6"
                       title="Clear all recorded test pre-orders"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-2.5 h-2.5" />
                       <span>Reset</span>
                     </button>
                   )}
@@ -4947,16 +5018,16 @@ export default function Phase1Validate({
               </div>
 
               {reservations.length === 0 ? (
-                /* COMPACT EMPTY STATE CARD */
-                <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0 shadow-2xs" data-testid="founding-trophy-pedestal">
-                      <Trophy className="w-4 h-4 text-amber-700" />
+                /* TIGHT EMPTY STATE CARD */
+                <div className="p-2 rounded-lg bg-amber-50/40 border border-amber-200/60 flex items-center justify-between gap-2 text-left">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0 shadow-2xs" data-testid="founding-trophy-pedestal">
+                      <Trophy className="w-3 h-3 text-amber-700" />
                     </div>
-                    <div>
-                      <h5 className="text-xs font-bold text-slate-900">The 50 Founding Members Cohort is Open</h5>
-                      <p className="text-[11px] text-slate-500 leading-normal max-w-lg mt-0.5">
-                        Lock your first customer pre-order to claim <strong className="text-amber-800 font-semibold">Genesis Backer #1</strong> and kick off validation momentum toward Phase 2 MVP Engineering.
+                    <div className="min-w-0">
+                      <h5 className="text-[11px] font-bold text-slate-900 leading-tight">The 50 Founding Members Cohort is Open</h5>
+                      <p className="text-[10px] text-slate-500 leading-tight truncate sm:line-clamp-1 mt-0.2">
+                        Lock your first customer pre-order to claim <strong className="text-amber-800 font-semibold">Genesis Backer #1</strong> and kick off validation momentum.
                       </p>
                     </div>
                   </div>
@@ -4965,139 +5036,153 @@ export default function Phase1Validate({
                     href={`${origin}/preorder/${productSlug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs shrink-0 cursor-pointer"
+                    className="px-2 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[10px] flex items-center justify-center gap-1 transition-colors shadow-2xs shrink-0 cursor-pointer h-6.5"
                   >
-                    <span>Open Preorder Checkout ↗</span>
+                    <span>Open Preorder ↗</span>
                   </a>
                 </div>
               ) : (
-                /* BACKERS LIST */
-                <div className="space-y-1.5">
+                /* BACKERS LIST (COMPACT SCROLLABLE) */
+                <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
                   {reservations.map((res, idx) => (
                     <div
                       key={res.id}
-                      className="p-2.5 rounded-lg bg-slate-50/70 border border-slate-200/80 hover:border-slate-300 hover:bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs transition-all shadow-2xs"
+                      className="p-1.5 rounded-lg bg-slate-50/70 border border-slate-200/80 hover:border-slate-300 hover:bg-white flex items-center justify-between gap-2 text-xs transition-all shadow-2xs"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-800 shadow-2xs shrink-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-5 h-5 rounded bg-white border border-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-800 shadow-2xs shrink-0">
                           {idx === 0 ? '👑' : idx < 5 ? '⭐' : '#' + (idx + 1)}
                         </div>
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-slate-900 text-xs">{res.name}</span>
-                            <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded border ${
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-slate-900 text-[11px] truncate">{res.name}</span>
+                            <span className={`text-[7px] font-mono font-semibold px-1 py-0.2 rounded border ${
                               idx === 0
                                 ? 'bg-amber-100 text-amber-800 border-amber-300'
                                 : idx < 5
                                 ? 'bg-purple-100 text-purple-800 border-purple-300'
                                 : 'bg-slate-100 text-slate-700 border-slate-200'
                             }`}>
-                              {idx === 0 ? 'Genesis Backer #1' : idx < 5 ? `Founding Pioneer #${idx + 1}` : `VIP Member #${idx + 1}`}
+                              {idx === 0 ? 'Genesis Backer #1' : idx < 5 ? `Pioneer #${idx + 1}` : `VIP #${idx + 1}`}
                             </span>
                             {res.paymentMethod && (
-                              <span className="text-[9px] font-mono text-slate-500 bg-slate-100 px-1 py-0.2 rounded border border-slate-200">
+                              <span className="text-[7px] font-mono text-slate-500 bg-slate-100 px-1 py-0.2 rounded border border-slate-200">
                                 {res.paymentMethod}
                               </span>
                             )}
+                            {res.experimentVariant && (
+                              <span className="text-[7px] font-mono text-emerald-800 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200 truncate max-w-[130px]" title={res.experimentVariant}>
+                                Exp: {res.experimentVariant}
+                              </span>
+                            )}
                           </div>
-                          <div className="text-[10px] text-slate-500 font-mono">{res.email}</div>
+                          <div className="text-[8px] text-slate-500 font-mono truncate">{res.email}</div>
                         </div>
                       </div>
 
-                      <div className="text-right flex sm:flex-col items-center sm:items-end justify-between gap-0.5">
+                      <div className="text-right shrink-0">
                         <div className="font-bold text-xs text-emerald-700 font-mono">+${res.amount}</div>
-                        <span className="text-[9px] text-slate-500">{res.tier}</span>
+                        <span className="text-[8px] text-slate-500">{res.tier}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* TIGHT RECORD TRANSACTION FORM */}
-              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+              {/* TIGHT COLLAPSIBLE RECORD TRANSACTION FORM */}
+              <div className="rounded-lg bg-slate-50/60 border border-slate-200/70 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowRecordForm(!showRecordForm)}
+                  className="w-full p-1.5 sm:p-2 flex items-center justify-between text-left hover:bg-slate-100/70 transition-colors cursor-pointer"
+                >
+                  <span className="text-[10px] font-bold text-slate-900 flex items-center gap-1.5">
+                    <Plus className={`w-3 h-3 text-emerald-600 transition-transform ${showRecordForm ? 'rotate-45' : ''}`} />
                     <span>Record Direct Backer Transaction</span>
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">Manual Entry / VIP Checkout Simulation</span>
-                </div>
+                  <div className="flex items-center gap-1 text-[8px] font-mono text-slate-400">
+                    <span>Manual Entry / VIP Checkout Simulation</span>
+                    <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${showRecordForm ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
 
-                <form onSubmit={handleSimulatePresale} className="space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {[
-                      { label: `Founding Annual ($${activeFoundingPrice})`, value: activeFoundingPrice, desc: '50% Lifetime Price Lock' },
-                      { label: `Refundable Deposit ($${activeDepositPrice})`, value: activeDepositPrice, desc: '100% Guaranteed VIP Hold' },
-                      { label: `VIP Founder Pass ($${activeVipPrice})`, value: activeVipPrice, desc: 'Roadmap Council + Direct Call' }
-                    ].map(tier => (
+                {showRecordForm && (
+                  <div className="p-2 pt-0 space-y-1.5 border-t border-slate-200/50">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 pt-1.5">
+                      {[
+                        { label: `Founding ($${activeFoundingPrice})`, value: activeFoundingPrice, desc: '50% Price Lock' },
+                        { label: `Deposit ($${activeDepositPrice})`, value: activeDepositPrice, desc: 'Guaranteed Hold' },
+                        { label: `VIP Pass ($${activeVipPrice})`, value: activeVipPrice, desc: 'Roadmap Access' }
+                      ].map(tier => (
+                        <button
+                          key={tier.value}
+                          type="button"
+                          onClick={() => setSimBuyerTier(tier.value)}
+                          className={`p-1 rounded-md border text-left transition-all cursor-pointer ${
+                            simBuyerTier === tier.value
+                              ? 'bg-white border-slate-900 text-slate-900 shadow-2xs ring-1 ring-slate-900'
+                              : 'bg-white/80 border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-white'
+                          }`}
+                        >
+                          <div className="text-[10px] font-semibold">{tier.label}</div>
+                          <div className="text-[8px] text-slate-400 leading-tight">{tier.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+
+                    <form onSubmit={handleSimulatePresale} className="grid grid-cols-1 sm:grid-cols-3 gap-1">
+                      <input
+                        type="text"
+                        placeholder="Backer Name"
+                        value={simBuyerName}
+                        onChange={e => setSimBuyerName(e.target.value)}
+                        className="px-2 py-1 rounded-md bg-white border border-slate-200 text-[11px] text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-400 h-6.5"
+                      />
+                      <input
+                        type="email"
+                        placeholder="Backer Email"
+                        value={simBuyerEmail}
+                        onChange={e => setSimBuyerEmail(e.target.value)}
+                        className="px-2 py-1 rounded-md bg-white border border-slate-200 text-[11px] text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-400 h-6.5"
+                      />
                       <button
-                        key={tier.value}
-                        type="button"
-                        onClick={() => setSimBuyerTier(tier.value)}
-                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                          simBuyerTier === tier.value
-                            ? 'bg-white border-slate-900 text-slate-900 shadow-2xs ring-1 ring-slate-900'
-                            : 'bg-white/80 border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-white'
-                        }`}
+                        type="submit"
+                        className="px-2 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[10px] flex items-center justify-center gap-1 transition-colors shadow-2xs cursor-pointer h-6.5"
                       >
-                        <div className="text-xs font-semibold">{tier.label}</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">{tier.desc}</div>
+                        <Plus className="w-2.5 h-2.5" />
+                        <span>Record Backer (+${simBuyerTier})</span>
                       </button>
-                    ))}
+                    </form>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Backer Name"
-                      value={simBuyerName}
-                      onChange={e => setSimBuyerName(e.target.value)}
-                      className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-400 h-8.5"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Backer Email"
-                      value={simBuyerEmail}
-                      onChange={e => setSimBuyerEmail(e.target.value)}
-                      className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-slate-400 h-8.5"
-                    />
-                    <button
-                      type="submit"
-                      className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer h-8.5"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Record Backer (+${simBuyerTier})</span>
-                    </button>
-                  </div>
-                </form>
+                )}
               </div>
             </div>
 
             {/* SECTION 4: FUNNEL OPTIMIZATION & A/B EXPERIMENTS */}
-            <div className="space-y-3 text-xs pt-1">
-              <div className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-2 shadow-2xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 shadow-2xs">
-                      <Sliders className="w-3.5 h-3.5" />
+            <div className="space-y-1.5 text-xs pt-0.5">
+              <div className="p-2 sm:p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-100 pb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-6 h-6 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 shadow-2xs">
+                      <Sliders className="w-3 h-3" />
                     </div>
                     <div>
                       <span className="text-xs font-bold text-slate-900 block">Funnel Optimization & A/B Experiments</span>
-                      <span className="text-[10px] text-slate-400 font-mono">CRO telemetry analysis for messaging, pricing, and creator content</span>
+                      <span className="text-[9px] text-slate-400 font-mono">CRO telemetry analysis for messaging, pricing, and creator content</span>
                     </div>
                   </div>
 
                   <button
                     onClick={handleRunExperimentsAI}
                     disabled={isAnalyzingExperiments}
-                    className="text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                    className="text-[10px] font-semibold text-white bg-slate-900 hover:bg-slate-800 px-2.5 py-1 rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs shrink-0 h-6.5"
                   >
-                    {isAnalyzingExperiments ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sliders className="w-3.5 h-3.5 text-slate-300" />}
+                    {isAnalyzingExperiments ? <Loader2 className="w-3 h-3 animate-spin text-emerald-400" /> : <Sliders className="w-3 h-3 text-slate-300" />}
                     <span>{experimentsData ? 'Re-Analyze Funnel' : 'Generate Experiments'}</span>
                   </button>
                 </div>
 
-                <p className="text-slate-600 text-xs leading-relaxed">
+                <p className="text-slate-600 text-[11px] leading-relaxed">
                   {experimentsData?.performanceAudit?.summary || 'Formulate conversion experiments tailored to audience resonance and live funnel bottlenecks.'}
                 </p>
               </div>
@@ -5106,38 +5191,38 @@ export default function Phase1Validate({
               {isAnalyzingExperiments ? (
                 <Phase1ExperimentsGenSkeleton />
               ) : !experimentsData?.experiments || experimentsData.experiments.length === 0 ? (
-                <div className="p-5 text-center text-slate-500 border border-slate-200 rounded-xl space-y-2 bg-white">
-                  <p>No optimization experiments generated yet.</p>
+                <div className="p-3 text-center text-slate-500 border border-slate-200/80 rounded-xl space-y-1.5 bg-slate-50/40">
+                  <p className="text-xs">No optimization experiments generated yet.</p>
                   <button
                     type="button"
                     onClick={handleRunExperimentsAI}
                     disabled={isAnalyzingExperiments}
-                    className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer h-6.5"
                   >
-                    <Sliders className="w-3.5 h-3.5" />
+                    <Sliders className="w-3 h-3" />
                     <span>Analyze Funnel & Generate Experiments</span>
                   </button>
                 </div>
               ) : (
-                <div className="space-y-2.5">
+                <div className="space-y-1.5">
                   {/* Active Experiments Summary Banner */}
                   {experimentsData.experiments.some(e => e.status === 'applied') && (
-                    <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 shadow-2xs">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-md bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shrink-0">
-                          <Check className="w-3.5 h-3.5" />
+                    <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 shadow-2xs">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-md bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shrink-0">
+                          <Check className="w-3 h-3" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-emerald-900">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-bold text-emerald-900">
                               {experimentsData.experiments.filter(e => e.status === 'applied').length} Active Optimization Experiment{experimentsData.experiments.filter(e => e.status === 'applied').length > 1 ? 's' : ''} Live in Phase 1
                             </span>
-                            <span className="text-[9px] font-mono font-semibold uppercase px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <span className="text-[8px] font-mono font-semibold uppercase px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
                               Active
                             </span>
                           </div>
-                          <p className="text-[11px] text-emerald-700">
-                            Your Phase 1 Validation Plan (Step 1), live Landing Page (Step 2), and Creator Tasks (Step 3) are powered by these active variants.
+                          <p className="text-[10px] text-emerald-700">
+                            Your Phase 1 Validation Plan (Step 1), Landing Page (Step 2), and Creator Tasks (Step 3) are powered by these active variants.
                           </p>
                         </div>
                       </div>
@@ -5147,15 +5232,15 @@ export default function Phase1Validate({
                           setActiveStep('assets')
                           onSelectStep?.('assets')
                         }}
-                        className="px-2.5 py-1 rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 text-xs font-semibold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                        className="px-2 py-0.5 rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 text-[10px] font-semibold transition-all flex items-center gap-1 shrink-0 cursor-pointer h-6"
                       >
                         <span>View in Funnel</span>
-                        <ArrowRight className="w-3 h-3 text-emerald-700" />
+                        <ArrowRight className="w-2.5 h-2.5 text-emerald-700" />
                       </button>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
                     {experimentsData.experiments.map((exp) => {
                       const categoryIcons = {
                         messaging: MessageSquare,
@@ -5166,80 +5251,106 @@ export default function Phase1Validate({
                       const CatIcon = categoryIcons[exp.category] || Sliders
 
                       return (
-                        <div key={exp.id} className="p-3 rounded-lg bg-white border border-slate-200 hover:border-slate-300 space-y-2 flex flex-col justify-between transition-all shadow-2xs">
-                          <div className="space-y-1.5">
+                        <div key={exp.id} className="p-2 sm:p-2.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 space-y-1.5 flex flex-col justify-between transition-all shadow-2xs">
+                          <div className="space-y-1">
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-mono font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5">
-                                <CatIcon className="w-3 h-3 text-slate-600" />
+                              <span className="text-[9px] font-mono font-medium uppercase tracking-wider px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1">
+                                <CatIcon className="w-2.5 h-2.5 text-slate-600" />
                                 <span>{exp.category?.replace('_', ' ')} Experiment</span>
                               </span>
-                              <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              <span className="text-[9px] font-mono font-bold text-emerald-800 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
                                 {exp.expectedUplift}
                               </span>
                             </div>
 
-                            <h4 className="font-bold text-slate-900 text-xs leading-snug">{exp.title}</h4>
-                            <p className="text-[11px] text-slate-500 leading-relaxed">{exp.hypothesis}</p>
+                            <h4 className="font-bold text-slate-900 text-[11px] leading-snug">{exp.title}</h4>
+                            <p className="text-[10px] text-slate-500 leading-relaxed">{exp.hypothesis}</p>
 
-                            <div className="p-2 rounded-md bg-slate-50 border border-slate-200/80 space-y-0.5 text-[11px]">
-                              <span className="text-emerald-700 font-semibold block flex items-center gap-1 text-[10px]">
-                                <ArrowRight className="w-3 h-3 text-emerald-600" />
+                            <div className="p-1.5 rounded-md bg-slate-50 border border-slate-200/80 space-y-0.2 text-[10px]">
+                              <span className="text-emerald-700 font-semibold block flex items-center gap-1 text-[9px]">
+                                <ArrowRight className="w-2.5 h-2.5 text-emerald-600" />
                                 <span>Proposed Variant:</span>
                               </span>
                               <p className="text-slate-800 italic leading-relaxed">{exp.variant}</p>
                             </div>
 
                             {/* Phase 1 Implementation Mapping */}
-                            <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5">
+                            <div className="text-[9px] text-slate-400 flex items-center gap-1 pt-0.5">
                               <span className="font-medium text-slate-500">Targets:</span>
                               <span className="text-slate-600 font-mono">
                                 {exp.category === 'messaging'
-                                  ? 'Step 2 Campaign Kit & Step 3 Social Post Draft'
+                                  ? 'Step 2 Kit & Step 3 Social'
                                   : exp.category === 'creator_content'
-                                  ? 'Step 3 Creator Story Sprints & Tasks'
+                                  ? 'Step 3 Story Sprints'
                                   : exp.category === 'landing_page'
-                                  ? 'Step 2 Live Landing Page Hero & Headline'
-                                  : 'Step 1 Validation Plan & Step 2 Pre-Order Checkout'}
+                                  ? 'Step 2 Hero & Headline'
+                                  : 'Step 1 Plan & Step 2 Checkout'}
                               </span>
                             </div>
                           </div>
 
-                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5">
+                          <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                            <div className="flex items-center gap-1">
                               <span className={`w-1.5 h-1.5 rounded-full ${
                                 exp.status === 'applied' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
                               }`} />
-                              <span className={`text-[10px] font-mono font-medium uppercase tracking-wider ${
+                              <span className={`text-[9px] font-mono font-medium uppercase tracking-wider ${
                                 exp.status === 'applied' ? 'text-emerald-700' : 'text-slate-500'
                               }`}>
                                 {exp.status === 'applied' ? 'Live in Phase 1' : 'Ready to Test'}
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1">
                               {exp.status === 'applied' && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRevertExperiment(exp)}
-                                  className="px-2 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
-                                  title="Revert back to control"
-                                >
-                                  <RotateCcw className="w-3 h-3" />
-                                  <span>Revert</span>
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (exp.category === 'messaging') {
+                                        setActiveStep('campaign')
+                                        setCampaignSubTab('post')
+                                        onSelectStep?.('campaign')
+                                      } else if (exp.category === 'creator_content') {
+                                        setActiveStep('campaign')
+                                        setCampaignSubTab('story')
+                                        onSelectStep?.('campaign')
+                                      } else if (exp.category === 'pricing') {
+                                        setActiveStep('plan')
+                                        onSelectStep?.('plan')
+                                      } else {
+                                        setActiveStep('assets')
+                                        onSelectStep?.('assets')
+                                      }
+                                    }}
+                                    className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 transition-colors flex items-center gap-1 cursor-pointer h-6"
+                                    title="Jump to target step in Phase 1 to view live changes"
+                                  >
+                                    <span>Jump to Target ↗</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRevertExperiment(exp)}
+                                    className="px-1.5 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors flex items-center gap-1 cursor-pointer h-6"
+                                    title="Revert back to control"
+                                  >
+                                    <RotateCcw className="w-2.5 h-2.5" />
+                                    <span>Revert</span>
+                                  </button>
+                                </>
                               )}
 
                               <button
                                 type="button"
                                 onClick={() => handleApplyExperiment(exp)}
-                                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer shadow-2xs ${
+                                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer shadow-2xs h-6 ${
                                   exp.status === 'applied'
                                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                     : 'bg-slate-900 hover:bg-slate-800 text-white'
                                 }`}
                               >
-                                <Check className="w-3 h-3" />
-                                <span>{exp.status === 'applied' ? 'Applied' : 'Apply to Phase 1'}</span>
+                                <Check className="w-2.5 h-2.5" />
+                                <span>{exp.status === 'applied' ? 'Applied to Phase 1' : 'Apply to Phase 1'}</span>
                               </button>
                             </div>
                           </div>
@@ -5252,43 +5363,119 @@ export default function Phase1Validate({
             </div>
 
             {/* SECTION 5: AUDIENCE FEEDBACK PULSE */}
-            <div className="space-y-2.5 text-xs pt-1">
-              <div className="flex items-center justify-between">
+            <div className="space-y-1.5 text-xs pt-0.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                    <MessageSquare className="w-3 h-3 text-emerald-600" />
                     <span>Live Audience Feedback & Demand Sentiment</span>
                   </h4>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[10px] text-slate-500">
                     Real-time qualitative insights gathered from customer discovery surveys and backer checkout notes.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 font-semibold">
-                  {surveyResponses?.length || 0} Discovery Feedback Recorded
-                </span>
+
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[9px] font-mono text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200 font-semibold">
+                    {surveyResponses?.length || 0} Discovery Feedback Recorded
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(`${origin}/survey/${productSlug}`, 'survey_link')}
+                    className="px-2 py-0.5 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-medium transition-colors flex items-center gap-1 cursor-pointer h-6 shadow-2xs"
+                    title="Copy shareable survey URL"
+                  >
+                    {copiedKey === 'survey_link' ? <Check className="w-2.5 h-2.5 text-emerald-600" /> : <Copy className="w-2.5 h-2.5 text-slate-500" />}
+                    <span>{copiedKey === 'survey_link' ? 'Copied' : 'Copy Survey Link'}</span>
+                  </button>
+
+                  <a
+                    href={`${origin}/survey/${productSlug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 py-0.5 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-medium transition-colors flex items-center gap-1 cursor-pointer h-6 shadow-2xs"
+                    title="Open live public audience survey"
+                  >
+                    <span>Open Live Survey</span>
+                    <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={handleSimulateSurveyResponse}
+                    className="px-2 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer h-6 shadow-2xs"
+                    title="Simulate 1 incoming audience survey response"
+                  >
+                    <Plus className="w-2.5 h-2.5" />
+                    <span>+ Simulate</span>
+                  </button>
+
+                  {surveyResponses && surveyResponses.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearAllSurveyResponses}
+                      className="px-1.5 py-0.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 text-[10px] transition-colors cursor-pointer h-6"
+                      title="Clear all responses"
+                    >
+                      <Trash2 className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {(!surveyResponses || surveyResponses.length === 0) ? (
-                <div className="p-4 sm:p-5 text-center text-slate-500 border border-slate-200/80 rounded-xl space-y-1 bg-slate-50/50">
-                  <p className="font-medium text-xs text-slate-600">No audience discovery responses recorded yet.</p>
-                  <p className="text-[11px] text-slate-400">Share your research survey link with the audience to view live feedback pulse.</p>
+                <div className="p-3.5 text-center text-slate-500 border border-slate-200/70 rounded-xl space-y-2 bg-slate-50/40">
+                  <p className="font-semibold text-xs text-slate-800">No audience discovery responses recorded yet.</p>
+                  <p className="text-[10px] text-slate-500 max-w-md mx-auto leading-relaxed">
+                    Share your research survey link <span className="font-mono text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-[9px]">/survey/{productSlug}</span> with your audience to gather real-time feedback, or simulate a response to view the sentiment engine.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleSimulateSurveyResponse}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Simulate Discovery Feedback (+1)</span>
+                    </button>
+                    <a
+                      href={`${origin}/survey/${productSlug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+                    >
+                      <span>Take Live Survey</span>
+                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                    </a>
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                   {surveyResponses.map(res => (
-                    <div key={res.id} className="p-3 rounded-lg bg-white border border-slate-200/80 space-y-1.5 shadow-2xs">
+                    <div key={res.id} className="p-2 rounded-lg bg-white border border-slate-200/80 space-y-1 shadow-2xs group">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900">{res.name}</span>
-                          <span className="text-[10px] text-slate-500 font-mono">{res.email}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-slate-900 text-[11px]">{res.name}</span>
+                          <span className="text-[9px] text-slate-500 font-mono">{res.email}</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          Intent: {res.rating || 8}/10
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Intent: {res.rating || 8}/10
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSurveyResponse(res.id)}
+                            className="text-slate-300 hover:text-rose-600 transition-colors p-0.5 rounded cursor-pointer"
+                            title="Delete this feedback response"
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
                       </div>
 
                       {res.answers && (
-                        <div className="space-y-0.5 text-[11px] text-slate-700 bg-slate-50 p-2 rounded-md border border-slate-200/80">
+                        <div className="space-y-0.5 text-[10px] text-slate-700 bg-slate-50 p-1.5 rounded-md border border-slate-200/80">
                           {Object.entries(res.answers).map(([qKey, ans], aIdx) => (
                             <div key={aIdx} className="leading-relaxed">
                               <strong className="text-slate-600 font-mono">{qKey}:</strong> {ans}
@@ -5302,7 +5489,7 @@ export default function Phase1Validate({
               )}
             </div>
 
-            <div className="pt-2 flex justify-end">
+            <div className="pt-1 flex justify-end">
               <button
                 onClick={() => {
                   const updated = {
@@ -5323,7 +5510,7 @@ export default function Phase1Validate({
                   setActiveStep('gate')
                   onSelectStep?.('gate')
                 }}
-                className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs h-7"
               >
                 <span>Proceed to Step 5: Gate Checkpoint</span>
                 <ArrowRight className="w-3.5 h-3.5 text-emerald-400" />

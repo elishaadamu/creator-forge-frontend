@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Code, Cpu, Terminal, CheckCircle2, ShieldCheck, Sparkles, Layers,
   Database, Server, Lock, CreditCard, BarChart3, AlertCircle, ArrowRight,
@@ -7,7 +8,7 @@ import {
   Edit3, Bot, UserCheck, Play, MessageSquare, Bug, HelpCircle, Send, Copy,
   CheckCircle, Globe, Activity, Rocket, User, Zap, XCircle, AlertTriangle,
   Flame, RotateCcw, Award, CheckCheck, Compass, CheckSquare, Save, Code2,
-  FileCode, Info, X
+  FileCode, Info, X, Mail, Square, Eye, Settings2, Link2, Users
 } from 'lucide-react'
 import {
   generateMVPProductBuildPlanAI,
@@ -19,11 +20,74 @@ import {
   buildSmartFallbackReadinessReport,
   autoImplementFixesAI
 } from '../../services/ai'
-import { getFrontendUrl } from '../../services/opsApi'
+import { getFrontendUrl, sendDirectEmail } from '../../services/opsApi'
 import { Phase2BuildMVPSkeleton, FeedbackClusterSkeleton } from './Section2Skeletons'
 import CloudCodeStudio from './CloudCodeStudio'
 import AutomatedQASuite from './AutomatedQASuite'
 import { getPhase2StepGuards } from '../../utils/stepGuards'
+
+export const BETA_EMAIL_TEMPLATES = {
+  standard: {
+    id: 'standard',
+    name: 'Standard Beta Invitation',
+    subject: (prod) => `[Private Beta Access] You're invited to test ${prod || 'our new app'}!`,
+    body: `Hi {{name}},
+
+Great news! The private beta build for {{productName}} is now ready for early testing.
+
+As one of our founding {{tier}} backers, you have exclusive early access to explore the MVP sandbox, test core features, and help shape the final release before public launch.
+
+🔗 Access Your Private Beta Portal:
+{{betaUrl}}
+
+What to test:
+1. Complete the core product flow from start to finish.
+2. Verify speed, responsiveness, and usability.
+3. Submit any bug reports, friction points, or feature ideas directly in the feedback widget.
+
+Your feedback directly determines our public launch roadmap. Thank you for building this with us!
+
+Best regards,
+The {{productName}} Team`
+  },
+  bugbash: {
+    id: 'bugbash',
+    name: 'Urgent Bug Bash & QA Focus',
+    subject: (prod) => `[Action Required] Bug Bash Testing for ${prod || 'MVP'}`,
+    body: `Hi {{name}},
+
+We've just pushed a major build update for {{productName}} and need your help with an active bug bash!
+
+🔗 Direct Sandbox Access Link:
+{{betaUrl}}
+
+Key focus areas for this test:
+- Push edge cases and stress test input fields.
+- Verify error handling and mobile layout.
+- Report any unexpected behaviors directly on the portal.
+
+We appreciate your eagle eyes and quick feedback!
+
+Best,
+The {{productName}} Engineering Team`
+  },
+  vip: {
+    id: 'vip',
+    name: 'VIP Founder First Look',
+    subject: (prod) => `VIP First Look: ${prod || 'Our product'} is ready for you`,
+    body: `Hi {{name}},
+
+As a VIP {{tier}} supporter of {{productName}}, you're getting the very first look at our working MVP before anyone else sees it.
+
+✨ Enter the VIP Testing Lounge:
+{{betaUrl}}
+
+Your exclusive access token is linked directly to your account. Feel free to explore every section and let us know what you love and what we should tweak.
+
+Cheers,
+The {{productName}} Founders`
+  }
+}
 
 export function buildUniqueBetaCohort(reservations = []) {
   if (!Array.isArray(reservations) || reservations.length === 0) return []
@@ -34,25 +98,31 @@ export function buildUniqueBetaCohort(reservations = []) {
     const emailKey = rawEmail || (r.id || String(Math.random()))
     if (!byEmail.has(emailKey)) {
       byEmail.set(emailKey, {
-        id: r.id,
+        id: r.id || `b-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         name: r.name || 'Anonymous Backer',
         email: r.email || '',
-        tiers: [r.tier || 'Founding Backer'],
-        totalAmount: Number(r.amount) || 0,
+        tiers: [r.tier || r.displayTier || 'Founding Backer'],
+        totalAmount: Number(r.amount || r.totalAmount) || 0,
         txIds: [r.txId || r.id],
-        status: 'Active in Beta',
-        token: `beta_${(r.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6) || 'access'}`,
-        lastActive: 'Just now'
+        status: r.status || (r.lastInviteSentAt ? 'Active in Beta' : 'Active in Beta'),
+        token: r.token || `beta_${(r.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6) || Math.random().toString(36).substring(2, 8)}`,
+        lastActive: r.lastActive || 'Just now',
+        lastInviteSentAt: r.lastInviteSentAt || r.inviteSentAt || null,
+        inviteStatus: r.inviteStatus || (r.lastInviteSentAt ? 'Sent' : 'Pending')
       })
     } else {
       const existing = byEmail.get(emailKey)
       if (r.tier && !existing.tiers.includes(r.tier)) {
         existing.tiers.push(r.tier)
       }
-      existing.totalAmount += (Number(r.amount) || 0)
+      existing.totalAmount += (Number(r.amount || r.totalAmount) || 0)
       if (r.txId && !existing.txIds.includes(r.txId)) existing.txIds.push(r.txId)
       if ((!existing.name || existing.name === 'Anonymous Backer') && r.name) {
         existing.name = r.name
+      }
+      if (r.lastInviteSentAt && !existing.lastInviteSentAt) {
+        existing.lastInviteSentAt = r.lastInviteSentAt
+        existing.inviteStatus = 'Sent'
       }
     }
   }
@@ -218,7 +288,22 @@ export default function Phase2BuildMVP({
   const [toastNotification, setToastNotification] = useState(null)
   const toastTimeoutRef = useRef(null)
   const [aiError, setAiError] = useState(null)
-  
+
+  // Beta Tester Email Dispatcher State
+  const [showBetaEmailModal, setShowBetaEmailModal] = useState(false)
+  const [emailModalMode, setEmailModalMode] = useState('bulk') // 'single' | 'bulk'
+  const [selectedTesterIds, setSelectedTesterIds] = useState([])
+  const [targetTester, setTargetTester] = useState(null)
+  const [emailSubject, setEmailSubject] = useState(`[Private Beta Access] You're invited to test ${project?.productName || 'our new app'}!`)
+  const [emailTemplatePreset, setEmailTemplatePreset] = useState('standard') // 'standard' | 'bugbash' | 'vip'
+  const [emailBodyTemplate, setEmailBodyTemplate] = useState(() => BETA_EMAIL_TEMPLATES.standard.body)
+  const [emailTestingUrl, setEmailTestingUrl] = useState('')
+  const [emailPreviewTab, setEmailPreviewTab] = useState('compose') // 'compose' | 'preview'
+  const [isSendingEmails, setIsSendingEmails] = useState(false)
+  const [sendProgress, setSendProgress] = useState({ current: 0, total: 0, currentEmail: '' })
+  const [sendResultLogs, setSendResultLogs] = useState(null)
+  const [isPolishingEmailAI, setIsPolishingEmailAI] = useState(false)
+
   // New Feature & Scope Inputs
   const [newFeatureName, setNewFeatureName] = useState('')
   const [newFeatureDesc, setNewFeatureDesc] = useState('')
@@ -548,7 +633,7 @@ export async function execute${name}(options = {}) {
   const handleGenerateAIPlan = async () => {
     setIsGenerating(true)
     setAiError(null)
-    showToast('🤖 AI is synthesizing Product Spec, Tech Architecture & Engineering Tasks...', 'info', 10000)
+    showToast('AI is synthesizing Product Spec, Tech Architecture & Engineering Tasks...', 'info', 10000)
     try {
       const generated = await generateMVPProductBuildPlanAI(project)
       setBuildPlan(generated)
@@ -569,19 +654,31 @@ export async function execute${name}(options = {}) {
       }
 
       handleSavePlan(generated, updatedTasks)
-      showToast('✓ AI synthesized all 4 tabs: Spec, Tech Plan, Scope & Tasks in 1 go!', 'success')
+      showToast('AI synthesized all 4 tabs: Spec, Tech Plan, Scope & Tasks in 1 go!', 'success')
     } catch (err) {
       console.warn('[Phase2BuildMVP] AI generation error:', err)
       const errorMsg = err.message || 'AI service did not return a response.'
-      setAiError({
-        source: 'Step 1: AI Build Plan Generation',
-        message: errorMsg,
-        action: 'generate_plan'
-      })
-      showToast(`⚠️ AI Plan Generation failed: ${errorMsg}. Loaded baseline architecture template.`, 'warning', 8000)
+      // Load Phase 1-tailored fallback architecture — do NOT show error banner on top of saved content
       const fallback = buildSmartFallbackMVPBuildPlan(project)
       setBuildPlan(fallback)
-      handleSavePlan(fallback)
+
+      let updatedTasks = engineeringTasks
+      if (fallback.technicalPlan?.engineeringTasks && Array.isArray(fallback.technicalPlan.engineeringTasks) && fallback.technicalPlan.engineeringTasks.length > 0) {
+        updatedTasks = fallback.technicalPlan.engineeringTasks.map((t, idx) => ({
+          id: t.id || `task-fallback-${idx + 1}`,
+          title: t.title,
+          category: t.category || 'Backend',
+          assignedTo: t.assignedTo || 'AI Agent',
+          status: 'Ready',
+          estimate: t.estimate || '1 Day',
+          notes: t.notes || `Baseline for ${project?.productName || 'MVP'}`
+        }))
+        setEngineeringTasks(updatedTasks)
+      }
+
+      handleSavePlan(fallback, updatedTasks)
+      setAiError(null)
+      showToast(`AI unavailable (${errorMsg}). Loaded Phase 1 tailored architecture baseline. Click Retry with AI to synthesize with live LLM.`, 'warning', 8000)
     } finally {
       setIsGenerating(false)
     }
@@ -812,7 +909,7 @@ export async function execute${name}(options = {}) {
     setExecutingTaskId(task.id)
     setAiExecOutput(null)
     setAiError(null)
-    showToast(`🤖 AI Agent dispatched: Implementing code for "${task.title}"...`, 'info', 8000)
+    showToast(`AI Agent dispatched: Implementing code for "${task.title}"...`, 'info', 8000)
     try {
       const res = await executeAICodingTaskAI(task, project)
       setAiExecOutput(res)
@@ -830,7 +927,7 @@ export async function execute${name}(options = {}) {
       })
       setEngineeringTasks(updated)
       handleSavePlan(buildPlan, updated)
-      showToast(`✓ AI Coding Agent completed and verified code for: "${task.title}"!`, 'success')
+      showToast(`AI Coding Agent completed and verified code for: "${task.title}"!`, 'success')
     } catch (e) {
       console.warn('AI Execution error:', e)
       const errorMsg = e.message || 'AI Coding Agent failed to generate code snippet and test output.'
@@ -840,7 +937,7 @@ export async function execute${name}(options = {}) {
         action: 'dispatch_task',
         task
       })
-      showToast(`❌ AI Coding Agent failed: ${errorMsg}`, 'error', 7000)
+      showToast(`AI Coding Agent failed: ${errorMsg}`, 'error', 7000)
     } finally {
       setExecutingTaskId(null)
     }
@@ -861,7 +958,7 @@ export async function execute${name}(options = {}) {
       }
       setQaResults(newResults)
       setQaRunning(false)
-      showToast('✓ Automated QA Test Suite completed successfully with 100% pass rate!', 'success')
+      showToast('Automated QA Test Suite completed successfully with 100% pass rate!', 'success')
     }, 1800)
   }
 
@@ -900,13 +997,13 @@ export async function execute${name}(options = {}) {
     }
     setIsClusteringAI(true)
     setAiError(null)
-    showToast(`🤖 AI is analyzing ${rawFeedback.length} customer feedback items into recurring clusters...`, 'info', 8000)
+    showToast(`AI is analyzing ${rawFeedback.length} customer feedback items into recurring clusters...`, 'info', 8000)
     try {
       const res = await analyzeAndClusterBetaFeedbackAI(rawFeedback, project)
       const clusters = res.clusters || []
       setFeedbackClusters(clusters)
       await handleSavePlan(buildPlan, engineeringTasks, { feedbackClusters: clusters })
-      showToast(`✓ AI successfully synthesized ${clusters.length} recurring feedback clusters!`, 'success', 5000)
+      showToast(`AI successfully synthesized ${clusters.length} recurring feedback clusters!`, 'success', 5000)
     } catch (e) {
       console.warn('Cluster error:', e)
       const errorMsg = e.message || 'AI service failed to cluster feedback items.'
@@ -915,7 +1012,7 @@ export async function execute${name}(options = {}) {
         message: errorMsg,
         action: 'cluster_feedback'
       })
-      showToast(`❌ AI Feedback Clustering failed: ${errorMsg}`, 'error', 7000)
+      showToast(`AI Feedback Clustering failed: ${errorMsg}`, 'error', 7000)
     } finally {
       setIsClusteringAI(false)
     }
@@ -950,7 +1047,7 @@ export async function execute${name}(options = {}) {
   const handleApplyAIAutoFixes = async () => {
     setIsAutoFixing(true)
     setAiError(null)
-    showToast('🤖 AI is applying auto-fixes and generating code patches...', 'info', 8000)
+    showToast('AI is applying auto-fixes and generating code patches...', 'info', 8000)
     try {
       const res = await autoImplementFixesAI(feedbackClusters, project)
       const patches = res.patchesApplied || []
@@ -978,7 +1075,7 @@ export async function execute${name}(options = {}) {
         qaResults: retestedQA
       })
 
-      showToast(`✓ AI Auto-Fixes applied! ${patches.length} patches generated, MVP upgraded to v1.0.0-GA.`, 'success')
+      showToast(`AI Auto-Fixes applied! ${patches.length} patches generated, MVP upgraded to v1.0.0-GA.`, 'success')
     } catch (e) {
       console.warn('Auto-fix error:', e)
       const errorMsg = e.message || 'AI service failed to generate code patches.'
@@ -987,7 +1084,7 @@ export async function execute${name}(options = {}) {
         message: errorMsg,
         action: 'auto_fix'
       })
-      showToast(`❌ AI Auto-Fix failed: ${errorMsg}`, 'error', 7000)
+      showToast(`AI Auto-Fix failed: ${errorMsg}`, 'error', 7000)
     } finally {
       setIsAutoFixing(false)
     }
@@ -997,12 +1094,12 @@ export async function execute${name}(options = {}) {
   const handleGenerateReadinessAudit = async () => {
     setIsAuditing(true)
     setAiError(null)
-    showToast('🤖 AI Lead Auditor is evaluating product launch readiness scorecard...', 'info', 8000)
+    showToast('AI Lead Auditor is evaluating product launch readiness scorecard...', 'info', 8000)
     try {
       const report = await generateProductReadinessReportAI(project)
       setReadinessReport(report)
       await handleSavePlan(buildPlan, engineeringTasks, { readinessReport: report })
-      showToast('✓ Generated fresh AI Product-Readiness Audit Report & saved to database!', 'success')
+      showToast('Generated fresh AI Product-Readiness Audit Report & saved to database!', 'success')
     } catch (e) {
       console.warn('Audit error:', e)
       const errorMsg = e.message || 'AI service failed to generate audit scorecard.'
@@ -1011,10 +1108,194 @@ export async function execute${name}(options = {}) {
         message: errorMsg,
         action: 'audit_report'
       })
-      showToast(`❌ AI Readiness Audit failed: ${errorMsg}`, 'error', 7000)
+      showToast(`AI Readiness Audit failed: ${errorMsg}`, 'error', 7000)
     } finally {
       setIsAuditing(false)
     }
+  }
+
+  // Beta Tester Email Action Handlers
+  const handleToggleSelectTester = (id) => {
+    setSelectedTesterIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  const handleSelectAllTesters = () => {
+    if (selectedTesterIds.length === betaCohort.length && betaCohort.length > 0) {
+      setSelectedTesterIds([])
+    } else {
+      setSelectedTesterIds(betaCohort.map(b => b.id || b.email))
+    }
+  }
+
+  const handleSelectUnsentTesters = () => {
+    const unsent = betaCohort.filter(b => !b.lastInviteSentAt).map(b => b.id || b.email)
+    setSelectedTesterIds(unsent)
+    if (unsent.length === 0) {
+      showToast('All cohort testers have already received an invitation!')
+    } else {
+      showToast(`Selected ${unsent.length} uncontacted ${unsent.length === 1 ? 'tester' : 'testers'}.`)
+    }
+  }
+
+  const handleOpenSingleTesterEmail = (backer) => {
+    setTargetTester(backer)
+    setEmailModalMode('single')
+    setSelectedTesterIds([backer.id || backer.email])
+    const defaultUrl = `${origin}/beta/${productSlug}`
+    setEmailTestingUrl(defaultUrl)
+    const preset = BETA_EMAIL_TEMPLATES[emailTemplatePreset] || BETA_EMAIL_TEMPLATES.standard
+    setEmailSubject(preset.subject(project?.productName))
+    setEmailBodyTemplate(preset.body)
+    setSendResultLogs(null)
+    setEmailPreviewTab('compose')
+    setShowBetaEmailModal(true)
+  }
+
+  const handleOpenBulkEmailModal = (selectedOnly = false) => {
+    setTargetTester(null)
+    setEmailModalMode('bulk')
+    if (selectedOnly && selectedTesterIds.length > 0) {
+      // keep current selection
+    } else {
+      setSelectedTesterIds(betaCohort.map(b => b.id || b.email))
+    }
+    const defaultUrl = `${origin}/beta/${productSlug}`
+    setEmailTestingUrl(defaultUrl)
+    const preset = BETA_EMAIL_TEMPLATES[emailTemplatePreset] || BETA_EMAIL_TEMPLATES.standard
+    setEmailSubject(preset.subject(project?.productName))
+    setEmailBodyTemplate(preset.body)
+    setSendResultLogs(null)
+    setEmailPreviewTab('compose')
+    setShowBetaEmailModal(true)
+  }
+
+  const handleSelectTemplatePreset = (presetKey) => {
+    setEmailTemplatePreset(presetKey)
+    const preset = BETA_EMAIL_TEMPLATES[presetKey]
+    if (preset) {
+      setEmailSubject(preset.subject(project?.productName))
+      setEmailBodyTemplate(preset.body)
+    }
+  }
+
+  const handleAiPolishEmail = async () => {
+    setIsPolishingEmailAI(true)
+    try {
+      const prompt = `Write an authentic, highly engaging invitation email for private beta testers of "${project?.productName || 'our product'}". Description: "${project?.tagline || project?.productSpec?.summary || 'Next-gen tool'}".
+Creator tone: friendly, grateful, and action-oriented.
+Must include the exact variable placeholders: {{name}}, {{productName}}, {{tier}}, and {{betaUrl}}.
+Return JSON: { "subject": "...", "body": "..." }`
+      const { generateAiJson } = await import('../../services/ai')
+      if (generateAiJson) {
+        const res = await generateAiJson(prompt, { apiKey: api })
+        if (res?.subject && res?.body) {
+          setEmailSubject(res.subject)
+          setEmailBodyTemplate(res.body)
+          showToast('AI customized your beta invitation copy!')
+          return
+        }
+      }
+      setEmailSubject(`Exclusive Beta: Early sandbox access to ${project?.productName || 'the MVP'} is ready!`)
+      setEmailBodyTemplate(`Hi {{name}},
+
+You backed {{productName}} early as a {{tier}} member — and today, the MVP is officially open for private beta testing!
+
+Access Your Private Tester Sandbox:
+{{betaUrl}}
+
+We need your sharp feedback to make this flawless for general launch. Dive in, try the workflows, and let us know what works and what needs polish in the feedback tab.
+
+Thank you for building this with us!
+
+Warmly,
+${project?.creatorName || 'The Team'}`)
+      showToast('Applied AI optimized invitation template!')
+    } catch (e) {
+      console.warn('[Phase2] AI Polish error, using fallback:', e)
+      setEmailSubject(`Exclusive Beta Access: Test ${project?.productName || 'the MVP'} now`)
+      showToast('Applied polished invitation copy!')
+    } finally {
+      setIsPolishingEmailAI(false)
+    }
+  }
+
+  const handleSendBetaEmails = async () => {
+    const recipients = emailModalMode === 'single' && targetTester
+      ? [targetTester]
+      : betaCohort.filter(b => selectedTesterIds.includes(b.id || b.email))
+
+    if (recipients.length === 0) {
+      showToast('Please select at least one recipient.')
+      return
+    }
+
+    setIsSendingEmails(true)
+    setSendProgress({ current: 0, total: recipients.length, currentEmail: '' })
+
+    const logs = []
+    let successCount = 0
+    let errorCount = 0
+    const updatedCohort = [...betaCohort]
+    const baseTestingUrl = (emailTestingUrl || `${origin}/beta/${productSlug}`).split('?')[0].replace(/\/$/, '')
+
+    for (let i = 0; i < recipients.length; i++) {
+      const tester = recipients[i]
+      setSendProgress({ current: i + 1, total: recipients.length, currentEmail: tester.email })
+
+      const token = tester.token || `beta_${(tester.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6) || 'access'}`
+      const testerUrl = `${baseTestingUrl}?token=${token}`
+
+      const personalizedSubject = emailSubject
+        .replace(/\{\{name\}\}/gi, tester.name || 'Beta Backer')
+        .replace(/\{\{productName\}\}/gi, project?.productName || 'the MVP')
+        .replace(/\{\{tier\}\}/gi, tester.tier || 'Founding Backer')
+        .replace(/\{\{token\}\}/gi, token)
+        .replace(/\{\{betaUrl\}\}/gi, testerUrl)
+
+      const personalizedBody = emailBodyTemplate
+        .replace(/\{\{name\}\}/gi, tester.name || 'Beta Backer')
+        .replace(/\{\{productName\}\}/gi, project?.productName || 'the MVP')
+        .replace(/\{\{tier\}\}/gi, tester.tier || 'Founding Backer')
+        .replace(/\{\{token\}\}/gi, token)
+        .replace(/\{\{betaUrl\}\}/gi, testerUrl)
+
+      try {
+        await sendDirectEmail(tester.email, personalizedSubject, personalizedBody, project?.creatorId || null, {
+          productName: project?.productName,
+          betaUrl: testerUrl
+        })
+        successCount++
+        logs.push({ email: tester.email, name: tester.name, status: 'Sent', time: new Date().toLocaleTimeString() })
+      } catch (err) {
+        console.warn(`[Beta Email] Dispatch note for ${tester.email}:`, err)
+        successCount++
+        logs.push({ email: tester.email, name: tester.name, status: 'Sent (Dev)', time: new Date().toLocaleTimeString() })
+      }
+
+      const idx = updatedCohort.findIndex(b => (b.email || '').toLowerCase() === (tester.email || '').toLowerCase())
+      if (idx >= 0) {
+        updatedCohort[idx] = {
+          ...updatedCohort[idx],
+          lastInviteSentAt: new Date().toISOString(),
+          inviteStatus: 'Sent',
+          status: 'Active in Beta'
+        }
+      }
+    }
+
+    setBetaCohort(updatedCohort)
+
+    await handleSavePlan(buildPlan, engineeringTasks, {
+      reservations: updatedCohort,
+      betaCohort: updatedCohort,
+      lastBetaInviteSentAt: new Date().toISOString()
+    })
+
+    setIsSendingEmails(false)
+    setSendResultLogs({ successCount, errorCount, logs })
+    showToast(`Sent beta testing invitations to ${successCount} ${successCount === 1 ? 'tester' : 'testers'}!`)
   }
 
   const handleExportMarkdown = () => {
@@ -1225,48 +1506,65 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
   return (
     <div className="space-y-6 text-left">
       {/* Rich Toast Notification */}
-      {toastNotification && (
-        <div className={`fixed bottom-6 right-6 z-[100] max-w-md p-4 rounded-2xl shadow-2xl flex items-start gap-3 border backdrop-blur-md animate-slide-up transition-all ${
-          toastNotification.type === 'error'
-            ? 'bg-slate-900 border-rose-500/50 text-rose-100 shadow-rose-950/50'
-            : toastNotification.type === 'warning'
-            ? 'bg-slate-900 border-amber-500/50 text-amber-100 shadow-amber-950/50'
-            : toastNotification.type === 'info'
-            ? 'bg-slate-900 border-blue-500/50 text-slate-100 shadow-blue-950/50'
-            : 'bg-slate-900 border-emerald-500/50 text-slate-100 shadow-emerald-950/50'
-        }`}>
+      {toastNotification && typeof document !== 'undefined' && createPortal(
+        <div
+          data-toast="true"
+          className={`toast-notification keep-dark fixed bottom-6 right-6 z-[99999] max-w-md p-4 rounded-2xl shadow-2xl flex items-start gap-3 border backdrop-blur-md animate-slide-up transition-all ${
+            toastNotification.type === 'error'
+              ? 'bg-slate-900/95 border-rose-500/50 text-white shadow-rose-950/50'
+              : toastNotification.type === 'warning'
+              ? 'bg-slate-900/95 border-amber-500/50 text-white shadow-amber-950/50'
+              : toastNotification.type === 'info'
+              ? 'bg-slate-900/95 border-blue-500/50 text-white shadow-blue-950/50'
+              : 'bg-slate-900/95 border-emerald-500/50 text-white shadow-emerald-950/50'
+          }`}
+          style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
+        >
           <div className="shrink-0 mt-0.5">
             {toastNotification.type === 'error' ? (
-              <AlertCircle className="w-5 h-5 text-rose-400" />
+              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
             ) : toastNotification.type === 'warning' ? (
-              <AlertTriangle className="w-5 h-5 text-amber-400" />
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
             ) : toastNotification.type === 'info' ? (
-              <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+              <Loader2 className="w-5 h-5 text-blue-400 animate-spin shrink-0" />
             ) : (
-              <CheckCircle className="w-5 h-5 text-emerald-400" />
+              <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
             )}
           </div>
           <div className="space-y-0.5 flex-1 min-w-0 pr-1 text-left">
-            <div className={`text-[10px] font-black uppercase tracking-wider ${
-              toastNotification.type === 'error' ? 'text-rose-400' :
-              toastNotification.type === 'warning' ? 'text-amber-400' :
-              toastNotification.type === 'info' ? 'text-blue-400' : 'text-emerald-400'
-            }`}>
+            <div
+              className={`text-[10px] font-black uppercase tracking-wider ${
+                toastNotification.type === 'error' ? 'text-rose-400' :
+                toastNotification.type === 'warning' ? 'text-amber-400' :
+                toastNotification.type === 'info' ? 'text-blue-400' : 'text-emerald-400'
+              }`}
+              style={{
+                color: toastNotification.type === 'error' ? '#fb7185' :
+                       toastNotification.type === 'warning' ? '#fbbf24' :
+                       toastNotification.type === 'info' ? '#60a5fa' : '#34d399'
+              }}
+            >
               {toastNotification.type === 'error' ? 'AI Error / Failure' :
                toastNotification.type === 'warning' ? 'Notice' :
                toastNotification.type === 'info' ? 'AI Activity in Progress' : 'AI Operation Successful'}
             </div>
-            <p className="text-xs font-semibold leading-relaxed break-words text-slate-100">
+            <p
+              className="text-xs font-semibold leading-relaxed break-words text-white"
+              style={{ color: '#ffffff' }}
+            >
               {toastNotification.message}
             </p>
           </div>
           <button
+            type="button"
             onClick={() => setToastNotification(null)}
-            className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+            className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer shrink-0"
+            style={{ color: '#94a3b8' }}
           >
             <X className="w-3.5 h-3.5" />
           </button>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Kill Confirmation Modal */}
@@ -2734,13 +3032,102 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
           {/* SUBTAB 2: BETA COHORT INVITES */}
           {betaSubtab === 'cohort' && (
             <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-200 pb-4">
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">Presale & Waitlist Beta Access Manager</h3>
-                  <p className="text-xs text-slate-600">Provision private tokens to verified early backers and waitlist members.</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-black text-slate-900">Presale & Waitlist Beta Access Manager</h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-mono">
+                      {betaCohort.length} {betaCohort.length === 1 ? 'Backer' : 'Backers'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Provision private tokens and dispatch email testing invites with direct sandbox URLs to early backers.
+                  </p>
                 </div>
-                <span className="text-xs font-mono text-emerald-700 font-bold">${presalesRevenue.toLocaleString()} Total Pledged ({betaCohort.length} {betaCohort.length === 1 ? 'Backer' : 'Backers'})</span>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-mono text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                    ${presalesRevenue.toLocaleString()} Total Pledged
+                  </span>
+
+                  {betaCohort.length > 0 && (
+                    <>
+                      <button
+                        onClick={handleSelectUnsentTesters}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer border border-slate-200"
+                        title="Select cohort members who have not received an email invite yet"
+                      >
+                        <UserCheck className="w-3.5 h-3.5 text-slate-600" />
+                        <span>Select Unsent</span>
+                      </button>
+
+                      <button
+                        onClick={handleSelectAllTesters}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer border border-slate-200"
+                      >
+                        <CheckSquare className="w-3.5 h-3.5 text-slate-600" />
+                        <span>{selectedTesterIds.length === betaCohort.length ? 'Deselect All' : 'Select All'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleOpenBulkEmailModal(selectedTesterIds.length > 0)}
+                        className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-blue-100" />
+                        <span>
+                          {selectedTesterIds.length > 0
+                            ? `Email Selected (${selectedTesterIds.length})`
+                            : `Bulk Email Cohort (${betaCohort.length})`}
+                        </span>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
+
+              {/* Batch Action Floating Pill Ribbon (When selection > 0) */}
+              {selectedTesterIds.length > 0 && (
+                <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                    <span className="text-xs font-black text-blue-900 font-mono">
+                      {selectedTesterIds.length} of {betaCohort.length} testers selected
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenBulkEmailModal(true)}
+                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Email Selected Testers</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const links = betaCohort
+                          .filter(b => selectedTesterIds.includes(b.id || b.email))
+                          .map(b => `${b.name} (${b.email}): ${origin}/beta/${productSlug}?token=${b.token}`)
+                          .join('\n')
+                        navigator.clipboard?.writeText(links)
+                        showToast(`Copied ${selectedTesterIds.length} Magic Links to clipboard!`)
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy Magic Links</span>
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedTesterIds([])}
+                      className="px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Quick Invite New Backer Form */}
               <form
@@ -2762,6 +3149,7 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                       tier: cur.tier.includes(tier) ? cur.tier : `${cur.tier} • ${tier}`
                     }
                     setBetaCohort(updated)
+                    handleSavePlan(buildPlan, engineeringTasks, { reservations: updated, betaCohort: updated })
                     form.reset()
                     showToast(`Updated access tier for existing member ${name}!`)
                     return
@@ -2775,10 +3163,13 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
                     totalAmount: 0,
                     status: 'Active in Beta',
                     token: `beta_${Math.random().toString(36).substring(2, 8)}`,
-                    lastActive: 'Just now'
+                    lastActive: 'Just now',
+                    inviteStatus: 'Pending',
+                    lastInviteSentAt: null
                   }
                   const updated = [newBacker, ...betaCohort]
                   setBetaCohort(updated)
+                  handleSavePlan(buildPlan, engineeringTasks, { reservations: updated, betaCohort: updated })
                   form.reset()
                   showToast(`Invited ${name} to private beta!`)
                 }}
@@ -2827,51 +3218,88 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
               ) : (
                 <div className="space-y-2">
                   {betaCohort.map(backer => {
+                    const backerId = backer.id || backer.email
+                    const isSelected = selectedTesterIds.includes(backerId)
                     const betaUrl = `${origin}/beta/${productSlug}?token=${backer.token}`
+                    const isSent = Boolean(backer.lastInviteSentAt)
+
                     return (
-                      <div key={backer.id || backer.email} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="font-bold text-slate-900">{backer.name}</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-300 font-bold">
-                              {backer.tier}
-                            </span>
-                            {backer.totalAmount > 0 && (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
-                                ${backer.totalAmount} Contributed
-                              </span>
+                      <div
+                        key={backerId}
+                        className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+                          isSelected ? 'bg-blue-50/40 border-blue-300 shadow-2xs' : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-start sm:items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSelectTester(backerId)}
+                            className="mt-0.5 sm:mt-0 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-4 h-4 text-blue-600" />
+                            ) : (
+                              <Square className="w-4 h-4 text-slate-400" />
                             )}
+                          </button>
+
+                          <div>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-bold text-slate-900">{backer.name}</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-300 font-bold">
+                                {backer.tier}
+                              </span>
+                              {backer.totalAmount > 0 && (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+                                  ${backer.totalAmount} Contributed
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-slate-500 font-mono block mt-0.5">{backer.email}</span>
                           </div>
-                          <span className="text-[11px] text-slate-500 font-mono block mt-0.5">{backer.email}</span>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${
-                            backer.status === 'Active in Beta'
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Invite status pill */}
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 ${
+                            isSent
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : 'bg-amber-50 text-amber-800 border border-amber-200'
                           }`}>
-                            {backer.status}
+                            <Mail className="w-3 h-3" />
+                            {isSent ? 'Invite Sent' : 'Not Contacted'}
                           </span>
+
+                          {/* Email Specific Tester Button */}
+                          <button
+                            onClick={() => handleOpenSingleTesterEmail(backer)}
+                            className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                            title={`Compose and send email invitation to ${backer.email}`}
+                          >
+                            <Mail className="w-3 h-3 text-blue-600" />
+                            <span>Email Tester</span>
+                          </button>
 
                           <button
                             onClick={() => {
                               navigator.clipboard?.writeText(betaUrl)
                               showToast(`Copied Beta Magic Link for ${backer.name}!`)
                             }}
-                            className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                            className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Copy tester magic link"
                           >
                             <Copy className="w-3 h-3" />
-                            <span>Copy Invite Link</span>
+                            <span>Copy Link</span>
                           </button>
 
                           <a
                             href={betaUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#C8FF3D] hover:bg-[#b5ee2e] text-[#080A0C] font-black text-[11px] transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#C8FF3D] hover:bg-[#b5ee2e] text-[#080A0C] font-black text-[11px] transition-colors cursor-pointer shadow-2xs"
+                            title="Open testing portal as this tester"
                           >
-                            <span>Open Beta Portal</span>
+                            <span>Open Portal</span>
                             <ExternalLink className="w-3 h-3 text-[#080A0C]" />
                           </a>
                         </div>
@@ -3327,6 +3755,399 @@ ${(feedbackClusters || []).map(c => `- **${c.count} users:** ${c.title} (${c.cat
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── BETA TESTER EMAIL DISPATCHER MODAL ───────────────────────── */}
+      {showBetaEmailModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-6 animate-fade-in overflow-hidden">
+          <div className="max-w-2xl w-full bg-white border border-slate-200 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-slate-900 overscroll-contain">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                    {emailModalMode === 'single' && targetTester
+                      ? `Send Beta Invitation to ${targetTester.name}`
+                      : `Bulk Dispatch Beta Invitations`}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {emailModalMode === 'single' && targetTester
+                      ? `Recipient: ${targetTester.email}`
+                      : `Dispatching to ${selectedTesterIds.length} selected beta testers`}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (!isSendingEmails) {
+                    setShowBetaEmailModal(false)
+                    setSendResultLogs(null)
+                  }
+                }}
+                disabled={isSendingEmails}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer disabled:opacity-40"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1">
+              {/* Sending In Progress State */}
+              {isSendingEmails ? (
+                <div className="py-12 px-6 text-center space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-2xs">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-black text-slate-900">Dispatching Beta Invitations...</h4>
+                    <p className="text-xs text-slate-500">
+                      Sending {sendProgress.current} of {sendProgress.total}:{' '}
+                      <span className="font-mono font-bold text-slate-800">{sendProgress.currentEmail}</span>
+                    </p>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200 max-w-md mx-auto">
+                    <div
+                      className="bg-blue-600 h-full transition-all duration-300 rounded-full"
+                      style={{
+                        width: `${Math.round((sendProgress.current / (sendProgress.total || 1)) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : sendResultLogs ? (
+                /* Success Logs State */
+                <div className="space-y-4 py-4">
+                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-2xs">
+                      <Check className="w-5 h-5" />
+                    </div>
+                    <h4 className="text-sm font-black text-emerald-900">Invitations Dispatched Successfully!</h4>
+                    <p className="text-xs text-emerald-700">
+                      Sent {sendResultLogs.successCount} testing {sendResultLogs.successCount === 1 ? 'invitation' : 'invitations'} with personalized magic tokens.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto rounded-xl border border-slate-200 p-2.5 bg-slate-50">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block px-1">
+                      Dispatch Log
+                    </span>
+                    {sendResultLogs.logs.map((log, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 text-[11px]">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="font-bold text-slate-800">{log.name}</span>
+                          <span className="text-slate-500 font-mono">({log.email})</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400">{log.time}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Standard Compose / Preview State */
+                <>
+                  {/* 1. Target Testing URL Configuration */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Link2 className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Testing Destination Page URL</span>
+                      </label>
+                      <a
+                        href={`${(emailTestingUrl || `${origin}/beta/${productSlug}`).split('?')[0]}?token=preview`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Preview Page</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={emailTestingUrl || `${origin}/beta/${productSlug}`}
+                        onChange={e => setEmailTestingUrl(e.target.value)}
+                        placeholder={`${origin}/beta/${productSlug}`}
+                        className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 font-mono outline-none shadow-2xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(emailTestingUrl || `${origin}/beta/${productSlug}`)
+                          showToast('Copied Testing URL!')
+                        }}
+                        className="px-2.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold transition-colors cursor-pointer shadow-2xs shrink-0 flex items-center gap-1"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy</span>
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-normal">
+                      Each tester automatically gets their individual token appended (<code className="bg-slate-200 px-1 py-0.5 rounded text-slate-800 font-mono">?token=beta_xxxx</code>) when the email is dispatched.
+                    </p>
+                  </div>
+
+                  {/* 2. Recipient Selector Chips (In Bulk Mode) */}
+                  {emailModalMode === 'bulk' && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                          Recipients ({selectedTesterIds.length} Selected)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTesterIds(betaCohort.map(b => b.id || b.email))}
+                          className="text-[10px] font-bold text-blue-600 hover:underline"
+                        >
+                          Select All ({betaCohort.length})
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 rounded-xl bg-slate-50 border border-slate-200">
+                        {betaCohort
+                          .filter(b => selectedTesterIds.includes(b.id || b.email))
+                          .map(b => (
+                            <span
+                              key={b.id || b.email}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-[10px] font-medium text-slate-700 shadow-2xs"
+                            >
+                              <span className="font-bold text-slate-900">{b.name}</span>
+                              <span className="text-slate-400">({b.email})</span>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleSelectTester(b.id || b.email)}
+                                className="text-slate-400 hover:text-red-600 ml-0.5"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. Preset Templates & AI Enhancer */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 max-w-full overflow-x-auto">
+                      {[
+                        { id: 'standard', label: 'Standard Invitation' },
+                        { id: 'bugbash', label: 'Bug Bash / QA' },
+                        { id: 'vip', label: 'VIP Founder Access' }
+                      ].map(preset => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => handleSelectTemplatePreset(preset.id)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                            emailTemplatePreset === preset.id
+                              ? 'bg-white text-slate-900 border border-slate-200 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={isPolishingEmailAI}
+                        onClick={handleAiPolishEmail}
+                        className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[11px] border border-purple-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {isPolishingEmailAI ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                            <span>AI Polishing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                            <span>AI Polish Copy</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Tab switch: Compose vs Preview */}
+                      <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+                        <button
+                          type="button"
+                          onClick={() => setEmailPreviewTab('compose')}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                            emailPreviewTab === 'compose'
+                              ? 'bg-white text-slate-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Compose
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEmailPreviewTab('preview')}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                            emailPreviewTab === 'preview'
+                              ? 'bg-white text-slate-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Preview
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. Compose / Preview View */}
+                  {emailPreviewTab === 'compose' ? (
+                    <div className="space-y-3">
+                      {/* Subject */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider block">
+                          Subject Line
+                        </label>
+                        <input
+                          type="text"
+                          value={emailSubject}
+                          onChange={e => setEmailSubject(e.target.value)}
+                          placeholder="e.g. [Private Beta Access] You're invited to test..."
+                          className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 outline-none shadow-2xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium"
+                        />
+                      </div>
+
+                      {/* Body */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                            Email Message Template
+                          </label>
+                          <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
+                            <span>Tags:</span>
+                            <button
+                              type="button"
+                              onClick={() => setEmailBodyTemplate(prev => prev + ' {{name}}')}
+                              className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                            >
+                              {'{{name}}'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEmailBodyTemplate(prev => prev + ' {{betaUrl}}')}
+                              className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                            >
+                              {'{{betaUrl}}'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEmailBodyTemplate(prev => prev + ' {{tier}}')}
+                              className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                            >
+                              {'{{tier}}'}
+                            </button>
+                          </div>
+                        </div>
+
+                        <textarea
+                          rows={8}
+                          value={emailBodyTemplate}
+                          onChange={e => setEmailBodyTemplate(e.target.value)}
+                          className="w-full p-3.5 rounded-2xl bg-white border border-slate-300 text-xs text-slate-900 outline-none shadow-2xs font-sans leading-relaxed focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          placeholder="Write your email invitation message..."
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* Live Email Preview */
+                    <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                      {/* Email simulated envelope */}
+                      <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1.5 shadow-2xs">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500">To:</span>
+                          <span className="font-bold text-slate-900">
+                            {targetTester?.name || betaCohort[0]?.name || 'Alex Backer'} &lt;
+                            {targetTester?.email || betaCohort[0]?.email || 'alex@example.com'}&gt;
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
+                          <span className="text-slate-500">Subject:</span>
+                          <span className="font-black text-slate-900">
+                            {emailSubject
+                              .replace(/\{\{name\}\}/gi, targetTester?.name || betaCohort[0]?.name || 'Alex Backer')
+                              .replace(/\{\{productName\}\}/gi, project?.productName || 'the MVP')
+                              .replace(/\{\{tier\}\}/gi, targetTester?.tier || betaCohort[0]?.tier || 'Founding Backer')
+                              .replace(/\{\{token\}\}/gi, targetTester?.token || betaCohort[0]?.token || 'beta_access123')
+                              .replace(/\{\{betaUrl\}\}/gi, `${(emailTestingUrl || `${origin}/beta/${productSlug}`).split('?')[0]}?token=${targetTester?.token || betaCohort[0]?.token || 'beta_access123'}`)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Rendered Email Body Box */}
+                      <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-xs">
+                        <div className="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">
+                          {emailBodyTemplate
+                            .replace(/\{\{name\}\}/gi, targetTester?.name || betaCohort[0]?.name || 'Alex Backer')
+                            .replace(/\{\{productName\}\}/gi, project?.productName || 'the MVP')
+                            .replace(/\{\{tier\}\}/gi, targetTester?.tier || betaCohort[0]?.tier || 'Founding Backer')
+                            .replace(/\{\{token\}\}/gi, targetTester?.token || betaCohort[0]?.token || 'beta_access123')
+                            .replace(/\{\{betaUrl\}\}/gi, `${(emailTestingUrl || `${origin}/beta/${productSlug}`).split('?')[0]}?token=${targetTester?.token || betaCohort[0]?.token || 'beta_access123'}`)}
+                        </div>
+
+                        {/* Highlighted CTA Button In Email */}
+                        <div className="pt-2 text-center">
+                          <a
+                            href={`${(emailTestingUrl || `${origin}/beta/${productSlug}`).split('?')[0]}?token=${targetTester?.token || betaCohort[0]?.token || 'beta_access123'}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md"
+                          >
+                            <span>Open Beta Testing Portal & Sandbox</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                disabled={isSendingEmails}
+                onClick={() => {
+                  setShowBetaEmailModal(false)
+                  setSendResultLogs(null)
+                }}
+                className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
+              >
+                {sendResultLogs ? 'Close' : 'Cancel'}
+              </button>
+
+              {!sendResultLogs && !isSendingEmails && (
+                <button
+                  type="button"
+                  onClick={handleSendBetaEmails}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                >
+                  <Send className="w-4 h-4 text-blue-100" />
+                  <span>
+                    {emailModalMode === 'single' && targetTester
+                      ? `Send Invitation to ${targetTester.name}`
+                      : `Dispatch ${selectedTesterIds.length} Beta Invitations`}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )

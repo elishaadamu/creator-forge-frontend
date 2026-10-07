@@ -66,18 +66,18 @@ export default function ProjectOS({
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search)
       const stepParam = sp.get('step')
-      if (stepParam && ['plan', 'assets', 'campaign', 'optimize', 'gate', 'build', 'beta', 'prep', 'launch', 'review', 'scale'].includes(stepParam.toLowerCase())) {
+      if (stepParam && ['plan', 'assets', 'campaign', 'optimize', 'gate', 'build', 'beta', 'prep', 'monitor', 'manager', 'report', 'launch', 'review', 'scale'].includes(stepParam.toLowerCase())) {
         return stepParam.toLowerCase()
       }
-      const pNum = project?.currentPhase ? Number(project.currentPhase) : (project?.status === 'building' ? 2 : 1)
+      const pNum = project?.currentPhase ? Number(project.currentPhase) : (project?.status === 'launched' || project?.phase2Passed || project?.p2Complete ? 3 : project?.status === 'building' || project?.phase1Passed || project?.p1Complete ? 2 : 1)
       if (project?.id) {
         const cached = localStorage.getItem(`forge_p${pNum}_step_${project.id}`)
-        if (cached && ['plan', 'assets', 'campaign', 'optimize', 'gate', 'build', 'beta', 'prep', 'launch', 'review', 'scale'].includes(cached)) {
+        if (cached && ['plan', 'assets', 'campaign', 'optimize', 'gate', 'build', 'beta', 'prep', 'monitor', 'manager', 'report', 'launch', 'review', 'scale'].includes(cached)) {
           return cached
         }
       }
     }
-    return getProjectActiveStep(project, project?.currentPhase ? Number(project.currentPhase) : 1)
+    return getProjectActiveStep(project, project?.currentPhase ? Number(project.currentPhase) : (project?.status === 'launched' || project?.phase2Passed || project?.p2Complete ? 3 : project?.status === 'building' || project?.phase1Passed || project?.p1Complete ? 2 : 1))
   })
 
   const [showShareModal, setShowShareModal] = useState(false)
@@ -331,7 +331,15 @@ partnerships@creatorforge.com`
   const projectCurrentPhase = Number(
     project.currentPhase ||
     project.current_phase ||
-    (project.status === 'building' ? 2 : project.status === 'launched' ? 3 : ((project.gateDecisions?.length || 0) > 0 ? 2 : 1))
+    (project.status === 'launched' || project.phase2Passed || project.p2Complete
+      ? 3
+      : project.status === 'building' || project.phase1Passed || project.p1Complete
+      ? 2
+      : project.gateDecisions?.some(d => d.decision === 'pass_to_phase3' || d.decision === 'launch_product')
+      ? 3
+      : project.gateDecisions?.some(d => d.decision === 'pass_to_phase2')
+      ? 2
+      : 1)
   )
   const [selectedPhaseTab, setSelectedPhaseTab] = useState(projectCurrentPhase)
 
@@ -371,7 +379,7 @@ partnerships@creatorforge.com`
     const updatedStatus = nextPhase === 2 ? 'building' : nextPhase === 3 ? 'launched' : 'validating'
     const initialStep = nextPhase === 2 ? 'plan' : nextPhase === 3 ? 'prep' : 'plan'
     const decisionItem = nextPhase === 2 ? {
-      id: `gate_${Date.now()}`,
+      id: `gate_p1_${Date.now()}`,
       decision: 'pass_to_phase2',
       gateStatus: 'passed',
       targetRevenue: presaleTarget,
@@ -379,6 +387,16 @@ partnerships@creatorforge.com`
       backersCount: Array.isArray(project.reservations) ? new Set(project.reservations.map(r => (r.email || r.id || '').toLowerCase().trim())).size : Number(project.telemetry?.presalesCount || 0),
       conversionRate: Number(project.conversionRate || 0),
       notes: 'Phase 1 completed. Advanced to Phase 2: Build MVP.',
+      decidedAt: new Date().toLocaleString()
+    } : nextPhase === 3 ? {
+      id: `gate_p2_${Date.now()}`,
+      decision: 'pass_to_phase3',
+      gateStatus: 'passed',
+      targetRevenue: presaleTarget,
+      achievedRevenue: presalesRevenue,
+      backersCount: Array.isArray(project.reservations) ? new Set(project.reservations.map(r => (r.email || r.id || '').toLowerCase().trim())).size : Number(project.telemetry?.presalesCount || 0),
+      conversionRate: Number(project.conversionRate || 0),
+      notes: 'Phase 2 completed. Advanced to Phase 3: Launch Commercial Operations.',
       decidedAt: new Date().toLocaleString()
     } : null
 
@@ -390,7 +408,15 @@ partnerships@creatorforge.com`
       phase1Passed: true,
       step4Done: true,
       step5Done: true,
-      ...(nextPhase === 3 ? { p2Complete: true, phase2Passed: true } : {}),
+      ...(nextPhase === 3 ? {
+        p2Complete: true,
+        phase2Passed: true,
+        buildCompleted: true,
+        mvpBuildDone: true,
+        betaTestingCompleted: true,
+        betaApproved: true,
+        phase2BetaDone: true
+      } : {}),
       currentStep: initialStep,
       current_step: initialStep,
       status: updatedStatus,
@@ -401,14 +427,27 @@ partnerships@creatorforge.com`
     }
     setSelectedPhaseTab(nextPhase)
     setSelectedPhaseStep(initialStep)
+    if (project?.id) {
+      try {
+        localStorage.setItem(`forge_p${nextPhase}_step_${project.id}`, initialStep)
+        localStorage.removeItem(`forge_p2_step_${project.id}`)
+        const url = new URL(window.location.href)
+        url.searchParams.set('step', initialStep)
+        url.searchParams.set('modal', 'phase')
+        window.history.replaceState({}, '', url.toString())
+      } catch (e) {}
+    }
     onUpdateProject?.(prev => ({
       ...(prev || {}),
       ...updated
     }))
     if (project?.id) {
       import('../../services/opsApi').then(({ updateCoLaunchProject, recordGateDecision }) => {
-        if (nextPhase === 2 && recordGateDecision) {
-          recordGateDecision(project.id, { decision: 'pass_to_phase2', notes: 'Phase 1 completed. Advanced to Phase 2: Build MVP.' }).catch(e => console.warn(e))
+        if (recordGateDecision) {
+          recordGateDecision(project.id, {
+            decision: nextPhase === 2 ? 'pass_to_phase2' : 'pass_to_phase3',
+            notes: nextPhase === 2 ? 'Phase 1 completed. Advanced to Phase 2: Build MVP.' : 'Phase 2 completed. Advanced to Phase 3: Launch.'
+          }).catch(e => console.warn(e))
         }
         updateCoLaunchProject(project.id, {
           currentPhase: nextPhase,
@@ -419,7 +458,16 @@ partnerships@creatorforge.com`
           p1Complete: true,
           phase1Passed: true,
           step4Done: true,
-          step5Done: true
+          step5Done: true,
+          ...(nextPhase === 3 ? {
+            p2Complete: true,
+            phase2Passed: true,
+            buildCompleted: true,
+            mvpBuildDone: true,
+            betaTestingCompleted: true,
+            betaApproved: true,
+            phase2BetaDone: true
+          } : {})
         }).catch(e => console.warn(e))
       })
     }

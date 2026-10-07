@@ -170,6 +170,8 @@ export default function PreorderLandingPage({ slug }) {
         attributedChannel = 'Direct Messages'
       }
 
+      const activeExpVariant = project?.campaignKit?.pricingConfig?.activeExperimentTitle || project?.campaignKit?.landingPageCopy?.activeExperimentTitle || null
+
       const newReservation = {
         id: `res-${Date.now()}`,
         name: buyerName.trim(),
@@ -181,7 +183,8 @@ export default function PreorderLandingPage({ slug }) {
         txId: txId,
         date: 'Just now',
         timestamp: Date.now(),
-        status: 'Paid'
+        status: 'Paid',
+        experimentVariant: activeExpVariant
       }
 
       try {
@@ -216,7 +219,8 @@ export default function PreorderLandingPage({ slug }) {
           tier: selectedTier.name,
           paymentMethod: paymentMethod === 'stripe' ? 'Stripe' : 'PayPal',
           channel: attributedChannel,
-          txId: txId
+          txId: txId,
+          experimentVariant: activeExpVariant
         })
         if (dbResult) {
           setProject(dbResult)

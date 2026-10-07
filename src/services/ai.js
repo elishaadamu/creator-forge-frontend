@@ -36,28 +36,44 @@ try {
   console.warn("[Forge] Failed to load AI keys from localStorage:", e);
 }
 
-export async function ensureServerAiKeysLoaded() {
-  if (inMemoryAiKeys.openaiKey || inMemoryAiKeys.geminiKey || inMemoryAiKeys.anthropicKey) {
-    return inMemoryAiKeys;
-  }
-  try {
-    const res = await fetch("/api/settings");
-    if (res.ok) {
-      const data = await res.json();
-      if (data.openai_api_key && !inMemoryAiKeys.openaiKey) {
-        inMemoryAiKeys.openaiKey = data.openai_api_key;
+export async function ensureServerAiKeysLoaded(force = false) {
+  const needsKeys =
+    force ||
+    !inMemoryAiKeys.geminiKey ||
+    !inMemoryAiKeys.openaiKey ||
+    failedKeys.has(inMemoryAiKeys.geminiKey) ||
+    failedKeys.has(inMemoryAiKeys.openaiKey);
+
+  if (needsKeys) {
+    try {
+      const res = await fetch("/api/settings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.gemini_api_key && (!inMemoryAiKeys.geminiKey || failedKeys.has(inMemoryAiKeys.geminiKey) || force)) {
+          inMemoryAiKeys.geminiKey = data.gemini_api_key;
+          failedKeys.delete(data.gemini_api_key);
+        }
+        if (data.openai_api_key && (!inMemoryAiKeys.openaiKey || failedKeys.has(inMemoryAiKeys.openaiKey) || force)) {
+          inMemoryAiKeys.openaiKey = data.openai_api_key;
+          failedKeys.delete(data.openai_api_key);
+        }
+        if (data.anthropic_api_key && (!inMemoryAiKeys.anthropicKey || failedKeys.has(inMemoryAiKeys.anthropicKey) || force)) {
+          inMemoryAiKeys.anthropicKey = data.anthropic_api_key;
+          failedKeys.delete(data.anthropic_api_key);
+        }
+        if (data.active_ai_provider) {
+          inMemoryAiKeys.activeProvider = data.active_ai_provider;
+        }
       }
-      if (data.gemini_api_key && !inMemoryAiKeys.geminiKey) {
-        inMemoryAiKeys.geminiKey = data.gemini_api_key;
-      }
-      if (data.anthropic_api_key && !inMemoryAiKeys.anthropicKey) {
-        inMemoryAiKeys.anthropicKey = data.anthropic_api_key;
-      }
+    } catch (e) {
+      console.warn("[Forge AI] Could not auto-fetch server AI keys:", e);
     }
-  } catch (e) {
-    console.warn("[Forge AI] Could not auto-fetch server AI keys:", e);
   }
   return inMemoryAiKeys;
+}
+
+export function resetFailedAiKeys() {
+  failedKeys.clear();
 }
 
 export function loadAiKeys() {
@@ -75,7 +91,7 @@ export function saveAiKeys({
     inMemoryAiKeys.geminiKey = (geminiKey || "").trim();
     try {
       localStorage.setItem("forge_gemini_api_key", inMemoryAiKeys.geminiKey);
-    } catch (e) {}
+    } catch (e) { }
   }
   if (togetherKey !== undefined) {
     inMemoryAiKeys.togetherKey = (togetherKey || "").trim();
@@ -84,7 +100,7 @@ export function saveAiKeys({
         "forge_together_api_key",
         inMemoryAiKeys.togetherKey,
       );
-    } catch (e) {}
+    } catch (e) { }
   }
 
   if (openaiKey !== undefined) {
@@ -96,7 +112,7 @@ export function saveAiKeys({
       } else {
         localStorage.removeItem("forge_openai_api_key");
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   if (anthropicKey !== undefined) {
     inMemoryAiKeys.anthropicKey = (anthropicKey || "").trim();
@@ -105,7 +121,7 @@ export function saveAiKeys({
         "forge_anthropic_api_key",
         inMemoryAiKeys.anthropicKey,
       );
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
@@ -125,7 +141,7 @@ export function clearInMemoryAiKeys() {
     localStorage.removeItem("forge_openai_api_key");
     localStorage.removeItem("forge_anthropic_api_key");
     localStorage.removeItem("forge_ai_keys_consent");
-  } catch (e) {}
+  } catch (e) { }
 }
 
 export function hasGeminiKey() {
@@ -163,7 +179,7 @@ export function setAiKeysConsent(value) {
   aiKeysConsentGiven = !!value;
   try {
     localStorage.setItem("forge_ai_keys_consent", String(aiKeysConsentGiven));
-  } catch (e) {}
+  } catch (e) { }
 }
 
 export async function saveAiKeysToDb(username) {
@@ -246,8 +262,6 @@ async function geminiCall(
   const { geminiKey } = loadAiKeys();
   if (!geminiKey) throw new Error("NO_GEMINI_KEY");
 
-  const url = `/api/gemini/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${geminiKey}`;
-
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -274,49 +288,67 @@ async function geminiCall(
     }
   }
 
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: activeSignal,
-    });
+  const candidateModels = [
+    "gemini-2.5-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+  ];
+  let lastErr = null;
 
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`Gemini ${res.status}: ${err.slice(0, 300)}`);
-    }
+  for (const model of candidateModels) {
+    const url = `/api/gemini/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: activeSignal,
+      });
 
-    const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    if (!text) throw new Error("Gemini returned empty response");
-
-    if (jsonMode) {
-      const cleaned = text
-        .replace(/^```json\s*/i, "")
-        .replace(/^```\s*/i, "")
-        .replace(/```\s*$/i, "")
-        .trim();
-      try {
-        return JSON.parse(cleaned);
-      } catch (err) {
-        console.error("[Forge] Gemini JSON parse failed. Raw response:", text);
-        throw err;
+      if (!res.ok) {
+        const errText = await res.text();
+        lastErr = new Error(`Gemini ${model} ${res.status}: ${errText.slice(0, 300)}`);
+        // If 404 or 400 (e.g. model name not available in this region/key), try next candidate
+        if (res.status === 404 || res.status === 400) {
+          continue;
+        }
+        throw lastErr;
       }
-    }
 
-    return text;
-  } catch (err) {
-    if (err.name === "AbortError") {
-      if (signal && signal.aborted) {
-        throw err;
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      if (!text) throw new Error("Gemini returned empty response");
+
+      clearTimeout(timeoutId);
+
+      if (jsonMode) {
+        const cleaned = text
+          .replace(/^```json\s*/i, "")
+          .replace(/^```\s*/i, "")
+          .replace(/```\s*$/i, "")
+          .trim();
+        try {
+          return JSON.parse(cleaned);
+        } catch (err) {
+          console.error("[Forge] Gemini JSON parse failed. Raw response:", text);
+          throw err;
+        }
       }
-      throw new Error("Gemini request timed out after 45s");
+
+      return text;
+    } catch (err) {
+      if (err.name === "AbortError") {
+        clearTimeout(timeoutId);
+        if (signal && signal.aborted) throw err;
+        throw new Error("Gemini request timed out after 45s");
+      }
+      lastErr = err;
     }
-    throw err;
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  clearTimeout(timeoutId);
+  throw lastErr || new Error("All Gemini candidate models failed");
 }
 
 // ── Anthropic Call ─────────────────────────────────────────────────────────────
@@ -561,12 +593,12 @@ async function openaiResponsesCall(
   if (!text) throw new Error("OpenAI Responses empty");
   return jsonMode
     ? JSON.parse(
-        text
-          .replace(/^```json\s*/i, "")
-          .replace(/^```\s*/i, "")
-          .replace(/```\s*$/i, "")
-          .trim(),
-      )
+      text
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim(),
+    )
     : text;
 }
 
@@ -639,6 +671,27 @@ async function aiTextCall(
         "[Forge] Anthropic Claude call failed, trying fallback:",
         err,
       );
+    }
+  }
+
+  // Last resort: clear stale failedKeys, force-reload from server, retry Gemini once
+  failedKeys.clear();
+  await ensureServerAiKeysLoaded(true);
+  const refreshed = loadAiKeys();
+  if (refreshed.geminiKey) {
+    try {
+      return await geminiCall(prompt, systemPrompt, maxTokens, signal, jsonMode);
+    } catch (retryErr) {
+      if (retryErr.name === "AbortError") throw retryErr;
+      console.warn("[Forge] Final Gemini retry after key refresh failed:", retryErr);
+    }
+  }
+  if (refreshed.openaiKey) {
+    try {
+      return await openaiCall(prompt, systemPrompt, maxTokens, signal, jsonMode);
+    } catch (retryErr) {
+      if (retryErr.name === "AbortError") throw retryErr;
+      console.warn("[Forge] Final OpenAI retry after key refresh failed:", retryErr);
     }
   }
 
@@ -1219,7 +1272,7 @@ Return exactly this JSON:
     if (data && data.content && typeof data.content === "string") {
       try {
         return JSON.parse(data.content);
-      } catch (e) {}
+      } catch (e) { }
     }
     if (data && data.content && typeof data.content === "object") {
       return data.content;
@@ -1298,11 +1351,11 @@ Keep product names authentic, tailored, and highly specific to the creator's nic
       if (arrStart !== -1 && arrEnd !== -1) {
         try {
           return JSON.parse(jsonStr.slice(arrStart, arrEnd + 1));
-        } catch (e) {}
+        } catch (e) { }
       }
       try {
         return JSON.parse(jsonStr);
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 3. Wrapped object content
@@ -1781,8 +1834,8 @@ export function buildSmartFallbackCampaignKit(source, options = {}) {
     pacing === 'intensive'
       ? intensiveSchedule
       : pacing === 'balanced'
-      ? balancedSchedule
-      : lowBurdenSchedule;
+        ? balancedSchedule
+        : lowBurdenSchedule;
 
   let fallbackAnnouncement = `🚨 Big announcement! After hearing so many comments across our channel about the nightmare of manual workflows in ${niche}, we're officially building ${product}.\n\n💡 ${tagline}.\n\n${rawPosts.length > 0 ? `In our recent upload "${primaryVideoTitle}", hundreds of you pointed out how broken current tools are.` : `We've spent weeks architecting a dedicated solution built specifically for our community's workflow.`}\n\nWe're accepting only 50 Founding Members for our private Beta at 50% off ($${unitPrice}/yr) + direct input on our product roadmap.\n\n👇 Claim a founding spot or reserve with a $${depositVal} refundable deposit:\n${origin}/preorder/${slug}?ref=twitter_post`;
   if (isVideoMidRollOnly) {
@@ -2228,15 +2281,15 @@ Niche: "${niche}"
 
 RESPONSES DATA:
 ${JSON.stringify(
-  responses.map((r) => ({
-    respondent: r.name || "Anonymous",
-    email: r.email || "",
-    intentRating: r.rating || 8,
-    answers: r.answers || {},
-  })),
-  null,
-  2,
-)}
+    responses.map((r) => ({
+      respondent: r.name || "Anonymous",
+      email: r.email || "",
+      intentRating: r.rating || 8,
+      answers: r.answers || {},
+    })),
+    null,
+    2,
+  )}
 
 Return JSON with exact keys:
 {
@@ -2301,7 +2354,7 @@ Return JSON with exact keys:
         scoreVerdict: resObj.scoreVerdict || "Positive Validation Signal",
         executiveSummary: String(
           resObj.executiveSummary ||
-            "Customer discovery responses indicate positive product-market demand.",
+          "Customer discovery responses indicate positive product-market demand.",
         ),
         keyFindings: Array.isArray(resObj.keyFindings)
           ? resObj.keyFindings
@@ -3282,11 +3335,11 @@ export function buildSmartFallbackCodebase(projectData) {
   const features = (spec.features && Array.isArray(spec.features) && spec.features.length > 0)
     ? spec.features
     : [
-        { name: 'Core Workflow Automation', priority: 'P0', description: 'Real-time orchestration pipeline and state management' },
-        { name: 'Telemetry & Analytics Stream', priority: 'P0', description: 'Latency and throughput monitoring with live events' },
-        { name: 'Creator & Audience Hub', priority: 'P1', description: 'Audience engagement segmentation and tracking' },
-        { name: 'Stripe Billing & Licensing', priority: 'P0', description: 'Instant checkout verification and subscription tiers' }
-      ]
+      { name: 'Core Workflow Automation', priority: 'P0', description: 'Real-time orchestration pipeline and state management' },
+      { name: 'Telemetry & Analytics Stream', priority: 'P0', description: 'Latency and throughput monitoring with live events' },
+      { name: 'Creator & Audience Hub', priority: 'P1', description: 'Audience engagement segmentation and tracking' },
+      { name: 'Stripe Billing & Licensing', priority: 'P0', description: 'Instant checkout verification and subscription tiers' }
+    ]
   const prodSlug = product.toLowerCase().replace(/[^a-z0-9]/g, '-')
 
   const appJsx = `import React, { useState, useEffect } from 'react'
@@ -4272,22 +4325,22 @@ export function buildSmartFallbackPhase3Strategy(projectData) {
   // Build Real Ops Checklist directly from Phase 2 Tasks and Files
   const p2Tasks = (Array.isArray(ctx.engineeringTasks) && ctx.engineeringTasks.length > 0)
     ? ctx.engineeringTasks.map((t, idx) => ({
-        id: t.id || `oc-p2-${idx + 1}`,
-        title: t.title || t.name || `Engineering Task #${idx + 1}`,
-        done: t.status === 'Completed' || Boolean(t.executedAt),
-        category: t.category || 'Phase 2 Engineering',
-        code: t.code || '',
-        files: t.files || []
-      }))
+      id: t.id || `oc-p2-${idx + 1}`,
+      title: t.title || t.name || `Engineering Task #${idx + 1}`,
+      done: t.status === 'Completed' || Boolean(t.executedAt),
+      category: t.category || 'Phase 2 Engineering',
+      code: t.code || '',
+      files: t.files || []
+    }))
     : []
 
   const p2FileTasks = (Array.isArray(ctx.projectFiles) && ctx.projectFiles.length > 0)
     ? ctx.projectFiles.map((f, idx) => ({
-        id: `oc-file-${idx + 1}`,
-        title: `Verify ${f.filename || f.name} production bundle & route binding`,
-        done: true,
-        category: 'Phase 2 Codebase'
-      }))
+      id: `oc-file-${idx + 1}`,
+      title: `Verify ${f.filename || f.name} production bundle & route binding`,
+      done: true,
+      category: 'Phase 2 Codebase'
+    }))
     : []
 
   const isQaRun = Boolean(ctx.qaResults && (ctx.qaResults.executedAt || ctx.qaResults.status === 'Passed' || (ctx.qaResults.unitTests && ctx.qaResults.unitTests.passed > 0)))
