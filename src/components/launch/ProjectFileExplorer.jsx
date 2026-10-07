@@ -70,7 +70,6 @@ export default function ProjectFileExplorer({ project, onUpdateProject }) {
       projectFiles: newFileList
     }))
     try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
       window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
     } catch (e) {}
 

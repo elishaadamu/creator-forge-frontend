@@ -85,7 +85,7 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
   }
 
   try {
-    const activeProject = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+    const activeProject = {}
     const clientId = getOrCreateClientId()
     const fingerprint = getDeviceFingerprint()
     const deviceType = getDeviceType()
@@ -195,7 +195,6 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
     }
 
     try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProject))
       window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProject }))
     } catch (e) {}
 
@@ -243,7 +242,7 @@ export function trackVisit(pagePath = '/dashboard', onProjectUpdate = null) {
  */
 export function simulateUniqueDeviceVisit(deviceType = 'mobile', onProjectUpdate = null) {
   try {
-    const activeProject = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+    const activeProject = {}
     const rawVisitors = activeProject.uniqueVisitors || []
     
     const fakeId = `cid_${deviceType}_${Math.random().toString(36).slice(2, 9)}_${Date.now().toString(36)}`
@@ -283,7 +282,6 @@ export function simulateUniqueDeviceVisit(deviceType = 'mobile', onProjectUpdate
       lastVisitorTimestamp: Date.now()
     }
 
-    localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProject))
     if (onProjectUpdate) onProjectUpdate(updatedProject)
 
     return updatedProject

@@ -59,13 +59,6 @@ export default function BetaTestingPortal({ slug }) {
           console.warn('[BetaTestingPortal] getProjectBySlug error:', e)
         }
 
-        if (!proj) {
-          try {
-            const cached = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-            if (cached && Object.keys(cached).length > 0) proj = cached
-          } catch (e) {}
-        }
-
         if (isMounted && proj) {
           setProject(proj)
           setSubmittedFeedbackList(Array.isArray(proj.betaFeedback) ? proj.betaFeedback : [])
@@ -387,9 +380,6 @@ ${techProfile.recommendedToolkits.map(t => `- **${t.name}**: ${t.purpose}`).join
       // Update local state
       const updatedProj = { ...project, generatedCode: existingGenerated }
       setProject(updatedProj)
-      try {
-        localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProj))
-      } catch (err) {}
 
       setIsAddingFile(false)
       setNewFilePath('')
@@ -429,14 +419,6 @@ ${techProfile.recommendedToolkits.map(t => `- **${t.name}**: ${t.purpose}`).join
           betaFeedback: updated
         })
       }
-
-      try {
-        const cached = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        if (cached && Object.keys(cached).length > 0) {
-          cached.betaFeedback = updated
-          localStorage.setItem('forge_launch_active_project', JSON.stringify(cached))
-        }
-      } catch (e) {}
 
       setFeedbackMessage('')
       showToast('Feedback logged directly to the engineering team!')

@@ -16,14 +16,7 @@ import { PreorderLandingSkeleton } from './Section2Skeletons'
 
 export default function PreorderLandingPage({ slug }) {
   const [isLoading, setIsLoading] = useState(true)
-  const [project, setProject] = useState(() => {
-    try {
-      const active = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-      return active && Object.keys(active).length > 0 ? active : null
-    } catch (e) {
-      return null
-    }
-  })
+  const [project, setProject] = useState(null)
 
   useEffect(() => {
     const title = project?.name
@@ -64,18 +57,10 @@ export default function PreorderLandingPage({ slug }) {
           const dbProj = await getProjectBySlug(slug)
           if (isMounted && dbProj) {
             setProject(dbProj)
-            try {
-              localStorage.setItem('forge_launch_active_project', JSON.stringify(dbProj))
-            } catch (e) {}
           }
         }
       } catch (err) {
-        try {
-          const active = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-          if (isMounted && active && Object.keys(active).length > 0) {
-            setProject(active)
-          }
-        } catch (e) {}
+        console.warn('[Preorder] Failed to load project from MongoDB Atlas:', err)
       } finally {
         if (isMounted) setIsLoading(false)
       }
@@ -86,18 +71,15 @@ export default function PreorderLandingPage({ slug }) {
       if (isMounted && updated) setProject(updated)
     })
 
-    const handleSync = () => {
-      try {
-        const cur = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
-        if (cur && Object.keys(cur).length > 0) setProject(cur)
-      } catch (err) {}
+    const handleSync = (e) => {
+      if (e?.detail) {
+        setProject(e.detail)
+      }
     }
 
-    window.addEventListener('storage', handleSync)
     window.addEventListener('forge_project_updated', handleSync)
     return () => {
       isMounted = false
-      window.removeEventListener('storage', handleSync)
       window.removeEventListener('forge_project_updated', handleSync)
     }
   }, [slug])
@@ -203,7 +185,7 @@ export default function PreorderLandingPage({ slug }) {
       }
 
       try {
-        const current = JSON.parse(localStorage.getItem('forge_launch_active_project') || '{}')
+        const current = project || {}
         const existingReservations = Array.isArray(current.reservations) ? current.reservations : []
         const nextReservations = [newReservation, ...existingReservations]
         const nextTotalRevenue = nextReservations.reduce((acc, r) => acc + (Number(r.amount) || 0), 0)
@@ -217,14 +199,11 @@ export default function PreorderLandingPage({ slug }) {
           conversionRate: Number(nextConversionRate)
         }
 
-        localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
         setProject(updated)
-
         window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
-        window.dispatchEvent(new Event('storage'))
       } catch (err) {}
 
-      // 2. Persist to central Render PostgreSQL database for cross-device & cross-browser synchronization
+      // 2. Persist to MongoDB Atlas via backend API for cross-device & cross-browser synchronization
       try {
         const { recordPreorderUniversal } = await import('../../services/opsApi')
         const dbResult = await recordPreorderUniversal({
@@ -241,10 +220,7 @@ export default function PreorderLandingPage({ slug }) {
         })
         if (dbResult) {
           setProject(dbResult)
-          try {
-            localStorage.setItem('forge_launch_active_project', JSON.stringify(dbResult))
-            window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: dbResult }))
-          } catch (e) {}
+          window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: dbResult }))
         }
       } catch (dbErr) {
         console.warn('[Preorder] DB persistence completed or logged:', dbErr)

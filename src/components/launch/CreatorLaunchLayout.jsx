@@ -54,18 +54,7 @@ export default function CreatorLaunchLayout({
     return false
   }
 
-  const [activeProject, setActiveProject] = useState(() => {
-    try {
-      const savedProject = getExpiringItem('forge_launch_active_project')
-      if (savedProject && !isCorruptedPhantomProject(savedProject)) {
-        return savedProject
-      }
-      removeExpiringItem('forge_launch_active_project')
-      return null
-    } catch {
-      return null
-    }
-  })
+  const [activeProject, setActiveProject] = useState(null)
   const [allProjects, setAllProjects] = useState([])
   const [showPartnerMenu, setShowPartnerMenu] = useState(false)
   const [isSwitchingCreator, setIsSwitchingCreator] = useState(false)
@@ -106,14 +95,7 @@ export default function CreatorLaunchLayout({
   const [showSection1Menu, setShowSection1Menu] = useState(false)
   const [showSection1Sidebar, setShowSection1Sidebar] = useState(false)
 
-  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(() => {
-    try {
-      const saved = localStorage.getItem('forge_cobuilder_pass_price')
-      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
-    } catch {
-      return 50
-    }
-  })
+  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(50)
 
   const SECTION1_STEPS = [
     { step: 1, label: '1. Campaign Setup', desc: 'Target Niches & Autonomous Engine', icon: Target, color: 'text-slate-900', bg: 'bg-slate-100' },
@@ -343,7 +325,6 @@ export default function CreatorLaunchLayout({
 
         setActiveProject(matched)
         try {
-          setExpiringItem('forge_launch_active_project', matched, ONE_HOUR_MS)
           localStorage.removeItem('forge_launch_active_section')
           const nextUrl = new URL('/project-os', window.location.origin)
           nextUrl.searchParams.set('project', matched.id)
@@ -502,7 +483,6 @@ export default function CreatorLaunchLayout({
         return [finalProject, ...filtered]
       })
       try {
-        setExpiringItem('forge_launch_active_project', finalProject, ONE_HOUR_MS)
         localStorage.removeItem('forge_launch_active_section')
         const url = new URL(window.location.href)
         url.searchParams.set('section', 'section2')
@@ -597,17 +577,7 @@ export default function CreatorLaunchLayout({
     return () => window.removeEventListener('popstate', handleUrlSync)
   }, [])
 
-  // Keep activeProject in expiring storage (1 hour TTL) without modifying clean browser URLs
-  useEffect(() => {
-    try {
-      localStorage.removeItem('forge_launch_active_section')
-      if (activeProject) {
-        setExpiringItem('forge_launch_active_project', activeProject, ONE_HOUR_MS)
-      }
-    } catch (e) {
-      console.warn('Failed to sync creator launch state to storage', e)
-    }
-  }, [activeProject])
+
 
   // Synchronize with backend DB: Sync workflow state and active projects across all devices
   useEffect(() => {
@@ -625,7 +595,6 @@ export default function CreatorLaunchLayout({
           const dbFee = ws?.default_pass_price ?? ws?.cobuilder_pass_price ?? ws?.extra_state?.default_pass_price ?? ws?.extra_state?.cobuilder_pass_price
           if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
             setCobuilderPassPrice(Number(dbFee))
-            try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
           }
           const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
           const urlSec = searchParams?.get('section')
@@ -655,15 +624,6 @@ export default function CreatorLaunchLayout({
             const cleanCreator = creatorParam ? creatorParam.replace(/^@/, '').toLowerCase().trim() : null
 
             setActiveProject(prev => {
-              const local = prev || (() => {
-                try {
-                  const saved = getExpiringItem('forge_launch_active_project')
-                  return isCorruptedPhantomProject(saved) ? null : saved
-                } catch {
-                  return null
-                }
-              })()
-
               let matched = null
               // 1. Explicit project ID from URL
               if (projIdParam) {
@@ -677,9 +637,9 @@ export default function CreatorLaunchLayout({
                   (p.creatorEmail && p.creatorEmail.toLowerCase() === cleanCreator)
                 )
               }
-              // 3. Fallback to active/local project if already set
-              if (!matched && local) {
-                matched = projs.find(p => p.id === local.id || (p.creatorId && p.creatorId === local.creatorId))
+              // 3. Fallback to active project in React state if already set
+              if (!matched && prev) {
+                matched = projs.find(p => p.id === prev.id || (p.creatorId && p.creatorId === prev.creatorId))
               }
               // 4. Default to most recently updated project
               if (!matched) {
@@ -720,14 +680,10 @@ export default function CreatorLaunchLayout({
                 appliedPatches: (matched.appliedPatches?.length || 0) > 0 ? matched.appliedPatches : (local?.id === matched.id ? (local?.appliedPatches || []) : []),
                 mvpVersion: (local?.id === matched.id ? local?.mvpVersion : null) || matched.mvpVersion || 'v1.0.0-MVP'
               }
-              try {
-                setExpiringItem('forge_launch_active_project', merged, ONE_HOUR_MS)
-              } catch { }
               return merged
             })
           } else {
-            // DB returned 0 projects: Clear local project state, NEVER resurrect deleted projects!
-            removeExpiringItem('forge_launch_active_project')
+            // DB returned 0 projects: Clear project state
             setAllProjects([])
             setActiveProject(null)
           }
@@ -748,11 +704,8 @@ export default function CreatorLaunchLayout({
     setActiveProject(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
       if (!next) return next
-      try {
-        setExpiringItem('forge_launch_active_project', next, ONE_HOUR_MS)
-      } catch (e) { }
 
-      // Persist to backend database tables in SQLite / PostgreSQL
+      // Persist directly to MongoDB Atlas co_launch_projects via backend API
       if (next.id) {
         import('../../services/opsApi').then(({ updateCoLaunchProject }) => {
           updateCoLaunchProject(next.id, {
@@ -868,9 +821,6 @@ export default function CreatorLaunchLayout({
       if (dbProj && dbProj.id) {
         setActiveProject(prev => {
           const merged = { ...(prev || {}), ...dbProj }
-          try {
-            setExpiringItem('forge_launch_active_project', merged, ONE_HOUR_MS)
-          } catch { }
           return merged
         })
         setAllProjects(prev => [dbProj, ...prev.filter(p => p.id !== dbProj.id)])

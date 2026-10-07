@@ -198,21 +198,13 @@ export default function CreatorPortal({ portalId }) {
     }
   }, [project?.id, project?.creatorHandle, portalId])
 
-  const [defaultPassPrice, setDefaultPassPrice] = useState(() => {
-    try {
-      const saved = localStorage.getItem('forge_cobuilder_pass_price')
-      return saved && !isNaN(Number(saved)) ? Number(saved) : 199
-    } catch {
-      return 199
-    }
-  })
+  const [defaultPassPrice, setDefaultPassPrice] = useState(199)
 
   useEffect(() => {
     getWorkflowState().then((wf) => {
       const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price
       if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
         setDefaultPassPrice(Number(dbFee))
-        try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
       }
     }).catch(() => {})
   }, [])

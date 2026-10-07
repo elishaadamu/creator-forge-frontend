@@ -792,17 +792,8 @@ export default function CreatorFollowUpCRM({
       explicitTracked?.step === 7
     );
 
-    if (!hasActiveLaunchedProject && isCommittedCreator) {
-      try {
-        const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
-        if (storedProj) {
-          const matchId = storedProj.creatorId && (storedProj.creatorId === c.id || storedProj.creatorId === c.handle);
-          const matchHandle = storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === cCleanHandle);
-          if (matchId || matchHandle || matchedDbProj) {
-            hasActiveLaunchedProject = true;
-          }
-        }
-      } catch (e) {}
+    if (!hasActiveLaunchedProject && isCommittedCreator && matchedDbProj) {
+      hasActiveLaunchedProject = true;
     }
 
     // 2. Check thread messages to see if creator or operator has exchanged Step 5/6 concept proposals

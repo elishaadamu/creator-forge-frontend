@@ -256,21 +256,6 @@ export default function CloudCodeStudio({
     // From active project prop
     let sourceFiles = Array.isArray(project?.projectFiles) ? project.projectFiles : []
 
-    // Fallback to localStorage if prop is initializing
-    if (sourceFiles.length === 0) {
-      try {
-        const raw = localStorage.getItem('forge_launch_active_project')
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          if (Array.isArray(parsed?.projectFiles) && parsed.projectFiles.length > 0) {
-            sourceFiles = parsed.projectFiles
-          }
-        }
-      } catch (e) {
-        console.warn('[CloudCodeStudio] localStorage read notice:', e)
-      }
-    }
-
     const rawCodeFiles = []
     const rawMarketingAssets = []
 
@@ -590,10 +575,7 @@ export default function CloudCodeStudio({
     if (project?.id) updateCoLaunchProject(project.id, { projectFiles: finalPayload }).catch(() => {})
 
     try {
-      const activeProjRaw = localStorage.getItem('forge_launch_active_project')
-      const activeProj = activeProjRaw ? JSON.parse(activeProjRaw) : (project || {})
-      const updatedProj = { ...activeProj, projectFiles: finalPayload }
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProj))
+      const updatedProj = { ...(project || {}), projectFiles: finalPayload }
       window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProj }))
     } catch (e) {}
 
@@ -696,13 +678,10 @@ export default function CloudCodeStudio({
       onUpdateProject(prev => ({ ...(prev || {}), projectFiles: projectFilesPayload }))
     }
     try {
-      const activeProjRaw = localStorage.getItem('forge_launch_active_project')
-      const activeProj = activeProjRaw ? JSON.parse(activeProjRaw) : (project || {})
-      const updatedProj = { ...activeProj, projectFiles: projectFilesPayload }
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updatedProj))
+      const updatedProj = { ...(project || {}), projectFiles: projectFilesPayload }
       window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updatedProj }))
     } catch (e) {
-      console.warn('[Storage] Local sync warning:', e)
+      console.warn('[Storage] Sync warning:', e)
     }
 
     // 4. Immediately persist to Backend DB

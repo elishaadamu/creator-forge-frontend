@@ -260,7 +260,6 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
       messages: newCustomList
     }))
     try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
       window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
     } catch (e) {}
 
@@ -337,7 +336,6 @@ export default function CreatorWhatsAppChat({ project = {}, onUpdateProject }) {
     }
     onUpdateProject?.(prev => ({ ...(prev || {}), ...updated }))
     try {
-      localStorage.setItem('forge_launch_active_project', JSON.stringify(updated))
       window.dispatchEvent(new CustomEvent('forge_project_updated', { detail: updated }))
     } catch (e) {}
     setShowAddMeetingModal(false)

@@ -11204,17 +11204,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   (c.project_id || c.projectId) &&
                   (["launched", "active_project", "partnered"].includes((c.status || "").toLowerCase()) || matchedDbProj)
                 );
-                if (!isLaunched) {
-                  try {
-                    const stageMap = getExpiringItem("forge_creator_stage_map", {});
-                    const isStageMapSection2 = stageMap[c.id]?.step === "section2" || stageMap[c.id]?.step === 7;
-                    const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
-                    const matchId = storedProj && (storedProj.creatorId === c.id || storedProj.creatorId === c.handle);
-                    const matchHandle = storedProj && cCleanHandle && storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === cCleanHandle);
-                    if ((isStageMapSection2 || matchId || matchHandle || matchedDbProj) && (cHasVerifiedCommitment || (c.status || "").toLowerCase() === "launched" || (c.status || "").toLowerCase() === "partnered")) {
-                      isLaunched = true;
-                    }
-                  } catch (e) { }
+                if (!isLaunched && matchedDbProj && (cHasVerifiedCommitment || (c.status || "").toLowerCase() === "launched" || (c.status || "").toLowerCase() === "partnered")) {
+                  isLaunched = true;
                 }
 
                 const pitchSent = Boolean(
@@ -11450,17 +11441,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   hasCommitment
                 );
 
-                if (!isSelectedCreatorLaunched && selectedCreator && hasCommitment) {
-                  try {
-                    const stageMap = getExpiringItem("forge_creator_stage_map", {});
-                    const isStageMapSection2 = stageMap[selectedCreator.id]?.step === "section2" || stageMap[selectedCreator.id]?.step === 7;
-                    const storedProj = JSON.parse(localStorage.getItem("forge_launch_active_project") || "null");
-                    const matchId = storedProj && (storedProj.creatorId === selectedCreator.id || storedProj.creatorId === selectedCreator.handle);
-                    const matchHandle = storedProj && selCleanHandle && storedProj.creatorHandle && (storedProj.creatorHandle.replace(/^@/, "").toLowerCase() === selCleanHandle);
-                    if (isStageMapSection2 || matchId || matchHandle || matchedDbProj) {
-                      isSelectedCreatorLaunched = true;
-                    }
-                  } catch (e) { }
+                if (!isSelectedCreatorLaunched && selectedCreator && hasCommitment && matchedDbProj) {
+                  isSelectedCreatorLaunched = true;
                 }
 
                 if (isSelectedCreatorLaunched) {

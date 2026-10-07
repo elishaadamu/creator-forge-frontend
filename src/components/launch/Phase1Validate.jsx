@@ -95,15 +95,6 @@ export default function Phase1Validate({
         performanceAudit: proj?.metadataInfo?.performanceAudit || proj?.metadata_info?.performanceAudit || null
       }
     }
-    if (typeof window !== 'undefined' && proj?.id) {
-      try {
-        const cached = localStorage.getItem(`forge_experiments_${proj.id}`)
-        if (cached) {
-          const parsed = JSON.parse(cached)
-          if (parsed?.experiments?.length > 0) return parsed
-        }
-      } catch (e) {}
-    }
     return null
   }
 
@@ -161,16 +152,11 @@ export default function Phase1Validate({
     project?.validationCampaign?.reviewStatus
   ])
 
-  // Synchronize experimentsData whenever project prop updates, polling refreshes, or from localStorage
+  // Synchronize experimentsData whenever project prop updates or polling refreshes
   useEffect(() => {
     const incoming = resolveExperimentsData(project)
     if (incoming) {
       setExperimentsData(incoming)
-      if (typeof window !== 'undefined' && project?.id) {
-        try {
-          localStorage.setItem(`forge_experiments_${project.id}`, JSON.stringify(incoming))
-        } catch (e) {}
-      }
     }
   }, [
     project?.id,
@@ -1432,11 +1418,6 @@ export default function Phase1Validate({
       if (results && Array.isArray(results.experiments) && results.experiments.length > 0) {
         setExperimentsData(results)
         setExperiments(results.experiments)
-        if (typeof window !== 'undefined' && project?.id) {
-          try {
-            localStorage.setItem(`forge_experiments_${project.id}`, JSON.stringify(results))
-          } catch (e) {}
-        }
         const updated = {
           ...(project || {}),
           experimentsData: results,
@@ -1562,11 +1543,6 @@ export default function Phase1Validate({
       nextExpData = { ...experimentsData, experiments: updatedExps }
       setExperimentsData(nextExpData)
       setExperiments(updatedExps)
-      if (typeof window !== 'undefined' && project?.id) {
-        try {
-          localStorage.setItem(`forge_experiments_${project.id}`, JSON.stringify(nextExpData))
-        } catch (e) {}
-      }
     }
 
     const updatedProject = {
@@ -1656,11 +1632,6 @@ export default function Phase1Validate({
       nextExpData = { ...experimentsData, experiments: updatedExps }
       setExperimentsData(nextExpData)
       setExperiments(updatedExps)
-      if (typeof window !== 'undefined' && project?.id) {
-        try {
-          localStorage.setItem(`forge_experiments_${project.id}`, JSON.stringify(nextExpData))
-        } catch (e) {}
-      }
     }
 
     const updatedProject = {
