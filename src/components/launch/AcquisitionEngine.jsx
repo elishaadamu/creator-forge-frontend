@@ -627,6 +627,7 @@ export default function AcquisitionEngine({
   }, []);
 
   // Sync incoming initialCreators from parent layout / database sync
+  // Sync incoming initialCreators from parent layout / database sync
   // DB is the authoritative source — always adopt DB creators, preserving local-only edits
   useEffect(() => {
     if (discovering) return;
@@ -683,10 +684,8 @@ export default function AcquisitionEngine({
 
         return merged;
       });
-    } else if (initialCreators && Array.isArray(initialCreators) && initialCreators.length === 0 && !loadingCreatorsFromDb) {
-      setCreators([]);
     }
-  }, [initialCreators, discovering, loadingCreatorsFromDb]);
+  }, [initialCreators, discovering]);
 
   // Enforce platform requirement: strictly 100k-1M followers, max 50 creators
   useEffect(() => {
@@ -1925,11 +1924,10 @@ export default function AcquisitionEngine({
     const controller = new AbortController();
     discoveryAbortRef.current = controller;
 
-    // Capture all currently known handles to guarantee deduplication
-    const existingHandles = Array.from(new Set([
+    // Capture handles for deduplication only if appending or explicit in Step 2
+    const existingHandles = activeStep === 2 ? Array.from(new Set([
       ...(creators || []).map((c) => (c.handle || "").replace(/^@/, "").toLowerCase()),
-      ...(initialCreators || []).map((c) => (c.handle || "").replace(/^@/, "").toLowerCase()),
-    ])).filter(Boolean);
+    ])).filter(Boolean) : [];
 
     // 1. Reset discovery batch UI state so Step 2 renders a fresh incoming cohort
     setCreators([]);
@@ -1992,9 +1990,12 @@ export default function AcquisitionEngine({
           };
         });
         setCreators(enrichedCreators);
-        setSelectedCreatorId(enrichedCreators[0].id);
+        if (enrichedCreators.length > 0) {
+          setSelectedCreatorId(enrichedCreators[0].id);
+        }
         try {
           localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(enrichedCreators));
+          window.dispatchEvent(new CustomEvent("forge:creators_updated", { detail: enrichedCreators }));
         } catch (e) { }
         const emailsFound = enrichedCreators.filter((c) =>
           (c.email || c.email_public || "").includes("@"),

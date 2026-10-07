@@ -172,6 +172,17 @@ export default function CreatorLaunchLayout({
 
   useEffect(() => {
     fetchCrmData()
+    const handleCreatorsUpdated = (e) => {
+      if (e?.detail && Array.isArray(e.detail) && e.detail.length > 0) {
+        setCrmCreators(e.detail)
+      } else {
+        fetchCrmData()
+      }
+    }
+    window.addEventListener('forge:creators_updated', handleCreatorsUpdated)
+    return () => {
+      window.removeEventListener('forge:creators_updated', handleCreatorsUpdated)
+    }
   }, [activeSection])
 
   // Read active individual user / admin profile
