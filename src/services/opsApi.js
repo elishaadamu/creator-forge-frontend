@@ -333,10 +333,6 @@ export const getWorkflowState = async (forceRefresh = false) => {
     req('GET', '/workflow-state').then(ws => {
       if (ws) {
         _cachedWorkflowState = ws
-        const dbFee = ws?.default_pass_price ?? ws?.cobuilder_pass_price ?? ws?.extra_state?.default_pass_price ?? ws?.extra_state?.cobuilder_pass_price
-        if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
-          try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
-        }
       }
     }).catch(() => {})
     return _cachedWorkflowState
@@ -351,10 +347,6 @@ export const getWorkflowState = async (forceRefresh = false) => {
       const res = await req('GET', '/workflow-state')
       if (res) {
         _cachedWorkflowState = res
-        const dbFee = res?.default_pass_price ?? res?.cobuilder_pass_price ?? res?.extra_state?.default_pass_price ?? res?.extra_state?.cobuilder_pass_price
-        if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
-          try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
-        }
       }
       return res
     } finally {
@@ -368,10 +360,6 @@ export const getWorkflowState = async (forceRefresh = false) => {
 export const updateWorkflowState = async (data) => {
   if (_cachedWorkflowState && typeof data === 'object') {
     _cachedWorkflowState = { ..._cachedWorkflowState, ...data }
-  }
-  const dbFee = data?.default_pass_price ?? data?.cobuilder_pass_price ?? data?.extra_state?.default_pass_price ?? data?.extra_state?.cobuilder_pass_price
-  if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
-    try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
   }
   const res = await req('POST', '/workflow-state', data)
   if (res) {

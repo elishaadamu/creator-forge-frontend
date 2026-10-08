@@ -92,14 +92,23 @@ export default function CreatorParticipationManager() {
   const [actionModalProject, setActionModalProject] = useState(null)
 
   // Dynamic Co-Builder Pass Price States
-  const [defaultPassPrice, setDefaultPassPrice] = useState(() => {
-    try {
-      const saved = localStorage.getItem('forge_cobuilder_pass_price')
-      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
-    } catch {
-      return 50
+  const [defaultPassPrice, setDefaultPassPrice] = useState(50)
+
+  useEffect(() => {
+    // Purge any legacy localStorage fee key to ensure DB is the sole source of truth
+    try { localStorage.removeItem('forge_cobuilder_pass_price') } catch (e) { }
+
+    const handlePriceEvent = (e) => {
+      const p = e?.detail
+      if (p !== undefined && p !== null && !isNaN(Number(p))) {
+        setDefaultPassPrice(Number(p))
+      }
     }
-  })
+    window.addEventListener('forge_pass_price_changed', handlePriceEvent)
+    return () => {
+      window.removeEventListener('forge_pass_price_changed', handlePriceEvent)
+    }
+  }, [])
 
   // Global Pass Price Modal
   const [showGlobalPriceModal, setShowGlobalPriceModal] = useState(false)
@@ -209,9 +218,9 @@ export default function CreatorParticipationManager() {
         }
       }).catch(err => console.warn('[CreatorParticipationManager] Workflow state pass fee sync notice:', err))
 
-      // 2. Mirror to localStorage
+      // 2. Broadcast change event across all views in memory
       try {
-        localStorage.setItem('forge_cobuilder_pass_price', String(numericFee))
+        window.dispatchEvent(new CustomEvent('forge_pass_price_changed', { detail: numericFee }))
       } catch (e) { }
       setDefaultPassPrice(numericFee)
 
@@ -304,9 +313,6 @@ export default function CreatorParticipationManager() {
         const dbFee = wf.default_pass_price ?? wf.cobuilder_pass_price ?? wf.extra_state?.default_pass_price ?? wf.extra_state?.cobuilder_pass_price
         if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
           setDefaultPassPrice(Number(dbFee))
-          try {
-            localStorage.setItem('forge_cobuilder_pass_price', String(dbFee))
-          } catch (e) { }
         }
       }
 

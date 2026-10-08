@@ -320,25 +320,30 @@ export default function AcquisitionEngine({
     return [];
   });
 
-  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(() => {
-    try {
-      const saved = localStorage.getItem('forge_cobuilder_pass_price');
-      return saved && !isNaN(Number(saved)) ? Number(saved) : 50;
-    } catch {
-      return 50;
-    }
-  });
+  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(50);
 
   useEffect(() => {
+    try { localStorage.removeItem('forge_cobuilder_pass_price'); } catch (e) { }
+
     import("../../services/opsApi").then(({ getWorkflowState }) => {
       getWorkflowState().then((wf) => {
         const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price;
         if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
           setCobuilderPassPrice(Number(dbFee));
-          try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)); } catch (e) {}
         }
       }).catch(() => {});
     });
+
+    const handlePriceEvent = (e) => {
+      const p = e?.detail;
+      if (p !== undefined && p !== null && !isNaN(Number(p))) {
+        setCobuilderPassPrice(Number(p));
+      }
+    };
+    window.addEventListener('forge_pass_price_changed', handlePriceEvent);
+    return () => {
+      window.removeEventListener('forge_pass_price_changed', handlePriceEvent);
+    };
   }, []);
 
   useEffect(() => {

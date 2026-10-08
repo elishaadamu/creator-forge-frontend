@@ -198,23 +198,28 @@ export default function CreatorPortal({ portalId }) {
     }
   }, [project?.id, project?.creatorHandle, portalId])
 
-  const [defaultPassPrice, setDefaultPassPrice] = useState(() => {
-    try {
-      const saved = localStorage.getItem('forge_cobuilder_pass_price')
-      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
-    } catch {
-      return 50
-    }
-  })
+  const [defaultPassPrice, setDefaultPassPrice] = useState(50)
 
   useEffect(() => {
+    try { localStorage.removeItem('forge_cobuilder_pass_price') } catch (e) {}
+
     getWorkflowState().then((wf) => {
       const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price
       if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
         setDefaultPassPrice(Number(dbFee))
-        try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
       }
     }).catch(() => {})
+
+    const handlePriceEvent = (e) => {
+      const p = e?.detail
+      if (p !== undefined && p !== null && !isNaN(Number(p))) {
+        setDefaultPassPrice(Number(p))
+      }
+    }
+    window.addEventListener('forge_pass_price_changed', handlePriceEvent)
+    return () => {
+      window.removeEventListener('forge_pass_price_changed', handlePriceEvent)
+    }
   }, [])
 
   const hasCustomFee = Boolean(

@@ -15,7 +15,22 @@ export default function FollowUpCRMPage() {
   const [loading, setLoading] = useState(true);
   const [isSyncingImap, setIsSyncingImap] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(50);
+
+  useEffect(() => {
+    try { localStorage.removeItem('forge_cobuilder_pass_price'); } catch (e) { }
+
+    const handlePriceEvent = (e) => {
+      const p = e?.detail;
+      if (p !== undefined && p !== null && !isNaN(Number(p))) {
+        setCobuilderPassPrice(Number(p));
+      }
+    };
+    window.addEventListener('forge_pass_price_changed', handlePriceEvent);
+    return () => {
+      window.removeEventListener('forge_pass_price_changed', handlePriceEvent);
+    };
+  }, []);
 
   useEffect(() => {
     updatePageSEO({
@@ -61,6 +76,11 @@ export default function FollowUpCRMPage() {
       }
       if (workflowRes.status === "fulfilled" && workflowRes.value) {
         setWorkflowState(workflowRes.value);
+        const ws = workflowRes.value;
+        const dbFee = ws?.default_pass_price ?? ws?.cobuilder_pass_price ?? ws?.extra_state?.default_pass_price ?? ws?.extra_state?.cobuilder_pass_price;
+        if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
+          setCobuilderPassPrice(Number(dbFee));
+        }
       }
       if (projectsRes.status === "fulfilled" && projectsRes.value) {
         setProjects(Array.isArray(projectsRes.value) ? projectsRes.value : []);
@@ -267,7 +287,7 @@ export default function FollowUpCRMPage() {
               title="Dedicated Creator Participation & Co-Builder Console"
             >
               <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>Co-Builders ($50)</span>
+              <span>Co-Builders (${cobuilderPassPrice})</span>
             </a>
           </div>
         </div>

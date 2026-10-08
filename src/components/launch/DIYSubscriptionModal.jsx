@@ -19,7 +19,7 @@ import {
   User,
   ExternalLink
 } from 'lucide-react'
-import { updateCoLaunchProject, sendDirectEmail } from '../../services/opsApi'
+import { updateCoLaunchProject, sendDirectEmail, getWorkflowState } from '../../services/opsApi'
 import FloatingPolygons from '../ui/FloatingPolygons'
 
 export default function DIYSubscriptionModal({
@@ -44,6 +44,7 @@ export default function DIYSubscriptionModal({
   const [dedicatedUrl, setDedicatedUrl] = useState('')
   const [copiedUrl, setCopiedUrl] = useState(false)
   const [emailNotice, setEmailNotice] = useState('')
+  const [dbPassPrice, setDbPassPrice] = useState(50)
 
   // Handle ESC key to dismiss modal
   useEffect(() => {
@@ -57,16 +58,29 @@ export default function DIYSubscriptionModal({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, isProcessing, onClose])
 
-  if (!isOpen) return null
+  useEffect(() => {
+    try { localStorage.removeItem('forge_cobuilder_pass_price') } catch (e) {}
+    if (!isOpen) return
+    getWorkflowState().then((wf) => {
+      const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price
+      if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
+        setDbPassPrice(Number(dbFee))
+      }
+    }).catch(() => {})
 
-  const defaultPassPrice = (() => {
-    try {
-      const saved = localStorage.getItem('forge_cobuilder_pass_price')
-      return saved && !isNaN(Number(saved)) ? Number(saved) : 50
-    } catch {
-      return 50
+    const handlePriceEvent = (e) => {
+      const p = e?.detail
+      if (p !== undefined && p !== null && !isNaN(Number(p))) {
+        setDbPassPrice(Number(p))
+      }
     }
-  })()
+    window.addEventListener('forge_pass_price_changed', handlePriceEvent)
+    return () => {
+      window.removeEventListener('forge_pass_price_changed', handlePriceEvent)
+    }
+  }, [isOpen])
+
+  if (!isOpen) return null
 
   const amountToCharge = Number(
     project?.diyFee ??
@@ -75,7 +89,7 @@ export default function DIYSubscriptionModal({
     project?.metadataInfo?.diyFee ??
     project?.metadata_info?.diy_fee ??
     project?.diySubscription?.amount ??
-    defaultPassPrice ??
+    dbPassPrice ??
     50
   )
   const productName = project?.productName || 'Your Custom SaaS App'
