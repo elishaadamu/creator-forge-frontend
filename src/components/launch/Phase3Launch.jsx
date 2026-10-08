@@ -481,28 +481,28 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
         const isReadyToLaunch = allChecklistsDone
 
         return (
-          <div className="p-6 sm:p-7 rounded-3xl bg-slate-900 text-white border border-slate-800 shadow-xl space-y-5">
+          <div className="p-6 sm:p-7 rounded-3xl bg-slate-50/90 border border-slate-200/90 shadow-sm space-y-5 text-slate-900">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] font-mono font-bold uppercase tracking-wider">
+                  <span className="px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-mono font-bold uppercase tracking-wider">
                     Phase 3 Checkpoint — COMMERCIAL LAUNCH
                   </span>
                   <span className={`text-[10px] font-mono font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 ${
                     isLive
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                       : isReadyToLaunch
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                        : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        : 'bg-amber-50 text-amber-800 border-amber-300'
                   }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${isLive || isReadyToLaunch ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full ${isLive || isReadyToLaunch ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                     <span>{isLive ? 'LIVE IN PRODUCTION' : isReadyToLaunch ? 'READY TO LAUNCH' : 'PRE-LAUNCH PREPARATION'}</span>
                   </span>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
                   Turn the Working MVP into a Real Revenue-Producing Business
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                   Execute commercial launch, coordinate creator marketing assets, ensure production infrastructure reliability, and monitor live channel attribution.
                 </p>
               </div>
@@ -512,19 +512,19 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                   <button
                     type="button"
                     onClick={handleToggleProductionLaunch}
-                    className="px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white whitespace-nowrap shrink-0 min-w-max"
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap shrink-0 min-w-max"
                   >
-                    <Rocket className="w-4 h-4 shrink-0 text-emerald-200" />
-                    <span className="whitespace-nowrap">Production Live ✓</span>
+                    <Rocket className="w-4 h-4 shrink-0 text-white" />
+                    <span className="whitespace-nowrap text-white font-bold">Production Live ✓</span>
                   </button>
                 ) : isReadyToLaunch ? (
                   <button
                     type="button"
                     onClick={handleToggleProductionLaunch}
-                    className="px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-emerald-900/30 cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white whitespace-nowrap shrink-0 min-w-max"
+                    className="px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap shrink-0 min-w-max"
                   >
-                    <Rocket className="w-4 h-4 shrink-0 text-emerald-200" />
-                    <span className="whitespace-nowrap">Go Live / Launch Now 🚀</span>
+                    <Rocket className="w-4 h-4 shrink-0 text-white" />
+                    <span className="whitespace-nowrap text-white font-extrabold">Go Live / Launch Now 🚀</span>
                   </button>
                 ) : (
                   <button
@@ -534,69 +534,69 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                       setPrepSubtab('checklists')
                       showToast(`Complete all launch checklists in Step 1 before launching (${completedTasksCount}/${totalTasksCount} verified).`)
                     }}
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-xs text-slate-200 font-semibold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
+                    className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-2xs"
                     title="Complete all Creator & Engineering checklist items in Step 1 to unlock launch"
                   >
-                    <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="whitespace-nowrap">Launch Locked ({completedTasksCount}/{totalTasksCount} Verified)</span>
+                    <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span className="whitespace-nowrap text-slate-700 font-semibold">Launch Locked ({completedTasksCount}/{totalTasksCount} Verified)</span>
                   </button>
                 )}
 
                 <button
                   type="button"
                   onClick={handleExportMarkdown}
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 shadow-sm transition-colors"
+                  className="p-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 shadow-2xs transition-colors"
                   title="Download Launch Report"
                 >
-                  <FileText className="w-4 h-4 text-slate-300" />
+                  <FileText className="w-4 h-4 text-slate-600" />
                 </button>
               </div>
             </div>
 
             {/* Live Production Telemetry Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 shadow-inner space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Live Revenue</span>
                 </span>
-                <div className="text-lg sm:text-xl font-black text-emerald-400 font-mono">
+                <div className="text-xl sm:text-2xl font-black text-emerald-600 font-mono">
                   ${telemetry.revenue.toLocaleString()}
                 </div>
                 <span className="text-[10px] text-slate-400 block font-mono">Processed revenue</span>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 shadow-inner space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-blue-400" />
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-blue-600" />
                   <span>Paying Customers</span>
                 </span>
-                <div className="text-lg sm:text-xl font-black text-white font-mono">
+                <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono">
                   {telemetry.customers}
                 </div>
                 <span className="text-[10px] text-slate-400 block font-mono">{telemetry.visitors > 0 ? ((telemetry.customers / telemetry.visitors) * 100).toFixed(1) : '0.0'}% paid conversion</span>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 shadow-inner space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5 text-indigo-400" />
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-indigo-600" />
                   <span>Visitor Traffic</span>
                 </span>
-                <div className="text-lg sm:text-xl font-black text-indigo-300 font-mono">
+                <div className="text-xl sm:text-2xl font-black text-blue-600 font-mono">
                   {telemetry.visitors.toLocaleString()}
                 </div>
                 <span className="text-[10px] text-slate-400 block font-mono">Tracked sessions</span>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 shadow-inner space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <Radio className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Top Channel</span>
                 </span>
-                <div className="text-xs sm:text-sm font-bold text-white truncate">
+                <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                   {channelStats && channelStats.length > 0 ? (channelStats.find(c => c.topPerformer)?.channel || channelStats[0]?.channel) : 'Creator Direct'}
                 </div>
-                <span className="text-[10px] text-emerald-400 font-semibold block font-mono">
+                <span className="text-[10px] text-emerald-600 font-semibold block font-mono">
                   {channelStats && channelStats.length > 0 ? (channelStats.find(c => c.topPerformer)?.convRate || channelStats[0]?.convRate) : '0.0%'} Conversion
                 </span>
               </div>
