@@ -267,20 +267,26 @@ export default function ForgeChat({ isOpen, onClose }) {
   }
 
   return (
-    <div
-      className="flex flex-col border-l"
-      style={{
-        width: '360px',
-        borderColor: 'rgba(255,255,255,0.07)',
-        background: '#0c0c0c',
-        flexShrink: 0,
-      }}
-    >
-      {/* Header */}
+    <>
+      {/* Mobile Backdrop Overlay */}
       <div
-        className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0"
-        style={{ borderColor: 'rgba(255,255,255,0.07)' }}
+        className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs animate-fade-in"
+        onClick={onClose}
+      />
+
+      <div
+        className="fixed inset-y-0 right-0 z-50 md:static flex flex-col border-l shadow-2xl md:shadow-none w-full max-w-[340px] sm:max-w-[380px] md:w-[360px] animate-fade-in"
+        style={{
+          borderColor: 'rgba(255,255,255,0.07)',
+          background: '#0c0c0c',
+          flexShrink: 0,
+        }}
       >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0"
+          style={{ borderColor: 'rgba(255,255,255,0.07)' }}
+        >
         <div className="flex items-center gap-2.5">
           <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center">
             <Sparkles size={11} className="text-black" />
@@ -387,5 +393,6 @@ export default function ForgeChat({ isOpen, onClose }) {
         </div>
       </div>
     </div>
-  )
+  </>
+)
 }

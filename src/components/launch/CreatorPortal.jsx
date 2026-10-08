@@ -727,61 +727,66 @@ export default function CreatorPortal({ portalId }) {
         </div>
 
         {/* Center & Right Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Main View Switcher (Launch Kit vs ProjectOS) */}
+        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
+          {/* Main View Switcher (Launch Kit vs ProjectOS) - Responsive on both mobile & desktop */}
           {!isTrackChoicePending && (
-            <div className="hidden md:flex items-center gap-0.5 p-0.5 bg-slate-100/90 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-0.5 p-0.5 bg-slate-100/90 rounded-lg border border-slate-200">
               <button
                 type="button"
                 onClick={() => setActiveMainView('launch_kit')}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   activeMainView === 'launch_kit'
                     ? 'bg-white text-slate-900 shadow-2xs'
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
+                title="Open Daily Launch Kit & Marketing Assets"
               >
-                Launch Kit
+                <Rocket className="w-3 h-3 text-emerald-600 sm:hidden" />
+                <span className="hidden sm:inline">Launch Kit</span>
+                <span className="sm:hidden">Kit</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveMainView('projectos')}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   activeMainView === 'projectos'
                     ? 'bg-white text-slate-900 shadow-2xs'
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
+                title="Open ProjectOS Operational Center"
               >
-                ProjectOS
+                <Layers className="w-3 h-3 text-indigo-600 sm:hidden" />
+                <span className="hidden sm:inline">ProjectOS</span>
+                <span className="sm:hidden">OS</span>
               </button>
             </div>
           )}
 
           {/* Track Indicator & Upgrade Pass Action */}
           {isDiyActive ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] font-mono font-bold shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[10px] sm:text-[11px] font-mono font-bold shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
               <span className="hidden sm:inline">Track 1: Co-Builder (${cobuilderPrice} Paid)</span>
-              <span className="sm:hidden">Co-Builder (${cobuilderPrice})</span>
+              <span className="sm:hidden">Co-Builder</span>
             </div>
           ) : isTrackChoicePending ? (
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-[11px] font-mono font-bold shadow-2xs">
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-[11px] font-mono font-bold shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                <span className="hidden sm:inline">Track Choice Pending</span>
-                <span className="sm:hidden">Choice Pending</span>
+                <span>Track Choice Pending</span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowDiyModal(true)}
-                className="h-7 sm:h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
+                className="h-7 sm:h-8 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
               >
-                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300" />
+                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300 shrink-0" />
                 <span className="hidden sm:inline">Co-Builder Pass (${cobuilderPrice})</span>
                 <span className="sm:hidden">${cobuilderPrice} Pass</span>
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5">
               <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 border border-purple-300/80 text-purple-800 text-[11px] font-mono font-bold shadow-2xs">
                 <span>🤝</span>
                 <span>Track 2: Studio-Managed (50/50)</span>
@@ -789,9 +794,9 @@ export default function CreatorPortal({ portalId }) {
               <button
                 type="button"
                 onClick={() => setShowDiyModal(true)}
-                className="h-7 sm:h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
+                className="h-7 sm:h-8 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
               >
-                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300" />
+                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300 shrink-0" />
                 <span className="hidden sm:inline">Upgrade to Co-Builder (${cobuilderPrice})</span>
                 <span className="sm:hidden">${cobuilderPrice} Pass</span>
               </button>
@@ -799,8 +804,8 @@ export default function CreatorPortal({ portalId }) {
           )}
 
           {/* Revenue Share Pill */}
-          <div className="h-7 sm:h-8 flex items-center gap-1.5 pl-2 border-l border-slate-200">
-            <div className="px-2 py-0.5 rounded-lg bg-emerald-50/80 border border-emerald-200 flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-800">
+          <div className="h-7 sm:h-8 flex items-center gap-1 sm:gap-1.5 pl-1.5 sm:pl-2 border-l border-slate-200">
+            <div className="px-1.5 sm:px-2 py-0.5 rounded-lg bg-emerald-50/80 border border-emerald-200 flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-[11px] font-mono font-bold text-emerald-800">
               <DollarSign className="w-3 h-3 text-emerald-600 shrink-0" />
               <span className="hidden md:inline text-[10px] text-emerald-600 font-sans font-semibold">
                 {isDiyActive ? '100% Pool:' : '50%:'}
@@ -1256,7 +1261,7 @@ export default function CreatorPortal({ portalId }) {
               </div>
 
               {/* Right Column: PREVIEW DECK - VENTURE SUMMARY (4 of 12 cols) */}
-              <div className="lg:col-span-4 sticky top-24 space-y-4">
+              <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
@@ -2012,7 +2017,7 @@ export default function CreatorPortal({ portalId }) {
               </div>
 
               {/* Right Column: PREVIEW DECK - SPRINT SUMMARY (4 of 12 cols) */}
-              <div className="lg:col-span-4 sticky top-24 space-y-4">
+              <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>

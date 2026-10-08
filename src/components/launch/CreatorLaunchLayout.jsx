@@ -1422,23 +1422,32 @@ export default function CreatorLaunchLayout({
       {/* Main Content View */}
       <main className="flex-1 w-full max-w-[1720px] mx-auto px-2.5 sm:px-5 py-4 space-y-5 overflow-x-clip min-w-0 relative z-10">
         {/* Mobile Section Switcher */}
-        <div className="flex md:hidden items-center p-1 rounded-xl bg-slate-100 border border-slate-200 gap-1 overflow-x-auto">
+        <div className="flex md:hidden items-center p-1 rounded-xl bg-slate-100 border border-slate-200 gap-1 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveSection('section1')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap ${activeSection === 'section1' ? 'bg-white text-slate-950 border border-slate-200/80 shadow-xs' : 'text-slate-600'
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all ${activeSection === 'section1' ? 'bg-white text-slate-950 border border-slate-200/80 shadow-xs font-bold' : 'text-slate-600'
               }`}
           >
             <Target className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Section 1: Acquisition</span>
+            <span>Acquisition</span>
           </button>
           <a
             href={activeProject?.id ? `/project-os?project=${activeProject.id}` : '/project-os'}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-600 hover:text-slate-950"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-semibold whitespace-nowrap text-slate-600 hover:text-slate-950 transition-all"
             title="Open Dedicated Co-Launch Operations Center"
           >
             <Layers className="w-3.5 h-3.5 text-emerald-600" />
             <span>Project OS</span>
-            <ExternalLink className="w-3 h-3 text-slate-400" />
+            <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
+          </a>
+          <a
+            href="/participation-manager"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-semibold whitespace-nowrap text-slate-600 hover:text-slate-950 transition-all"
+            title="Dedicated Creator Participation & Co-Builder Console"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-500" />
+            <span>Co-Builders</span>
+            <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
           </a>
         </div>
 

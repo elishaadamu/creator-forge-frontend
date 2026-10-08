@@ -331,7 +331,39 @@ export default function FollowUpCRMPage() {
       </header>
 
       {/* Main Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6 relative">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 relative">
+        {/* Mobile Suite Navigation Ribbon */}
+        <div className="flex md:hidden items-center p-1 rounded-xl bg-slate-100 border border-slate-200 gap-1 overflow-x-auto no-scrollbar">
+          <a
+            href="/launch"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-semibold whitespace-nowrap text-slate-600 hover:text-slate-950 transition-all"
+          >
+            <Target className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Acquisition</span>
+          </a>
+          <a
+            href="/project-os"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-semibold whitespace-nowrap text-slate-600 hover:text-slate-950 transition-all"
+          >
+            <Layers className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Project OS</span>
+          </a>
+          <button
+            type="button"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-bold whitespace-nowrap bg-white text-slate-950 border border-slate-200/80 shadow-xs"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-teal-600" />
+            <span>CRM ({creators.length})</span>
+          </button>
+          <a
+            href="/participation-manager"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-semibold whitespace-nowrap text-slate-600 hover:text-slate-950 transition-all"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-500" />
+            <span>Co-Builders</span>
+          </a>
+        </div>
+
         {loading ? (
           <CRMSkeleton />
         ) : (
