@@ -15,6 +15,7 @@ import DIYSubscriptionModal from './DIYSubscriptionModal'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import PostVisualMockup from './PostVisualMockup'
 import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards } from '../../utils/stepGuards'
+import { parseMainPricingAmount, parseConceptPricing } from '../../utils/pricing'
 
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
@@ -519,19 +520,19 @@ export default function CreatorPortal({ portalId }) {
       id: `res-${Date.now()}`,
       name: `Backer #${(currentRes.length + 1)}`,
       email: `member${currentRes.length + 1}@audience.com`,
-      amount: 49,
-      tier: 'Early Bird Pass',
+      amount: dynamicPresalePrice,
+      tier: dynamicPresaleTierName,
       created_at: new Date().toISOString()
     }
     const updatedReservations = [newReservation, ...currentRes]
-    const updatedRevenue = Number(project.currentPresales || 0) + 49
+    const updatedRevenue = Number(project.currentPresales || 0) + dynamicPresalePrice
     const updated = {
       ...project,
       currentPresales: updatedRevenue,
       reservations: updatedReservations
     }
     handleUpdateProject(updated)
-    showToast('Simulated backer pre-order recorded (+ $49 USD). Revenue share updated!')
+    showToast(`Simulated backer pre-order recorded (+ $${dynamicPresalePrice} USD). Revenue share updated!`)
   }
 
   const getTaskDraftContent = (task) => {
@@ -609,19 +610,60 @@ export default function CreatorPortal({ portalId }) {
     )
   }
 
-  const presalesRevenue = Number(project.currentPresales || 0)
+  const presalesRevenue = Number(project?.currentPresales || 0)
   const parseThresholdAmount = (str) => {
     if (!str) return 0
     const match = String(str).replace(/,/g, '').match(/\$(\d+)/)
     return match ? Number(match[1]) : 0
   }
-  const derivedPlanTarget = parseThresholdAmount(project.validationPlan?.threshold)
-  const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project.presaleTarget || project.targetRevenue || 7000)
+  const derivedPlanTarget = parseThresholdAmount(project?.validationPlan?.threshold)
+  const presaleTarget = derivedPlanTarget > 0 ? derivedPlanTarget : Number(project?.presaleTarget || project?.targetRevenue || 7000)
   const creatorRevenueShare = Math.round(presalesRevenue * 0.5)
-  const campaignKit = project.campaignKit || {}
+
+  // Dynamic presale price & tier resolution from DB project / concept / campaign kit
+  const rawPricingSource =
+    project?.selectedConcept?.pricing ||
+    project?.pricing ||
+    project?.validationPlan?.pricing ||
+    project?.campaignKit?.pricingTiers?.[0]?.price ||
+    project?.campaignKit?.foundingPrice ||
+    project?.presalePrice ||
+    project?.earlyBirdPrice ||
+    cobuilderPrice ||
+    49
+
+  const dynamicPresalePrice = parseMainPricingAmount(rawPricingSource, cobuilderPrice || 49)
+  const parsedConcept = parseConceptPricing(rawPricingSource, dynamicPresalePrice)
+  const dynamicPresaleTierName =
+    project?.campaignKit?.pricingTiers?.[0]?.name ||
+    parsedConcept.tiers?.[0]?.name ||
+    'Early Bird Pass'
+
+  const backersNeededForGate = Math.max(1, Math.ceil(presaleTarget / (dynamicPresalePrice || 49)))
+
+  const reservations = project?.reservations || []
+  const displayReservations = useMemo(() => {
+    if (reservations.length > 0) return reservations
+    if (presalesRevenue > 0) {
+      const count = Math.max(1, Math.round(presalesRevenue / (dynamicPresalePrice || 49)))
+      const unitPrice = dynamicPresalePrice || 49
+      return Array.from({ length: count }, (_, idx) => ({
+        id: `recorded-${idx + 1}`,
+        name: `Founding Backer #${idx + 1}`,
+        email: `backer${idx + 1}@audience.com`,
+        amount: unitPrice,
+        tier: dynamicPresaleTierName,
+        created_at: new Date().toISOString()
+      }))
+    }
+    return []
+  }, [reservations, presalesRevenue, dynamicPresalePrice, dynamicPresaleTierName])
+
+  const totalBackersCount = displayReservations.length
+  const campaignKit = project?.campaignKit || {}
   const schedule = (campaignKit.postingSchedule && campaignKit.postingSchedule.length > 0)
     ? campaignKit.postingSchedule
-    : (project.checklist && project.checklist.length > 0 ? project.checklist : [
+    : (project?.checklist && project.checklist.length > 0 ? project.checklist : [
         { id: 'day-1', day: 1, title: 'Problem Teaser & Discovery Poll', channel: 'X Post', isToday: false, done: true, draftKey: 'announcementPost', description: 'Post teaser and survey link to gather audience friction points.' },
         { id: 'day-2', day: 2, title: 'Post Instagram Story #2 — Pain Point Poll & Announcement', channel: 'Instagram Stories', isToday: true, done: false, draftKey: 'storySequence', description: 'Post 3-story sequence with interactive poll sticker to drive warm audience to the pre-order page.' },
         { id: 'day-3', day: 3, title: 'Publish 60-Second Video Demo & Launch Hook', channel: 'TikTok / Reels / Shorts', isToday: false, done: false, draftKey: 'videoScript', description: 'Post 60s short-form demo demonstrating the core solution in action.' },
@@ -632,8 +674,7 @@ export default function CreatorPortal({ portalId }) {
       ])
   const completedTasksCount = schedule.filter(t => t.done || t.completed).length
   const totalTasksCount = schedule.length
-  const reservations = project.reservations || []
-  const preorderUrl = `${getFrontendUrl()}/preorder?ref=${project.creatorHandle?.replace('@','') || 'creator'}`
+  const preorderUrl = `${getFrontendUrl()}/preorder?ref=${project?.creatorHandle?.replace('@','') || 'creator'}`
   const targetPct = presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 0
 
   return (
@@ -1515,9 +1556,9 @@ export default function CreatorPortal({ portalId }) {
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">Pre-Orders / Backers</span>
                   <span className="text-base font-extrabold text-slate-900 font-mono mt-0.5 block">
-                    {reservations.length}
+                    {totalBackersCount}
                   </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">Tier: $49 Founding Pass</span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">Tier: ${dynamicPresalePrice} {dynamicPresaleTierName}</span>
                 </div>
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">Sprint Tasks</span>
@@ -1543,7 +1584,7 @@ export default function CreatorPortal({ portalId }) {
               {[
                 { id: 'tasks', label: 'Daily Launch Checklist', count: `${completedTasksCount}/${totalTasksCount}` },
                 { id: 'scripts', label: 'Copyable Launch Content', count: '7 items' },
-                { id: 'presales', label: 'Verified Pre-Orders', count: `${reservations.length}` },
+                { id: 'presales', label: 'Verified Pre-Orders', count: `${totalBackersCount}` },
                 { id: 'messages', label: 'Studio Chat & Messages', count: `${portalDisplayMessages.length}` },
                 { id: 'strategy', label: 'Validation Specs' },
               ].map(tab => {
@@ -1837,7 +1878,7 @@ export default function CreatorPortal({ portalId }) {
                   <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div>
-                        <h3 className="font-bold text-slate-900 text-sm">Verified Backer Reservations ({reservations.length})</h3>
+                        <h3 className="font-bold text-slate-900 text-sm">Verified Backer Reservations ({totalBackersCount})</h3>
                         <p className="text-xs text-slate-500">Live feed of audience pre-orders directly tied to your revenue share.</p>
                       </div>
                       <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
@@ -1845,7 +1886,7 @@ export default function CreatorPortal({ portalId }) {
                       </span>
                     </div>
 
-                    {reservations.length === 0 ? (
+                    {displayReservations.length === 0 ? (
                       <div className="py-12 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl space-y-2">
                         <Users className="w-8 h-8 text-slate-300 mx-auto" />
                         <p>No customer pre-orders recorded yet. Pledges will populate here as backers join.</p>
@@ -1855,12 +1896,12 @@ export default function CreatorPortal({ portalId }) {
                           className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
                         >
                           <Plus className="w-3.5 h-3.5" />
-                          <span>Simulate First Pre-Order (+$49)</span>
+                          <span>Simulate First Pre-Order (+${dynamicPresalePrice})</span>
                         </button>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {reservations.map(res => (
+                        {displayReservations.map(res => (
                           <div key={res.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
                             <div>
                               <div className="font-bold text-slate-900">{res.name}</div>
@@ -1868,7 +1909,7 @@ export default function CreatorPortal({ portalId }) {
                             </div>
                             <div className="text-right">
                               <div className="font-mono font-bold text-emerald-700">+${res.amount}</div>
-                              <span className="text-[10px] text-slate-500 font-mono">{res.tier || 'Founding Pass'}</span>
+                              <span className="text-[10px] text-slate-500 font-mono">{res.tier || dynamicPresaleTierName}</span>
                             </div>
                           </div>
                         ))}
@@ -1994,11 +2035,11 @@ export default function CreatorPortal({ portalId }) {
                     </div>
                     <div className="flex items-center justify-between py-1 border-b border-slate-100">
                       <span className="text-slate-500">Presale Price Point</span>
-                      <span className="font-mono font-bold text-slate-900">$49 Early Bird Pass</span>
+                      <span className="font-mono font-bold text-slate-900">${dynamicPresalePrice} {dynamicPresaleTierName}</span>
                     </div>
                     <div className="flex items-center justify-between py-1 border-b border-slate-100">
                       <span className="text-slate-500">Backers Needed for Gate</span>
-                      <span className="font-mono font-bold text-emerald-700">~{Math.max(1, Math.ceil(presaleTarget / 49))} Pre-Orders</span>
+                      <span className="font-mono font-bold text-emerald-700">~{backersNeededForGate.toLocaleString()} Pre-Orders</span>
                     </div>
                     <div className="flex items-center justify-between py-1 border-b border-slate-100">
                       <span className="text-slate-500">Co-Founder Split</span>
@@ -2033,7 +2074,7 @@ export default function CreatorPortal({ portalId }) {
                       className="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs tracking-tight transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-slate-900/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-slate-900"
                     >
                       <Plus className="w-4 h-4 text-emerald-400 stroke-[3]" />
-                      <span>Simulate Backer Pre-Order (+$49)</span>
+                      <span>Simulate Backer Pre-Order (+${dynamicPresalePrice})</span>
                     </button>
 
                     <button
