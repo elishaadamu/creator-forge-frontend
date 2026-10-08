@@ -780,7 +780,7 @@ export default function ContentCalendar() {
           {calJob.status === 'running' && (
             <div className="flex items-center gap-2">
               <span className="text-[10px] flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
                 Running in background…
               </span>
               <button

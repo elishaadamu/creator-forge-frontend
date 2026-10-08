@@ -474,7 +474,7 @@ export default function Welcome() {
               className="hover:text-slate-950 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5"
             >
               <span>Creators</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             </a>
             <a 
               href="#workflow" 
@@ -523,11 +523,9 @@ export default function Welcome() {
             >
               <span><span className="hidden xs:inline">Start </span>Engagement</span>
               <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5] shrink-0" />
-              {/* Signature Top-Right Accent Beacon Dot with Ambient Halo */}
-              <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 flex h-3 w-3 sm:h-4 sm:w-4 pointer-events-none items-center justify-center">
-                <span className="absolute inline-flex h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-emerald-400/30 blur-[1px]" />
-                <span className="animate-ping absolute inline-flex h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-3 sm:w-3 bg-emerald-500 border-2 border-white shadow-xs" />
+              {/* Signature Top-Right Accent Beacon Dot */}
+              <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 flex h-2.5 w-2.5 sm:h-3 sm:w-3 pointer-events-none items-center justify-center">
+                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 border border-white shadow-xs" />
               </span>
             </button>
 
@@ -561,7 +559,7 @@ export default function Welcome() {
                 className="px-4 py-3 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer flex items-center justify-between"
               >
                 <span>Creators Roster</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
               </a>
               <a 
                 href="#workflow" 
@@ -632,10 +630,8 @@ export default function Welcome() {
               >
                 <span>Start Engagement</span>
                 <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span className="absolute -top-1 -right-1 flex h-3 w-3 pointer-events-none items-center justify-center">
-                  <span className="absolute inline-flex h-4 w-4 rounded-full bg-emerald-400/30 blur-[1px]" />
-                  <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-white" />
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none items-center justify-center">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 border border-white" />
                 </span>
               </button>
             </div>
@@ -676,7 +672,7 @@ export default function Welcome() {
           <div className="w-full h-full flex flex-col justify-center items-start text-left order-2 lg:order-1">
             {/* Eyebrow Pill */}
             <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 xs:px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-mono font-semibold uppercase tracking-tight sm:tracking-wider text-slate-700 mb-3.5 sm:mb-4 shadow-2xs whitespace-nowrap max-w-full">
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 shrink-0" />
               <span className="text-slate-900 font-bold shrink-0">WE BUILD YOUR APP FOR FREE</span>
               <span className="text-slate-400 shrink-0">·</span>
               <span className="text-emerald-700 font-bold shrink-0">YOU KEEP 50% PROFIT</span>
@@ -715,11 +711,9 @@ export default function Welcome() {
               >
                 <span>Start Engagement</span>
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                {/* Signature Top-Right Accent Beacon Dot with Soft Halo Glow */}
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 pointer-events-none items-center justify-center">
-                  <span className="absolute inline-flex h-6 w-6 rounded-full bg-emerald-400/30 blur-[2px]" />
-                  <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-xs" />
+                {/* Signature Top-Right Accent Beacon Dot */}
+                <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3 pointer-events-none items-center justify-center">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white shadow-xs" />
                 </span>
               </button>
 
@@ -767,7 +761,7 @@ export default function Welcome() {
               {/* Floating Live Telemetry Badge 1: Top Right */}
               <div className="absolute -top-3 right-2 sm:right-6 p-2.5 sm:p-3 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl text-left hidden sm:block animate-float-gentle z-20">
                 <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 mb-0.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   <span className="font-bold">MONTHLY SUBSCRIBER REVENUE</span>
                 </div>
                 <div className="text-base sm:text-lg font-display font-black text-slate-950 font-mono">
@@ -833,7 +827,7 @@ export default function Welcome() {
                   />
                   <span className="truncate max-w-[100px] sm:max-w-none">{creator.name.split(' ')[0]}</span>
                   {isPrimary && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   )}
                   {isSecondary && (
                     <span className="w-1.5 h-1.5 rounded-full bg-sky-400" title="Active on screen" />
@@ -1036,11 +1030,9 @@ export default function Welcome() {
                           <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current shrink-0" />
                           <span className="truncate">Interactive Demo</span>
                           <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0 hidden xs:inline-block" />
-                          {/* Top-Right Accent Beacon Dot with Ambient Halo */}
-                          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 sm:h-3 sm:w-3 pointer-events-none items-center justify-center">
-                            <span className="absolute inline-flex h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-full bg-emerald-400/30 blur-[1px]" />
-                            <span className="animate-ping absolute inline-flex h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-emerald-400 opacity-60" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-emerald-500 border border-white" />
+                          {/* Top-Right Accent Beacon Dot */}
+                          <span className="absolute -top-1 -right-1 flex h-2 w-2 sm:h-2.5 sm:w-2.5 pointer-events-none items-center justify-center">
+                            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 border border-white" />
                           </span>
                         </button>
                         <button
@@ -2266,10 +2258,8 @@ export default function Welcome() {
               >
                 <span>Start Engagement</span>
                 <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 pointer-events-none items-center justify-center">
-                  <span className="absolute inline-flex h-5 w-5 rounded-full bg-emerald-400/30 blur-[2px]" />
-                  <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white shadow-xs" />
+                <span className="absolute -top-1 -right-1 flex h-3 w-3 pointer-events-none items-center justify-center">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white shadow-xs" />
                 </span>
               </button>
 
@@ -2534,10 +2524,8 @@ export default function Welcome() {
                 <span>Start Engagement</span>
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                 {/* Signature Top-Right Accent Beacon Dot */}
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 pointer-events-none items-center justify-center">
-                  <span className="absolute inline-flex h-5 w-5 rounded-full bg-emerald-400/20" />
-                  <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-[#0A0F1D]" />
+                <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3 pointer-events-none items-center justify-center">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#0A0F1D]" />
                 </span>
               </button>
 
@@ -2614,7 +2602,7 @@ export default function Welcome() {
               {/* Real-time Telemetry & Cohort Badge */}
               <div className="space-y-2 pt-2">
                 <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs font-mono">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
                   <span className="text-slate-300 font-semibold">ALL SYSTEMS OPERATIONAL</span>
                   <span className="text-slate-600">·</span>
                   <span className="text-slate-400">99.99% Uptime</span>
@@ -3207,11 +3195,9 @@ export default function Welcome() {
                     className="relative flex-1 sm:flex-none px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer flex items-center justify-center gap-1.5 min-h-[36px] sm:min-h-[42px] group"
                   >
                     <span>Apply as Co-Founder (50/50) →</span>
-                    {/* Signature Top-Right Accent Beacon Dot with Ambient Halo */}
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3 pointer-events-none items-center justify-center">
-                      <span className="absolute inline-flex h-4 w-4 rounded-full bg-emerald-400/30 blur-[1px]" />
-                      <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 opacity-60" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-white" />
+                    {/* Signature Top-Right Accent Beacon Dot */}
+                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none items-center justify-center">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 border border-white" />
                     </span>
                   </button>
                 </div>

@@ -522,7 +522,7 @@ export default function Analyzing() {
                     {isCompleted
                       ? <Check size={11} className="text-black" strokeWidth={3} />
                       : isActive
-                        ? <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        ? <span className="w-1.5 h-1.5 rounded-full bg-white" />
                         : null
                     }
                   </div>

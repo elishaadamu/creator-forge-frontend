@@ -6984,7 +6984,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             <span className="text-slate-300">•</span>
             {scopedCreatorId ? (
               <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs shadow-2xs">
-                <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse flex-shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-indigo-600 flex-shrink-0" />
                 <span className="font-medium truncate max-w-[240px]">
                   Individual Focus: <strong>{scopedIndividualCreator?.name || scopedIndividualCreator?.handle || scopedCreatorId}</strong>
                 </span>
@@ -6994,7 +6994,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               </div>
             ) : (
               <span className="text-xs text-slate-600 font-medium flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${loadingCreatorsFromDb ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
+                <span className={`w-2 h-2 rounded-full ${loadingCreatorsFromDb ? 'bg-amber-400' : 'bg-emerald-500'}`} />
                 Collective Cohort View ({loadingCreatorsFromDb ? (
                   <span className="inline-flex items-center gap-1.5 text-slate-500 font-normal">
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
@@ -7099,7 +7099,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </span>
                 </div>
                 {isActive && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400" />
                 )}
               </button>
             );
@@ -8429,7 +8429,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 className="relative inline-flex items-center justify-center gap-2 h-9 px-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
               >
                 <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
                 <span>Proceed to Step 3: Outreach Wave</span>
@@ -9109,7 +9108,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 className="relative inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
               >
                 <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
                 <Send
@@ -9531,7 +9529,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               {scopedIndividualCreator && (
                 <div className="flex items-center justify-between p-3.5 rounded-xl bg-indigo-50/90 border border-indigo-200 text-indigo-950 text-xs shadow-2xs">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse flex-shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-indigo-600 flex-shrink-0" />
                     <span className="truncate">
                       Focused on individual lead from CRM: <strong>{scopedIndividualCreator.name || scopedIndividualCreator.display_name || scopedIndividualCreator.handle}</strong>
                     </span>
@@ -10218,7 +10216,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 ) : (
                                   <>
                                     <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                                     </span>
                                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -10458,7 +10455,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5 font-display">
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                           <span>AI Audience Intelligence & Co-Launch Synthesis in Progress</span>
                         </span>
                         <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-mono border border-emerald-200 font-bold">
@@ -10583,7 +10580,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     className="relative inline-flex items-center justify-center gap-2 h-9 px-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
                   >
                     <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                     </span>
                     <span>Advance to Step 6 →</span>
@@ -10609,7 +10605,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   title="Send the 3 product concepts directly to the creator's email and advance to Step 6"
                 >
                   <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                   </span>
                   {isSendingPitch ? (
@@ -11468,7 +11463,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         className="relative flex items-center gap-2 h-9 px-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-bold border border-slate-800 shadow-sm transition-all cursor-pointer active:scale-95 whitespace-nowrap"
                       >
                         <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                         </span>
                         <Rocket className="w-3.5 h-3.5 text-emerald-300" />
@@ -11660,7 +11654,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     >
                       {hasFullCommitment && (
                         <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                         </span>
                       )}
@@ -12259,7 +12252,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           className="relative px-4 py-1.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
                         >
                           <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                           </span>
                           {isSendingPitch ? (
@@ -12368,7 +12360,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         className="relative px-4 py-1.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 sm:hidden"
                       >
                         <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                         </span>
                         {isSendingPitch ? (
@@ -12521,7 +12512,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             }`}
                         >
                           <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                           </span>
                           <span>
@@ -13098,7 +13088,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 >
                   {decisionModal.decisionType === "approve" && (
                     <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                     </span>
                   )}
@@ -13191,7 +13180,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   <div className="col-span-2 pt-2 border-t border-slate-200">
                     <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Co-Founder Portal Link</span>
                     <p className="font-mono text-[11px] text-slate-600 truncate mt-0.5 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
                       <span>{selectedCreator?.email || selectedCreator?.email_public || "Direct Magic Link Generated"}</span>
                     </p>
                   </div>
@@ -13247,7 +13236,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
                     <span className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       <span>
                         {launchStepIndex === 1
                           ? "Binding specifications..."

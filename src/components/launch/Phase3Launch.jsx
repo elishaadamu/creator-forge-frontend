@@ -481,49 +481,50 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
         const isReadyToLaunch = allChecklistsDone
 
         return (
-          <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 border border-slate-200 shadow-2xs space-y-4">
+          <div className="p-6 sm:p-7 rounded-3xl bg-slate-900 text-white border border-slate-800 shadow-xl space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-black uppercase tracking-wider">
-                    Phase 3 Checkpoint — LAUNCH
+                  <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] font-mono font-bold uppercase tracking-wider">
+                    Phase 3 Checkpoint — COMMERCIAL LAUNCH
                   </span>
-                  <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                  <span className={`text-[10px] font-mono font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 ${
                     isLive
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300 animate-pulse'
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
                       : isReadyToLaunch
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                        : 'bg-amber-50 text-amber-700 border-amber-300'
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                        : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                   }`}>
-                    {isLive ? '🚀 LIVE IN PRODUCTION' : isReadyToLaunch ? '✨ READY TO LAUNCH' : 'PRE-LAUNCH PREP'}
+                    <span className={`w-1.5 h-1.5 rounded-full ${isLive || isReadyToLaunch ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                    <span>{isLive ? 'LIVE IN PRODUCTION' : isReadyToLaunch ? 'READY TO LAUNCH' : 'PRE-LAUNCH PREPARATION'}</span>
                   </span>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                   Turn the Working MVP into a Real Revenue-Producing Business
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
                   Execute commercial launch, coordinate creator marketing assets, ensure production infrastructure reliability, and monitor live channel attribution.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
+              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
                 {isLive ? (
                   <button
                     type="button"
                     onClick={handleToggleProductionLaunch}
-                    className="px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap shrink-0 min-w-max"
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white whitespace-nowrap shrink-0 min-w-max"
                   >
-                    <Rocket className="w-3.5 h-3.5 shrink-0" />
+                    <Rocket className="w-4 h-4 shrink-0 text-emerald-200" />
                     <span className="whitespace-nowrap">Production Live ✓</span>
                   </button>
                 ) : isReadyToLaunch ? (
                   <button
                     type="button"
                     onClick={handleToggleProductionLaunch}
-                    className="px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse whitespace-nowrap shrink-0 min-w-max"
+                    className="px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-emerald-900/30 cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white whitespace-nowrap shrink-0 min-w-max"
                   >
-                    <Rocket className="w-3.5 h-3.5 shrink-0" />
-                    <span className="whitespace-nowrap">Go Live / Launch Now</span>
+                    <Rocket className="w-4 h-4 shrink-0 text-emerald-200" />
+                    <span className="whitespace-nowrap">Go Live / Launch Now 🚀</span>
                   </button>
                 ) : (
                   <button
@@ -533,10 +534,10 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                       setPrepSubtab('checklists')
                       showToast(`Complete all launch checklists in Step 1 before launching (${completedTasksCount}/${totalTasksCount} verified).`)
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-2xs"
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-xs text-slate-200 font-semibold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
                     title="Complete all Creator & Engineering checklist items in Step 1 to unlock launch"
                   >
-                    <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <span className="whitespace-nowrap">Launch Locked ({completedTasksCount}/{totalTasksCount} Verified)</span>
                   </button>
                 )}
@@ -544,46 +545,58 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                 <button
                   type="button"
                   onClick={handleExportMarkdown}
-                  className="p-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 shadow-2xs"
+                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 shadow-sm transition-colors"
                   title="Download Launch Report"
                 >
-                  <FileText className="w-4 h-4" />
+                  <FileText className="w-4 h-4 text-slate-300" />
                 </button>
               </div>
             </div>
 
             {/* Live Production Telemetry Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-0.5">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Live Revenue</span>
-                <div className="text-base sm:text-lg font-black text-emerald-600 font-mono">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 shadow-inner space-y-1">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Live Revenue</span>
+                </span>
+                <div className="text-lg sm:text-xl font-black text-emerald-400 font-mono">
                   ${telemetry.revenue.toLocaleString()}
                 </div>
-                <span className="text-[10px] text-slate-400">Processed revenue</span>
+                <span className="text-[10px] text-slate-400 block font-mono">Processed revenue</span>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-0.5">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Paying Customers</span>
-                <div className="text-base sm:text-lg font-black text-slate-900 font-mono">
+              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 shadow-inner space-y-1">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Paying Customers</span>
+                </span>
+                <div className="text-lg sm:text-xl font-black text-white font-mono">
                   {telemetry.customers}
                 </div>
-                <span className="text-[10px] text-slate-400">{telemetry.visitors > 0 ? ((telemetry.customers / telemetry.visitors) * 100).toFixed(1) : '0.0'}% paid conversion</span>
+                <span className="text-[10px] text-slate-400 block font-mono">{telemetry.visitors > 0 ? ((telemetry.customers / telemetry.visitors) * 100).toFixed(1) : '0.0'}% paid conversion</span>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-0.5">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Visitor Traffic</span>
-                <div className="text-base sm:text-lg font-black text-blue-600 font-mono">
+              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 shadow-inner space-y-1">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Visitor Traffic</span>
+                </span>
+                <div className="text-lg sm:text-xl font-black text-indigo-300 font-mono">
                   {telemetry.visitors.toLocaleString()}
                 </div>
-                <span className="text-[10px] text-slate-400">Tracked sessions</span>
+                <span className="text-[10px] text-slate-400 block font-mono">Tracked sessions</span>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-0.5">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Top Channel</span>
-                <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 shadow-inner space-y-1">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Top Channel</span>
+                </span>
+                <div className="text-xs sm:text-sm font-bold text-white truncate">
                   {channelStats && channelStats.length > 0 ? (channelStats.find(c => c.topPerformer)?.channel || channelStats[0]?.channel) : 'Creator Direct'}
                 </div>
-                <span className="text-[10px] text-emerald-600 font-semibold">
+                <span className="text-[10px] text-emerald-400 font-semibold block font-mono">
                   {channelStats && channelStats.length > 0 ? (channelStats.find(c => c.topPerformer)?.convRate || channelStats[0]?.convRate) : '0.0%'} Conversion
                 </span>
               </div>
@@ -593,23 +606,23 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
       })()}
 
       {/* 4-Step Phase 3 Stepper Navigation */}
-      <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-100/90 border border-slate-200 shadow-2xs space-y-2">
-        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
+      <div className="p-3 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2.5">
+        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-            <span className="text-[11px] font-mono font-black uppercase tracking-wider text-slate-700">
+            <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0" />
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
               Commercial Launch & Scale Pipeline
             </span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-mono font-bold shadow-xs select-none" style={{ color: '#ffffff', backgroundColor: '#0f172a' }}>
-            <span className="text-[10px] uppercase font-mono tracking-wider" style={{ color: '#ffffff' }}>Progress:</span>
-            <span className="font-extrabold text-xs" style={{ color: '#ffffff' }}>
-              {[p3Guards.isStep1Done, p3Guards.isStep2Done, p3Guards.isStep3Done, p3Guards.isStep4Done].filter(Boolean).length} of 4 Done
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-mono font-bold shadow-xs select-none">
+            <span className="text-[10px] text-slate-300 uppercase font-mono tracking-wider">Milestones:</span>
+            <span className="font-extrabold text-xs text-emerald-400">
+              {[p3Guards.isStep1Done, p3Guards.isStep2Done, p3Guards.isStep3Done, p3Guards.isStep4Done].filter(Boolean).length} of 4 Complete
             </span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-1 sm:gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {[
             { id: 'prep', num: '01', label: '1. Prepare Launch', icon: Calendar, isDone: p3Guards.isStep1Done, canAccess: p3Guards.canAccessStep1 },
             { id: 'monitor', num: '02', label: '2. Launch + Monitor', icon: TrendingUp, isDone: p3Guards.isStep2Done, canAccess: p3Guards.canAccessStep2 },
@@ -619,51 +632,51 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
             const isActive = activeStep === tab.id
             const isDone = tab.isDone
             const isLocked = !tab.canAccess
+            const Icon = tab.icon
+
             return (
-              <div key={tab.id} className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0 last:flex-initial">
-                <button
-                  type="button"
-                  onClick={() => setActiveStep(tab.id)}
-                  disabled={isLocked}
-                  title={isLocked ? getP3StepMissingPrerequisiteText(tab.id) : tab.label}
-                  className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-mono transition-all shrink-0 cursor-pointer ${
-                    isActive
-                      ? 'bg-slate-900 text-white shadow-xs ring-2 ring-indigo-400/40 border border-slate-900 font-bold'
-                      : isDone
-                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100/80 font-semibold shadow-2xs'
-                      : isLocked
-                      ? 'bg-slate-200/50 text-slate-400 border border-slate-200/80 cursor-not-allowed opacity-60'
-                      : 'bg-slate-50 text-slate-600 hover:text-slate-950 hover:bg-white border border-slate-200 shadow-2xs'
-                  }`}
-                >
-                  {isActive ? (
-                    <>
-                      <span className="px-1 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-bold">
-                        STEP {tab.num}
-                      </span>
-                      <span className="text-white font-sans font-extrabold whitespace-nowrap">{tab.label}</span>
-                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-indigo-400 animate-pulse ml-0.5 shrink-0" />
-                    </>
-                  ) : isDone ? (
-                    <>
-                      <div className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                        <Check className="w-2.5 h-2.5 stroke-[3]" />
-                      </div>
-                      <span className="font-sans font-bold text-slate-900 whitespace-nowrap">{tab.label}</span>
-                    </>
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveStep(tab.id)}
+                disabled={isLocked}
+                title={isLocked ? getP3StepMissingPrerequisiteText(tab.id) : tab.label}
+                className={`flex items-center justify-between p-3 rounded-xl text-xs transition-all cursor-pointer border ${
+                  isActive
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-md font-bold'
+                    : isDone
+                    ? 'bg-emerald-50/80 text-emerald-900 border-emerald-300 hover:bg-emerald-100/90 font-semibold'
+                    : isLocked
+                    ? 'bg-slate-50 text-slate-400 border-slate-200/80 cursor-not-allowed opacity-60'
+                    : 'bg-slate-50 text-slate-700 hover:text-slate-950 hover:bg-slate-100 border-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-emerald-400' : isDone ? 'text-emerald-600' : isLocked ? 'text-slate-400' : 'text-slate-600'}`} />
+                  <div className="text-left min-w-0">
+                    <span className={`block text-[9px] font-mono uppercase tracking-wider font-bold ${isActive ? 'text-slate-400' : 'text-slate-400'}`}>
+                      Step {tab.num}
+                    </span>
+                    <span className="truncate block font-sans font-bold text-[11px] sm:text-xs">
+                      {tab.label.replace(/^\d+\.\s*/, '')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="shrink-0 ml-1.5">
+                  {isDone ? (
+                    <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    </div>
                   ) : isLocked ? (
-                    <>
-                      <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-sans font-medium text-slate-500 whitespace-nowrap">{tab.label}</span>
-                    </>
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                  ) : isActive ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
                   ) : (
-                    <>
-                      <span className="text-[10px] font-mono text-slate-400 font-bold">{tab.num}</span>
-                      <span className="font-sans font-semibold text-slate-700 whitespace-nowrap">{tab.label}</span>
-                    </>
+                    <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0" />
                   )}
-                </button>
-              </div>
+                </div>
+              </button>
             )
           })}
         </div>
@@ -1850,57 +1863,57 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
       {activeStep === 'monitor' && (
         <div className="space-y-5">
           {/* Live Status Control Header */}
-          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                <h3 className="text-sm font-bold text-slate-900">Live Production Telemetry & Conversion Funnel</h3>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                <h3 className="text-sm font-bold text-slate-900 font-sans">Live Production Telemetry & Conversion Funnel</h3>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">Real-time visitor tracking, conversion analytics & technical uptime.</p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-500 font-mono">Uptime: <strong className="text-emerald-700">{telemetry.uptime}</strong></span>
-              <span className="text-[11px] text-slate-500 font-mono">Latency: <strong className="text-blue-700">{telemetry.avgLatency}</strong></span>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-slate-600 font-mono bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">Uptime: <strong className="text-emerald-700">{telemetry.uptime}</strong></span>
+              <span className="text-[11px] text-slate-600 font-mono bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">Latency: <strong className="text-blue-700">{telemetry.avgLatency}</strong></span>
             </div>
           </div>
 
           {/* Production Telemetry Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-              <span className="text-[10px] text-slate-500 font-bold uppercase flex items-center gap-1">
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5 text-blue-600" />
                 <span>Unique Visitors</span>
               </span>
-              <div className="text-xl font-black text-slate-900 font-mono">{telemetry.visitors.toLocaleString()}</div>
-              <span className="text-[10px] text-slate-400">Total tracked visits</span>
+              <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono">{telemetry.visitors.toLocaleString()}</div>
+              <span className="text-[10px] text-slate-400 block font-mono">Total tracked visits</span>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-              <span className="text-[10px] text-slate-500 font-bold uppercase flex items-center gap-1">
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Signups & Activation</span>
               </span>
-              <div className="text-xl font-black text-slate-900 font-mono">{telemetry.signups} Accounts</div>
-              <span className="text-[10px] text-slate-400">{telemetry.activatedUsers} active in workspace</span>
+              <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono">{telemetry.signups} Accounts</div>
+              <span className="text-[10px] text-slate-400 block font-mono">{telemetry.activatedUsers} active in workspace</span>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-              <span className="text-[10px] text-slate-500 font-bold uppercase flex items-center gap-1">
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Paying Customers</span>
               </span>
-              <div className="text-xl font-black text-emerald-700 font-mono">{telemetry.customers}</div>
-              <span className="text-[10px] text-emerald-600 font-bold">${telemetry.revenue.toLocaleString()} Processed</span>
+              <div className="text-xl sm:text-2xl font-black text-emerald-700 font-mono">{telemetry.customers}</div>
+              <span className="text-[10px] text-emerald-600 font-bold block font-mono">${telemetry.revenue.toLocaleString()} Processed</span>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-              <span className="text-[10px] text-slate-500 font-bold uppercase flex items-center gap-1">
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <MousePointerClick className="w-3.5 h-3.5 text-amber-600" />
                 <span>Overall Paid Conversion</span>
               </span>
-              <div className="text-xl font-black text-amber-700 font-mono">{conversionRate}%</div>
-              <span className="text-[10px] text-slate-400">Visitor-to-paid ratio</span>
+              <div className="text-xl sm:text-2xl font-black text-amber-700 font-mono">{conversionRate}%</div>
+              <span className="text-[10px] text-slate-400 block font-mono">Visitor-to-paid ratio</span>
             </div>
           </div>
 
@@ -2132,7 +2145,7 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                     Highest-Converting: {launchManager.topPerformingChannel || 'Creator Stories'}
                   </span>
                   {launchManager.trafficSurgeDetected && (
-                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-200 animate-pulse">
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-200">
                       🔥 Traffic Surge Detected
                     </span>
                   )}
@@ -2547,7 +2560,7 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
                   {/* Choice 1: SCALE */}
                   <button
                     type="button"
@@ -2559,32 +2572,35 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                       handleSaveState({ decisionNotice: dec })
                       showToast('Scale mode activated!')
                     }}
-                    className={`p-4 rounded-2xl text-left space-y-2 transition-all group border ${
+                    className={`p-5 rounded-2xl text-left space-y-3 transition-all group border flex flex-col justify-between ${
                       p3Guards.allPriorStepsDone
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md active:scale-[0.98] border-blue-500 cursor-pointer'
+                        ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-lg active:scale-[0.98] border-slate-700 cursor-pointer ring-1 ring-emerald-500/30'
                         : 'bg-slate-100 text-slate-400 border-slate-200 shadow-none cursor-not-allowed opacity-60'
                     }`}
                     title={!p3Guards.allPriorStepsDone ? 'Complete Steps 1–3 before scaling' : 'Activate Scale Mode'}
                   >
                     <div className="flex items-center justify-between">
-                      <div className={`p-2 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <Rocket className="w-5 h-5" />}
+                      <div className={`p-2.5 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-200 text-slate-400'}`}>
+                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <Rocket className="w-5 h-5 text-emerald-400" />}
                       </div>
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                        p3Guards.allPriorStepsDone ? 'bg-emerald-400 text-slate-950' : 'bg-slate-200 text-slate-500'
+                      <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                        p3Guards.allPriorStepsDone ? 'bg-emerald-400 text-slate-950 font-black shadow-xs' : 'bg-slate-200 text-slate-500'
                       }`}>
                         {p3Guards.allPriorStepsDone ? 'Recommended' : 'Locked'}
                       </span>
                     </div>
                     <div>
-                      <h4 className={`text-sm font-black transition-colors ${p3Guards.allPriorStepsDone ? 'text-white' : 'text-slate-400'}`}>
-                        1. SCALE
+                      <h4 className={`text-sm font-black tracking-tight transition-colors ${p3Guards.allPriorStepsDone ? 'text-white' : 'text-slate-400'}`}>
+                        1. SCALE & EXPAND
                       </h4>
-                      <p className={`text-[11px] leading-relaxed mt-0.5 ${p3Guards.allPriorStepsDone ? 'text-blue-100' : 'text-slate-400'}`}>
+                      <p className={`text-[11px] leading-relaxed mt-1 ${p3Guards.allPriorStepsDone ? 'text-slate-300' : 'text-slate-400'}`}>
                         {p3Guards.allPriorStepsDone
-                          ? 'Double down on top converting channels, increase creator posting cadence & unlock viral loops.'
+                          ? 'Double down on top converting channels, increase creator posting cadence & unlock viral referral loops.'
                           : 'Locked — Complete Steps 1–3 (Prepare, Monitor, and Launch Manager) first.'}
                       </p>
+                    </div>
+                    <div className="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-emerald-400 font-bold">
+                      → Accelerate Production
                     </div>
                   </button>
 
@@ -2599,27 +2615,30 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                       handleSaveState({ decisionNotice: dec })
                       showToast('Iterate mode set.')
                     }}
-                    className={`p-4 rounded-2xl text-left space-y-2 border transition-all ${
+                    className={`p-5 rounded-2xl text-left space-y-3 border transition-all flex flex-col justify-between ${
                       p3Guards.allPriorStepsDone
-                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-900 border-slate-200 hover:border-slate-300 active:scale-[0.98] group cursor-pointer shadow-2xs'
+                        ? 'bg-white hover:bg-slate-50 text-slate-900 border-slate-200 hover:border-slate-300 active:scale-[0.98] group cursor-pointer shadow-xs'
                         : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className={`p-2 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-white border border-slate-200 text-blue-600' : 'bg-slate-200 text-slate-400'}`}>
-                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />}
+                      <div className={`p-2.5 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-indigo-50 border border-indigo-200 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
+                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <RefreshCw className="w-5 h-5 text-indigo-600" />}
                       </div>
-                      <span className="text-[10px] font-mono text-slate-500 font-semibold">Optimize</span>
+                      <span className="text-[10px] font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 font-bold">Optimize</span>
                     </div>
                     <div>
-                      <h4 className={`text-sm font-bold transition-colors ${p3Guards.allPriorStepsDone ? 'text-slate-900' : 'text-slate-400'}`}>
-                        2. ITERATE
+                      <h4 className={`text-sm font-bold tracking-tight transition-colors ${p3Guards.allPriorStepsDone ? 'text-slate-900' : 'text-slate-400'}`}>
+                        2. ITERATE & REFINE
                       </h4>
-                      <p className={`text-[11px] leading-relaxed mt-0.5 ${p3Guards.allPriorStepsDone ? 'text-slate-600' : 'text-slate-400'}`}>
+                      <p className={`text-[11px] leading-relaxed mt-1 ${p3Guards.allPriorStepsDone ? 'text-slate-600' : 'text-slate-400'}`}>
                         {p3Guards.allPriorStepsDone
-                          ? 'Optimize lower-converting channels and patch mobile checkout drop-offs.'
+                          ? 'Optimize lower-converting channels, polish mobile checkout friction, and refine onboarding hooks.'
                           : 'Locked — Complete Steps 1–3 first.'}
                       </p>
+                    </div>
+                    <div className="pt-2 border-t border-slate-100 text-[10px] font-mono text-indigo-600 font-bold">
+                      → Patch Bottlenecks
                     </div>
                   </button>
 
@@ -2634,27 +2653,30 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                       handleSaveState({ decisionNotice: dec })
                       showToast('Maintain mode set.')
                     }}
-                    className={`p-4 rounded-2xl text-left space-y-2 border transition-all ${
+                    className={`p-5 rounded-2xl text-left space-y-3 border transition-all flex flex-col justify-between ${
                       p3Guards.allPriorStepsDone
-                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-900 border-slate-200 hover:border-slate-300 active:scale-[0.98] group cursor-pointer shadow-2xs'
+                        ? 'bg-white hover:bg-slate-50 text-slate-900 border-slate-200 hover:border-slate-300 active:scale-[0.98] group cursor-pointer shadow-xs'
                         : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className={`p-2 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-white border border-slate-200 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
-                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+                      <div className={`p-2.5 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-emerald-50 border border-emerald-200 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
+                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5 text-emerald-600" />}
                       </div>
-                      <span className="text-[10px] font-mono text-slate-500 font-semibold">Steady</span>
+                      <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold">Steady-State</span>
                     </div>
                     <div>
-                      <h4 className={`text-sm font-bold transition-colors ${p3Guards.allPriorStepsDone ? 'text-slate-900' : 'text-slate-400'}`}>
-                        3. MAINTAIN
+                      <h4 className={`text-sm font-bold tracking-tight transition-colors ${p3Guards.allPriorStepsDone ? 'text-slate-900' : 'text-slate-400'}`}>
+                        3. MAINTAIN & HARVEST
                       </h4>
-                      <p className={`text-[11px] leading-relaxed mt-0.5 ${p3Guards.allPriorStepsDone ? 'text-slate-600' : 'text-slate-400'}`}>
+                      <p className={`text-[11px] leading-relaxed mt-1 ${p3Guards.allPriorStepsDone ? 'text-slate-600' : 'text-slate-400'}`}>
                         {p3Guards.allPriorStepsDone
-                          ? 'Preserve organic creator posting rhythm, maintain high customer retention and steady MRR.'
+                          ? 'Preserve organic creator posting rhythm, maintain high customer retention and steady MRR deposits.'
                           : 'Locked — Complete Steps 1–3 first.'}
                       </p>
+                    </div>
+                    <div className="pt-2 border-t border-slate-100 text-[10px] font-mono text-emerald-700 font-bold">
+                      → Organic Retention
                     </div>
                   </button>
 
@@ -2662,21 +2684,24 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                   <button
                     type="button"
                     onClick={() => setShowKillModal(true)}
-                    className="p-4 rounded-2xl bg-red-50/50 hover:bg-red-50 text-red-900 text-left space-y-2 border border-red-200 hover:border-red-300 transition-all active:scale-[0.98] group cursor-pointer shadow-2xs"
+                    className="p-5 rounded-2xl bg-rose-50/40 hover:bg-rose-50 text-rose-900 text-left space-y-3 border border-rose-200 hover:border-rose-300 transition-all active:scale-[0.98] group cursor-pointer shadow-xs flex flex-col justify-between"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="p-2 rounded-xl bg-red-100 text-red-700">
+                      <div className="p-2.5 rounded-xl bg-rose-100 text-rose-700">
                         <XCircle className="w-5 h-5" />
                       </div>
-                      <span className="text-[10px] font-mono text-red-700 font-bold">Sunset</span>
+                      <span className="text-[10px] font-mono text-rose-700 font-bold bg-white px-2 py-0.5 rounded border border-rose-200">Sunset</span>
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-red-700 transition-colors">
-                        4. KILL
+                      <h4 className="text-sm font-bold tracking-tight text-rose-800 transition-colors">
+                        4. ARCHIVE / SUNSET
                       </h4>
-                      <p className="text-[11px] text-red-600 leading-relaxed mt-0.5">
+                      <p className="text-[11px] text-rose-600 leading-relaxed mt-1">
                         Gracefully sunset product, refund active subscriptions, or pivot to a new validated problem space.
                       </p>
+                    </div>
+                    <div className="pt-2 border-t border-rose-200 text-[10px] font-mono text-rose-700 font-bold">
+                      → Sunset Protocol
                     </div>
                   </button>
                 </div>

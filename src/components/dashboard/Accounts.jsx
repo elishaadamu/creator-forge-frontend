@@ -368,7 +368,7 @@ export default function Accounts() {
                           <div className="flex items-center justify-between">
                             <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Instagram Developer Keys</p>
                             <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                               Custom credentials configured
                             </span>
                           </div>

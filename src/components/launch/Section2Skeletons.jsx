@@ -674,7 +674,7 @@ export function PreorderLandingSkeleton({ slug }) {
           </div>
           <div className="space-y-1.5 text-xs text-[#969DA6]">
             <div className="flex items-center gap-2 text-[#F5F3EA]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#78E08F] animate-ping" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#78E08F]" />
               <span>Fetching verified creator concept & dynamic pricing</span>
             </div>
             <div className="flex items-center gap-2 text-[#969DA6]">

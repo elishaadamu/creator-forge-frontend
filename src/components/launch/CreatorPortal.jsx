@@ -709,14 +709,14 @@ export default function CreatorPortal({ portalId }) {
           {/* Track Indicator & Upgrade Pass Action */}
           {isDiyActive ? (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] font-mono font-bold shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               <span className="hidden sm:inline">Track 1: Co-Builder (${cobuilderPrice} Paid)</span>
               <span className="sm:hidden">Co-Builder (${cobuilderPrice})</span>
             </div>
           ) : isTrackChoicePending ? (
             <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-[11px] font-mono font-bold shadow-2xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                 <span className="hidden sm:inline">Track Choice Pending</span>
                 <span className="sm:hidden">Choice Pending</span>
               </div>

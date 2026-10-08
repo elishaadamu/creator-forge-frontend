@@ -806,10 +806,7 @@ export default function CreatorParticipationManager() {
 
             {/* Real-time status indicator */}
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${isLight ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'} border text-[11px] font-medium`}>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
               <span className="hidden md:inline">Real-Time Sync Active (4s)</span>
               <span className="md:hidden">Live</span>
             </div>

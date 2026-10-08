@@ -236,7 +236,7 @@ Inside, you'll find step-by-step video courses, downloadable resource guides, an
               {productName}
             </h2>
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
               <span className="text-[13px]" style={{ color: 'var(--theme-text-muted)' }}>
                 Live · {blueprint.type} · {membersCount.toLocaleString('en-US')} members
               </span>

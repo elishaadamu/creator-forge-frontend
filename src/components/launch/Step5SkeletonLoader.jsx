@@ -28,7 +28,7 @@ export default function Step5SkeletonLoader({ creatorName = 'Creator' }) {
             <span>Audience Intelligence & Deep Research Signals</span>
           </h3>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="text-[11px] text-emerald-700 font-mono font-medium">
               Extracting {creatorName}&apos;s channel telemetry...
             </span>

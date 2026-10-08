@@ -134,7 +134,7 @@ export default function DynamicConceptMockup({
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             MVP Ready
           </span>
         </div>
@@ -242,7 +242,7 @@ export default function DynamicConceptMockup({
                     </span>
                   </div>
                   <span className="text-[8px] font-mono text-emerald-400 bg-emerald-950/70 px-1 py-0.5 rounded border border-emerald-800 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                     Fine-Tuned Copilot
                   </span>
                 </div>

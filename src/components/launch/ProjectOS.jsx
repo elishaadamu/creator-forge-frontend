@@ -898,7 +898,7 @@ partnerships@creatorforge.com`
                   <span className="text-[11px] font-black text-slate-900 flex items-center justify-center gap-1.5">
                     {isLiveLaunch ? (
                       <>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                         <span className="text-emerald-700">Live Launch Verified</span>
                       </>
                     ) : currentPhase === 1 ? (
@@ -1000,7 +1000,7 @@ partnerships@creatorforge.com`
                 }`}>
                   {isLiveLaunch ? (
                     <>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                       <span>Live Launch</span>
                     </>
                   ) : currentPhase === 1 ? (
@@ -1144,7 +1144,7 @@ partnerships@creatorforge.com`
                               Simulated Architecture ({chosenConcept.mockupType || 'saas_os'})
                             </span>
                           </div>
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
                         </div>
                         <div className="p-3 sm:p-4">
                           <DynamicConceptMockup
@@ -1212,7 +1212,7 @@ partnerships@creatorforge.com`
                       <div className="text-xl sm:text-2xl font-black text-slate-950 font-mono tracking-tight flex items-center gap-1.5">
                         {isLiveLaunch ? (
                           <>
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                             <span className="text-emerald-700">Live</span>
                           </>
                         ) : (
@@ -1286,7 +1286,7 @@ partnerships@creatorforge.com`
                             <span>AI Activity Stream</span>
                           </span>
                           <span className="text-[10px] text-emerald-800 font-mono font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                             <span>Autonomous</span>
                           </span>
                         </div>
@@ -1355,7 +1355,7 @@ partnerships@creatorforge.com`
                   {/* AUDIENCE INTELLIGENCE & DATA GROUNDING BANNER (Anti-AI Slop & Proof) */}
                   <div className="p-4 rounded-xl border border-emerald-500/25 bg-emerald-50/50 space-y-3">
                     <div className="flex items-center gap-2 border-b border-emerald-500/20 pb-2.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                       <span className="font-extrabold text-xs text-slate-950 flex items-center gap-1.5">
                         <ShieldCheck className="w-4 h-4 text-emerald-600" />
                         <span>Grounded in Creator Audience Data</span>
@@ -1453,7 +1453,7 @@ partnerships@creatorforge.com`
                                       : 'border-slate-300 bg-slate-50'
                                   }`}
                                 >
-                                  {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : isToday ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" /> : null}
+                                  {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : isToday ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /> : null}
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap">
@@ -1757,7 +1757,7 @@ partnerships@creatorforge.com`
                                   </>
                                 ) : isLiveLaunch ? (
                                   <>
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                                     <span>Production Live</span>
                                   </>
                                 ) : (

@@ -451,7 +451,6 @@ export default function AdminPipelineLookup({
           <div className="flex items-center gap-3">
             <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500/20 to-amber-500/20 border border-rose-500/30 text-rose-400 flex-shrink-0 shadow-inner">
               <ShieldAlert className="w-4 h-4" />
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400" />
             </div>
             <div className="flex items-center gap-2.5">
@@ -459,7 +458,7 @@ export default function AdminPipelineLookup({
                 Pipeline Intelligence & Exception Dashboard
               </h2>
               <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08] text-[11px] text-slate-400 font-mono">
-                <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                <Radio className="w-3 h-3 text-emerald-400" />
                 <span>Live Audit ({creators.length} Leads)</span>
               </div>
             </div>

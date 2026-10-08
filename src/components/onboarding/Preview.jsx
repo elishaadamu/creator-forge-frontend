@@ -198,7 +198,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
             >
               <div className="space-y-1 flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                   <span className="text-[8px] font-bold uppercase tracking-wider text-red-400">Stream</span>
                 </div>
                 <h4 className="text-[11px] font-bold truncate" style={{ color: styles.text }}>{e.title}</h4>
@@ -625,7 +625,7 @@ export default function Preview() {
               className="flex items-center gap-2 px-3 py-1.5 rounded-full"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
               <span className="text-[12px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Generated</span>
             </div>
           </div>

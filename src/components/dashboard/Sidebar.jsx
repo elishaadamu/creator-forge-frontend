@@ -138,7 +138,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                   <span className="text-[13px] font-semibold text-white text-left flex-1">
                     Register Account
                   </span>
-                  <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
+                  <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-full bg-purple-400" />
                 </button>
               </div>
             )}
@@ -234,7 +234,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                 border: '1px solid rgba(168, 85, 247, 0.4)',
               }}
             >
-              <Rocket size={16} className="flex-shrink-0 text-purple-400 animate-pulse" />
+              <Rocket size={16} className="flex-shrink-0 text-purple-400" />
               {isOpen && (
                 <>
                   <span className="text-[13px] font-bold flex-1 text-left whitespace-nowrap text-white">
@@ -324,7 +324,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                 </span>
               )}
               {/* Subtle accent dot */}
-              <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
+              <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-full bg-purple-400" />
             </button>
           </div>
         )}

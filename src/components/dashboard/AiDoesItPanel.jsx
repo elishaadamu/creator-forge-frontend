@@ -359,7 +359,7 @@ function StepRow({ step, status }) {
         {status === 'done'
           ? <Check size={12} className="text-black" strokeWidth={3} />
           : status === 'active'
-            ? <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: step.color }} />
+            ? <span className="w-2 h-2 rounded-full" style={{ background: step.color }} />
             : status === 'skipped'
               ? <X size={10} style={{ color: 'rgba(255,255,255,0.3)' }} />
               : <Icon size={11} style={{ color: 'rgba(255,255,255,0.3)' }} />

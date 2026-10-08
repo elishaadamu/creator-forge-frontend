@@ -123,9 +123,7 @@ export default function LaunchStudioHero({
                 <span>Discover Creator Leads</span>
                 <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
                 {/* Signature Top-Right Accent Beacon Dot */}
-                <span className="absolute -top-1 -right-1 flex h-3 w-3 pointer-events-none items-center justify-center">
-                  <span className="absolute inline-flex h-4 w-4 rounded-full bg-emerald-400/30 blur-[1px]" />
-                  <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 opacity-60" />
+                <span className="absolute -top-1 -right-1 flex h-2 w-2 pointer-events-none items-center justify-center">
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white" />
                 </span>
               </button>

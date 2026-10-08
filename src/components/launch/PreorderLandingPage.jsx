@@ -355,7 +355,7 @@ export default function PreorderLandingPage({ slug }) {
       {/* Top Launch Notification Banner */}
       <div className="bg-[#0D1014] border-b border-[#252B32] py-2.5 px-3 sm:px-4 text-center text-xs">
         <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-medium flex-wrap">
-          <span className="w-2 h-2 rounded-full bg-[#78E08F] animate-pulse shrink-0" />
+          <span className="w-2 h-2 rounded-full bg-[#78E08F] shrink-0" />
           <span className="text-[#969DA6]">Exclusive Co-Founder Early Launch by</span>
           <span className="text-[#F5F3EA] font-semibold">{creatorName}</span>
           <span className="bg-[#C8FF3D]/10 text-[#C8FF3D] border border-[#C8FF3D]/25 px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider shrink-0">
@@ -558,7 +558,7 @@ export default function PreorderLandingPage({ slug }) {
                       {t.badge}
                     </span>
                     {isSelected && (
-                      <span className="w-2 h-2 rounded-full bg-[#C8FF3D] animate-ping shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-[#C8FF3D] shrink-0" />
                     )}
                   </div>
 

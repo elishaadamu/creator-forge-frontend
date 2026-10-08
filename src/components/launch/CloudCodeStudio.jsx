@@ -1685,7 +1685,7 @@ export default function CloudCodeStudio({
                           {/* Preview Mini Toolbar */}
                           <div className="h-8 bg-[#0c0e14] border-b border-white/[0.06] px-3 flex items-center justify-between text-[11px] font-mono shrink-0">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
                               <span className="text-slate-300 font-bold truncate">Live Sandbox: {activeFile.name}</span>
                             </div>
 

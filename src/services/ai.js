@@ -3376,7 +3376,7 @@ export default function App() {
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-sm tracking-tight text-white">${product}</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                 v1.0.0 Live MVP
               </span>
             </div>

@@ -159,7 +159,7 @@ export default function Revenue() {
         </div>
 
         <div className="flex items-center gap-2 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent.color, opacity: 0.6 }} />
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent.color, opacity: 0.6 }} />
           <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
             Dynamic revenue estimates tracked based on active platform member conversions.
           </p>

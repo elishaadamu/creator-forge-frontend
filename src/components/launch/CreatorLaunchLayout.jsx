@@ -1477,7 +1477,7 @@ export default function CreatorLaunchLayout({
                 </span>
               </div>
               <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                 <span>Syncing Workspace</span>
               </div>
             </div>
@@ -1520,9 +1520,8 @@ export default function CreatorLaunchLayout({
                 onClick={handleCreateDemoProject}
                 className="relative inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
               >
-                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
                 <Rocket className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Initialize Demo Venture</span>

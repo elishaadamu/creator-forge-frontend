@@ -383,7 +383,7 @@ export default function ProductMockupDisplay({ project, theme = 'lime' }) {
                   <span className="text-[10px] text-[#686F78]">(Auto-Saved)</span>
                 </div>
                 <div className="flex items-center gap-2 text-[10px]">
-                  <span className={`w-2 h-2 rounded-full ${isRunningCode ? 'bg-amber-400 animate-ping' : 'bg-[#78E08F]'}`} />
+                  <span className={`w-2 h-2 rounded-full ${isRunningCode ? 'bg-amber-400' : 'bg-[#78E08F]'}`} />
                   <span>{isRunningCode ? 'Compiling Build...' : 'Kernel: Ready'}</span>
                 </div>
               </div>

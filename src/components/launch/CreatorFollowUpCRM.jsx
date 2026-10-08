@@ -445,7 +445,7 @@ export default function CreatorFollowUpCRM({
         stageId: "section2",
         stageName: "Active Co-Launch Venture",
         badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold shadow-2xs",
-        dotClass: "bg-emerald-500 animate-pulse",
+        dotClass: "bg-emerald-500",
         description: "Venture greenlit & active in Section 2 (Phase 1: Validation)",
       };
     }
@@ -504,7 +504,7 @@ export default function CreatorFollowUpCRM({
           stageId: "interested",
           stageName: "AI: Interested Reply Received",
           badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold shadow-2xs",
-          dotClass: "bg-emerald-500 animate-pulse",
+          dotClass: "bg-emerald-500",
           description: "Creator replied positively with interest",
         };
       }
@@ -1662,7 +1662,7 @@ export default function CreatorFollowUpCRM({
                     {/* Stage / AI Classification Badge */}
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 shadow-2xs ${stage.badgeClass}`}>
-                        <span className={`w-2 h-2 rounded-full ${stage.dotClass} animate-pulse`} />
+                        <span className={`w-2 h-2 rounded-full ${stage.dotClass}`} />
                         <span>{stage.stageName}</span>
                       </span>
                     </div>
@@ -2069,7 +2069,7 @@ export default function CreatorFollowUpCRM({
                     </span>
                     <span className="text-slate-300">•</span>
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1.5 shadow-2xs ${detailCreator.stepInfo?.badgeClass || "bg-slate-100 text-slate-700 border-slate-200"}`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
                       <span>{detailCreator.stepInfo?.stepName || "Step 5: Audience & 3 Product Ideas"}</span>
                     </span>
                   </div>

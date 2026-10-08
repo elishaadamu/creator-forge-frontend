@@ -225,7 +225,7 @@ export default function DashboardLayout() {
               className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full"
               style={{ background: 'var(--theme-accent-bg)', border: '1px solid var(--theme-accent-border)' }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
               <span className="text-[12px]" style={{ color: 'var(--theme-text)' }}>
                 {creatorData.productName || 'Creator Academy'} live
               </span>
