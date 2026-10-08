@@ -4,7 +4,7 @@ import {
   Users, ExternalLink, Globe, Sparkles, AlertCircle, ShieldCheck, ArrowRight,
   TrendingUp, Award, Calendar, CheckSquare, Eye, Smartphone, Send, FileText,
   CheckCheck, Loader2, MessageCircle, Zap, Lock, Layers, Cpu, Laptop, CreditCard,
-  Plus, RotateCcw, Share2, HelpCircle
+  Plus, RotateCcw, Share2, HelpCircle, Menu, X
 } from 'lucide-react'
 import { getFrontendUrl, updateCoLaunchProject, getCoLaunchProject, getThreads, getWorkflowState } from '../../services/opsApi'
 import { updatePageSEO } from '../../utils/seo'
@@ -33,6 +33,7 @@ export default function CreatorPortal({ portalId }) {
   const [section1Threads, setSection1Threads] = useState([])
   const [creatorAvatar, setCreatorAvatar] = useState(null)
   const [avatarLoadError, setAvatarLoadError] = useState(false)
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const chatMessagesEndRef = useRef(null)
 
   const productName = project?.productName || project?.name || 'Software Co-Launch'
@@ -690,47 +691,46 @@ export default function CreatorPortal({ portalId }) {
       }}
     >
       {/* ── TOP NAV HEADER ──────────────────────────────────────────────────────── */}
-      <header className="h-13 sm:h-14 border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-3 sm:px-6 shadow-2xs">
-        {/* Brand / Partner Identity */}
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-          <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-[#0F172A] border border-slate-800 flex items-center justify-center shadow-xs text-white shrink-0">
-            {resolvedAvatar && !avatarLoadError ? (
-              <>
-                <img
-                  src={resolvedAvatar}
-                  alt={creatorName || 'Creator'}
-                  className="w-full h-full object-cover"
-                  onError={() => setAvatarLoadError(true)}
-                />
-                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#0F172A] border border-slate-700 flex items-center justify-center p-0.5 shadow-xs z-10">
-                  <CreatorForgeLogo size={8} showText={false} theme="dark" />
-                </div>
-              </>
-            ) : (
-              <CreatorForgeLogo size={18} showText={false} theme="dark" />
-            )}
-          </div>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="font-extrabold text-slate-900 tracking-tight text-xs sm:text-sm truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[200px] md:max-w-[240px]">
-                {productName}
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300/80 shrink-0">
-                50/50 Portal
-              </span>
+      <header className="border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-2xs w-full max-w-full">
+        <div className="h-13 sm:h-14 flex items-center justify-between px-2.5 sm:px-6 gap-1.5 sm:gap-2 w-full">
+          {/* Brand / Partner Identity */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1 sm:flex-initial">
+            <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-[#0F172A] border border-slate-800 flex items-center justify-center shadow-xs text-white shrink-0">
+              {resolvedAvatar && !avatarLoadError ? (
+                <>
+                  <img
+                    src={resolvedAvatar}
+                    alt={creatorName || 'Creator'}
+                    className="w-full h-full object-cover"
+                    onError={() => setAvatarLoadError(true)}
+                  />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#0F172A] border border-slate-700 flex items-center justify-center p-0.5 shadow-xs z-10">
+                    <CreatorForgeLogo size={8} showText={false} theme="dark" />
+                  </div>
+                </>
+              ) : (
+                <CreatorForgeLogo size={18} showText={false} theme="dark" />
+              )}
             </div>
-            <p className="text-[10px] text-slate-500 font-medium truncate max-w-[150px] sm:max-w-[200px] hidden sm:block">
-              Signed Partner: {creatorName}
-            </p>
-          </div>
-        </div>
 
-        {/* Center & Right Controls */}
-        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
-          {/* Main View Switcher (Launch Kit vs ProjectOS) - Responsive on both mobile & desktop */}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                <span className="font-extrabold text-slate-900 tracking-tight text-xs sm:text-sm truncate max-w-[80px] xs:max-w-[120px] sm:max-w-[180px] md:max-w-[240px]">
+                  {productName}
+                </span>
+                <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300/80 shrink-0">
+                  50/50
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-500 font-medium truncate max-w-[150px] sm:max-w-[200px] hidden md:block">
+                Signed Partner: {creatorName}
+              </p>
+            </div>
+          </div>
+
+          {/* Center View Switcher (Desktop & Mobile Compact) */}
           {!isTrackChoicePending && (
-            <div className="flex items-center gap-0.5 p-0.5 bg-slate-100/90 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-0.5 p-0.5 bg-slate-100/90 rounded-lg border border-slate-200 shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveMainView('launch_kit')}
@@ -762,60 +762,175 @@ export default function CreatorPortal({ portalId }) {
             </div>
           )}
 
-          {/* Track Indicator & Upgrade Pass Action */}
-          {isDiyActive ? (
-            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[10px] sm:text-[11px] font-mono font-bold shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              <span className="hidden sm:inline">Track 1: Co-Builder (${cobuilderPrice} Paid)</span>
-              <span className="sm:hidden">Co-Builder</span>
-            </div>
-          ) : isTrackChoicePending ? (
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-[11px] font-mono font-bold shadow-2xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                <span>Track Choice Pending</span>
+          {/* Desktop Right Controls (hidden on mobile, available in toggle drawer) */}
+          <div className="hidden lg:flex items-center gap-2 shrink-0">
+            {/* Track Indicator & Upgrade Pass Action */}
+            {isDiyActive ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] font-mono font-bold shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span>Track 1: Co-Builder (${cobuilderPrice} Paid)</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowDiyModal(true)}
-                className="h-7 sm:h-8 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
-              >
-                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300 shrink-0" />
-                <span className="hidden sm:inline">Co-Builder Pass (${cobuilderPrice})</span>
-                <span className="sm:hidden">${cobuilderPrice} Pass</span>
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 border border-purple-300/80 text-purple-800 text-[11px] font-mono font-bold shadow-2xs">
-                <span>🤝</span>
-                <span>Track 2: Studio-Managed (50/50)</span>
+            ) : isTrackChoicePending ? (
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-[11px] font-mono font-bold shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span>Track Choice Pending</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDiyModal(true)}
+                  className="h-8 flex items-center gap-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                  <span>Co-Builder Pass (${cobuilderPrice})</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowDiyModal(true)}
-                className="h-7 sm:h-8 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] sm:text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
-              >
-                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300 shrink-0" />
-                <span className="hidden sm:inline">Upgrade to Co-Builder (${cobuilderPrice})</span>
-                <span className="sm:hidden">${cobuilderPrice} Pass</span>
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 border border-purple-300/80 text-purple-800 text-[11px] font-mono font-bold shadow-2xs">
+                  <span>🤝</span>
+                  <span>Track 2: Studio-Managed (50/50)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDiyModal(true)}
+                  className="h-8 flex items-center gap-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                  <span>Upgrade to Co-Builder (${cobuilderPrice})</span>
+                </button>
+              </div>
+            )}
 
-          {/* Revenue Share Pill */}
-          <div className="h-7 sm:h-8 flex items-center gap-1 sm:gap-1.5 pl-1.5 sm:pl-2 border-l border-slate-200">
-            <div className="px-1.5 sm:px-2 py-0.5 rounded-lg bg-emerald-50/80 border border-emerald-200 flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-[11px] font-mono font-bold text-emerald-800">
-              <DollarSign className="w-3 h-3 text-emerald-600 shrink-0" />
-              <span className="hidden md:inline text-[10px] text-emerald-600 font-sans font-semibold">
-                {isDiyActive ? '100% Pool:' : '50%:'}
-              </span>
-              <span className="text-emerald-700 font-extrabold">
-                ${(isDiyActive ? presalesRevenue : creatorRevenueShare).toLocaleString()}
-              </span>
+            {/* Revenue Share Pill */}
+            <div className="h-8 flex items-center gap-1.5 pl-2 border-l border-slate-200">
+              <div className="px-2 py-0.5 rounded-lg bg-emerald-50/80 border border-emerald-200 flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-800">
+                <DollarSign className="w-3 h-3 text-emerald-600 shrink-0" />
+                <span className="text-[10px] text-emerald-600 font-sans font-semibold">
+                  {isDiyActive ? '100% Pool:' : '50%:'}
+                </span>
+                <span className="text-emerald-700 font-extrabold">
+                  ${(isDiyActive ? presalesRevenue : creatorRevenueShare).toLocaleString()}
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* Mobile Right Controls: Compact Revenue Badge + Toggle Menu Button */}
+          <div className="flex lg:hidden items-center gap-1.5 shrink-0">
+            <div className="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-0.5 text-[10px] sm:text-xs font-mono font-bold text-emerald-800">
+              <DollarSign className="w-3 h-3 text-emerald-600 shrink-0" />
+              <span>${(isDiyActive ? presalesRevenue : creatorRevenueShare).toLocaleString()}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileNavOpen(prev => !prev)}
+              className={`p-1.5 sm:p-2 rounded-lg border transition-colors cursor-pointer ${
+                isMobileNavOpen
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+              }`}
+              aria-label="Toggle Portal Navigation Menu"
+              title="Toggle Menu"
+            >
+              {isMobileNavOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Expandable Navbar Drawer */}
+        {isMobileNavOpen && (
+          <div className="lg:hidden border-t border-slate-200 bg-white px-3 sm:px-6 py-3 space-y-3 animate-in slide-in-from-top-2 duration-150 shadow-lg">
+            <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
+              <span className="text-[10px] uppercase font-mono font-bold text-slate-400">Signed Creator Partner</span>
+              <span className="text-xs font-bold text-slate-900">{creatorName}</span>
+            </div>
+
+            {/* View Switcher in Drawer */}
+            {!isTrackChoicePending && (
+              <div className="space-y-1">
+                <span className="text-[10px] uppercase font-mono font-bold text-slate-400">Workspace View</span>
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveMainView('launch_kit')
+                      setIsMobileNavOpen(false)
+                    }}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      activeMainView === 'launch_kit'
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Rocket className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Launch Kit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveMainView('projectos')
+                      setIsMobileNavOpen(false)
+                    }}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      activeMainView === 'projectos'
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>ProjectOS</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="text-xs font-mono font-semibold text-slate-700 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>{isDiyActive ? `Track 1: Co-Builder ($${cobuilderPrice} Paid)` : 'Track 2: Studio-Managed (50/50)'}</span>
+              </div>
+              {!isDiyActive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDiyModal(true)
+                    setIsMobileNavOpen(false)
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
+                >
+                  <Zap className="w-3 h-3 text-amber-300 fill-amber-300" />
+                  <span>${cobuilderPrice} Pass</span>
+                </button>
+              )}
+            </div>
+
+            {/* Quick Links & Share in Mobile Nav */}
+            <div className="grid grid-cols-2 gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  copyToClipboard(window.location.href, 'portal-link')
+                  setIsMobileNavOpen(false)
+                }}
+                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Share2 className="w-3.5 h-3.5 text-slate-600" />
+                <span>Share Portal</span>
+              </button>
+              <a
+                href={preorderUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Pre-Order Link</span>
+              </a>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Floating Notification */}
@@ -827,78 +942,80 @@ export default function CreatorPortal({ portalId }) {
       )}
 
       {/* ── MAIN BODY CONTAINER ─────────────────────────────────────────────────── */}
-      <div className="flex-1 w-full max-w-[96%] xl:max-w-[95%] 2xl:max-w-[1720px] mx-auto px-2 sm:px-4 lg:px-6 py-4 space-y-4 sm:space-y-5">
+      <div className="flex-1 w-full max-w-full 2xl:max-w-[1720px] mx-auto px-2.5 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-4 sm:space-y-5 overflow-x-hidden">
 
         {/* ── STEP / PHASE PROGRESS BAR ────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-2xs space-y-3.5">
-          {/* LEVEL 1: PROJECT ROADMAP & THE 3 PHASES (Distinct top row!) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2">
+        <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-5 shadow-2xs space-y-3 w-full max-w-full overflow-hidden">
+          {/* LEVEL 1: PROJECT ROADMAP & THE 3 PHASES (Distinct top row with smooth horizontal scroll!) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100 w-full">
+            <div className="flex items-center gap-2 shrink-0">
               <div className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs shrink-0">
                 <Layers className="w-3.5 h-3.5 text-emerald-400" />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Roadmap:</span>
-                <span className="text-xs font-bold text-slate-800">
+                <span className="text-xs font-bold text-slate-800 truncate">
                   Phase {currentPhase} of 3 — {currentPhase === 1 ? 'Market Validation' : currentPhase === 2 ? 'AI MVP Build' : 'Live Launch'}
                 </span>
               </div>
             </div>
 
-            {/* The 3 Phases Macro Stepper */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              {/* Phase 1 */}
-              <div className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
-                currentPhase === 1
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : currentPhase > 1
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                  : 'bg-slate-100 text-slate-500'
-              }`}>
-                {currentPhase > 1 ? (
-                  <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
-                ) : currentPhase === 1 ? (
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                ) : null}
-                <span>Phase 1: Validation</span>
-              </div>
+            {/* The 3 Phases Macro Stepper (Horizontally scrollable on small screens) */}
+            <div className="w-full sm:w-auto overflow-x-auto no-scrollbar scroll-smooth py-0.5">
+              <div className="flex items-center gap-1.5 min-w-max">
+                {/* Phase 1 */}
+                <div className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
+                  currentPhase === 1
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : currentPhase > 1
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {currentPhase > 1 ? (
+                    <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                  ) : currentPhase === 1 ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  ) : null}
+                  <span>Phase 1: Validation</span>
+                </div>
 
-              <div className="w-2.5 h-[1px] bg-slate-200 shrink-0" />
+                <div className="w-2.5 h-[1px] bg-slate-200 shrink-0" />
 
-              {/* Phase 2 */}
-              <div className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
-                currentPhase === 2
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : currentPhase > 2
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                  : 'bg-slate-100/80 text-slate-400'
-              }`}>
-                {currentPhase > 2 ? (
-                  <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
-                ) : currentPhase === 2 ? (
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                ) : null}
-                <span>Phase 2: Build MVP</span>
-              </div>
+                {/* Phase 2 */}
+                <div className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
+                  currentPhase === 2
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : currentPhase > 2
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-slate-100/80 text-slate-400'
+                }`}>
+                  {currentPhase > 2 ? (
+                    <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                  ) : currentPhase === 2 ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  ) : null}
+                  <span>Phase 2: Build MVP</span>
+                </div>
 
-              <div className="w-2.5 h-[1px] bg-slate-200 shrink-0" />
+                <div className="w-2.5 h-[1px] bg-slate-200 shrink-0" />
 
-              {/* Phase 3 */}
-              <div className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
-                currentPhase === 3
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100/80 text-slate-400'
-              }`}>
-                {currentPhase === 3 ? (
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                ) : null}
-                <span>Phase 3: Live Launch</span>
+                {/* Phase 3 */}
+                <div className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
+                  currentPhase === 3
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100/80 text-slate-400'
+                }`}>
+                  {currentPhase === 3 ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  ) : null}
+                  <span>Phase 3: Live Launch</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* LEVEL 2: DISTINCT EXECUTION STEPS (Clearly on its own row!) */}
-          <div className="space-y-2">
+          {/* LEVEL 2: DISTINCT EXECUTION STEPS (Horizontally scrollable on mobile!) */}
+          <div className="space-y-1.5 w-full">
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
@@ -913,75 +1030,77 @@ export default function CreatorPortal({ portalId }) {
               </span>
             </div>
 
-            {/* Steps Container */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-              {isTrackChoicePending ? (
-                <>
-                  <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs shrink-0 ring-2 ring-emerald-400/30">
-                    <span className="px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">01</span>
-                    <span>STEP 01 • ACTIVE</span>
-                    <span className="text-emerald-400 font-sans font-extrabold ml-0.5">Co-Launch Track Choice</span>
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
-                  </div>
-                  <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
-                  <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
-                    <span className="text-slate-400 font-bold">02</span>
-                    <span className="font-sans">Venture Architecture</span>
-                  </div>
-                  <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
-                  <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
-                    <span className="text-slate-400 font-bold">03</span>
-                    <span className="font-sans">Sprint 1 Execution</span>
-                  </div>
-                  <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
-                  <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
-                    <span className="text-slate-400 font-bold">04</span>
-                    <span className="font-sans">Audience Validation</span>
-                  </div>
-                  <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
-                  <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
-                    <span className="text-slate-400 font-bold">05</span>
-                    <span className="font-sans">Commercial Launch</span>
-                  </div>
-                </>
-              ) : (
-                activePhaseSteps.map((step, idx) => {
-                  const isActive = idx === resolvedActiveStepIndex
-                  const isDone = Boolean(step.isDone)
-                  return (
-                    <div key={step.id} className="flex items-center gap-2 shrink-0">
-                      {isDone ? (
-                        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold shadow-2xs">
-                          <div className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                          </div>
-                          <span className="font-sans font-bold text-slate-900">{step.label}</span>
-                        </div>
-                      ) : isActive ? (
-                        <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs ring-2 ring-emerald-400/40">
-                          <span className="px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">
-                            STEP {step.num}
-                          </span>
-                          <span className="text-white font-sans font-extrabold">{step.label}</span>
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono">
-                          <span className="text-slate-400 font-bold">{step.num}</span>
-                          <span className="font-sans font-medium text-slate-600">{step.label}</span>
-                        </div>
-                      )}
-                      {idx < activePhaseSteps.length - 1 && (
-                        <div
-                          className={`w-4 sm:w-5 h-[2px] rounded-full shrink-0 ${
-                            isDone ? 'bg-emerald-400' : 'bg-slate-200'
-                          }`}
-                        />
-                      )}
+            {/* Steps Container (Smooth Horizontal Scroll for Mobile) */}
+            <div className="w-full overflow-x-auto no-scrollbar scroll-smooth py-1">
+              <div className="flex items-center gap-2 min-w-max">
+                {isTrackChoicePending ? (
+                  <>
+                    <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs shrink-0 ring-2 ring-emerald-400/30">
+                      <span className="px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">01</span>
+                      <span>STEP 01 • ACTIVE</span>
+                      <span className="text-emerald-400 font-sans font-extrabold ml-0.5">Co-Launch Track Choice</span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
                     </div>
-                  )
-                })
-              )}
+                    <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
+                    <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
+                      <span className="text-slate-400 font-bold">02</span>
+                      <span className="font-sans">Venture Architecture</span>
+                    </div>
+                    <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
+                    <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
+                      <span className="text-slate-400 font-bold">03</span>
+                      <span className="font-sans">Sprint 1 Execution</span>
+                    </div>
+                    <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
+                    <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
+                      <span className="text-slate-400 font-bold">04</span>
+                      <span className="font-sans">Audience Validation</span>
+                    </div>
+                    <div className="w-4 h-[2px] bg-slate-200 shrink-0" />
+                    <div className="flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono shrink-0">
+                      <span className="text-slate-400 font-bold">05</span>
+                      <span className="font-sans">Commercial Launch</span>
+                    </div>
+                  </>
+                ) : (
+                  activePhaseSteps.map((step, idx) => {
+                    const isActive = idx === resolvedActiveStepIndex
+                    const isDone = Boolean(step.isDone)
+                    return (
+                      <div key={step.id} className="flex items-center gap-2 shrink-0">
+                        {isDone ? (
+                          <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold shadow-2xs">
+                            <div className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </div>
+                            <span className="font-sans font-bold text-slate-900">{step.label}</span>
+                          </div>
+                        ) : isActive ? (
+                          <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-mono font-bold shadow-xs ring-2 ring-emerald-400/40">
+                            <span className="px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">
+                              STEP {step.num}
+                            </span>
+                            <span className="text-white font-sans font-extrabold">{step.label}</span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-mono">
+                            <span className="text-slate-400 font-bold">{step.num}</span>
+                            <span className="font-sans font-medium text-slate-600">{step.label}</span>
+                          </div>
+                        )}
+                        {idx < activePhaseSteps.length - 1 && (
+                          <div
+                            className={`w-4 sm:w-5 h-[2px] rounded-full shrink-0 ${
+                              isDone ? 'bg-emerald-400' : 'bg-slate-200'
+                            }`}
+                          />
+                        )}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1589,34 +1708,36 @@ export default function CreatorPortal({ portalId }) {
             </div>
 
             {/* Sub-navigation Tabs */}
-            <div className="flex items-center gap-1.5 p-1.5 bg-white rounded-xl border border-slate-200 shadow-2xs overflow-x-auto scrollbar-none">
-              {[
-                { id: 'tasks', label: 'Daily Launch Checklist', count: `${completedTasksCount}/${totalTasksCount}` },
-                { id: 'scripts', label: 'Copyable Launch Content', count: `${schedule.length} items` },
-                { id: 'presales', label: 'Verified Pre-Orders', count: `${totalBackersCount}` },
-                { id: 'messages', label: 'Studio Chat & Messages', count: `${portalDisplayMessages.length}` },
-                { id: 'strategy', label: 'Validation Specs' },
-              ].map(tab => {
-                const isActive = activeTab === tab.id
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                      isActive
-                        ? 'bg-slate-900 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span>{tab.label}</span>
-                    {tab.count && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                        {tab.count}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
+            <div className="w-full overflow-x-auto no-scrollbar scroll-smooth p-1 bg-white rounded-xl border border-slate-200 shadow-2xs">
+              <div className="flex items-center gap-1.5 min-w-max">
+                {[
+                  { id: 'tasks', label: 'Daily Launch Checklist', count: `${completedTasksCount}/${totalTasksCount}` },
+                  { id: 'scripts', label: 'Copyable Launch Content', count: `${schedule.length} items` },
+                  { id: 'presales', label: 'Verified Pre-Orders', count: `${totalBackersCount}` },
+                  { id: 'messages', label: 'Studio Chat & Messages', count: `${portalDisplayMessages.length}` },
+                  { id: 'strategy', label: 'Validation Specs' },
+                ].map(tab => {
+                  const isActive = activeTab === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                        isActive
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      {tab.count && (
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             {/* 2-Column Sprint Grid */}
@@ -1751,26 +1872,28 @@ export default function CreatorPortal({ portalId }) {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {[
-                        { id: 'post', label: 'Announcement Post' },
-                        { id: 'story', label: 'Instagram Stories (3-Part)' },
-                        { id: 'video', label: 'Video Demo Hook' },
-                        { id: 'email', label: 'Email Newsletter' },
-                        { id: 'dm', label: 'VIP DM Outreach' },
-                      ].map(st => (
-                        <button
-                          key={st.id}
-                          onClick={() => setActiveScriptTab(st.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            activeScriptTab === st.id
-                              ? 'bg-slate-900 text-white'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          }`}
-                        >
-                          {st.label}
-                        </button>
-                      ))}
+                    <div className="w-full overflow-x-auto no-scrollbar scroll-smooth py-0.5">
+                      <div className="flex items-center gap-1.5 min-w-max">
+                        {[
+                          { id: 'post', label: 'Announcement Post' },
+                          { id: 'story', label: 'Instagram Stories (3-Part)' },
+                          { id: 'video', label: 'Video Demo Hook' },
+                          { id: 'email', label: 'Email Newsletter' },
+                          { id: 'dm', label: 'VIP DM Outreach' },
+                        ].map(st => (
+                          <button
+                            key={st.id}
+                            onClick={() => setActiveScriptTab(st.id)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                              activeScriptTab === st.id
+                                ? 'bg-slate-900 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            {st.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="space-y-3 pt-2">

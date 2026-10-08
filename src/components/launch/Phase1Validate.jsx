@@ -1909,7 +1909,8 @@ export default function Phase1Validate({
         </div>
 
         {/* Bottom Row: 5-Step Pipeline Roadmap */}
-        <div className="flex items-center justify-between gap-1 sm:gap-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="w-full overflow-x-auto no-scrollbar scroll-smooth pb-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-max">
           {[
             { id: 'plan', num: '01', label: '1. Plan', icon: FileText, isDone: isStep1Done, canAccess: canAccessStep1 },
             { id: 'assets', num: '02', label: '2. Assets', icon: Layout, isDone: isStep2Done, canAccess: canAccessStep2 },
@@ -1922,7 +1923,7 @@ export default function Phase1Validate({
             const isDone = Boolean(step.isDone)
 
             return (
-              <div key={step.id} className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0 last:flex-initial">
+              <div key={step.id} className="flex items-center gap-1 sm:gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleStepChange(step.id)}
@@ -1977,6 +1978,7 @@ export default function Phase1Validate({
           })}
         </div>
       </div>
+    </div>
 
       {/* Floating Notification Toast */}
       {feedbackNotice && (
