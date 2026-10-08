@@ -1842,9 +1842,9 @@ export default function CreatorPortal({ portalId }) {
                               <button
                                 type="button"
                                 onClick={() => setViewDraftTask(task)}
-                                className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 text-slate-700 hover:text-slate-900 text-xs font-semibold shrink-0 transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs active:scale-[0.98]"
+                                className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-900 hover:text-white border border-slate-200 hover:border-slate-900 text-slate-800 text-[11px] font-bold shrink-0 transition-all duration-150 flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95 whitespace-nowrap"
                               >
-                                <Eye className="w-3.5 h-3.5 text-slate-500" />
+                                <Eye className="w-3 h-3" />
                                 <span>View Draft</span>
                               </button>
                             </div>

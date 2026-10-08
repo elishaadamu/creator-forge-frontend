@@ -310,7 +310,7 @@ export function enrichTasksWithGrounding(tasks, project) {
     if (draftKey === 'videoScript' || channelLower.includes('video') || channelLower.includes('youtube') || channelLower.includes('tiktok') || titleLower.includes('video')) {
       typeConfig = {
         groundingType: 'video_integration',
-        groundingBadge: '📹 Native Video Integration',
+        groundingBadge: '📹 Native Video Hook',
         groundingSummary: `Connects naturally to "${primaryVideoTitle}"`,
         sourceCitation: grounding.transcripts[0]?.quote || `Discussion in "${primaryVideoTitle}"`,
         provenanceDetails: `A seamless 60-second mid-roll or short demo directly addressing the workflow challenge covered in ${creator}'s recent upload.`,
@@ -321,7 +321,7 @@ export function enrichTasksWithGrounding(tasks, project) {
     } else if (draftKey === 'newsletterDraft' || channelLower.includes('email') || channelLower.includes('newsletter') || titleLower.includes('newsletter') || titleLower.includes('email')) {
       typeConfig = {
         groundingType: 'anti_spam',
-        groundingBadge: '🛡️ Anti-Spam Protected · 1:1 Plain-Text',
+        groundingBadge: '🛡️ 1:1 Plain-Text (Anti-Spam)',
         groundingSummary: 'Personal 1:1 letter from creator (Bypasses Gmail Promotions & Spam)',
         sourceCitation: `Comment #13 Deliverability Guard: SPF/DKIM aligned, 0% marketing spam tags, conversational reply hook.`,
         provenanceDetails: `Addresses Comment #13: Framed as a personal 1:1 email from ${creator} inviting core fans to the 50 Founding Member cohort.`,
@@ -332,7 +332,7 @@ export function enrichTasksWithGrounding(tasks, project) {
     } else if (draftKey === 'storySequence' || channelLower.includes('story') || channelLower.includes('instagram') || titleLower.includes('poll') || titleLower.includes('teaser')) {
       typeConfig = {
         groundingType: 'audience_comment',
-        groundingBadge: '💬 Top Audience Demand Signal',
+        groundingBadge: '💬 Audience Demand Signal',
         groundingSummary: 'Low-friction discovery poll testing audience resonance',
         sourceCitation: grounding.audienceComments[0]?.quote ? `"${grounding.audienceComments[0].quote}"` : 'Direct community inquiries and channel insights.',
         provenanceDetails: `Hooks the exact frustration from top community comments. The interactive poll tests viewer resonance before any sales pitch.`,
@@ -343,7 +343,7 @@ export function enrichTasksWithGrounding(tasks, project) {
     } else if (draftKey === 'directMessageScript' || channelLower.includes('dm') || channelLower.includes('message') || titleLower.includes('vip')) {
       typeConfig = {
         groundingType: 'direct_outreach',
-        groundingBadge: '🤝 VIP 1-on-1 Outreach',
+        groundingBadge: '🤝 1-on-1 VIP Invite',
         groundingSummary: 'High-reply conversational invite for top engaged followers',
         sourceCitation: 'Personal outreach to top commenters and supporters.',
         provenanceDetails: 'Conversational 1-on-1 invites giving top community members private beta access.',
@@ -354,7 +354,7 @@ export function enrichTasksWithGrounding(tasks, project) {
     } else if (titleLower.includes('lock') || titleLower.includes('final') || titleLower.includes('cap') || titleLower.includes('wrap')) {
       typeConfig = {
         groundingType: 'creator_voice',
-        groundingBadge: '🎯 Founding Cohort Cap Lock',
+        groundingBadge: '🎯 Founding Cap Lock',
         groundingSummary: 'Transparent wrap-up note thanking backers & locking founding price',
         sourceCitation: 'Final milestone before Phase 2 MVP engineering begins.',
         provenanceDetails: `A candid wrap-up note from ${creator} thanking backers and locking private Beta access before closing the validation sprint.`,
