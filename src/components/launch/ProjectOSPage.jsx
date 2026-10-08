@@ -366,66 +366,68 @@ export default function ProjectOSPage() {
       )}
 
       {/* Top Universal Operator Command Bar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 shadow-2xs">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-2.5 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4 shadow-2xs w-full max-w-full">
         {/* Left: Branding & Back Navigation */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <a
             href="/launch"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-950 transition-all text-xs font-semibold group"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-950 transition-all text-xs font-semibold group shrink-0"
             title="Return to Creator Acquisition Engine (Steps 1–6)"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-slate-500 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="hidden sm:inline">Creator Acquisition</span>
-            <span className="sm:hidden">Back</span>
+            <span className="hidden md:inline">Creator Acquisition</span>
+            <span className="md:hidden">Back</span>
           </a>
 
-          <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+          <div className="h-4 w-px bg-slate-200 hidden sm:block shrink-0" />
 
           {/* Studio Brand & Section Indicator */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center shadow-xs shrink-0">
-              <CreatorForgeLogo size={18} showText={false} theme="light" />
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center shadow-xs shrink-0">
+              <CreatorForgeLogo size={16} showText={false} theme="light" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-black text-slate-950 tracking-tight uppercase">CREATOR FORGE</span>
+            <div className="hidden xs:block">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <span className="text-xs font-black text-slate-950 tracking-tight uppercase hidden sm:inline">CREATOR FORGE</span>
                 <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
                   PROJECT OS
                 </span>
               </div>
-              <p className="text-[10px] text-slate-500 hidden md:block">Co-Launch Operations & Engineering Command</p>
+              <p className="text-[10px] text-slate-500 hidden lg:block">Co-Launch Operations & Engineering Command</p>
             </div>
           </div>
         </div>
 
         {/* Center: Project Switcher Dropdown */}
         {activeProject && (
-          <div className="relative">
+          <div className="relative min-w-0 flex-1 max-w-[150px] xs:max-w-[200px] sm:max-w-[320px]">
             <button
               type="button"
               onClick={() => setShowProjectDropdown((prev) => !prev)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs text-xs transition-all max-w-[240px] sm:max-w-[340px]"
+              className="w-full flex items-center justify-between gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs text-xs transition-all cursor-pointer"
             >
-              {activeProject.creatorAvatar ? (
-                <img
-                  src={activeProject.creatorAvatar}
-                  alt={activeProject.creatorName}
-                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-slate-200"
-                />
-              ) : (
-                <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">
-                  {(activeProject.creatorName || 'P')[0]}
-                </div>
-              )}
-              <div className="text-left truncate">
-                <div className="font-bold text-slate-900 truncate text-[11px] sm:text-xs">
-                  {activeProject.productName || 'Active Venture'}
-                </div>
-                <div className="text-[10px] text-slate-500 truncate">
-                  {activeProject.creatorName ? `w/ ${activeProject.creatorName}` : 'Partner Project'}
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                {activeProject.creatorAvatar ? (
+                  <img
+                    src={activeProject.creatorAvatar}
+                    alt={activeProject.creatorName}
+                    className="w-5 h-5 rounded-full object-cover shrink-0 border border-slate-200"
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">
+                    {(activeProject.creatorName || 'P')[0]}
+                  </div>
+                )}
+                <div className="text-left min-w-0 flex-1 truncate">
+                  <div className="font-bold text-slate-900 truncate text-[11px] sm:text-xs">
+                    {activeProject.productName || 'Active Venture'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 truncate hidden xs:block">
+                    {activeProject.creatorName ? `w/ ${activeProject.creatorName}` : 'Partner Project'}
+                  </div>
                 </div>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-0.5" />
             </button>
 
             {/* Dropdown Menu */}
@@ -435,7 +437,7 @@ export default function ProjectOSPage() {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowProjectDropdown(false)}
                 />
-                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 sm:w-80 rounded-2xl bg-white border border-slate-200 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 text-slate-900">
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm rounded-2xl bg-white border border-slate-200 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 text-slate-900">
                   <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100 flex items-center justify-between">
                     <span>Co-Launch Projects ({projects.length})</span>
                     <a
@@ -490,11 +492,11 @@ export default function ProjectOSPage() {
         )}
 
         {/* Right: CRM Link & Refresh Button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Dedicated Co-Builder Passes & Participation Console Link */}
           <a
             href="/participation-manager"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 transition-all text-xs font-bold shadow-2xs"
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 transition-all text-xs font-bold shadow-2xs"
             title="Open Dedicated Creator Participation & Co-Builder Console"
           >
             <Zap className="w-3.5 h-3.5 text-amber-700" />
@@ -506,7 +508,7 @@ export default function ProjectOSPage() {
             href="/follow-up-crm"
             target="_blank"
             rel="noreferrer"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all text-xs font-semibold shadow-2xs"
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all text-xs font-semibold shadow-2xs"
             title="Open Standalone Creator Follow-Up CRM"
           >
             <Users className="w-3.5 h-3.5 text-emerald-600" />
@@ -518,7 +520,7 @@ export default function ProjectOSPage() {
             type="button"
             onClick={() => loadProjects(true)}
             disabled={isRefreshing}
-            className="p-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all text-xs shadow-2xs cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all text-xs shadow-2xs cursor-pointer"
             title="Refresh Project Data"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-600' : ''}`} />
@@ -527,13 +529,13 @@ export default function ProjectOSPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col w-full max-w-full overflow-x-hidden">
         {loading ? (
-          <div className="px-3 sm:px-5 lg:px-6 py-4 max-w-[96%] xl:max-w-[95%] 2xl:max-w-[1720px] mx-auto w-full">
+          <div className="px-2.5 sm:px-5 lg:px-6 py-3 sm:py-4 max-w-full 2xl:max-w-[1720px] mx-auto w-full">
             <ProjectOSSkeleton />
           </div>
         ) : activeProject ? (
-          <div className="px-3 sm:px-5 lg:px-6 py-4 max-w-[96%] xl:max-w-[95%] 2xl:max-w-[1720px] mx-auto w-full">
+          <div className="px-2.5 sm:px-5 lg:px-6 py-3 sm:py-4 max-w-full 2xl:max-w-[1720px] mx-auto w-full">
             <ProjectOS
               key={activeProject.id}
               project={activeProject}

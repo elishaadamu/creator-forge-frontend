@@ -1908,8 +1908,8 @@ export default function Phase1Validate({
           </div>
         </div>
 
-        {/* Bottom Row: 5-Step Pipeline Roadmap (Full width, No horizontal scroll) */}
-        <div className="flex items-center justify-between gap-1 sm:gap-2">
+        {/* Bottom Row: 5-Step Pipeline Roadmap */}
+        <div className="flex items-center justify-between gap-1 sm:gap-2 overflow-x-auto no-scrollbar pb-1">
           {[
             { id: 'plan', num: '01', label: '1. Plan', icon: FileText, isDone: isStep1Done, canAccess: canAccessStep1 },
             { id: 'assets', num: '02', label: '2. Assets', icon: Layout, isDone: isStep2Done, canAccess: canAccessStep2 },

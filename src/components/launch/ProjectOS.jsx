@@ -733,38 +733,38 @@ partnerships@creatorforge.com`
     : checklistTasks
 
   return (
-    <div className="space-y-4 sm:space-y-5 w-full max-w-full">
+    <div className="space-y-4 sm:space-y-5 w-full max-w-full overflow-x-hidden">
       {/* SECTION 2 HEADER (LIGHT MODE & HIGH-CONTRAST) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-emerald-700">
               SECTION 2
             </span>
             <span className="text-xs text-slate-300">•</span>
-            <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200 shadow-2xs">
+            <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200 shadow-2xs truncate max-w-full">
               {cleanProductName}
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight mt-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-950 tracking-tight mt-1">
             CO-LAUNCH PROJECT OS
           </h1>
           <p className="text-xs text-slate-600 mt-0.5 flex items-center gap-1.5 flex-wrap">
             <span>Co-Founding Partner:</span>
             <strong className="text-emerald-700 font-bold">{cleanCreatorName}</strong>
             <span className="text-slate-500 font-mono text-[11px]">({cleanCreatorHandle})</span>
-            <span className="text-slate-300">•</span>
-            <span className="text-slate-600 italic">"{cleanTagline}"</span>
+            <span className="text-slate-300 hidden xs:inline">•</span>
+            <span className="text-slate-600 italic line-clamp-1 xs:line-clamp-none">"{cleanTagline}"</span>
           </p>
         </div>
 
         {/* Right CTA / Portal Quick Button */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
           <a
             href={portalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-2xs hover:shadow-xs active:scale-95"
+            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-2xs hover:shadow-xs active:scale-95"
           >
             <Rocket className="w-3.5 h-3.5 text-indigo-600" />
             <span>Co-Founder Portal</span>
@@ -773,7 +773,7 @@ partnerships@creatorforge.com`
 
           <button
             onClick={() => setShowShareModal(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5 text-slate-700" />
             <span>Share Portal</span>
@@ -786,7 +786,7 @@ partnerships@creatorforge.com`
                   onResetProject()
                 }
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap active:scale-95 shadow-2xs"
+              className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap active:scale-95 shadow-2xs"
               title="Reset project and return to Section 1"
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-600" />
@@ -800,7 +800,7 @@ partnerships@creatorforge.com`
       <div className="w-full space-y-4">
         <div className="rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-stretch w-full relative">
           {/* Left Mini Sidebar (S1 - FIXED/STICKY) */}
-          <div className="w-full md:w-56 lg:w-60 bg-slate-50/95 border-b md:border-b-0 md:border-r border-slate-200/90 p-3 sm:p-3.5 flex flex-row md:flex-col justify-between items-center md:items-stretch gap-2 shrink-0 md:sticky md:top-14 md:self-start md:h-[calc(100vh-4.5rem)] md:max-h-[calc(100vh-4.5rem)] md:overflow-y-auto md:overflow-x-hidden scrollbar-thin z-20 rounded-t-2xl md:rounded-tr-none md:rounded-l-2xl">
+          <div className="w-full md:w-56 lg:w-60 bg-slate-50/95 border-b md:border-b-0 md:border-r border-slate-200/90 p-3 sm:p-3.5 flex flex-col justify-between items-stretch gap-2.5 shrink-0 md:sticky md:top-14 md:self-start md:h-[calc(100vh-4.5rem)] md:max-h-[calc(100vh-4.5rem)] md:overflow-y-auto md:overflow-x-hidden scrollbar-thin z-20 rounded-t-2xl md:rounded-tr-none md:rounded-l-2xl">
             <div className="flex md:flex-col items-center md:items-stretch gap-1 overflow-x-auto no-scrollbar shrink-0 w-full pt-0.5">
               <div className="hidden md:block px-2 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
                 Command Center
@@ -835,7 +835,7 @@ partnerships@creatorforge.com`
 
             {/* ACTIVE PHASE PINNED TO BOTTOM ON DESKTOP, INLINE ON MOBILE */}
             <div className="md:mt-auto md:pt-4 shrink-0 w-full">
-              <div className="p-2 sm:p-3 rounded-2xl bg-white border border-slate-200 text-center flex md:flex-col items-center gap-2 shadow-2xs">
+              <div className="p-2 sm:p-3 rounded-2xl bg-white border border-slate-200 text-center flex items-center justify-between md:flex-col gap-2 shadow-2xs">
                 <div className="hidden md:flex items-center justify-between w-full px-1">
                   <span className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                     {isLiveLaunch ? (

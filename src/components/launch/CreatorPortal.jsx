@@ -583,33 +583,6 @@ export default function CreatorPortal({ portalId }) {
   const resolvedActiveStepIndex = activeStepIdx === -1 ? activePhaseSteps.length - 1 : activeStepIdx
   const resolvedAvatar = creatorAvatar || project?.creatorAvatar || project?.creator_avatar || project?.avatar || project?.avatar_url
 
-  if (loading) {
-    return <CreatorPortalSkeleton />
-  }
-
-  if (!project) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex items-center justify-center p-6">
-        <div className="max-w-md w-full p-8 rounded-2xl bg-white border border-slate-200 text-center space-y-4 shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center mx-auto">
-            <Rocket className="w-6 h-6 text-white" />
-          </div>
-          <h2 className="text-lg font-bold text-slate-900">No Active Creator Project Loaded</h2>
-          <p className="text-xs text-slate-500">
-            Please ask your co-founder operator to initialize your partnership project and share your link.
-          </p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer"
-          >
-            Retry Connection
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   const presalesRevenue = Number(project?.currentPresales || 0)
   const parseThresholdAmount = (str) => {
     if (!str) return 0
@@ -658,6 +631,33 @@ export default function CreatorPortal({ portalId }) {
     }
     return []
   }, [reservations, presalesRevenue, dynamicPresalePrice, dynamicPresaleTierName])
+
+  if (loading) {
+    return <CreatorPortalSkeleton />
+  }
+
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex items-center justify-center p-6">
+        <div className="max-w-md w-full p-8 rounded-2xl bg-white border border-slate-200 text-center space-y-4 shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center mx-auto">
+            <Rocket className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900">No Active Creator Project Loaded</h2>
+          <p className="text-xs text-slate-500">
+            Please ask your co-founder operator to initialize your partnership project and share your link.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer"
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const totalBackersCount = displayReservations.length
   const campaignKit = project?.campaignKit || {}
