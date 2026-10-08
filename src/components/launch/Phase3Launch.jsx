@@ -2561,149 +2561,267 @@ export default function Phase3Launch({ project, api, onUpdateProject, activeStep
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-                  {/* Choice 1: SCALE */}
-                  <button
-                    type="button"
-                    disabled={!p3Guards.allPriorStepsDone}
-                    onClick={() => {
-                      if (!p3Guards.allPriorStepsDone) return
-                      const dec = '🚀 SCALE MODE ACTIVATED: Creator posting frequency doubled, viral referral engine enabled, paid channels unlocked.'
-                      setDecisionNotice(dec)
-                      handleSaveState({ decisionNotice: dec })
-                      showToast('Scale mode activated!')
-                    }}
-                    className={`p-5 rounded-2xl text-left space-y-3 transition-all group border flex flex-col justify-between ${
-                      p3Guards.allPriorStepsDone
-                        ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-lg active:scale-[0.98] border-slate-700 cursor-pointer ring-1 ring-emerald-500/30'
-                        : 'bg-slate-100 text-slate-400 border-slate-200 shadow-none cursor-not-allowed opacity-60'
-                    }`}
-                    title={!p3Guards.allPriorStepsDone ? 'Complete Steps 1–3 before scaling' : 'Activate Scale Mode'}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className={`p-2.5 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-200 text-slate-400'}`}>
-                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <Rocket className="w-5 h-5 text-emerald-400" />}
-                      </div>
-                      <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                        p3Guards.allPriorStepsDone ? 'bg-emerald-400 text-slate-950 font-black shadow-xs' : 'bg-slate-200 text-slate-500'
-                      }`}>
-                        {p3Guards.allPriorStepsDone ? 'Recommended' : 'Locked'}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className={`text-sm font-black tracking-tight transition-colors ${p3Guards.allPriorStepsDone ? 'text-white' : 'text-slate-400'}`}>
-                        1. SCALE & EXPAND
-                      </h4>
-                      <p className={`text-[11px] leading-relaxed mt-1 ${p3Guards.allPriorStepsDone ? 'text-slate-300' : 'text-slate-400'}`}>
-                        {p3Guards.allPriorStepsDone
-                          ? 'Double down on top converting channels, increase creator posting cadence & unlock viral referral loops.'
-                          : 'Locked — Complete Steps 1–3 (Prepare, Monitor, and Launch Manager) first.'}
-                      </p>
-                    </div>
-                    <div className="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-emerald-400 font-bold">
-                      → Accelerate Production
-                    </div>
-                  </button>
+                  {(() => {
+                    const isScaleActive = Boolean(decisionNotice?.toLowerCase().includes('scale'))
+                    const isIterateActive = Boolean(decisionNotice?.toLowerCase().includes('iterate'))
+                    const isMaintainActive = Boolean(decisionNotice?.toLowerCase().includes('maintain'))
+                    const isSunsetActive = Boolean(decisionNotice?.toLowerCase().includes('sunset') || decisionNotice?.toLowerCase().includes('archive'))
+                    const hasSelectedAny = Boolean(decisionNotice)
 
-                  {/* Choice 2: ITERATE */}
-                  <button
-                    type="button"
-                    disabled={!p3Guards.allPriorStepsDone}
-                    onClick={() => {
-                      if (!p3Guards.allPriorStepsDone) return
-                      const dec = '🔄 ITERATE MODE: Refining onboarding funnel and optimizing mobile checkout friction before further ad spend.'
-                      setDecisionNotice(dec)
-                      handleSaveState({ decisionNotice: dec })
-                      showToast('Iterate mode set.')
-                    }}
-                    className={`p-5 rounded-2xl text-left space-y-3 border transition-all flex flex-col justify-between ${
-                      p3Guards.allPriorStepsDone
-                        ? 'bg-white hover:bg-slate-50 text-slate-900 border-slate-200 hover:border-slate-300 active:scale-[0.98] group cursor-pointer shadow-xs'
-                        : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className={`p-2.5 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-indigo-50 border border-indigo-200 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
-                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <RefreshCw className="w-5 h-5 text-indigo-600" />}
-                      </div>
-                      <span className="text-[10px] font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 font-bold">Optimize</span>
-                    </div>
-                    <div>
-                      <h4 className={`text-sm font-bold tracking-tight transition-colors ${p3Guards.allPriorStepsDone ? 'text-slate-900' : 'text-slate-400'}`}>
-                        2. ITERATE & REFINE
-                      </h4>
-                      <p className={`text-[11px] leading-relaxed mt-1 ${p3Guards.allPriorStepsDone ? 'text-slate-600' : 'text-slate-400'}`}>
-                        {p3Guards.allPriorStepsDone
-                          ? 'Optimize lower-converting channels, polish mobile checkout friction, and refine onboarding hooks.'
-                          : 'Locked — Complete Steps 1–3 first.'}
-                      </p>
-                    </div>
-                    <div className="pt-2 border-t border-slate-100 text-[10px] font-mono text-indigo-600 font-bold">
-                      → Patch Bottlenecks
-                    </div>
-                  </button>
+                    return (
+                      <>
+                        {/* Choice 1: SCALE */}
+                        <button
+                          type="button"
+                          disabled={!p3Guards.allPriorStepsDone}
+                          onClick={() => {
+                            if (!p3Guards.allPriorStepsDone) return
+                            const dec = '🚀 SCALE MODE ACTIVATED: Creator posting frequency doubled, viral referral engine enabled, paid channels unlocked.'
+                            setDecisionNotice(dec)
+                            handleSaveState({ decisionNotice: dec })
+                            showToast('Scale mode activated!')
+                          }}
+                          className={`p-5 rounded-2xl text-left space-y-3 transition-all group border flex flex-col justify-between ${
+                            !p3Guards.allPriorStepsDone
+                              ? 'bg-slate-100 text-slate-400 border-slate-200 shadow-none cursor-not-allowed opacity-60'
+                              : isScaleActive || !hasSelectedAny
+                                ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-lg active:scale-[0.98] border-slate-700 cursor-pointer ring-2 ring-emerald-500'
+                                : 'bg-white hover:bg-slate-50 text-slate-900 border-slate-200 hover:border-slate-300 active:scale-[0.98] cursor-pointer shadow-xs'
+                          }`}
+                          title={!p3Guards.allPriorStepsDone ? 'Complete Steps 1–3 before scaling' : 'Activate Scale Mode'}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className={`p-2.5 rounded-xl ${
+                              !p3Guards.allPriorStepsDone
+                                ? 'bg-slate-200 text-slate-400'
+                                : isScaleActive || !hasSelectedAny
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                  : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                            }`}>
+                              {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <Rocket className="w-5 h-5" />}
+                            </div>
+                            <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                              !p3Guards.allPriorStepsDone
+                                ? 'bg-slate-200 text-slate-500'
+                                : isScaleActive
+                                  ? 'bg-emerald-400 text-slate-950 font-black shadow-xs'
+                                  : !hasSelectedAny
+                                    ? 'bg-emerald-400 text-slate-950 font-black shadow-xs'
+                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            }`}>
+                              {!p3Guards.allPriorStepsDone ? 'Locked' : isScaleActive ? 'Active Mode ✓' : 'Recommended'}
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className={`text-sm font-black tracking-tight transition-colors ${
+                              !p3Guards.allPriorStepsDone
+                                ? 'text-slate-400'
+                                : isScaleActive || !hasSelectedAny
+                                  ? 'text-white'
+                                  : 'text-slate-900'
+                            }`}>
+                              1. SCALE & EXPAND
+                            </h4>
+                            <p className={`text-[11px] leading-relaxed mt-1 ${
+                              !p3Guards.allPriorStepsDone
+                                ? 'text-slate-400'
+                                : isScaleActive || !hasSelectedAny
+                                  ? 'text-slate-300'
+                                  : 'text-slate-600'
+                            }`}>
+                              {p3Guards.allPriorStepsDone
+                                ? 'Double down on top converting channels, increase creator posting cadence & unlock viral referral loops.'
+                                : 'Locked — Complete Steps 1–3 (Prepare, Monitor, and Launch Manager) first.'}
+                            </p>
+                          </div>
+                          <div className={`pt-2 border-t text-[10px] font-mono font-bold ${
+                            isScaleActive || !hasSelectedAny
+                              ? 'border-slate-800/80 text-emerald-400'
+                              : 'border-slate-100 text-emerald-600'
+                          }`}>
+                            {isScaleActive ? '✓ Active Direction' : '→ Accelerate Production'}
+                          </div>
+                        </button>
 
-                  {/* Choice 3: MAINTAIN */}
-                  <button
-                    type="button"
-                    disabled={!p3Guards.allPriorStepsDone}
-                    onClick={() => {
-                      if (!p3Guards.allPriorStepsDone) return
-                      const dec = '🛡️ MAINTAIN MODE: Operating at steady-state organic posting and monitoring subscriber retention.'
-                      setDecisionNotice(dec)
-                      handleSaveState({ decisionNotice: dec })
-                      showToast('Maintain mode set.')
-                    }}
-                    className={`p-5 rounded-2xl text-left space-y-3 border transition-all flex flex-col justify-between ${
-                      p3Guards.allPriorStepsDone
-                        ? 'bg-white hover:bg-slate-50 text-slate-900 border-slate-200 hover:border-slate-300 active:scale-[0.98] group cursor-pointer shadow-xs'
-                        : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className={`p-2.5 rounded-xl ${p3Guards.allPriorStepsDone ? 'bg-emerald-50 border border-emerald-200 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
-                        {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5 text-emerald-600" />}
-                      </div>
-                      <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold">Steady-State</span>
-                    </div>
-                    <div>
-                      <h4 className={`text-sm font-bold tracking-tight transition-colors ${p3Guards.allPriorStepsDone ? 'text-slate-900' : 'text-slate-400'}`}>
-                        3. MAINTAIN & HARVEST
-                      </h4>
-                      <p className={`text-[11px] leading-relaxed mt-1 ${p3Guards.allPriorStepsDone ? 'text-slate-600' : 'text-slate-400'}`}>
-                        {p3Guards.allPriorStepsDone
-                          ? 'Preserve organic creator posting rhythm, maintain high customer retention and steady MRR deposits.'
-                          : 'Locked — Complete Steps 1–3 first.'}
-                      </p>
-                    </div>
-                    <div className="pt-2 border-t border-slate-100 text-[10px] font-mono text-emerald-700 font-bold">
-                      → Organic Retention
-                    </div>
-                  </button>
+                        {/* Choice 2: ITERATE */}
+                        <button
+                          type="button"
+                          disabled={!p3Guards.allPriorStepsDone}
+                          onClick={() => {
+                            if (!p3Guards.allPriorStepsDone) return
+                            const dec = '🔄 ITERATE MODE: Refining onboarding funnel and optimizing mobile checkout friction before further ad spend.'
+                            setDecisionNotice(dec)
+                            handleSaveState({ decisionNotice: dec })
+                            showToast('Iterate mode set.')
+                          }}
+                          className={`p-5 rounded-2xl text-left space-y-3 border transition-all flex flex-col justify-between ${
+                            !p3Guards.allPriorStepsDone
+                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
+                              : isIterateActive
+                                ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-lg active:scale-[0.98] border-slate-700 cursor-pointer ring-2 ring-indigo-500'
+                                : 'bg-white hover:bg-slate-50 text-slate-900 border-slate-200 hover:border-slate-300 active:scale-[0.98] group cursor-pointer shadow-xs'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className={`p-2.5 rounded-xl ${
+                              !p3Guards.allPriorStepsDone
+                                ? 'bg-slate-200 text-slate-400'
+                                : isIterateActive
+                                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                                  : 'bg-indigo-50 border border-indigo-200 text-indigo-600'
+                            }`}>
+                              {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />}
+                            </div>
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                              isIterateActive
+                                ? 'bg-indigo-400 text-slate-950 border-indigo-300 font-black'
+                                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            }`}>
+                              {isIterateActive ? 'Active Mode ✓' : 'Optimize'}
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className={`text-sm font-bold tracking-tight transition-colors ${
+                              !p3Guards.allPriorStepsDone
+                                ? 'text-slate-400'
+                                : isIterateActive
+                                  ? 'text-white'
+                                  : 'text-slate-900'
+                            }`}>
+                              2. ITERATE & REFINE
+                            </h4>
+                            <p className={`text-[11px] leading-relaxed mt-1 ${
+                              !p3Guards.allPriorStepsDone
+                                ? 'text-slate-400'
+                                : isIterateActive
+                                  ? 'text-slate-300'
+                                  : 'text-slate-600'
+                            }`}>
+                              {p3Guards.allPriorStepsDone
+                                ? 'Optimize lower-converting channels, polish mobile checkout friction, and refine onboarding hooks.'
+                                : 'Locked — Complete Steps 1–3 first.'}
+                            </p>
+                          </div>
+                          <div className={`pt-2 border-t text-[10px] font-mono font-bold ${
+                            isIterateActive
+                              ? 'border-slate-800/80 text-indigo-400'
+                              : 'border-slate-100 text-indigo-600'
+                          }`}>
+                            {isIterateActive ? '✓ Active Direction' : '→ Patch Bottlenecks'}
+                          </div>
+                        </button>
 
-                  {/* Choice 4: KILL */}
-                  <button
-                    type="button"
-                    onClick={() => setShowKillModal(true)}
-                    className="p-5 rounded-2xl bg-rose-50/40 hover:bg-rose-50 text-rose-900 text-left space-y-3 border border-rose-200 hover:border-rose-300 transition-all active:scale-[0.98] group cursor-pointer shadow-xs flex flex-col justify-between"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="p-2.5 rounded-xl bg-rose-100 text-rose-700">
-                        <XCircle className="w-5 h-5" />
-                      </div>
-                      <span className="text-[10px] font-mono text-rose-700 font-bold bg-white px-2 py-0.5 rounded border border-rose-200">Sunset</span>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold tracking-tight text-rose-800 transition-colors">
-                        4. ARCHIVE / SUNSET
-                      </h4>
-                      <p className="text-[11px] text-rose-600 leading-relaxed mt-1">
-                        Gracefully sunset product, refund active subscriptions, or pivot to a new validated problem space.
-                      </p>
-                    </div>
-                    <div className="pt-2 border-t border-rose-200 text-[10px] font-mono text-rose-700 font-bold">
-                      → Sunset Protocol
-                    </div>
-                  </button>
+                        {/* Choice 3: MAINTAIN */}
+                        <button
+                          type="button"
+                          disabled={!p3Guards.allPriorStepsDone}
+                          onClick={() => {
+                            if (!p3Guards.allPriorStepsDone) return
+                            const dec = '🛡️ MAINTAIN MODE: Operating at steady-state organic posting and monitoring subscriber retention.'
+                            setDecisionNotice(dec)
+                            handleSaveState({ decisionNotice: dec })
+                            showToast('Maintain mode set.')
+                          }}
+                          className={`p-5 rounded-2xl text-left space-y-3 border transition-all flex flex-col justify-between ${
+                            !p3Guards.allPriorStepsDone
+                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
+                              : isMaintainActive
+                                ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-lg active:scale-[0.98] border-slate-700 cursor-pointer ring-2 ring-emerald-500'
+                                : 'bg-white hover:bg-slate-50 text-slate-900 border-slate-200 hover:border-slate-300 active:scale-[0.98] group cursor-pointer shadow-xs'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className={`p-2.5 rounded-xl ${
+                              !p3Guards.allPriorStepsDone
+                                ? 'bg-slate-200 text-slate-400'
+                                : isMaintainActive
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                  : 'bg-emerald-50 border border-emerald-200 text-emerald-600'
+                            }`}>
+                              {!p3Guards.allPriorStepsDone ? <Lock className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+                            </div>
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                              isMaintainActive
+                                ? 'bg-emerald-400 text-slate-950 border-emerald-300 font-black'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}>
+                              {isMaintainActive ? 'Active Mode ✓' : 'Steady-State'}
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className={`text-sm font-bold tracking-tight transition-colors ${
+                              !p3Guards.allPriorStepsDone
+                                ? 'text-slate-400'
+                                : isMaintainActive
+                                  ? 'text-white'
+                                  : 'text-slate-900'
+                            }`}>
+                              3. MAINTAIN & HARVEST
+                            </h4>
+                            <p className={`text-[11px] leading-relaxed mt-1 ${
+                              !p3Guards.allPriorStepsDone
+                                ? 'text-slate-400'
+                                : isMaintainActive
+                                  ? 'text-slate-300'
+                                  : 'text-slate-600'
+                            }`}>
+                              {p3Guards.allPriorStepsDone
+                                ? 'Preserve organic creator posting rhythm, maintain high customer retention and steady MRR deposits.'
+                                : 'Locked — Complete Steps 1–3 first.'}
+                            </p>
+                          </div>
+                          <div className={`pt-2 border-t text-[10px] font-mono font-bold ${
+                            isMaintainActive
+                              ? 'border-slate-800/80 text-emerald-400'
+                              : 'border-slate-100 text-emerald-700'
+                          }`}>
+                            {isMaintainActive ? '✓ Active Direction' : '→ Organic Retention'}
+                          </div>
+                        </button>
+
+                        {/* Choice 4: KILL */}
+                        <button
+                          type="button"
+                          onClick={() => setShowKillModal(true)}
+                          className={`p-5 rounded-2xl text-left space-y-3 border transition-all active:scale-[0.98] group cursor-pointer shadow-xs flex flex-col justify-between ${
+                            isSunsetActive
+                              ? 'bg-rose-950 text-white border-rose-600 ring-2 ring-rose-500 shadow-lg'
+                              : 'bg-rose-50/40 hover:bg-rose-50 text-rose-900 border-rose-200 hover:border-rose-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className={`p-2.5 rounded-xl ${isSunsetActive ? 'bg-rose-900 text-rose-200' : 'bg-rose-100 text-rose-700'}`}>
+                              <XCircle className="w-5 h-5" />
+                            </div>
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                              isSunsetActive
+                                ? 'bg-rose-500 text-white border-rose-400'
+                                : 'bg-white text-rose-700 border-rose-200'
+                            }`}>
+                              {isSunsetActive ? 'Archived ✓' : 'Sunset'}
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className={`text-sm font-bold tracking-tight transition-colors ${
+                              isSunsetActive ? 'text-white' : 'text-rose-800'
+                            }`}>
+                              4. ARCHIVE / SUNSET
+                            </h4>
+                            <p className={`text-[11px] leading-relaxed mt-1 ${
+                              isSunsetActive ? 'text-rose-200' : 'text-rose-600'
+                            }`}>
+                              Gracefully sunset product, refund active subscriptions, or pivot to a new validated problem space.
+                            </p>
+                          </div>
+                          <div className={`pt-2 border-t text-[10px] font-mono font-bold ${
+                            isSunsetActive ? 'border-rose-800 text-rose-300' : 'border-rose-200 text-rose-700'
+                          }`}>
+                            {isSunsetActive ? '✓ Product Archived' : '→ Sunset Protocol'}
+                          </div>
+                        </button>
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
 
