@@ -676,35 +676,35 @@ export default function CreatorLaunchLayout({
 
               // Safeguard against ghost UUID
               if (isCorruptedPhantomProject(matched)) return null
-              // Deep merge DB project record with any transient local memory
+              // Deep merge DB project record with any transient in-memory state
               const resolvedKit = matched.campaignKit ||
                 (matched.validationCampaign?.productAssets?.announcementPost ? matched.validationCampaign.productAssets : null) ||
-                (local?.id === matched.id ? local.campaignKit : null) ||
+                (prev?.id === matched.id ? prev.campaignKit : null) ||
                 null
 
               const merged = {
                 ...matched,
                 campaignKit: resolvedKit,
-                campaignLaunched: Boolean(matched.campaignLaunched || (local?.id === matched.id && local?.campaignLaunched) || resolvedKit),
-                campaignAssetsGenerated: Boolean(matched.campaignAssetsGenerated || (local?.id === matched.id && local?.campaignAssetsGenerated) || resolvedKit),
+                campaignLaunched: Boolean(matched.campaignLaunched || (prev?.id === matched.id && prev?.campaignLaunched) || resolvedKit),
+                campaignAssetsGenerated: Boolean(matched.campaignAssetsGenerated || (prev?.id === matched.id && prev?.campaignAssetsGenerated) || resolvedKit),
                 creatorTasks: (matched.creatorTasks?.length > 0)
                   ? matched.creatorTasks
-                  : (local?.id === matched.id && local?.creatorTasks?.length > 0 ? local.creatorTasks : []),
-                surveyData: matched.surveyData || (local?.id === matched.id ? local?.surveyData : null) || null,
-                validationPlan: matched.validationPlan || (local?.id === matched.id ? local?.validationPlan : null) || null,
-                gateDecisions: (local?.id === matched.id && (local?.gateDecisions?.length || 0) > (matched.gateDecisions?.length || 0))
-                  ? local.gateDecisions
-                  : (matched.gateDecisions || local?.gateDecisions || []),
-                projectFiles: (local?.id === matched.id && (local?.projectFiles?.length || 0) > 0) ? local.projectFiles : (matched.projectFiles || []),
-                messages: (local?.id === matched.id && (local?.messages?.length || 0) > 0) ? local.messages : (matched.messages || []),
-                mvpBuildPlan: (local?.id === matched.id ? local?.mvpBuildPlan : null) || matched.mvpBuildPlan,
-                engineeringTasks: (matched.engineeringTasks?.length || 0) > 0 ? matched.engineeringTasks : (local?.id === matched.id ? (local?.engineeringTasks || []) : []),
-                qaResults: (local?.id === matched.id ? local?.qaResults : null) || matched.qaResults,
-                betaFeedback: (matched.betaFeedback?.length || 0) > 0 ? matched.betaFeedback : (local?.id === matched.id ? (local?.betaFeedback || []) : []),
-                feedbackClusters: (matched.feedbackClusters?.length || 0) > 0 ? matched.feedbackClusters : (local?.id === matched.id ? (local?.feedbackClusters || []) : []),
-                readinessReport: (local?.id === matched.id ? local?.readinessReport : null) || matched.readinessReport,
-                appliedPatches: (matched.appliedPatches?.length || 0) > 0 ? matched.appliedPatches : (local?.id === matched.id ? (local?.appliedPatches || []) : []),
-                mvpVersion: (local?.id === matched.id ? local?.mvpVersion : null) || matched.mvpVersion || 'v1.0.0-MVP'
+                  : (prev?.id === matched.id && prev?.creatorTasks?.length > 0 ? prev.creatorTasks : []),
+                surveyData: matched.surveyData || (prev?.id === matched.id ? prev?.surveyData : null) || null,
+                validationPlan: matched.validationPlan || (prev?.id === matched.id ? prev?.validationPlan : null) || null,
+                gateDecisions: (prev?.id === matched.id && (prev?.gateDecisions?.length || 0) > (matched.gateDecisions?.length || 0))
+                  ? prev.gateDecisions
+                  : (matched.gateDecisions || prev?.gateDecisions || []),
+                projectFiles: (prev?.id === matched.id && (prev?.projectFiles?.length || 0) > 0) ? prev.projectFiles : (matched.projectFiles || []),
+                messages: (prev?.id === matched.id && (prev?.messages?.length || 0) > 0) ? prev.messages : (matched.messages || []),
+                mvpBuildPlan: (prev?.id === matched.id ? prev?.mvpBuildPlan : null) || matched.mvpBuildPlan,
+                engineeringTasks: (matched.engineeringTasks?.length > 0) ? matched.engineeringTasks : (prev?.id === matched.id ? (prev?.engineeringTasks || []) : []),
+                qaResults: (prev?.id === matched.id ? prev?.qaResults : null) || matched.qaResults,
+                betaFeedback: (matched.betaFeedback?.length > 0) ? matched.betaFeedback : (prev?.id === matched.id ? (prev?.betaFeedback || []) : []),
+                feedbackClusters: (matched.feedbackClusters?.length > 0) ? matched.feedbackClusters : (prev?.id === matched.id ? (prev?.feedbackClusters || []) : []),
+                readinessReport: (prev?.id === matched.id ? prev?.readinessReport : null) || matched.readinessReport,
+                appliedPatches: (matched.appliedPatches?.length > 0) ? matched.appliedPatches : (prev?.id === matched.id ? (prev?.appliedPatches || []) : []),
+                mvpVersion: (prev?.id === matched.id ? prev?.mvpVersion : null) || matched.mvpVersion || 'v1.0.0-MVP'
               }
               return merged
             })
