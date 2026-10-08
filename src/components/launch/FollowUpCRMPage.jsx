@@ -16,6 +16,7 @@ export default function FollowUpCRMPage() {
   const [isSyncingImap, setIsSyncingImap] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [cobuilderPassPrice, setCobuilderPassPrice] = useState(50);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     try { localStorage.removeItem('forge_cobuilder_pass_price'); } catch (e) { }
