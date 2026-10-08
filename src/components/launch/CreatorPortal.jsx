@@ -674,6 +674,10 @@ export default function CreatorPortal({ portalId }) {
       ])
   const completedTasksCount = schedule.filter(t => t.done || t.completed).length
   const totalTasksCount = schedule.length
+  const sprintTotalDays = schedule.length > 0 ? schedule.length : (project?.sprintDuration || 7)
+  const projectCreatedTime = project?.created_at ? new Date(project.created_at).getTime() : Date.now()
+  const daysElapsed = Math.max(0, Math.floor((Date.now() - projectCreatedTime) / (1000 * 60 * 60 * 24)))
+  const daysRemaining = Math.max(1, sprintTotalDays - daysElapsed)
   const preorderUrl = `${getFrontendUrl()}/preorder?ref=${project?.creatorHandle?.replace('@','') || 'creator'}`
   const targetPct = presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 0
 
@@ -1549,9 +1553,9 @@ export default function CreatorPortal({ portalId }) {
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">Sprint Duration</span>
                   <span className="text-base font-extrabold text-slate-900 font-mono mt-0.5 block">
-                    14 days
+                    {sprintTotalDays} days
                   </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">12 days remaining</span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">{daysRemaining} day{daysRemaining === 1 ? '' : 's'} remaining</span>
                 </div>
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">Pre-Orders / Backers</span>
@@ -1583,7 +1587,7 @@ export default function CreatorPortal({ portalId }) {
             <div className="flex items-center gap-1.5 p-1.5 bg-white rounded-xl border border-slate-200 shadow-2xs overflow-x-auto scrollbar-none">
               {[
                 { id: 'tasks', label: 'Daily Launch Checklist', count: `${completedTasksCount}/${totalTasksCount}` },
-                { id: 'scripts', label: 'Copyable Launch Content', count: '7 items' },
+                { id: 'scripts', label: 'Copyable Launch Content', count: `${schedule.length} items` },
                 { id: 'presales', label: 'Verified Pre-Orders', count: `${totalBackersCount}` },
                 { id: 'messages', label: 'Studio Chat & Messages', count: `${portalDisplayMessages.length}` },
                 { id: 'strategy', label: 'Validation Specs' },
@@ -2047,7 +2051,7 @@ export default function CreatorPortal({ portalId }) {
                     </div>
                     <div className="flex items-center justify-between py-1 border-b border-slate-100">
                       <span className="text-slate-500">Launch Timeline</span>
-                      <span className="font-bold text-slate-900">7 Days of Structured Posts</span>
+                      <span className="font-bold text-slate-900">{sprintTotalDays} Days of Structured Posts</span>
                     </div>
                     <div className="flex items-center justify-between py-1">
                       <span className="text-slate-500">Your Current 50% Pool</span>

@@ -28,28 +28,30 @@ export default function PreorderLandingPage({ slug }) {
       : null
   )
 
-  const productName = project?.productName || selectedConcept?.name || 'TacticianAI'
-  const creatorName = project?.creatorName || 'PotatoMcWhiskey'
+  const productName = project?.productName || selectedConcept?.name || project?.title || 'Software Co-Launch'
+  const creatorName = project?.creatorName || project?.creatorHandle || 'Creator Partner'
   const creatorAvatar = project?.creatorAvatar || selectedConcept?.creatorAvatar || null
-  const creatorHandle = project?.creatorHandle || 'PotatoMcWhiskey'
-  const niche = project?.niche || selectedConcept?.demographicAlignment || 'Competitive Strategy Gaming'
-  const tagline = project?.productTagline || selectedConcept?.tagline || 'Personalized strategy co-pilot for high-level tactical execution.'
+  const creatorHandle = project?.creatorHandle || 'creator'
+  const niche = project?.niche || selectedConcept?.demographicAlignment || selectedConcept?.niche || 'Software & Tech'
+  const tagline = project?.productTagline || selectedConcept?.tagline || selectedConcept?.description || 'Personalized software tool built for the community.'
   const headline = project?.campaignKit?.landingPageCopy?.headline || `The ${productName} Workspace Built with ${creatorName}`
   const subheadline = project?.campaignKit?.landingPageCopy?.subheadline || selectedConcept?.description || tagline
 
-  const targetAudience = selectedConcept?.customer || project?.targetAudience || project?.customer || 'Ambitious ranked-play ladder climbers'
-  const problemSolved = selectedConcept?.problem || project?.problem || 'Lack of personalized feedback on individual playstyle; general tutorials are too broad.'
+  const targetAudience = selectedConcept?.customer || project?.targetAudience || project?.customer || 'Target Community & Verified Members'
+  const problemSolved = selectedConcept?.problem || project?.problem || 'Manual operational friction and lack of specialized, high-performance tooling.'
   const keyFeatures = (Array.isArray(selectedConcept?.keyFeatures) && selectedConcept.keyFeatures.length > 0)
     ? selectedConcept.keyFeatures
     : (Array.isArray(project?.keyFeatures) && project.keyFeatures.length > 0)
       ? project.keyFeatures
-      : ['VOD review AI agent', 'Tactical decision scoring', 'Voice-activated strategy lookup', 'Playstyle optimization reports']
+      : (Array.isArray(selectedConcept?.features) && selectedConcept.features.length > 0)
+        ? selectedConcept.features
+        : ['Automated workflow execution', 'Real-time performance metrics', 'Direct community integration', 'Founding member lifetime perks']
 
-  const conceptPricing = selectedConcept?.pricing || project?.pricing || '$27/mo Pro • $69/mo Copilot Tier'
+  const conceptPricing = selectedConcept?.pricing || project?.pricing || '$29/mo Starter • $79/mo Pro'
 
   const cfg = project?.campaignKit?.pricingConfig || project?.pricingConfig || project?.validationCampaign?.productAssets?.pricingConfig
   const sanitizedPricing = sanitizePricingConfig(cfg, conceptPricing)
-  const foundingPrice = sanitizedPricing.foundingPrice || 138
+  const foundingPrice = sanitizedPricing.foundingPrice || 99
   const depositPrice = sanitizedPricing.depositPrice || Math.max(9, Math.round(foundingPrice * 0.2))
   const perksText = cfg?.perks || `50% Lifetime Price Lock ($${foundingPrice}/yr) & VIP Alpha Perks`
 
