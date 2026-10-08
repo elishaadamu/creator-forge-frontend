@@ -47,9 +47,9 @@ export default function ProjectOSPage() {
       const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price
       if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
         setCobuilderPassPrice(Number(dbFee))
-        try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
+        try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) { }
       }
-    }).catch(() => {})
+    }).catch(() => { })
   }, [])
 
   const showToast = (type, title, message) => {
@@ -147,7 +147,7 @@ export default function ProjectOSPage() {
                 try {
                   const raw = sessionStorage.getItem(`forge_creator_videos_${cleanH}`)
                   if (raw) cachedVideos = JSON.parse(raw)
-                } catch (e) {}
+                } catch (e) { }
               }
               const creatorPosts = (Array.isArray(creator.recentPosts) && creator.recentPosts.length > 0 ? creator.recentPosts : null) ||
                 (Array.isArray(creator.recent_posts) && creator.recent_posts.length > 0 ? creator.recent_posts : null) ||
@@ -199,7 +199,7 @@ export default function ProjectOSPage() {
           try {
             const raw = sessionStorage.getItem(`forge_creator_videos_${handleClean}`)
             if (raw) cachedVideos = JSON.parse(raw)
-          } catch (e) {}
+          } catch (e) { }
         }
         const resolvedPosts = (Array.isArray(target.recentPosts) && target.recentPosts.length > 0 ? target.recentPosts : null) ||
           (Array.isArray(target.videos) && target.videos.length > 0 ? target.videos : null) ||
@@ -239,7 +239,7 @@ export default function ProjectOSPage() {
               if (vids && vids.length > 0) {
                 setActiveProject((prev) => (prev && prev.id === target.id ? { ...prev, recentPosts: vids, videos: vids } : prev))
               }
-            }).catch(() => {})
+            }).catch(() => { })
           })
         }
 
@@ -249,7 +249,7 @@ export default function ProjectOSPage() {
           url.searchParams.set('project', target.id)
           if (target.creatorId) url.searchParams.set('creator', target.creatorId)
           window.history.replaceState({}, '', url.toString())
-        } catch (e) {}
+        } catch (e) { }
       }
     } catch (err) {
       console.error('[ProjectOSPage] Failed to load projects:', err)
@@ -274,7 +274,7 @@ export default function ProjectOSPage() {
       url.searchParams.set('project', project.id)
       if (project.creatorId) url.searchParams.set('creator', project.creatorId)
       window.history.replaceState({}, '', url.toString())
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // Handle live updates from Phase 1-4 components
@@ -449,11 +449,10 @@ export default function ProjectOSPage() {
                           key={p.id}
                           type="button"
                           onClick={() => handleSelectProject(p)}
-                          className={`w-full text-left px-3 py-2 rounded-xl flex items-center gap-3 transition-all ${
-                            isCurrent
+                          className={`w-full text-left px-3 py-2 rounded-xl flex items-center gap-3 transition-all ${isCurrent
                               ? 'bg-emerald-50 border border-emerald-300 text-slate-900 font-bold'
                               : 'hover:bg-slate-50 text-slate-700'
-                          }`}
+                            }`}
                         >
                           {p.creatorAvatar ? (
                             <img

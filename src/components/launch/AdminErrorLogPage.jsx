@@ -185,13 +185,12 @@ export default function AdminErrorLogPage() {
       {toast && (
         <div className="fixed bottom-6 right-6 z-[9999] pointer-events-auto">
           <div
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl ${
-              toast.type === "success"
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl ${toast.type === "success"
                 ? "bg-[#0b1b13]/95 border-emerald-500/30 text-emerald-300"
                 : toast.type === "error"
-                ? "bg-[#1f0e12]/95 border-rose-500/30 text-rose-300"
-                : "bg-[#0f1422]/95 border-blue-500/30 text-blue-300"
-            }`}
+                  ? "bg-[#1f0e12]/95 border-rose-500/30 text-rose-300"
+                  : "bg-[#0f1422]/95 border-blue-500/30 text-blue-300"
+              }`}
           >
             {toast.type === "success" ? (
               <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />

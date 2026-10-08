@@ -76,7 +76,7 @@ export default function CreatorParticipationManager() {
     setTheme(next)
     try {
       localStorage.setItem('forge_participation_theme', next)
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // Follow-up email modal state
@@ -162,17 +162,17 @@ export default function CreatorParticipationManager() {
         prev.map((p) =>
           p.id === customPriceModalProject.id
             ? {
-                ...p,
-                diyFee: isReset ? defaultPassPrice : numericFee,
-                diyPassPrice: isReset ? defaultPassPrice : numericFee,
-                hasCustomFee: !isReset,
-                metadataInfo: {
-                  ...(p.metadataInfo || {}),
-                  diy_fee: isReset ? undefined : numericFee,
-                  diyFee: isReset ? undefined : numericFee,
-                  diyPassPrice: isReset ? undefined : numericFee
-                }
+              ...p,
+              diyFee: isReset ? defaultPassPrice : numericFee,
+              diyPassPrice: isReset ? defaultPassPrice : numericFee,
+              hasCustomFee: !isReset,
+              metadataInfo: {
+                ...(p.metadataInfo || {}),
+                diy_fee: isReset ? undefined : numericFee,
+                diyFee: isReset ? undefined : numericFee,
+                diyPassPrice: isReset ? undefined : numericFee
               }
+            }
             : p
         )
       )
@@ -212,7 +212,7 @@ export default function CreatorParticipationManager() {
       // 2. Mirror to localStorage
       try {
         localStorage.setItem('forge_cobuilder_pass_price', String(numericFee))
-      } catch (e) {}
+      } catch (e) { }
       setDefaultPassPrice(numericFee)
 
       // 3. Update pending ventures
@@ -306,7 +306,7 @@ export default function CreatorParticipationManager() {
           setDefaultPassPrice(Number(dbFee))
           try {
             localStorage.setItem('forge_cobuilder_pass_price', String(dbFee))
-          } catch (e) {}
+          } catch (e) { }
         }
       }
 
@@ -357,7 +357,7 @@ export default function CreatorParticipationManager() {
       .replace(/^@/, '')
       .replace(/[^a-zA-Z0-9]/g, '')
       .toLowerCase()
-    
+
     const isCoBuilder = proj.isDIY || proj.diySubscription?.active
     if (isCoBuilder) {
       return `${origin}/portal/${handleClean}?view=projectos&token=cf_diy_paid&project=${proj.id}`
@@ -543,14 +543,14 @@ export default function CreatorParticipationManager() {
             project_id: null,
             projectId: null
           })
-        } catch (e) {}
+        } catch (e) { }
       }
       try {
         const activeLocal = getExpiringItem('forge_launch_active_project')
         if (activeLocal?.id === proj.id) {
           removeExpiringItem('forge_launch_active_project')
         }
-      } catch (e) {}
+      } catch (e) { }
       setProjects((prev) => prev.filter((p) => p.id !== proj.id))
       showToast('success', 'Venture Deleted', `Successfully removed "${name}".`)
     } catch (err) {
@@ -572,7 +572,7 @@ export default function CreatorParticipationManager() {
         removeExpiringItem('forge_launch_active_project')
         localStorage.removeItem('forge_launch_all_projects')
         localStorage.removeItem('forge_launch_active_section')
-      } catch (e) {}
+      } catch (e) { }
       setProjects([])
       showToast('success', 'All Ventures Deleted', 'Successfully wiped all Section 2 co-launch ventures.')
     } catch (err) {
@@ -652,8 +652,8 @@ export default function CreatorParticipationManager() {
     try {
       const cleanHandle = (creator.handle || creator.display_name || 'creator').replace(/^@/, '')
       const creatorName = creator.display_name || creator.name || creator.handle || 'Creator Partner'
-      const followerCountFormatted = creator.follower_count 
-        ? `${Number(creator.follower_count).toLocaleString()}` 
+      const followerCountFormatted = creator.follower_count
+        ? `${Number(creator.follower_count).toLocaleString()}`
         : (creator.followers || '100K+')
       const nicheStr = Array.isArray(creator.niche) ? creator.niche.join(', ') : (creator.niche || 'Software & Tech')
 
@@ -662,7 +662,7 @@ export default function CreatorParticipationManager() {
         try {
           const dn = typeof creator.discovery_notes === 'string' ? JSON.parse(creator.discovery_notes) : creator.discovery_notes
           if (dn?.selected_concept) selectedConcept = dn.selected_concept
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const prodName = selectedConcept.title || selectedConcept.name || `${creatorName.toUpperCase()} OS`
@@ -780,26 +780,23 @@ export default function CreatorParticipationManager() {
                 setGlobalPriceInput(defaultPassPrice || 50)
                 setShowGlobalPriceModal(true)
               }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 ${
-                isLight
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 ${isLight
                   ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 hover:border-slate-300'
                   : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.1] text-slate-200 hover:border-white/[0.2]'
-              }`}
+                }`}
               title="Click to change the default Co-Builder Pass fee anytime"
             >
-              <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${
-                isLight ? 'bg-slate-100 text-slate-700' : 'bg-white/[0.08] text-slate-300'
-              }`}>
+              <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${isLight ? 'bg-slate-100 text-slate-700' : 'bg-white/[0.08] text-slate-300'
+                }`}>
                 <DollarSign className="w-3.5 h-3.5" />
               </div>
               <span className={isLight ? 'text-slate-700' : 'text-slate-300'}>
                 Pass Fee: <strong className={`font-black font-mono ${isLight ? 'text-slate-950' : 'text-white'}`}>${defaultPassPrice || 50} USD</strong>
               </span>
-              <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ml-0.5 ${
-                isLight
+              <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ml-0.5 ${isLight
                   ? 'bg-slate-100 text-slate-600 border-slate-200/80'
                   : 'bg-white/[0.08] text-slate-300 border-white/[0.1]'
-              }`}>
+                }`}>
                 Edit
               </span>
             </button>
@@ -952,22 +949,20 @@ export default function CreatorParticipationManager() {
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             <button
               onClick={() => setFilterTrack('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                filterTrack === 'all'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${filterTrack === 'all'
                   ? isLight ? 'bg-slate-900 text-white shadow-2xs' : 'bg-white text-slate-950 shadow-md'
                   : isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70' : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
-              }`}
+                }`}
             >
               All Ventures ({totalProjects})
             </button>
 
             <button
               onClick={() => setFilterTrack('cobuilder')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                filterTrack === 'cobuilder'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${filterTrack === 'cobuilder'
                   ? 'bg-amber-400 text-slate-950 font-black shadow-2xs'
                   : isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70' : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
-              }`}
+                }`}
             >
               <Zap className="w-3 h-3" />
               <span>Co-Builders Active ({coBuildersCount})</span>
@@ -975,11 +970,10 @@ export default function CreatorParticipationManager() {
 
             <button
               onClick={() => setFilterTrack('pending')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                filterTrack === 'pending'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${filterTrack === 'pending'
                   ? isLight ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-md'
                   : isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70' : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
-              }`}
+                }`}
             >
               <Clock className="w-3 h-3" />
               <span>Pending Choice ({pendingCount})</span>
@@ -987,11 +981,10 @@ export default function CreatorParticipationManager() {
 
             <button
               onClick={() => setFilterTrack('managed')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                filterTrack === 'managed'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${filterTrack === 'managed'
                   ? isLight ? 'bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs' : 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-md'
                   : isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70' : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
-              }`}
+                }`}
             >
               <Rocket className="w-3 h-3" />
               <span>Studio-Managed ({managedCount})</span>
@@ -999,11 +992,10 @@ export default function CreatorParticipationManager() {
 
             <button
               onClick={() => setFilterTrack('pipeline')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                filterTrack === 'pipeline'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${filterTrack === 'pipeline'
                   ? isLight ? 'bg-indigo-600 text-white shadow-2xs' : 'bg-indigo-500 text-white shadow-md'
                   : isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70' : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08]'
-              }`}
+                }`}
             >
               <Users className="w-3 h-3" />
               <span>Pipeline Partners ({unlaunchedCreators.length})</span>
@@ -1055,9 +1047,8 @@ export default function CreatorParticipationManager() {
             </div>
           ) : (
             <div className="space-y-3">
-              <div className={`p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
-                isLight ? 'bg-indigo-50/70 border-indigo-200/80 text-indigo-950' : 'bg-indigo-950/20 border-indigo-500/20 text-indigo-200'
-              }`}>
+              <div className={`p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-indigo-50/70 border-indigo-200/80 text-indigo-950' : 'bg-indigo-950/20 border-indigo-500/20 text-indigo-200'
+                }`}>
                 <div className="flex items-center gap-2.5 text-xs">
                   <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
                   <span>
@@ -1084,11 +1075,10 @@ export default function CreatorParticipationManager() {
                   return (
                     <div
                       key={creator.id}
-                      className={`p-4 rounded-2xl border transition-all duration-200 relative overflow-hidden flex flex-col justify-between gap-3 ${
-                        isLight
+                      className={`p-4 rounded-2xl border transition-all duration-200 relative overflow-hidden flex flex-col justify-between gap-3 ${isLight
                           ? 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-xs'
                           : 'bg-[#0d1017] border-white/[0.08] hover:border-white/[0.15]'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
@@ -1110,13 +1100,12 @@ export default function CreatorParticipationManager() {
                               <h3 className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
                                 {cName}
                               </h3>
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                                status === 'partnered' || status === 'qualified'
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${status === 'partnered' || status === 'qualified'
                                   ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                                   : status === 'contacted'
-                                  ? isLight ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-blue-500/10 text-blue-300 border-blue-500/30'
-                                  : isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-white/[0.05] text-slate-300 border-white/[0.1]'
-                              }`}>
+                                    ? isLight ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-blue-500/10 text-blue-300 border-blue-500/30'
+                                    : isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-white/[0.05] text-slate-300 border-white/[0.1]'
+                                }`}>
                                 {status}
                               </span>
                             </div>
@@ -1149,11 +1138,10 @@ export default function CreatorParticipationManager() {
                           type="button"
                           disabled={isInitThis}
                           onClick={() => handleInitializeCreatorVenture(creator)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95 ${
-                            isLight
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95 ${isLight
                               ? 'bg-slate-900 hover:bg-slate-800 text-white'
                               : 'bg-white hover:bg-slate-100 text-slate-950'
-                          } ${isInitThis ? 'opacity-70 cursor-wait' : ''}`}
+                            } ${isInitThis ? 'opacity-70 cursor-wait' : ''}`}
                         >
                           {isInitThis ? (
                             <>
@@ -1189,11 +1177,10 @@ export default function CreatorParticipationManager() {
               <button
                 type="button"
                 onClick={() => setFilterTrack('pipeline')}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer ${
-                  isLight
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer ${isLight
                     ? 'bg-slate-900 text-white hover:bg-slate-800'
                     : 'bg-white text-slate-950 hover:bg-slate-100'
-                }`}
+                  }`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 <span>View {unlaunchedCreators.length} Pipeline Partners Awaiting Ventures</span>
@@ -1213,11 +1200,10 @@ export default function CreatorParticipationManager() {
               return (
                 <div
                   key={proj.id}
-                  className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 relative overflow-hidden ${
-                    isLight
+                  className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 relative overflow-hidden ${isLight
                       ? 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-xs'
                       : 'bg-[#0d1017] border-white/[0.08] hover:border-white/[0.15]'
-                  }`}
+                    }`}
                 >
 
                   <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
@@ -1287,37 +1273,32 @@ export default function CreatorParticipationManager() {
                     </div>
 
                     {/* Middle: Participation Status Card */}
-                    <div className={`w-full lg:w-80 xl:w-[340px] shrink-0 p-3.5 rounded-xl border transition-all space-y-2.5 ${
-                      isLight
+                    <div className={`w-full lg:w-80 xl:w-[340px] shrink-0 p-3.5 rounded-xl border transition-all space-y-2.5 ${isLight
                         ? 'bg-slate-50/80 border-slate-200/80 shadow-2xs'
                         : 'bg-white/[0.02] border-white/[0.08]'
-                    }`}>
+                      }`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
-                          isLight ? 'text-slate-500' : 'text-slate-400'
-                        }`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${isLight ? 'text-slate-500' : 'text-slate-400'
+                          }`}>
                           Participation Track
                         </span>
                         {isCoBuilder ? (
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 border ${
-                            isLight
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 border ${isLight
                               ? 'bg-slate-900 text-white border-slate-900'
                               : 'bg-white text-slate-950 border-white'
-                          }`}>
+                            }`}>
                             <Zap className={`w-3 h-3 shrink-0 ${isLight ? 'text-amber-400 fill-amber-400' : 'text-slate-950 fill-slate-950'}`} />
                             <span>Co-Builder (${projPrice} Paid)</span>
                           </span>
                         ) : isDeclined ? (
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 border ${
-                            isLight ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                          }`}>
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 border ${isLight ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                            }`}>
                             <ShieldCheck className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" />
                             <span>Studio-Managed</span>
                           </span>
                         ) : (
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 border ${
-                            isLight ? 'bg-slate-200/80 text-slate-700 border border-slate-300/80' : 'bg-white/[0.08] text-slate-300 border border-white/[0.1]'
-                          }`}>
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider whitespace-nowrap shrink-0 border ${isLight ? 'bg-slate-200/80 text-slate-700 border border-slate-300/80' : 'bg-white/[0.08] text-slate-300 border border-white/[0.1]'
+                            }`}>
                             <Clock className="w-3 h-3 text-slate-500 shrink-0" />
                             <span>Choice Pending</span>
                           </span>
@@ -1327,30 +1308,27 @@ export default function CreatorParticipationManager() {
                       {/* Status Details */}
                       {isCoBuilder ? (
                         <div className="space-y-2 pt-0.5">
-                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold border ${
-                            isLight
+                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold border ${isLight
                               ? 'bg-white border-slate-200 text-slate-800 shadow-2xs'
                               : 'bg-white/[0.04] border-white/[0.1] text-slate-200'
-                          }`}>
+                            }`}>
                             <Sparkles className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
                             <span className="truncate">Phases 1–3 Interactive Execution Unlocked</span>
                           </div>
                           <div className={`space-y-1.5 pt-1.5 border-t ${isLight ? 'border-slate-200/70' : 'border-white/[0.06]'} text-xs`}>
                             <div className="flex items-center justify-between gap-2">
                               <span className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>License:</span>
-                              <span className={`font-mono text-[10.5px] font-semibold px-2 py-0.5 rounded tracking-wide border ${
-                                isLight
+                              <span className={`font-mono text-[10.5px] font-semibold px-2 py-0.5 rounded tracking-wide border ${isLight
                                   ? 'bg-white text-slate-800 border-slate-200 shadow-2xs'
                                   : 'bg-white/[0.06] text-slate-200 border-white/[0.08]'
-                              }`}>
+                                }`}>
                                 {sub.licenseKey || 'FORGE-ACTIVE'}
                               </span>
                             </div>
                             <div className="flex items-center justify-between gap-2">
                               <span className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Payment:</span>
-                              <span className={`font-bold text-xs flex items-center gap-1.5 ${
-                                isLight ? 'text-emerald-700' : 'text-emerald-400'
-                              }`}>
+                              <span className={`font-bold text-xs flex items-center gap-1.5 ${isLight ? 'text-emerald-700' : 'text-emerald-400'
+                                }`}>
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shadow-xs"></span>
                                 ${projPrice.toFixed(2)} USD
                               </span>
@@ -1359,11 +1337,10 @@ export default function CreatorParticipationManager() {
                         </div>
                       ) : isDeclined ? (
                         <div className="space-y-2 pt-0.5">
-                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${
-                            isLight
+                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${isLight
                               ? 'bg-white border border-purple-200/80 text-purple-950 shadow-2xs'
                               : 'bg-black/40 border border-purple-500/30 text-purple-300'
-                          }`}>
+                            }`}>
                             <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
                             <span className="truncate">Studio-Managed Engineering Track</span>
                           </div>
@@ -1372,11 +1349,10 @@ export default function CreatorParticipationManager() {
                             <button
                               type="button"
                               onClick={() => handleOpenCustomPriceModal(proj)}
-                              className={`px-2 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                                isLight
+                              className={`px-2 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${isLight
                                   ? 'bg-slate-100/90 hover:bg-slate-200/90 border-slate-200 text-slate-800'
                                   : 'bg-white/[0.06] hover:bg-white/[0.1] border-white/[0.1] text-slate-200'
-                              }`}
+                                }`}
                               title="Click to change Co-Builder Pass fee for this creator"
                             >
                               <span className="font-mono">${projPrice} USD</span>
@@ -1386,11 +1362,10 @@ export default function CreatorParticipationManager() {
                         </div>
                       ) : (
                         <div className="space-y-2 pt-0.5">
-                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${
-                            isLight
+                          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${isLight
                               ? 'bg-white border border-slate-200 text-slate-700 shadow-2xs'
                               : 'bg-black/40 border border-white/[0.1] text-slate-300'
-                          }`}>
+                            }`}>
                             <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                             <span className="truncate">Awaiting Track Selection</span>
                           </div>
@@ -1399,11 +1374,10 @@ export default function CreatorParticipationManager() {
                             <button
                               type="button"
                               onClick={() => handleOpenCustomPriceModal(proj)}
-                              className={`px-2 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                                isLight
+                              className={`px-2 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${isLight
                                   ? 'bg-slate-100/90 hover:bg-slate-200/90 border-slate-200 text-slate-800'
                                   : 'bg-white/[0.06] hover:bg-white/[0.1] border-white/[0.1] text-slate-200'
-                              }`}
+                                }`}
                               title="Click to change Co-Builder Pass fee for this creator"
                             >
                               <span className="font-mono">${projPrice} USD</span>
@@ -1420,11 +1394,10 @@ export default function CreatorParticipationManager() {
                       <button
                         type="button"
                         onClick={() => handleCopyUrl(proj)}
-                        className={`h-9 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs active:scale-95 ${
-                          isLight
+                        className={`h-9 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs active:scale-95 ${isLight
                             ? 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
                             : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'
-                        }`}
+                          }`}
                         title="Copy Workspace URL"
                       >
                         {copiedId === proj.id ? (
@@ -1445,11 +1418,10 @@ export default function CreatorParticipationManager() {
                         href={workspaceUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className={`h-9 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs active:scale-95 ${
-                          isLight
+                        className={`h-9 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs active:scale-95 ${isLight
                             ? 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900'
                             : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'
-                        }`}
+                          }`}
                         title="Preview Portal View in New Tab"
                       >
                         <Eye className="w-3.5 h-3.5 text-slate-500" />
@@ -1461,11 +1433,10 @@ export default function CreatorParticipationManager() {
                       <button
                         type="button"
                         onClick={() => setActionModalProject(proj)}
-                        className={`h-9 px-3.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs hover:shadow-sm active:scale-95 ${
-                          isLight
+                        className={`h-9 px-3.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs hover:shadow-sm active:scale-95 ${isLight
                             ? 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900 shadow-slate-900/10'
                             : 'bg-white hover:bg-slate-100 text-slate-950 border-white shadow-white/10'
-                        }`}
+                          }`}
                         title="Open Venture Actions Menu"
                       >
                         <MoreHorizontal className="w-4 h-4 stroke-[2.5]" />
@@ -1489,9 +1460,8 @@ export default function CreatorParticipationManager() {
           }}
         >
           <div
-            className={`relative w-full max-w-lg rounded-3xl ${
-              isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl shadow-slate-900/15' : 'bg-[#0f131c] border-white/[0.12] text-white shadow-2xl'
-            } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
+            className={`relative w-full max-w-lg rounded-3xl ${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl shadow-slate-900/15' : 'bg-[#0f131c] border-white/[0.12] text-white shadow-2xl'
+              } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
           >
             {/* Header: Title, Creator & Close */}
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
@@ -1527,9 +1497,8 @@ export default function CreatorParticipationManager() {
               <button
                 type="button"
                 onClick={() => setActionModalProject(null)}
-                className={`p-2 rounded-xl ${
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
-                } transition-colors cursor-pointer shrink-0`}
+                className={`p-2 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
+                  } transition-colors cursor-pointer shrink-0`}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1564,22 +1533,19 @@ export default function CreatorParticipationManager() {
                   setActionModalProject(null)
                   handleOpenCustomPriceModal(p)
                 }}
-                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
-                  isLight ? 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-900' : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.1] text-white'
-                }`}
+                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${isLight ? 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-900' : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.1] text-white'
+                  }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    isLight ? 'bg-slate-200 text-slate-800' : 'bg-white/[0.08] text-white'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isLight ? 'bg-slate-200 text-slate-800' : 'bg-white/[0.08] text-white'
+                    }`}>
                     <DollarSign className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="text-xs font-bold flex items-center gap-1.5">
                       <span>Change Pass Fee</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
-                        isLight ? 'bg-slate-200 text-slate-800' : 'bg-white/[0.1] text-slate-200'
-                      }`}>${getProjectPassPrice(actionModalProject)} USD</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${isLight ? 'bg-slate-200 text-slate-800' : 'bg-white/[0.1] text-slate-200'
+                        }`}>${getProjectPassPrice(actionModalProject)} USD</span>
                     </div>
                     <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                       Set a custom Co-Builder Pass price for this creator
@@ -1598,9 +1564,8 @@ export default function CreatorParticipationManager() {
                     setActionModalProject(null)
                     handleMarkAsPaidCoBuilder(p)
                   }}
-                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
-                    isLight ? 'bg-emerald-50/70 hover:bg-emerald-100/70 border-emerald-200 text-slate-900' : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-white'
-                  }`}
+                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${isLight ? 'bg-emerald-50/70 hover:bg-emerald-100/70 border-emerald-200 text-slate-900' : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-white'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
@@ -1626,9 +1591,8 @@ export default function CreatorParticipationManager() {
                     setActionModalProject(null)
                     handleSwitchToStudioManaged(p)
                   }}
-                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
-                    isLight ? 'bg-purple-50/70 hover:bg-purple-100/70 border-purple-200 text-slate-900' : 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-white'
-                  }`}
+                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${isLight ? 'bg-purple-50/70 hover:bg-purple-100/70 border-purple-200 text-slate-900' : 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-white'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
@@ -1653,9 +1617,8 @@ export default function CreatorParticipationManager() {
                     setActionModalProject(null)
                     handleOpenEmailModal(p, 'followup')
                   }}
-                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
-                    isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
-                  }`}
+                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
@@ -1676,9 +1639,8 @@ export default function CreatorParticipationManager() {
               <button
                 type="button"
                 onClick={() => handleCopyUrl(actionModalProject)}
-                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
-                  isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
-                }`}
+                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
@@ -1705,9 +1667,8 @@ export default function CreatorParticipationManager() {
                 href={getCreatorWorkspaceUrl(actionModalProject)}
                 target="_blank"
                 rel="noreferrer"
-                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${
-                  isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
-                }`}
+                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer shadow-2xs hover:shadow-xs ${isLight ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900' : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08] text-white'
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-600 flex items-center justify-center shrink-0">
@@ -1732,9 +1693,8 @@ export default function CreatorParticipationManager() {
                     setActionModalProject(null)
                     handleDeleteProject(p)
                   }}
-                  className={`w-full p-3 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer ${
-                    isLight ? 'bg-rose-50/80 hover:bg-rose-100 border-rose-200 text-rose-700' : 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/30 text-rose-300'
-                  }`}
+                  className={`w-full p-3 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer ${isLight ? 'bg-rose-50/80 hover:bg-rose-100 border-rose-200 text-rose-700' : 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/30 text-rose-300'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-600 flex items-center justify-center shrink-0">
@@ -1842,11 +1802,10 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={handleSendEmail}
                 disabled={isSendingEmail || !emailSubject.trim() || !emailBody.trim()}
-                className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 shadow-sm ${
-                  isLight
+                className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 shadow-sm ${isLight
                     ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10'
                     : 'bg-white hover:bg-slate-100 text-slate-950 shadow-white/10'
-                }`}
+                  }`}
               >
                 {isSendingEmail ? (
                   <>
@@ -1874,18 +1833,16 @@ export default function CreatorParticipationManager() {
           }}
         >
           <div
-            className={`relative w-full max-w-md rounded-3xl ${
-              isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#0f131c] border-white/[0.12] text-white shadow-2xl'
-            } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
+            className={`relative w-full max-w-md rounded-3xl ${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#0f131c] border-white/[0.12] text-white shadow-2xl'
+              } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
           >
             {/* Header */}
             <div className={`flex items-start justify-between gap-3 border-b ${isLight ? 'border-slate-100' : 'border-white/[0.08]'} pb-3.5`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
-                  isLight
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${isLight
                     ? 'bg-slate-900 text-white border-slate-800 shadow-xs'
                     : 'bg-white/[0.08] text-white border-white/[0.12]'
-                }`}>
+                  }`}>
                   <DollarSign className="w-5 h-5" />
                 </div>
                 <div>
@@ -1901,9 +1858,8 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={() => setShowGlobalPriceModal(false)}
                 disabled={isSavingGlobalPrice}
-                className={`p-2 rounded-xl ${
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
-                } transition-colors cursor-pointer shrink-0`}
+                className={`p-2 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
+                  } transition-colors cursor-pointer shrink-0`}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1920,15 +1876,14 @@ export default function CreatorParticipationManager() {
                     key={amt}
                     type="button"
                     onClick={() => setGlobalPriceInput(amt)}
-                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                      Number(globalPriceInput) === amt
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${Number(globalPriceInput) === amt
                         ? isLight
                           ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
                           : 'bg-white text-slate-950 border-white shadow-sm'
                         : isLight
-                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
-                        : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
-                    }`}
+                          ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
+                          : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
+                      }`}
                   >
                     ${amt}
                   </button>
@@ -1941,11 +1896,10 @@ export default function CreatorParticipationManager() {
               <label className={`text-[11px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'} uppercase tracking-wider block`}>
                 Pass Fee Amount (USD)
               </label>
-              <div className={`relative flex items-center rounded-xl border transition-all ${
-                isLight
+              <div className={`relative flex items-center rounded-xl border transition-all ${isLight
                   ? 'bg-white border-slate-200 hover:border-slate-300 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-900/5'
                   : 'bg-white/[0.03] border-white/[0.1] hover:border-white/[0.16] focus-within:border-white focus-within:ring-2 focus-within:ring-white/10'
-              }`}>
+                }`}>
                 <span className={`pl-3.5 text-base font-bold select-none ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>$</span>
                 <input
                   type="number"
@@ -1953,15 +1907,13 @@ export default function CreatorParticipationManager() {
                   step="1"
                   value={globalPriceInput}
                   onChange={(e) => setGlobalPriceInput(e.target.value)}
-                  className={`w-full py-2.5 px-2 bg-transparent text-base font-black font-mono outline-none ${
-                    isLight ? 'text-slate-900 placeholder:text-slate-400' : 'text-white placeholder:text-slate-500'
-                  }`}
+                  className={`w-full py-2.5 px-2 bg-transparent text-base font-black font-mono outline-none ${isLight ? 'text-slate-900 placeholder:text-slate-400' : 'text-white placeholder:text-slate-500'
+                    }`}
                   placeholder="50"
                 />
                 <div className="pr-3 shrink-0">
-                  <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md ${
-                    isLight ? 'bg-slate-100 text-slate-600 border border-slate-200/80' : 'bg-white/[0.06] text-slate-300 border border-white/[0.08]'
-                  }`}>
+                  <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md ${isLight ? 'bg-slate-100 text-slate-600 border border-slate-200/80' : 'bg-white/[0.06] text-slate-300 border border-white/[0.08]'
+                    }`}>
                     USD
                   </span>
                 </div>
@@ -1969,30 +1921,28 @@ export default function CreatorParticipationManager() {
             </div>
 
             {/* Sync Checkbox */}
-            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer select-none transition-all ${
-              updatePendingWithGlobal
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer select-none transition-all ${updatePendingWithGlobal
                 ? isLight
                   ? 'bg-slate-50/90 border-slate-300/90'
                   : 'bg-white/[0.04] border-white/[0.14]'
                 : isLight
-                ? 'bg-white border-slate-200/80 hover:bg-slate-50/60'
-                : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
-            }`}>
+                  ? 'bg-white border-slate-200/80 hover:bg-slate-50/60'
+                  : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
+              }`}>
               <input
                 type="checkbox"
                 checked={updatePendingWithGlobal}
                 onChange={(e) => setUpdatePendingWithGlobal(e.target.checked)}
                 className="sr-only"
               />
-              <div className={`w-4 h-4 mt-0.5 rounded-md flex items-center justify-center shrink-0 border transition-all ${
-                updatePendingWithGlobal
+              <div className={`w-4 h-4 mt-0.5 rounded-md flex items-center justify-center shrink-0 border transition-all ${updatePendingWithGlobal
                   ? isLight
                     ? 'bg-slate-900 border-slate-900 text-white shadow-2xs'
                     : 'bg-white border-white text-slate-950 shadow-2xs'
                   : isLight
-                  ? 'bg-white border-slate-300'
-                  : 'bg-white/[0.06] border-white/[0.2]'
-              }`}>
+                    ? 'bg-white border-slate-300'
+                    : 'bg-white/[0.06] border-white/[0.2]'
+                }`}>
                 {updatePendingWithGlobal && <Check className="w-3 h-3 stroke-[3]" />}
               </div>
               <div className="text-xs space-y-0.5">
@@ -2011,11 +1961,10 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={() => setShowGlobalPriceModal(false)}
                 disabled={isSavingGlobalPrice}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
-                  isLight
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${isLight
                     ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                     : 'bg-white/[0.06] hover:bg-white/[0.1] text-slate-300'
-                }`}
+                  }`}
               >
                 Cancel
               </button>
@@ -2023,11 +1972,10 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={handleSaveGlobalPrice}
                 disabled={isSavingGlobalPrice || !globalPriceInput || Number(globalPriceInput) < 0}
-                className={`px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm hover:shadow flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isLight
+                className={`px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm hover:shadow flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${isLight
                     ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10'
                     : 'bg-white hover:bg-slate-100 text-slate-950 shadow-white/10'
-                }`}
+                  }`}
               >
                 {isSavingGlobalPrice ? (
                   <>
@@ -2055,18 +2003,16 @@ export default function CreatorParticipationManager() {
           }}
         >
           <div
-            className={`relative w-full max-w-md rounded-3xl ${
-              isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#0f131c] border-white/[0.12] text-white shadow-2xl'
-            } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
+            className={`relative w-full max-w-md rounded-3xl ${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#0f131c] border-white/[0.12] text-white shadow-2xl'
+              } border p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 my-auto`}
           >
             {/* Header */}
             <div className={`flex items-start justify-between gap-3 border-b ${isLight ? 'border-slate-100' : 'border-white/[0.08]'} pb-3.5`}>
               <div className="flex items-center gap-3 min-w-0">
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
-                  isLight
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${isLight
                     ? 'bg-slate-900 text-white border-slate-800 shadow-xs'
                     : 'bg-white/[0.08] text-white border-white/[0.12]'
-                }`}>
+                  }`}>
                   <DollarSign className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
@@ -2082,9 +2028,8 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={() => setCustomPriceModalProject(null)}
                 disabled={isSavingCustomPrice}
-                className={`p-2 rounded-xl ${
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
-                } transition-colors cursor-pointer shrink-0`}
+                className={`p-2 rounded-xl ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
+                  } transition-colors cursor-pointer shrink-0`}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2100,9 +2045,8 @@ export default function CreatorParticipationManager() {
                   type="button"
                   onClick={() => handleSaveCustomPrice(true)}
                   disabled={isSavingCustomPrice}
-                  className={`text-[10px] font-bold cursor-pointer transition-colors ${
-                    isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
-                  } underline underline-offset-2`}
+                  className={`text-[10px] font-bold cursor-pointer transition-colors ${isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+                    } underline underline-offset-2`}
                 >
                   Reset to Default (${defaultPassPrice})
                 </button>
@@ -2113,15 +2057,14 @@ export default function CreatorParticipationManager() {
                     key={amt}
                     type="button"
                     onClick={() => setCustomPriceInput(amt)}
-                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                      Number(customPriceInput) === amt
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${Number(customPriceInput) === amt
                         ? isLight
                           ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
                           : 'bg-white text-slate-950 border-white shadow-sm'
                         : isLight
-                        ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
-                        : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
-                    }`}
+                          ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
+                          : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
+                      }`}
                   >
                     ${amt}
                   </button>
@@ -2134,11 +2077,10 @@ export default function CreatorParticipationManager() {
               <label className={`text-[11px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'} uppercase tracking-wider block`}>
                 Custom Fee For This Creator (USD)
               </label>
-              <div className={`relative flex items-center rounded-xl border transition-all ${
-                isLight
+              <div className={`relative flex items-center rounded-xl border transition-all ${isLight
                   ? 'bg-white border-slate-200 hover:border-slate-300 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-900/5'
                   : 'bg-white/[0.03] border-white/[0.1] hover:border-white/[0.16] focus-within:border-white focus-within:ring-2 focus-within:ring-white/10'
-              }`}>
+                }`}>
                 <span className={`pl-3.5 text-base font-bold select-none ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>$</span>
                 <input
                   type="number"
@@ -2146,15 +2088,13 @@ export default function CreatorParticipationManager() {
                   step="1"
                   value={customPriceInput}
                   onChange={(e) => setCustomPriceInput(e.target.value)}
-                  className={`w-full py-2.5 px-2 bg-transparent text-base font-black font-mono outline-none ${
-                    isLight ? 'text-slate-900 placeholder:text-slate-400' : 'text-white placeholder:text-slate-500'
-                  }`}
+                  className={`w-full py-2.5 px-2 bg-transparent text-base font-black font-mono outline-none ${isLight ? 'text-slate-900 placeholder:text-slate-400' : 'text-white placeholder:text-slate-500'
+                    }`}
                   placeholder={String(defaultPassPrice || 50)}
                 />
                 <div className="pr-3 shrink-0">
-                  <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md ${
-                    isLight ? 'bg-slate-100 text-slate-600 border border-slate-200/80' : 'bg-white/[0.06] text-slate-300 border border-white/[0.08]'
-                  }`}>
+                  <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md ${isLight ? 'bg-slate-100 text-slate-600 border border-slate-200/80' : 'bg-white/[0.06] text-slate-300 border border-white/[0.08]'
+                    }`}>
                     USD
                   </span>
                 </div>
@@ -2170,11 +2110,10 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={() => setCustomPriceModalProject(null)}
                 disabled={isSavingCustomPrice}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
-                  isLight
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${isLight
                     ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                     : 'bg-white/[0.06] hover:bg-white/[0.1] text-slate-300'
-                }`}
+                  }`}
               >
                 Cancel
               </button>
@@ -2182,11 +2121,10 @@ export default function CreatorParticipationManager() {
                 type="button"
                 onClick={handleSaveCustomPrice}
                 disabled={isSavingCustomPrice || !customPriceInput || Number(customPriceInput) < 0}
-                className={`px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm hover:shadow flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isLight
+                className={`px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm hover:shadow flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${isLight
                     ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10'
                     : 'bg-white hover:bg-slate-100 text-slate-950 shadow-white/10'
-                }`}
+                  }`}
               >
                 {isSavingCustomPrice ? (
                   <>

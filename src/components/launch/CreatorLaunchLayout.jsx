@@ -331,7 +331,7 @@ export default function CreatorLaunchLayout({
           try {
             const raw = localStorage.getItem(`forge_creator_videos_${handleClean}`) || sessionStorage.getItem(`forge_creator_videos_${handleClean}`)
             if (raw) cachedVideos = JSON.parse(raw)
-          } catch (e) {}
+          } catch (e) { }
         }
         if ((!matched.recentPosts || matched.recentPosts.length === 0) && cachedVideos.length > 0) {
           matched.recentPosts = cachedVideos
@@ -431,7 +431,7 @@ export default function CreatorLaunchLayout({
         try {
           const raw = localStorage.getItem(`forge_creator_videos_${cleanHandle}`) || sessionStorage.getItem(`forge_creator_videos_${cleanHandle}`)
           if (raw) cachedVideos = JSON.parse(raw)
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const rawPosts = (
@@ -613,7 +613,7 @@ export default function CreatorLaunchLayout({
           const dbFee = ws?.default_pass_price ?? ws?.cobuilder_pass_price ?? ws?.extra_state?.default_pass_price ?? ws?.extra_state?.cobuilder_pass_price
           if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
             setCobuilderPassPrice(Number(dbFee))
-            try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) {}
+            try { localStorage.setItem('forge_cobuilder_pass_price', String(dbFee)) } catch (e) { }
           }
           const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
           const urlSec = searchParams?.get('section')
@@ -768,7 +768,7 @@ export default function CreatorLaunchLayout({
       try {
         const raw = localStorage.getItem(`forge_creator_videos_${cleanHandle}`) || sessionStorage.getItem(`forge_creator_videos_${cleanHandle}`)
         if (raw) cachedVideos = JSON.parse(raw)
-      } catch (e) {}
+      } catch (e) { }
     }
     const resolvedPosts = (Array.isArray(newProjData.recentPosts) && newProjData.recentPosts.length > 0 ? newProjData.recentPosts : null) ||
       (Array.isArray(newProjData.videos) && newProjData.videos.length > 0 ? newProjData.videos : null) ||
@@ -984,11 +984,10 @@ export default function CreatorLaunchLayout({
                   })
                 } catch { }
               }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                activeSection === 'section1'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${activeSection === 'section1'
                   ? 'bg-white text-slate-950 border border-slate-200/80 shadow-xs'
                   : 'text-slate-600 hover:text-slate-950 border border-transparent'
-              }`}
+                }`}
             >
               <Target className={`w-3.5 h-3.5 ${activeSection === 'section1' ? 'text-emerald-600' : 'text-slate-400'}`} />
               <span>Acquisition OS</span>
@@ -1086,8 +1085,8 @@ export default function CreatorLaunchLayout({
                                 setShowPartnerMenu(false);
                               }}
                               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer ${isCur
-                                  ? 'bg-slate-100 border border-slate-300 text-slate-950 font-semibold'
-                                  : 'hover:bg-slate-50 text-slate-700 hover:text-slate-950 border border-transparent'
+                                ? 'bg-slate-100 border border-slate-300 text-slate-950 font-semibold'
+                                : 'hover:bg-slate-50 text-slate-700 hover:text-slate-950 border border-transparent'
                                 }`}
                             >
                               <div className="w-7 h-7 rounded-lg overflow-hidden bg-slate-100 shrink-0 flex items-center justify-center text-xs font-bold text-slate-700">
@@ -1226,8 +1225,8 @@ export default function CreatorLaunchLayout({
                     setMobileDrawerOpen(false)
                   }}
                   className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${activeSection === 'section1'
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-600 border border-slate-200'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'
                     }`}
                 >
                   <Target className="w-3.5 h-3.5" />
@@ -1359,17 +1358,15 @@ export default function CreatorLaunchLayout({
                         setAcquisitionNavState({ step: s.step, nonce: Date.now() })
                         setShowSection1Sidebar(false)
                       }}
-                      className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer ${
-                        isCur
+                      className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer ${isCur
                           ? 'bg-slate-100 text-slate-950 shadow-xs border border-slate-300 font-semibold'
                           : isDone
-                          ? 'bg-emerald-50/40 hover:bg-emerald-50 text-slate-800 border border-emerald-200'
-                          : 'bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-950 border border-slate-100'
-                      }`}
+                            ? 'bg-emerald-50/40 hover:bg-emerald-50 text-slate-800 border border-emerald-200'
+                            : 'bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-950 border border-slate-100'
+                        }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center mt-0.5 ${
-                        isCur ? 'bg-slate-900 text-white' : isDone ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-700'
-                      }`}>
+                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center mt-0.5 ${isCur ? 'bg-slate-900 text-white' : isDone ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-700'
+                        }`}>
                         {isDone && !isCur ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Icon className="w-4 h-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
