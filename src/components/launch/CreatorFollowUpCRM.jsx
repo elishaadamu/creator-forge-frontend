@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { startCrmTour } from "../../utils/driverTour";
 import {
   Users,
   Search,
@@ -57,6 +58,14 @@ export default function CreatorFollowUpCRM({
     if (rawCreators && Array.isArray(rawCreators.creators)) return rawCreators.creators;
     return [];
   }, [rawCreators]);
+
+  // Auto-launch CRM Guided Tour if not already dismissed in this browser
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startCrmTour(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const realThreads = useMemo(() => {
     if (Array.isArray(rawThreads)) return rawThreads;
@@ -1424,7 +1433,7 @@ export default function CreatorFollowUpCRM({
   const crmContent = (
     <div className={`w-full ${isPage ? "rounded-2xl" : "max-w-6xl rounded-2xl max-h-[92vh]"} bg-white border border-slate-200/90 shadow-sm flex flex-col overflow-hidden`}>
         {/* Header Titlebar */}
-        <div className="bg-slate-50/70 px-6 py-4 border-b border-slate-200/90 flex items-center justify-between flex-wrap gap-3">
+        <div id="tour-crm-header" className="bg-slate-50/70 px-6 py-4 border-b border-slate-200/90 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-2xs">
               <Users className="w-5 h-5" />
@@ -1445,7 +1454,19 @@ export default function CreatorFollowUpCRM({
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Driver.js Workflow Tour Trigger */}
             <button
+              type="button"
+              onClick={() => startCrmTour(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold transition-all shadow-2xs cursor-pointer flex-shrink-0"
+              title="Start Guided Walkthrough (Driver.js)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+              <span>Workflow Tour</span>
+            </button>
+
+            <button
+              id="tour-crm-sync"
               type="button"
               onClick={onSyncImap}
               disabled={isSyncingImap}
@@ -1457,6 +1478,7 @@ export default function CreatorFollowUpCRM({
             </button>
 
             <button
+              id="tour-crm-export"
               type="button"
               onClick={handleExportCSV}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold transition-all shadow-2xs cursor-pointer flex-shrink-0"
@@ -1479,7 +1501,7 @@ export default function CreatorFollowUpCRM({
         </div>
 
         {/* KPI Status Pills */}
-        <div className="p-4 bg-white border-b border-slate-200/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        <div id="tour-crm-kpis" className="p-4 bg-white border-b border-slate-200/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {[
             { id: "all", label: "All Leads", count: counts.all, color: "text-slate-900", activeBg: "bg-slate-900 text-white border-slate-900 ring-slate-900", dot: "bg-slate-400" },
             { id: "section2", label: "Active Ventures", count: counts.section2, color: "text-emerald-700", activeBg: "bg-emerald-600 text-white border-emerald-600 ring-emerald-600", dot: "bg-emerald-500" },
@@ -1517,7 +1539,7 @@ export default function CreatorFollowUpCRM({
         </div>
 
         {/* Filter Controls & Search Bar */}
-        <div className="p-4 bg-slate-50/50 border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-3">
+        <div id="tour-crm-search" className="p-4 bg-slate-50/50 border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-3">
           <div className="relative flex-1 min-w-[240px] max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -1650,7 +1672,7 @@ export default function CreatorFollowUpCRM({
         </div>
 
         {/* Directory Leads Table / Grid */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+        <div id="tour-crm-list" className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {totalItems === 0 ? (
             <div className="text-center py-16 text-slate-500 text-xs space-y-2">
               <Users className="w-8 h-8 text-slate-400 mx-auto" />

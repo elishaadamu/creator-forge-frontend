@@ -1378,15 +1378,27 @@ Keep product names authentic, tailored, and highly specific to the creator's nic
 }
 
 export function buildSmartFallbackPlan(source) {
-  const product = source?.productName || source?.title || "the SaaS product";
+  const chosen = source?.selectedConcept || source?.selected_concept || {}
+  const product = chosen.name || source?.productName || source?.title || "the SaaS product";
   const creator =
     source?.creatorName || source?.handle?.replace("@", "") || "the Creator";
   const niche =
     source?.niche || source?.category || "high-growth digital tools";
   const tagline =
+    chosen.tagline ||
     source?.productTagline ||
     source?.description ||
     `They need a high-leverage solution to automate core tasks.`;
+  const customer =
+    chosen.customer ||
+    chosen.demographicAlignment ||
+    source?.targetAudience ||
+    source?.customer ||
+    `${niche} creators and professionals in ${creator}'s community who actively experience workflow friction`;
+  const problem =
+    chosen.problem ||
+    source?.problem ||
+    `${tagline} They currently spend 5–10 hours per week using fragmented workarounds and need a unified tool.`;
 
   // Dynamically analyze creator audience scale, pricing, and product complexity
   const rawFollowers = String(source?.followers || source?.follower_count || source?.followerStr || "250000");
@@ -1399,7 +1411,7 @@ export function buildSmartFallbackPlan(source) {
     followerCount = Number(rawFollowers.replace(/[^0-9]/g, '')) || 250000;
   }
 
-  const rawPricing = String(source?.selectedConcept?.pricing || source?.pricing || source?.revenueModel || "$89");
+  const rawPricing = String(chosen.pricing || source?.pricing || source?.revenueModel || "$89");
   const parsedPricing = parseConceptPricing(rawPricing, 89);
   const unitPrice = parsedPricing.foundingPrice;
   const depositVal = parsedPricing.depositPrice;
@@ -1416,7 +1428,7 @@ export function buildSmartFallbackPlan(source) {
   const computedRevenueTarget = Math.round(rawTargetRevenue / 500) * 500 || (targetBackers * unitPrice);
 
   // Determine sprint duration based on MVP difficulty and niche purchasing cycle
-  const diffStr = String(source?.mvpDifficulty || source?.complexity || "").toLowerCase();
+  const diffStr = String(chosen.mvpDifficulty || source?.mvpDifficulty || source?.complexity || "").toLowerCase();
   let sprintDays = 14;
   if (diffStr.includes("4 week") || diffStr.includes("high") || diffStr.includes("month")) {
     sprintDays = 21;
@@ -1428,11 +1440,15 @@ export function buildSmartFallbackPlan(source) {
     sprintDays = followerCount >= 200000 ? 18 : 14;
   }
 
+  const cleanCustomerDesc = customer.length > 25 && !customer.toLowerCase().includes('professionals in')
+    ? `${customer} who experience daily workflow friction and actively seek dedicated software.`
+    : customer;
+
   return {
-    customer: `${niche} creators and professionals in ${creator}'s community who actively experience workflow friction and already pay for software tools or coaching.`,
-    problem: `${tagline} They currently spend 5–10 hours per week using fragmented workarounds and are looking for a cohesive tool designed specifically for ${niche}.`,
+    customer: cleanCustomerDesc,
+    problem: problem,
     offer: `Founding Member Access to ${product}: 50% lifetime discount, direct alpha access, priority onboarding, and exclusive private feedback channel with the creators.`,
-    pricing: `$${unitPrice} founding annual membership ($${depositVal} refundable reservation deposit option available for immediate risk-free commitment).`,
+    pricing: chosen.pricing || `$${unitPrice} founding annual membership ($${depositVal} refundable reservation deposit option available for immediate risk-free commitment).`,
     testMethod: `1) Host a creator-led video breakdown & community poll. 2) Conduct 10 direct discovery interviews with high-intent respondents. 3) Launch a targeted founding member pre-sale window collecting paid reservations.`,
     period: `${sprintDays} days`,
     threshold: `$${computedRevenueTarget.toLocaleString()} in collected presales or ${targetBackers} paid founding member reservations from qualified buyers.`,
@@ -1443,8 +1459,9 @@ export async function generateValidationPlanAI(
   projectData,
   signal = undefined,
 ) {
+  const chosen = projectData?.selectedConcept || projectData?.selected_concept || {}
   const product =
-    projectData?.productName || projectData?.title || "the SaaS product";
+    chosen.name || projectData?.productName || projectData?.title || "the SaaS product";
   const creator =
     projectData?.creatorName ||
     projectData?.handle?.replace("@", "") ||
@@ -1452,19 +1469,28 @@ export async function generateValidationPlanAI(
   const niche =
     projectData?.niche || projectData?.category || "Tech & Creator Economy";
   const tagline =
+    chosen.tagline ||
     projectData?.productTagline ||
     projectData?.description ||
     "High-leverage product";
+  const problem =
+    chosen.problem ||
+    projectData?.problem ||
+    "Fragmented manual workflows and lost efficiency";
   const audience =
+    chosen.customer ||
+    chosen.demographicAlignment ||
     projectData?.targetAudience ||
+    projectData?.customer ||
     `${creator}'s audience and ${niche} professionals`;
   const model =
+    chosen.pricing ||
     projectData?.revenueModel ||
     projectData?.pricingModel ||
     projectData?.pricing ||
     "$89/yr founding access";
   const followers = projectData?.followers || projectData?.followerStr || "250K";
-  const difficulty = projectData?.mvpDifficulty || "Medium (3 weeks)";
+  const difficulty = chosen.mvpDifficulty || projectData?.mvpDifficulty || "Medium (3 weeks)";
 
   const system = `You are an elite product incubator strategist specializing in creator co-launches and pre-sale validation gates. You generate concrete, quantified, and realistic validation plan specifications. 
 CRITICAL RULE: DO NOT use static or default numbers for target revenue or validation period. You MUST analyze the creator's audience scale (${followers}), unit price (${model}), and MVP complexity (${difficulty}) to compute a custom revenue threshold and optimal sprint timeline.
@@ -1472,7 +1498,8 @@ Return ONLY a valid JSON object matching the requested schema with no surroundin
 
   const prompt = `Generate a comprehensive, customized validation plan specification for this co-launch product:
 Product Name: ${product}
-Tagline/Problem: ${tagline}
+Tagline: ${tagline}
+Core Problem Solved: ${problem}
 Creator Co-Founder: ${creator}
 Audience / Reach: ${followers} Followers
 Niche: ${niche}

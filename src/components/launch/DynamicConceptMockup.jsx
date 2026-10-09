@@ -69,10 +69,20 @@ export default function DynamicConceptMockup({
   concept,
   creator,
   conceptIndex = 0,
+  theme,
   onOpenDeck,
   onEditConcept
 }) {
-  const brandColorObj = getBrandColorObj(concept?.brandColor || (conceptIndex === 0 ? "#16A34A" : conceptIndex === 1 ? "#0F172A" : "#0284C7"));
+  const brandColorObj = theme
+    ? {
+        name: theme.name,
+        hex: theme.primaryHex,
+        glow: theme.glow || `${theme.primaryHex}33`,
+        bg: theme.badgeBg,
+        text: theme.badgeText,
+        border: theme.borderActive || theme.primaryHex,
+      }
+    : getBrandColorObj(concept?.brandColor || (conceptIndex === 0 ? "#16A34A" : conceptIndex === 1 ? "#0F172A" : "#0284C7"));
   const accentHex = brandColorObj.hex;
   const creatorName = creator?.name || creator?.display_name || "Creator";
   const firstName = creatorName.split(" ")[0];
@@ -126,15 +136,22 @@ export default function DynamicConceptMockup({
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-rose-500/90" />
           <div className="w-2.5 h-2.5 rounded-full bg-amber-400/90" />
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/90" />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: accentHex }} />
           <span className="text-[10px] font-mono text-slate-300 font-semibold ml-1.5 truncate max-w-[150px] flex items-center gap-1">
-            <Layers className="w-2.5 h-2.5 text-emerald-400" />
+            <Layers className="w-2.5 h-2.5" style={{ color: accentHex }} />
             <span>{concept?.name || "Architecture Spec"}</span>
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <span
+            className="text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1"
+            style={{
+              color: accentHex,
+              backgroundColor: `${accentHex}1a`,
+              borderColor: `${accentHex}50`
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accentHex }} />
             MVP Ready
           </span>
         </div>
@@ -164,7 +181,10 @@ export default function DynamicConceptMockup({
                     {creator?.avatar ? (
                       <img src={creator.avatar} alt="" className="w-4 h-4 rounded-full border border-slate-700" />
                     ) : (
-                      <div className="w-4 h-4 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[8px] flex items-center justify-center">
+                      <div
+                        className="w-4 h-4 rounded font-bold text-[8px] flex items-center justify-center"
+                        style={{ backgroundColor: `${accentHex}20`, color: accentHex }}
+                      >
                         {firstName[0]}
                       </div>
                     )}
@@ -181,7 +201,7 @@ export default function DynamicConceptMockup({
                 <div className="grid grid-cols-4 gap-1.5 flex-1 items-center">
                   <div className="col-span-1 bg-slate-900/90 rounded border border-slate-800/70 p-1 space-y-1 h-full flex flex-col justify-around">
                     <div className="flex items-center gap-1 text-[7px] text-slate-300 font-medium">
-                      <BarChart3 className="w-2.5 h-2.5 text-emerald-400" /> Dash
+                      <BarChart3 className="w-2.5 h-2.5" style={{ color: accentHex }} /> Dash
                     </div>
                     <div className="flex items-center gap-1 text-[7px] text-slate-400 font-medium">
                       <Zap className="w-2.5 h-2.5 text-amber-400" /> Tasks
@@ -194,26 +214,26 @@ export default function DynamicConceptMockup({
                   <div className="col-span-3 bg-slate-950/90 rounded border border-slate-800/80 p-1.5 h-full flex flex-col justify-between relative overflow-hidden">
                     <div className="flex items-center justify-between text-[8px]">
                       <span className="text-slate-400 font-medium">MRR Trajectory</span>
-                      <span className="font-mono font-bold text-emerald-400">+38.4%</span>
+                      <span className="font-mono font-bold" style={{ color: accentHex }}>+38.4%</span>
                     </div>
 
-                    {/* Smooth glowing SVG area chart in Emerald/Lime/Studio accent */}
+                    {/* Smooth glowing SVG area chart in Dynamic Theme Accent */}
                     <div className="h-9 w-full relative flex items-end">
                       <svg className="w-full h-full overflow-visible" viewBox="0 0 100 35" preserveAspectRatio="none">
                         <defs>
-                          <linearGradient id={`grad-p1-${conceptIndex}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#16A34A" stopOpacity="0.45" />
-                            <stop offset="100%" stopColor="#16A34A" stopOpacity="0.0" />
+                          <linearGradient id={`grad-p1-${conceptIndex}-${accentHex.replace('#', '')}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor={accentHex} stopOpacity="0.45" />
+                            <stop offset="100%" stopColor={accentHex} stopOpacity="0.0" />
                           </linearGradient>
                         </defs>
                         <path
                           d="M0,32 Q20,24 35,26 T70,12 T100,5 L100,35 L0,35 Z"
-                          fill={`url(#grad-p1-${conceptIndex})`}
+                          fill={`url(#grad-p1-${conceptIndex}-${accentHex.replace('#', '')})`}
                         />
                         <path
                           d="M0,32 Q20,24 35,26 T70,12 T100,5"
                           fill="none"
-                          stroke="#16A34A"
+                          stroke={accentHex}
                           strokeWidth="2"
                           strokeLinecap="round"
                         />
@@ -342,7 +362,7 @@ export default function DynamicConceptMockup({
       <div className="grid grid-cols-3 gap-1.5">
         <div className="p-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-center">
           <span className="text-[8px] text-slate-400 block font-medium">MRR Projected</span>
-          <span className="text-[10px] font-bold text-emerald-400 font-mono">
+          <span className="text-[10px] font-bold font-mono" style={{ color: accentHex }}>
             {concept?.mockup?.primaryMetric || concept?.primaryMetric || "$22.5K"}
           </span>
         </div>
@@ -365,7 +385,7 @@ export default function DynamicConceptMockup({
         <span className="truncate max-w-[130px] text-slate-300">
           {concept?.customer || concept?.demographicAlignment || "Target Users"}
         </span>
-        <span className="text-emerald-400 font-bold font-mono">
+        <span className="font-bold font-mono" style={{ color: accentHex }}>
           {concept?.pricing || "$29/mo"}
         </span>
       </div>

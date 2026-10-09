@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
+import { startAdminDashboardTour } from '../../utils/driverTour'
 import {
   ShieldAlert,
   Clock,
@@ -52,6 +53,14 @@ export default function AdminPipelineLookup({
     if (rawCreators && Array.isArray(rawCreators.creators)) return rawCreators.creators;
     return [];
   }, [rawCreators]);
+
+  // Auto-launch Admin Dashboard Guided Tour if not already dismissed in this browser
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startAdminDashboardTour(false)
+    }, 1200)
+    return () => clearTimeout(timer)
+  }, [])
 
   const realThreads = useMemo(() => {
     if (Array.isArray(rawThreads)) return rawThreads;
@@ -447,7 +456,7 @@ export default function AdminPipelineLookup({
   const dashboardContent = (
     <div className={`relative w-full ${isPage ? 'rounded-3xl min-h-[85vh]' : 'max-w-6xl h-[88vh] rounded-3xl'} flex flex-col bg-[#0b0d13] border border-white/[0.12] shadow-2xl overflow-hidden`}>
         {/* Sleek Command Center Header */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.08] bg-[#10131c]/90 backdrop-blur-md flex-shrink-0">
+        <div id="tour-admin-header" className="flex items-center justify-between px-6 py-3 border-b border-white/[0.08] bg-[#10131c]/90 backdrop-blur-md flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500/20 to-amber-500/20 border border-rose-500/30 text-rose-400 flex-shrink-0 shadow-inner">
               <ShieldAlert className="w-4 h-4" />
@@ -465,7 +474,19 @@ export default function AdminPipelineLookup({
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Driver.js Interactive Workflow Tour Trigger */}
             <button
+              type="button"
+              onClick={() => startAdminDashboardTour(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all cursor-pointer flex-shrink-0"
+              title="Start Guided Walkthrough (Driver.js)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+              <span>Workflow Tour</span>
+            </button>
+
+            <button
+              id="tour-admin-sync"
               type="button"
               onClick={onSyncImap}
               disabled={isSyncing}
@@ -500,7 +521,7 @@ export default function AdminPipelineLookup({
         )}
 
         {/* Compact Segmented Control & Search Command Rail */}
-        <div className="px-6 py-2.5 border-b border-white/[0.06] bg-[#090b10] flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 flex-shrink-0">
+        <div id="tour-admin-filters" className="px-6 py-2.5 border-b border-white/[0.06] bg-[#090b10] flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 flex-shrink-0">
           {/* Segmented Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none flex-shrink-0">
             <button
@@ -627,7 +648,7 @@ export default function AdminPipelineLookup({
         {/* Main Body: Creators List with Optional Slide-Over Drawer */}
         <div className="flex-1 min-h-0 flex overflow-hidden">
           {/* High-Height Creators List (THE CENTERPIECE) */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-3.5">
+          <div id="tour-admin-list" className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-3.5">
             {filteredList.length === 0 ? (
               <div className="py-20 text-center text-slate-400 space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto">

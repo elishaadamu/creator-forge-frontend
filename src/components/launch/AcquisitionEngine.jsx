@@ -587,13 +587,23 @@ export default function AcquisitionEngine({
             }
             const merged = dbList.map((dbC) => {
               const localMatch = dbC.id ? localById.get(String(dbC.id)) : null;
-              if (!localMatch) return dbC;
+              if (!localMatch) {
+                const safeStatus = (dbC.status === "launched" && !dbC.project_id && !dbC.projectId && !dbC.active_project_id)
+                  ? "discovered"
+                  : (dbC.status || "discovered");
+                return { ...dbC, status: safeStatus };
+              }
               const localEmail = (localMatch.email || localMatch.email_public || "").trim();
               const dbEmail = (dbC.email || dbC.email_public || "").trim();
               const preserveLocalEmail = localEmail && localEmail !== dbEmail;
+              const hasProject = Boolean(dbC.project_id || dbC.projectId || dbC.active_project_id || localMatch.project_id || localMatch.projectId);
+              const safeStatus = (!hasProject && (dbC.status === "launched" || localMatch.status === "launched"))
+                ? (localMatch.status && localMatch.status !== "launched" ? localMatch.status : "discovered")
+                : (dbC.status || localMatch.status || "discovered");
               return {
                 ...localMatch,
                 ...dbC,
+                status: safeStatus,
                 ...(preserveLocalEmail ? { email: localMatch.email, email_public: localMatch.email_public, email_verified: localMatch.email_verified } : {}),
               };
             });
@@ -646,16 +656,26 @@ export default function AcquisitionEngine({
         const merged = initialCreators.map((dbCreator) => {
           const localMatch = dbCreator.id ? localById.get(String(dbCreator.id)) : null;
 
-          if (!localMatch) return dbCreator;
+          if (!localMatch) {
+            const safeStatus = (dbCreator.status === "launched" && !dbCreator.project_id && !dbCreator.projectId && !dbCreator.active_project_id)
+              ? "discovered"
+              : (dbCreator.status || "discovered");
+            return { ...dbCreator, status: safeStatus };
+          }
 
           // Protect locally-modified email on current active creator: if local has a different email, keep it
           const localEmail = (localMatch.email || localMatch.email_public || "").trim();
           const dbEmail = (dbCreator.email || dbCreator.email_public || "").trim();
           const preserveLocalEmail = localEmail && localEmail !== dbEmail;
+          const hasProject = Boolean(dbCreator.project_id || dbCreator.projectId || dbCreator.active_project_id || localMatch.project_id || localMatch.projectId);
+          const safeStatus = (!hasProject && (dbCreator.status === "launched" || localMatch.status === "launched"))
+            ? (localMatch.status && localMatch.status !== "launched" ? localMatch.status : "discovered")
+            : (dbCreator.status || localMatch.status || "discovered");
 
           return {
             ...localMatch,
             ...dbCreator,
+            status: safeStatus,
             ...(preserveLocalEmail ? {
               email: localMatch.email,
               email_public: localMatch.email_public,
@@ -809,33 +829,43 @@ export default function AcquisitionEngine({
   const isCreatorLaunchedToSection2 = useCallback(
     (c) => {
       if (!c) return false;
-      const status = (c.status || "").toLowerCase();
-      if (status === "launched" || status === "partnered" || status === "active_project") {
-        return true;
-      }
+
+      // 1. Explicit project link on the creator object
       if (c.project_id || c.projectId || c.active_project_id) {
         return true;
       }
 
       const cCleanHandle = (c.handle || "").replace(/^@/, "").toLowerCase().trim();
-      const cCleanName = (c.name || c.display_name || "").toLowerCase().trim();
-      const cEmail = (c.email || c.email_public || "").toLowerCase().trim();
+      const cId = c.id ? String(c.id).trim() : "";
 
+      // 2. Strict match against existing Co-Launch Projects in Section 2
+      // Strictly match by creator ID or handle. NEVER match loosely by email or name.
       const matchedDbProj = (dbProjects || []).find((p) => {
         if (!p) return false;
+        const pCreatorId = p.creatorId ? String(p.creatorId).trim() : "";
         const pCleanHandle = (p.creatorHandle || "").replace(/^@/, "").toLowerCase().trim();
-        const pCleanName = (p.creatorName || "").toLowerCase().trim();
-        const pEmail = (p.creatorEmail || "").toLowerCase().trim();
+        const pId = p.id ? String(p.id).trim() : "";
+
         return (
-          (p.creatorId && (p.creatorId === c.id || p.creatorId === c.handle)) ||
-          (p.id && (p.id === c.project_id || p.id === c.projectId || p.id === c.active_project_id)) ||
+          (pCreatorId && cId && pCreatorId === cId) ||
+          (pCreatorId && cCleanHandle && pCreatorId.toLowerCase() === cCleanHandle) ||
           (cCleanHandle && pCleanHandle && cCleanHandle === pCleanHandle) ||
-          (cEmail && pEmail && cEmail === pEmail) ||
-          (cCleanName && pCleanName && cCleanName === pCleanName && cCleanName.length > 3 && !["creator", "partner", "lead"].includes(cCleanName))
+          (c.project_id && pId && String(c.project_id).trim() === pId) ||
+          (c.projectId && pId && String(c.projectId).trim() === pId)
         );
       });
 
-      return Boolean(matchedDbProj);
+      if (matchedDbProj) {
+        return true;
+      }
+
+      // If status is "launched" or "partnered", only consider them launched if they have a verified project link
+      const status = (c.status || "").toLowerCase();
+      if ((status === "launched" || status === "partnered" || status === "active_project") && (c.project_id || c.projectId || matchedDbProj)) {
+        return true;
+      }
+
+      return false;
     },
     [dbProjects]
   );
@@ -1098,9 +1128,9 @@ export default function AcquisitionEngine({
     const newEmail = (explicitValue !== null ? explicitValue : tempEmailValue).trim();
     let wasContacted = false;
 
-    // 1. Update local state immediately (both in React state and in localStorage)
+    // 1. Update local state immediately (both in React state and in localStorage synchronously)
     setCreators((prev) => {
-      const updated = prev.map((c) => {
+      const updated = (prev || []).map((c) => {
         const matchId = c.id === targetId;
         const cleanTarget = String(targetId).toLowerCase().replace(/^@/, "");
         const cleanHandle = String(c.handle || "").toLowerCase().replace(/^@/, "");
@@ -1115,11 +1145,21 @@ export default function AcquisitionEngine({
           );
           if (contacted) wasContacted = true;
 
+          // Preserve candidate statuses; never flip an unlaunched candidate to 'launched'
+          let safeStatus = c.status || "discovered";
+          if (safeStatus === "launched" && !c.project_id && !c.projectId) {
+            safeStatus = "discovered";
+          }
+          if (!contacted && (safeStatus === "interested" || safeStatus === "replied")) {
+            safeStatus = "discovered";
+          }
+
           return {
             ...c,
             email: newEmail,
             email_public: newEmail,
             email_verified: Boolean(newEmail && newEmail.includes("@")),
+            status: safeStatus,
             ...(contacted ? {} : {
               replyClassification: null,
               reply_classification: null,
@@ -1128,25 +1168,22 @@ export default function AcquisitionEngine({
               replySubject: null,
               replyTime: null,
               outreach_sent: false,
-              status: (c.status === "interested" || c.status === "replied") ? "discovered" : c.status,
             })
           };
         }
         return c;
       });
+
+      // Synchronously write to localStorage
+      try {
+        localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(updated));
+      } catch (err) { }
+
       return updated;
     });
 
     setEditingEmailCreatorId(null);
     setTempEmailValue("");
-
-    // 1b. Also persist updated creators list to localStorage so sync effects don't overwrite
-    setCreators((latest) => {
-      try {
-        localStorage.setItem("forge_launch_discovered_creators", JSON.stringify(latest));
-      } catch (e) { }
-      return latest;
-    });
 
     // 2. Persist to DB if creator exists on backend
     if (newEmail) {
@@ -1717,15 +1754,25 @@ export default function AcquisitionEngine({
               const merged = formattedDbCreators.map((dbC) => {
                 const localMatch = dbC.id ? localById.get(String(dbC.id)) : null;
 
-                if (!localMatch) return dbC;
+                if (!localMatch) {
+                  const safeStatus = (dbC.status === "launched" && !dbC.project_id && !dbC.projectId && !dbC.active_project_id)
+                    ? "discovered"
+                    : (dbC.status || "discovered");
+                  return { ...dbC, status: safeStatus };
+                }
 
                 const userEmail = (localMatch.email || localMatch.email_public || "").trim();
                 const dbEmail = (dbC.email || dbC.email_public || "").trim();
                 const preserveLocalEmail = userEmail && userEmail !== dbEmail;
+                const hasProject = Boolean(dbC.project_id || dbC.projectId || dbC.active_project_id || localMatch.project_id || localMatch.projectId);
+                const safeStatus = (!hasProject && (dbC.status === "launched" || localMatch.status === "launched"))
+                  ? (localMatch.status && localMatch.status !== "launched" ? localMatch.status : "discovered")
+                  : (dbC.status || localMatch.status || "discovered");
 
                 return {
                   ...localMatch,
                   ...dbC,
+                  status: safeStatus,
                   ...(preserveLocalEmail ? {
                     email: userEmail,
                     email_public: userEmail,
@@ -5638,6 +5685,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       competition: concept?.competition || "",
       mvpDifficulty: concept?.mvpDifficulty || "Low (2 weeks)",
       mockup: concept?.mockup || {},
+      brandColor: concept?.brandColor || selectedCreator?.brandColor || '#16A34A',
       creatorScore: selectedCreator.creatorScore || selectedCreator.score || 85,
       opportunityScore: concept?.opportunityScore || 92,
       selectedConceptId: concept?.id,
@@ -7020,7 +7068,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
   return (
     <div className="space-y-6 selection:bg-slate-900 selection:text-white">
       {/* ── PHASE NAVIGATION STEPPER WITH FLOATING POLYGONS ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-3 sm:p-4 shadow-xs">
+      <div id="tour-s1-header" className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-3 sm:p-4 shadow-xs">
         {/* Subtle Canvas Dot Grid Background */}
         <div
           className="absolute inset-0 pointer-events-none opacity-30 -z-0"
@@ -7095,7 +7143,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
         </div>
 
         {/* Stepper Buttons (Matching User HTML Design) */}
-        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 w-full min-w-0">
+        <div id="tour-s1-stepper" className="relative z-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 w-full min-w-0">
           {[
             { step: 1, num: "Step 01", label: "Campaign Setup", icon: Target },
             { step: 2, num: "Step 02", label: "Find & Qualify", icon: Search },
@@ -7109,6 +7157,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
             return (
               <button
                 key={item.step}
+                id={`tour-s1-step-${item.step}`}
                 onClick={() => {
                   if (item.step === 1 && scopedCreatorId) {
                     setShowResetUrlModal(true);
@@ -7216,7 +7265,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
 
                 {/* SECTION: Selected Niches Bar */}
-                <div className="space-y-3">
+                <div id="tour-s1-niche-select" className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Target Niche(s)</span>
@@ -7485,7 +7534,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     <span className="text-[11px] text-slate-400 font-mono">Select at least 1</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div id="tour-s1-platforms" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {/* YouTube Card */}
                     <button
                       type="button"
@@ -7582,7 +7631,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Card 1: Target Follower Range (Strictly 100K-1M) */}
-                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between h-full overflow-hidden">
+                    <div id="tour-s1-followers" className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between h-full overflow-hidden">
                       <div>
                         <div className="flex items-center justify-between mb-3 gap-1">
                           <div className="flex items-center gap-1.5 shrink-0">
@@ -7722,7 +7771,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                     </div>
 
                     {/* Card 3: Target Creators to Discover (Max 50) */}
-                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between h-full overflow-hidden">
+                    <div id="tour-s1-creators-count" className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between h-full overflow-hidden">
                       <div>
                         <div className="flex items-center justify-between mb-3 gap-1">
                           <div className="flex items-center gap-1.5 shrink-0">
@@ -8313,6 +8362,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
               {/* Primary Call to Action Button */}
               <div className="mt-5 space-y-3">
                 <button
+                  id="tour-s1-discovery-btn"
                   type="button"
                   onClick={handleStartEngine}
                   disabled={discovering || niches.length === 0 || selectedPlatforms.length === 0}
@@ -10266,7 +10316,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                 {!canApproveOrAdvance ? (
                                   <>
                                     <Lock className="w-3.5 h-3.5 text-slate-400" />
-                                    <span>Awaiting AI Interest Flag 🔒</span>
+                                    <span>Awaiting AI Interest Flag</span>
                                   </>
                                 ) : (
                                   <>
@@ -11715,12 +11765,12 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                       {hasFullCommitment ? (
                         <>
                           <Rocket className="w-3.5 h-3.5 text-emerald-300" />
-                          <span>Promote to ProjectOS & Send ${cobuilderPassPrice} DIY / Track Offer Email 🚀</span>
+                          <span>Promote to ProjectOS & Send ${cobuilderPassPrice} DIY / Track Offer Email</span>
                         </>
                       ) : (
                         <>
                           <Lock className="w-3.5 h-3.5 text-slate-400" />
-                          <span>Awaiting Full Creator Commitment 🔒</span>
+                          <span>Awaiting Full Creator Commitment</span>
                         </>
                       )}
                     </button>

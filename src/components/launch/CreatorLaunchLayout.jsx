@@ -12,6 +12,7 @@ import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } fro
 import FloatingPolygons, { HeroShallowPolygons } from '../ui/FloatingPolygons'
 
 import { logoutLaunchAuth } from './LaunchAuth'
+import { startSection1Tour } from '../../utils/driverTour'
 
 export default function CreatorLaunchLayout({
   initialProject = null,
@@ -41,6 +42,14 @@ export default function CreatorLaunchLayout({
         }
       }
     } catch (e) { }
+  }, [])
+
+  // Auto-launch Section 1 Driver.js Tour if not already dismissed in this browser
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startSection1Tour(false)
+    }, 1200)
+    return () => clearTimeout(timer)
   }, [])
 
   const [activeSection, setActiveSection] = useState('section1')
@@ -991,8 +1000,9 @@ export default function CreatorLaunchLayout({
           <div className="h-4 w-px bg-slate-200 hidden md:block" />
 
           {/* Clean Suite Navigation Tabs (Tablet & Desktop) */}
-          <div className="hidden md:flex items-center p-1 rounded-xl bg-slate-100/90 border border-slate-200">
+          <div id="tour-header-nav" className="hidden md:flex items-center p-1 rounded-xl bg-slate-100/90 border border-slate-200">
             <button
+              id="tour-nav-acquisition"
               onClick={() => {
                 setActiveSection('section1')
                 try {
@@ -1013,6 +1023,7 @@ export default function CreatorLaunchLayout({
               <span>Acquisition OS</span>
             </button>
             <a
+              id="tour-nav-project-os"
               href={activeProject?.id ? `/project-os?project=${activeProject.id}` : '/project-os'}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer text-slate-600 hover:text-slate-950 hover:bg-white/60 border border-transparent"
               title="Open Dedicated Co-Launch Operations Center"
@@ -1022,6 +1033,7 @@ export default function CreatorLaunchLayout({
               <ExternalLink className="w-3 h-3 text-slate-400" />
             </a>
             <a
+              id="tour-nav-participation"
               href="/participation-manager"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer text-slate-600 hover:text-slate-950 hover:bg-white/60 border border-transparent"
               title="Dedicated Creator Participation & Co-Builder Console"
@@ -1164,8 +1176,20 @@ export default function CreatorLaunchLayout({
 
         {/* Right: Actions & User Profile (Desktop & Tablet) */}
         <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+          {/* Driver.js Interactive Workflow Tour Trigger */}
+          <button
+            type="button"
+            onClick={() => startSection1Tour(true)}
+            className="flex items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs font-bold whitespace-nowrap bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition-all cursor-pointer shadow-2xs"
+            title="Start Interactive Guided Walkthrough (Driver.js)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+            <span>Workflow Tour</span>
+          </button>
+
           {/* Creator Follow-Up CRM Button */}
           <button
+            id="tour-nav-crm"
             type="button"
             onClick={() => window.open('/follow-up-crm', '_blank')}
             className="flex items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-950 border border-slate-200 transition-all cursor-pointer shadow-2xs"
@@ -1178,6 +1202,7 @@ export default function CreatorLaunchLayout({
 
           {/* Admin Pipeline & Exception Lookup Button */}
           <button
+            id="tour-nav-admin"
             type="button"
             onClick={() => window.open('/admin-error-log', '_blank')}
             className="flex items-center gap-1.5 px-2.5 h-8 rounded-xl text-xs font-semibold whitespace-nowrap bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-2xs"

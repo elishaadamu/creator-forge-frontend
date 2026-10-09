@@ -7,12 +7,13 @@ import {
   Calendar, Clock, CheckCircle, AlertCircle, MessageSquare, Folder,
   DollarSign, PieChart, Users, ChevronRight, ChevronLeft, Play, Eye, Smartphone, Monitor, Tablet,
   Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download, RefreshCw, RotateCcw, Zap, Trash2, Lock, Tag,
-  Crown, Cpu, Flame, Shield, Youtube
+  Crown, Cpu, Flame, Shield, Youtube, Workflow
 } from 'lucide-react'
 import Phase1Validate from './Phase1Validate'
 import Phase2BuildMVP from './Phase2BuildMVP'
 import Phase3Launch from './Phase3Launch'
 import DynamicConceptMockup from './DynamicConceptMockup'
+import WorkflowWiringTutorial from './WorkflowWiringTutorial'
 import { getFrontendUrl, recordGateDecision } from '../../services/opsApi'
 import { ProjectOSSkeleton } from './Section2Skeletons'
 import CreatorWhatsAppChat from './CreatorWhatsAppChat'
@@ -21,6 +22,9 @@ import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import AudienceGroundingModal from './AudienceGroundingModal'
 import { getProjectAudienceGrounding, enrichTasksWithGrounding } from '../../utils/audienceGrounding'
 import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards, getProjectActiveStep } from '../../utils/stepGuards'
+import { resolveCreatorTheme, getThemeCssVariables } from '../../utils/creatorTheme'
+import CreatorBrandThemePicker from './CreatorBrandThemePicker'
+import { startSection2Tour } from '../../utils/driverTour'
 
 // Detect raw UUID strings (prevent displaying raw UUIDs as creator names/handles)
 const isUuid = (str) => typeof str === 'string' && (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim()) || /^[0-9a-f-]{24,}$/i.test(str.trim()))
@@ -35,6 +39,23 @@ export default function ProjectOS({
   isDIY = false
 }) {
   const [isLoadingProject, setIsLoadingProject] = useState(() => !project)
+
+  const [activeTheme, setActiveTheme] = useState(null)
+  const theme = activeTheme || resolveCreatorTheme(
+    project?.brandColor || project?.colorTheme || project?.selectedConcept?.brandColor,
+    project?.niche,
+    project?.productName
+  )
+
+  useEffect(() => {
+    const handleThemeEvent = (e) => {
+      if (e?.detail) {
+        setActiveTheme(e.detail)
+      }
+    }
+    window.addEventListener('forge_theme_changed', handleThemeEvent)
+    return () => window.removeEventListener('forge_theme_changed', handleThemeEvent)
+  }, [])
 
   // Initialize sidebarTab from URL search param or default 'overview'
   const [sidebarTab, setSidebarTabState] = useState(() => {
@@ -705,7 +726,16 @@ partnerships@creatorforge.com`
   const [previewingFile, setPreviewingFile] = useState(null)
   const [showAudienceIntelModal, setShowAudienceIntelModal] = useState(false)
   const [audienceIntelModalTab, setAudienceIntelModalTab] = useState('transcripts')
+  const [showWiringTutorial, setShowWiringTutorial] = useState(false)
   const [expandedTaskGroundingId, setExpandedTaskGroundingId] = useState(null)
+
+  // Auto-launch Section 2 Driver.js Tour if not already dismissed in this browser
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startSection2Tour(false)
+    }, 1400)
+    return () => clearTimeout(timer)
+  }, [])
 
   const audienceGroundingData = getProjectAudienceGrounding(project)
 
@@ -810,8 +840,15 @@ partnerships@creatorforge.com`
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-emerald-700">
-              SECTION 2
+            <span
+              className="text-[11px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border shadow-2xs"
+              style={{
+                backgroundColor: theme.badgeBg,
+                color: theme.badgeText,
+                borderColor: theme.badgeBorder,
+              }}
+            >
+              SECTION 2 • {theme.name}
             </span>
             <span className="text-xs text-slate-300">•</span>
             <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200 shadow-2xs truncate max-w-full">
@@ -823,15 +860,21 @@ partnerships@creatorforge.com`
           </h1>
           <p className="text-xs text-slate-600 mt-0.5 flex items-center gap-1.5 flex-wrap">
             <span>Co-Founding Partner:</span>
-            <strong className="text-emerald-700 font-bold">{cleanCreatorName}</strong>
+            <strong className="font-bold" style={{ color: theme.primaryHex }}>{cleanCreatorName}</strong>
             <span className="text-slate-500 font-mono text-[11px]">({cleanCreatorHandle})</span>
             <span className="text-slate-300 hidden xs:inline">•</span>
             <span className="text-slate-600 italic line-clamp-1 xs:line-clamp-none">"{cleanTagline}"</span>
           </p>
         </div>
 
-        {/* Right CTA / Portal Quick Button */}
-        <div className="flex items-center gap-2 flex-wrap shrink-0">
+        {/* Right CTA / Portal Quick Button & Brand Theme Selector */}
+        <div id="tour-s2-theme-picker" className="flex items-center gap-2 flex-wrap shrink-0">
+          <CreatorBrandThemePicker
+            project={project}
+            currentTheme={theme}
+            onThemeSelect={setActiveTheme}
+          />
+
           {userRole !== 'creator' && (
             <a
               href={portalUrl}
@@ -909,8 +952,9 @@ partnerships@creatorforge.com`
                           ? 'bg-white text-slate-950 shadow-xs border border-slate-200 font-bold'
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100/80'
                       }`}
+                      style={isActive ? { borderLeftColor: theme.primaryHex, borderLeftWidth: 3 } : {}}
                     >
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+                      <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: isActive ? theme.primaryHex : undefined }} />
                       <span>{tab.label}</span>
                     </button>
                   )
@@ -939,7 +983,7 @@ partnerships@creatorforge.com`
                     </span>
                   )}
                 </div>
-                <div className="flex items-center justify-center gap-1.5">
+                <div id="tour-s2-phase-tabs" className="flex items-center justify-center gap-1.5">
                   {[1, 2, 3].map(p => {
                     const isDone = p === 1 ? isP1Done : p === 2 ? isP2Done : isP3Done
                     const isActive = currentPhase === p
@@ -960,18 +1004,30 @@ partnerships@creatorforge.com`
                               ? 'bg-blue-600 text-white shadow-xs'
                               : p === 3
                               ? isLiveLaunch
-                                ? 'bg-emerald-600 text-white shadow-xs'
+                                ? 'text-white shadow-xs'
                                 : 'bg-slate-900 text-white shadow-xs'
-                              : 'bg-emerald-600 text-white shadow-xs'
+                              : 'text-white shadow-xs'
                             : isDone
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                            ? 'border hover:opacity-80'
                             : 'bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200/80'
                         }`}
+                        style={
+                          isActive && p === 1
+                            ? { backgroundColor: theme.primaryHex }
+                            : isActive && p === 3 && isLiveLaunch
+                            ? { backgroundColor: theme.primaryHex }
+                            : isDone && p === 1
+                            ? { backgroundColor: theme.badgeBg, color: theme.badgeText, borderColor: theme.badgeBorder }
+                            : {}
+                        }
                         title={`Switch to Phase ${p}${isDone ? ' (Completed)' : ''}`}
                       >
                         <span>P{p}</span>
                         {isDone && (
-                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] font-black shadow-2xs border-2 border-white">
+                          <span
+                            className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full text-white flex items-center justify-center text-[8px] font-black shadow-2xs border-2 border-white"
+                            style={{ backgroundColor: theme.primaryHex }}
+                          >
                             <Check className="w-2 h-2 stroke-[3]" />
                           </span>
                         )}
@@ -983,8 +1039,8 @@ partnerships@creatorforge.com`
                   <span className="text-[11px] font-black text-slate-900 flex items-center justify-center gap-1.5">
                     {isLiveLaunch ? (
                       <>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                        <span className="text-emerald-700">Live Launch Verified</span>
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: theme.primaryHex }} />
+                        <span style={{ color: theme.badgeText }}>Live Launch Verified</span>
                       </>
                     ) : currentPhase === 1 ? (
                       isP1Done ? 'Phase 1: Validated (Done)' : 'Phase 1: Validate'
@@ -1000,10 +1056,11 @@ partnerships@creatorforge.com`
                     <button
                       type="button"
                       onClick={() => handleAdvancePhase(2)}
-                      className="mt-1 w-full py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer"
+                      className="mt-1 w-full py-1.5 px-2 rounded-lg hover:opacity-90 active:scale-95 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer"
+                      style={{ backgroundColor: theme.primaryHex }}
                       title="Mark Phase 1 as Done and Advance to Phase 2: Build MVP"
                     >
-                      <CheckCircle2 className="w-3 h-3 text-emerald-200" />
+                      <CheckCircle2 className="w-3 h-3 text-white/80" />
                       <span>Mark P1 Done → P2</span>
                     </button>
                   ) : (
@@ -1025,7 +1082,7 @@ partnerships@creatorforge.com`
           {/* Main Command Center Inner Area (S2 - WIDE & EXPANDED) */}
           <div className="flex-1 min-w-0 p-4 sm:p-5 lg:p-6 space-y-4 bg-white rounded-b-2xl md:rounded-bl-none md:rounded-r-2xl overflow-x-hidden">
             {/* Header inside Command Center */}
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-200/80 pb-3.5">
+            <div id="tour-s2-header" className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-200/80 pb-3.5">
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight flex items-center gap-2 flex-wrap">
@@ -1047,10 +1104,15 @@ partnerships@creatorforge.com`
                     return (
                       <>
                         <span
-                          className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 shadow-2xs inline-flex items-center gap-1.5 max-w-full sm:max-w-xl"
+                          className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold shadow-2xs inline-flex items-center gap-1.5 max-w-full sm:max-w-xl border"
+                          style={{
+                            backgroundColor: theme.badgeBg,
+                            color: theme.badgeText,
+                            borderColor: theme.badgeBorder
+                          }}
                           title={rawPricing}
                         >
-                          <Tag className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <Tag className="w-3 h-3 shrink-0" style={{ color: theme.primaryHex }} />
                           <span className="truncate">{corePrice}</span>
                         </span>
                         {expTitle && (
@@ -1066,8 +1128,15 @@ partnerships@creatorforge.com`
                     )
                   })()}
 
-                  <span className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
-                    <Target className="w-3.5 h-3.5 text-emerald-600" />
+                  <span
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold flex items-center gap-1.5 shadow-2xs border"
+                    style={{
+                      backgroundColor: theme.badgeBg,
+                      color: theme.badgeText,
+                      borderColor: theme.badgeBorder
+                    }}
+                  >
+                    <Target className="w-3.5 h-3.5 shrink-0" style={{ color: theme.primaryHex }} />
                     <span>Chosen Concept: {chosenConcept?.name || cleanProductName}</span>
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold bg-slate-100 text-slate-700 border border-slate-200">
@@ -1084,24 +1153,29 @@ partnerships@creatorforge.com`
               <div className="flex items-center gap-2 shrink-0 self-start sm:pt-0.5 flex-wrap">
                 <span className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap shadow-2xs flex items-center gap-1.5 ${
                   isLiveLaunch
-                    ? 'text-emerald-800 bg-emerald-50 border border-emerald-300'
+                    ? 'border'
                     : currentPhase === 2
                     ? 'text-blue-800 bg-blue-50 border border-blue-300'
                     : currentPhase === 3
                     ? 'text-slate-900 bg-slate-100 border border-slate-300'
                     : isP1Done
-                    ? 'text-emerald-800 bg-emerald-50 border border-emerald-300'
+                    ? 'border'
                     : 'text-slate-800 bg-slate-100 border border-slate-300'
-                }`}>
+                }`}
+                style={
+                  isLiveLaunch || isP1Done
+                    ? { backgroundColor: theme.badgeBg, color: theme.badgeText, borderColor: theme.badgeBorder }
+                    : {}
+                }>
                   {isLiveLaunch ? (
                     <>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: theme.primaryHex }} />
                       <span>Live Launch</span>
                     </>
                   ) : currentPhase === 1 ? (
                     isP1Done ? (
                       <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <CheckCircle2 className="w-3.5 h-3.5" style={{ color: theme.primaryHex }} />
                         <span>Phase 1: Validated (Done)</span>
                       </>
                     ) : (
@@ -1119,15 +1193,37 @@ partnerships@creatorforge.com`
                   <button
                     type="button"
                     onClick={() => handleAdvancePhase(2)}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+                    className="px-3 py-1.5 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap hover:opacity-90"
+                    style={{ backgroundColor: theme.primaryHex }}
                     title="Mark Phase 1 Done & Advance to Phase 2: Build MVP"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white/80" />
                     <span>Advance to Phase 2</span>
                   </button>
                 )}
 
                 <button
+                  type="button"
+                  onClick={() => startSection2Tour(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                  title="Start Interactive Guided Walkthrough (Driver.js)"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Workflow Tour</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowWiringTutorial(true)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                  title="Open Text-Based Workflow Wiring Tutorial"
+                >
+                  <Workflow className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Wiring Guide</span>
+                </button>
+
+                <button
+                  id="tour-s2-open-workspace-btn"
                   type="button"
                   onClick={() => openPhaseStep(getProjectActiveStep(project, currentPhase))}
                   className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
@@ -1142,24 +1238,52 @@ partnerships@creatorforge.com`
               {sidebarTab === 'overview' && (
                 <div className="space-y-4 animate-fade-in">
                   {/* STEP 5 CHOSEN CONCEPT BLUEPRINT (HERO CARD - THE MAIN IDEA) */}
-                  <div className="relative rounded-2xl bg-gradient-to-br from-white via-slate-50/70 to-emerald-50/30 border-2 border-emerald-500/80 p-4 sm:p-5 lg:p-6 shadow-sm space-y-4 overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600" />
+                  <div
+                    id="tour-s2-blueprint-card"
+                    className="relative rounded-2xl bg-gradient-to-br from-white via-slate-50/70 border-2 p-4 sm:p-5 lg:p-6 shadow-sm space-y-4 overflow-hidden"
+                    style={{
+                      borderColor: theme.borderActive,
+                      backgroundColor: theme.bgCardSubtle
+                    }}
+                  >
+                    <div className="absolute top-0 left-0 right-0 h-1" style={{ background: theme.gradientAccent }} />
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shrink-0 shadow-2xs">
-                          <Target className="w-5 h-5 text-emerald-700" />
+                        <div
+                          className="w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 shadow-2xs"
+                          style={{
+                            backgroundColor: theme.badgeBg,
+                            borderColor: theme.badgeBorder,
+                            color: theme.primaryHex
+                          }}
+                        >
+                          <Target className="w-5 h-5" style={{ color: theme.primaryHex }} />
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] font-mono font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-md border border-emerald-300">
+                            <span
+                              className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-md border"
+                              style={{
+                                backgroundColor: theme.badgeBg,
+                                color: theme.badgeText,
+                                borderColor: theme.badgeBorder
+                              }}
+                            >
                               Step 5 Chosen Concept Blueprint
                             </span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
                               {archetypeLabel}
                             </span>
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span
+                              className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border flex items-center gap-1"
+                              style={{
+                                backgroundColor: theme.badgeBg,
+                                color: theme.badgeText,
+                                borderColor: theme.badgeBorder
+                              }}
+                            >
+                              <CheckCircle2 className="w-3 h-3" style={{ color: theme.primaryHex }} />
                               <span>Creator Selected & Promoted</span>
                             </span>
                           </div>
@@ -1172,7 +1296,8 @@ partnerships@creatorforge.com`
                         <button
                           type="button"
                           onClick={() => openPhaseStep('plan')}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95"
+                          className="px-4 py-2 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 hover:opacity-90"
+                          style={{ backgroundColor: theme.primaryHex }}
                         >
                           <span>Review Phase 1 Spec</span>
                           <ArrowRight className="w-3.5 h-3.5" />
@@ -1211,15 +1336,25 @@ partnerships@creatorforge.com`
 
                         {/* Key Features List */}
                         {Array.isArray(chosenConcept.keyFeatures || chosenConcept.features) && (chosenConcept.keyFeatures || chosenConcept.features).length > 0 && (
-                          <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200/90 shadow-2xs space-y-2.5">
-                            <span className="text-[11px] font-mono uppercase text-emerald-900 font-bold flex items-center gap-1.5">
-                              <Cpu className="w-3.5 h-3.5 text-emerald-700" />
+                          <div
+                            className="p-4 rounded-xl border shadow-2xs space-y-2.5"
+                            style={{
+                              backgroundColor: theme.bgCardSubtle,
+                              borderColor: theme.badgeBorder
+                            }}
+                          >
+                            <span className="text-[11px] font-mono uppercase font-bold flex items-center gap-1.5" style={{ color: theme.badgeText }}>
+                              <Cpu className="w-3.5 h-3.5" style={{ color: theme.primaryHex }} />
                               <span>Core Software Features (Step 5 Customized)</span>
                             </span>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {(chosenConcept.keyFeatures || chosenConcept.features).slice(0, 4).map((feat, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-xs text-slate-800 font-semibold bg-white/80 px-2.5 py-1.5 rounded-lg border border-emerald-100">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-2 text-xs text-slate-800 font-semibold bg-white/90 px-2.5 py-1.5 rounded-lg border"
+                                  style={{ borderColor: theme.badgeBorder }}
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: theme.primaryHex }} />
                                   <span className="truncate">{typeof feat === 'string' ? feat : (feat.title || feat.name || 'Core feature')}</span>
                                 </div>
                               ))}
@@ -1229,7 +1364,7 @@ partnerships@creatorforge.com`
                       </div>
 
                       {/* Right: Mockup Preview Card */}
-                      <div className="lg:col-span-5 rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 shadow-md">
+                      <div id="tour-s2-mockup-card" className="lg:col-span-5 rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 shadow-md">
                         <div className="px-3.5 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
@@ -1239,7 +1374,7 @@ partnerships@creatorforge.com`
                               Simulated Architecture ({chosenConcept.mockupType || 'saas_os'})
                             </span>
                           </div>
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: theme.primaryHex }} />
                         </div>
                         <div className="p-3 sm:p-4">
                           <DynamicConceptMockup
@@ -1249,6 +1384,7 @@ partnerships@creatorforge.com`
                               handle: cleanCreatorHandle,
                               niche: project.niche
                             }}
+                            theme={theme}
                             conceptIndex={
                               chosenConcept.mockupType === 'knowledge_hub' ? 2 : chosenConcept.mockupType === 'ai_copilot' ? 1 : 0
                             }
@@ -1261,7 +1397,7 @@ partnerships@creatorforge.com`
                   {/* Top 4 KPI Cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 text-xs">
                     {/* 1. Presales / Live Revenue */}
-                    <div className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100/70 border border-slate-200 space-y-1.5 shadow-2xs transition-all">
+                    <div id="tour-s2-presales-meter" className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100/70 border border-slate-200 space-y-1.5 shadow-2xs transition-all">
                       <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                         {currentPhase === 3 ? 'Live Revenue' : 'Presales'}
                       </span>
@@ -1273,8 +1409,11 @@ partnerships@creatorforge.com`
                       </span>
                       <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden mt-1">
                         <div
-                          className="bg-emerald-600 h-full rounded-full transition-all duration-500"
-                          style={{ width: `${presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 100}%` }}
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            backgroundColor: theme.primaryHex,
+                            width: `${presaleTarget > 0 ? Math.min(100, Math.round((presalesRevenue / presaleTarget) * 100)) : 100}%`
+                          }}
                         />
                       </div>
                     </div>
@@ -1377,11 +1516,18 @@ partnerships@creatorforge.com`
                       <div>
                         <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-3">
                           <span className="font-bold text-slate-950 text-xs flex items-center gap-1.5">
-                            <Sparkles className="w-4 h-4 text-emerald-600" />
+                            <Sparkles className="w-4 h-4" style={{ color: theme.primaryHex }} />
                             <span>AI Activity Stream</span>
                           </span>
-                          <span className="text-[10px] text-emerald-800 font-mono font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span
+                            className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border flex items-center gap-1"
+                            style={{
+                              backgroundColor: theme.badgeBg,
+                              color: theme.badgeText,
+                              borderColor: theme.badgeBorder
+                            }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: theme.primaryHex }} />
                             <span>Autonomous</span>
                           </span>
                         </div>
@@ -1397,7 +1543,7 @@ partnerships@creatorforge.com`
                               const details = typeof act === 'object' ? (act.details || '') : ''
                               return (
                                 <div key={idx} className="flex items-start gap-2 py-0.5">
-                                  <span className="text-emerald-600 font-bold shrink-0">•</span>
+                                  <span className="font-bold shrink-0" style={{ color: theme.primaryHex }}>•</span>
                                   <div className="min-w-0">
                                     <span className="font-medium text-slate-900 block truncate">{title}</span>
                                     {details && <span className="text-[10px] text-slate-500 block truncate">{details}</span>}
@@ -1432,10 +1578,15 @@ partnerships@creatorforge.com`
                           setAudienceIntelModalTab('transcripts')
                           setShowAudienceIntelModal(true)
                         }}
-                        className="px-2.5 py-1 rounded-lg text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer border"
+                        style={{
+                          backgroundColor: theme.badgeBg,
+                          color: theme.badgeText,
+                          borderColor: theme.badgeBorder
+                        }}
                         title="View YouTube transcripts & audience comments"
                       >
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <ShieldCheck className="w-3.5 h-3.5" style={{ color: theme.primaryHex }} />
                         <span>Audience Citations</span>
                       </button>
                       <button
@@ -1448,11 +1599,17 @@ partnerships@creatorforge.com`
                   </div>
 
                   {/* AUDIENCE INTELLIGENCE & DATA GROUNDING BANNER (Anti-AI Slop & Proof) */}
-                  <div className="p-4 rounded-xl border border-emerald-500/25 bg-emerald-50/50 space-y-3">
-                    <div className="flex items-center gap-2 border-b border-emerald-500/20 pb-2.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <div
+                    className="p-4 rounded-xl border space-y-3"
+                    style={{
+                      backgroundColor: theme.bgCardSubtle,
+                      borderColor: theme.badgeBorder
+                    }}
+                  >
+                    <div className="flex items-center gap-2 border-b pb-2.5" style={{ borderColor: theme.badgeBorder }}>
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: theme.primaryHex }} />
                       <span className="font-extrabold text-xs text-slate-950 flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        <ShieldCheck className="w-4 h-4" style={{ color: theme.primaryHex }} />
                         <span>Grounded in Creator Audience Data</span>
                       </span>
                     </div>
@@ -2755,6 +2912,12 @@ partnerships@creatorforge.com`
         onClose={() => setShowAudienceIntelModal(false)}
         project={project}
         initialTab={audienceIntelModalTab}
+      />
+
+      {/* TEXT-BASED WORKFLOW WIRING ARCHITECTURE TUTORIAL */}
+      <WorkflowWiringTutorial
+        isOpen={showWiringTutorial}
+        onClose={() => setShowWiringTutorial(false)}
       />
     </div>
   )

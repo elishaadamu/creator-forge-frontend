@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import {
   CheckCircle2, DollarSign, Layout, Sparkles, Save, Check, Plus, Trash2,
@@ -39,6 +39,7 @@ import {
   parseDepositPricingAmount,
   sanitizePricingConfig
 } from '../../utils/pricing'
+import { getAiRecommendedTheme } from '../../utils/creatorTheme'
 import {
   Phase1ValidateSkeleton,
   Phase1CampaignGenSkeleton,
@@ -129,6 +130,10 @@ export default function Phase1Validate({
     project?.validationCampaign?.reviewStatus === 'approved'
   ))
 
+  const theme = useMemo(() => {
+    return getAiRecommendedTheme(project?.niche, project?.creatorHandle || project?.creator_handle || project?.creatorName)
+  }, [project?.niche, project?.creatorHandle, project?.creator_handle, project?.creatorName])
+
   useEffect(() => {
     if (activeStepId) setActiveStep(activeStepId)
   }, [activeStepId])
@@ -154,6 +159,7 @@ export default function Phase1Validate({
     const incoming = resolveExperimentsData(project)
     if (incoming) {
       setExperimentsData(incoming)
+      setExperiments(incoming.experiments || [])
     }
   }, [
     project?.id,
@@ -164,13 +170,17 @@ export default function Phase1Validate({
     project?.telemetry?.experiments
   ])
 
-  // Live YouTube Creator Uploads Synchronization
+  // Live YouTube Creator Uploads Synchronization (Guarded to run at most once per project ID)
+  const ytFetchAttemptedRef = useRef({})
   useEffect(() => {
+    const pId = project?.id
+    if (!pId || ytFetchAttemptedRef.current[pId]) return
     const hasPosts = (Array.isArray(project?.recentPosts) && project.recentPosts.length > 0) ||
       (Array.isArray(project?.videos) && project.videos.length > 0)
     if (!hasPosts) {
       const cleanH = String(project?.creatorHandle || project?.creator_handle || project?.handle || project?.creatorName || '').replace(/^@/, '').trim()
       if (cleanH && !/^[0-9a-f-]{15,}$/i.test(cleanH)) {
+        ytFetchAttemptedRef.current[pId] = true
         fetchCreatorYouTubeVideos(cleanH).then(vids => {
           if (vids && vids.length > 0 && onUpdateProject) {
             onUpdateProject(prev => {
@@ -207,6 +217,40 @@ export default function Phase1Validate({
     period: '',
     threshold: ''
   })
+
+  // Synchronize plan from project prop when database updates
+  useEffect(() => {
+    if (project?.validationPlan) {
+      setPlan(project.validationPlan)
+    }
+  }, [project?.id, project?.validationPlan])
+
+  // Check if Validation Plan has been explicitly generated
+  const [hasPlanGenerated, setHasPlanGenerated] = useState(() => {
+    if (project?.planGenerated !== undefined) return Boolean(project.planGenerated)
+    if (project?.validationPlan?.generated !== undefined) return Boolean(project.validationPlan.generated)
+    if (project?.planLocked || project?.validationPlan?.status === 'approved') return true
+    return false
+  })
+
+  // Synchronize hasPlanGenerated from project prop when database updates
+  useEffect(() => {
+    if (project?.planGenerated !== undefined) {
+      setHasPlanGenerated(Boolean(project.planGenerated))
+    } else if (project?.validationPlan?.generated !== undefined) {
+      setHasPlanGenerated(Boolean(project.validationPlan.generated))
+    } else if (project?.planLocked || project?.validationPlan?.status === 'approved') {
+      setHasPlanGenerated(true)
+    }
+  }, [project?.planGenerated, project?.validationPlan?.generated, project?.planLocked, project?.validationPlan?.status])
+
+  // Reset generated state if Section 1 chosen concept changed
+  useEffect(() => {
+    const chosenName = project?.selectedConcept?.name
+    if (chosenName && plan?.offer && !plan.offer.toLowerCase().includes(chosenName.toLowerCase())) {
+      setHasPlanGenerated(false)
+    }
+  }, [project?.selectedConcept?.name, plan?.offer])
 
   // Dynamic pricing resolution
   const dynamicPricingSource =
@@ -443,14 +487,6 @@ export default function Phase1Validate({
   }, [project?.reservations])
 
   useEffect(() => {
-    const incoming = resolveExperimentsData(project)
-    if (incoming) {
-      setExperimentsData(incoming)
-      setExperiments(incoming.experiments || [])
-    }
-  }, [project?.experiments, project?.experimentsData, project?.metadataInfo?.experimentsData, project?.telemetry?.experiments])
-
-  useEffect(() => {
     if (project?.currentPresales !== undefined) {
       setPresalesRevenue(Number(String(project.currentPresales).replace(/[^0-9.]/g, '')) || 0)
     }
@@ -493,32 +529,6 @@ export default function Phase1Validate({
       .replace(/https?:\/\/localhost:\d+/gi, origin)
   }
 
-  useEffect(() => {
-    if (campaignKit) {
-      const hasOldUrls = Boolean(
-        campaignKit.announcementPost?.includes('creatorforge.app') ||
-        campaignKit.announcementPost?.includes('localhost:') ||
-        campaignKit.storySequence?.includes('creatorforge.app') ||
-        campaignKit.storySequence?.includes('localhost:') ||
-        campaignKit.newsletterDraft?.includes('creatorforge.app') ||
-        campaignKit.newsletterDraft?.includes('localhost:') ||
-        campaignKit.directMessageScript?.includes('creatorforge.app') ||
-        campaignKit.directMessageScript?.includes('localhost:')
-      )
-      if (hasOldUrls) {
-        const sanitized = {
-          ...campaignKit,
-          announcementPost: normalizeUrlText(campaignKit.announcementPost),
-          storySequence: normalizeUrlText(campaignKit.storySequence),
-          newsletterDraft: normalizeUrlText(campaignKit.newsletterDraft),
-          directMessageScript: normalizeUrlText(campaignKit.directMessageScript)
-        }
-        setCampaignKit(sanitized)
-        if (onUpdateProject) onUpdateProject(curr => ({ ...(curr || {}), campaignKit: sanitized }))
-      }
-    }
-  }, [campaignKit, origin, productSlug])
-
   const showNotification = (msg) => {
     setFeedbackNotice(msg)
     setTimeout(() => setFeedbackNotice(''), 3500)
@@ -538,17 +548,24 @@ export default function Phase1Validate({
   }
 
   const campaignSyncTimerRef = useRef(null)
+  const campaignParentTimerRef = useRef(null)
+  const autoGenPlanTriggered = useRef(false)
 
   const updateCampaignKit = (field, value) => {
     setCampaignKit(prev => {
       const next = { ...prev, [field]: value }
-      if (onUpdateProject) {
-        onUpdateProject(curr => ({
-          ...(curr || {}),
-          campaignKit: next,
-          metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: next }
-        }))
-      }
+
+      if (campaignParentTimerRef.current) clearTimeout(campaignParentTimerRef.current)
+      campaignParentTimerRef.current = setTimeout(() => {
+        if (onUpdateProject) {
+          onUpdateProject(curr => ({
+            ...(curr || {}),
+            campaignKit: next,
+            metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: next }
+          }))
+        }
+      }, 400)
+
       if (project?.id) {
         if (campaignSyncTimerRef.current) clearTimeout(campaignSyncTimerRef.current)
         campaignSyncTimerRef.current = setTimeout(() => {
@@ -572,10 +589,38 @@ export default function Phase1Validate({
             research_survey: surveyData,
             review_status: 'approved'
           }).catch(e => console.warn('[Phase1] DB campaign auto-sync warning:', e))
-        }, 600)
+        }, 800)
       }
       return next
     })
+  }
+
+  const assetFieldDebounceRef = useRef(null)
+  const [assetName, setAssetName] = useState(() => project?.productName || '')
+  const [assetTagline, setAssetTagline] = useState(() => project?.productTagline || '')
+  const [assetTone, setAssetTone] = useState(() => project?.brandTone || 'Modern, Minimal, Dark SaaS')
+  const [assetAudience, setAssetAudience] = useState(() => project?.targetAudience || project?.niche || 'Software Developers & Tech Pros')
+
+  useEffect(() => {
+    if (project?.productName !== undefined) setAssetName(project.productName || '')
+    if (project?.productTagline !== undefined) setAssetTagline(project.productTagline || '')
+    if (project?.brandTone !== undefined) setAssetTone(project.brandTone || 'Modern, Minimal, Dark SaaS')
+    if (project?.targetAudience || project?.niche) setAssetAudience(project.targetAudience || project.niche || '')
+  }, [project?.id, project?.selectedConcept?.name])
+
+  const updateAssetField = (field, val) => {
+    if (assetFieldDebounceRef.current) clearTimeout(assetFieldDebounceRef.current)
+    assetFieldDebounceRef.current = setTimeout(() => {
+      if (onUpdateProject) {
+        onUpdateProject(p => {
+          if (!p) return p
+          if (field === 'targetAudience') {
+            return { ...p, targetAudience: val, niche: val }
+          }
+          return { ...p, [field]: val }
+        })
+      }
+    }, 400)
   }
 
   const saveAll = () => {
@@ -671,7 +716,7 @@ export default function Phase1Validate({
   const generatePlan = async () => {
     setIsGenerating(true)
     setSaveStatus('saving')
-    showNotification('Architecting 30-day AI Validation Plan...')
+    showNotification('Architecting AI Validation Plan from Section 1 concept...')
     try {
       let generated = null
       if (api?.generateValidationPlan) {
@@ -687,10 +732,12 @@ export default function Phase1Validate({
           locked: false
         }
         setPlan(generatedDraft)
+        setHasPlanGenerated(true)
         const newTarget = parseThresholdAmount(generated.threshold) || 12500
         const updated = {
           ...(project || {}),
-          validationPlan: generatedDraft,
+          planGenerated: true,
+          validationPlan: { ...generatedDraft, generated: true },
           presaleTarget: newTarget,
           targetRevenue: newTarget,
           campaignKit,
@@ -700,8 +747,35 @@ export default function Phase1Validate({
         }
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
 
+        // Directly persist and sync to MongoDB Atlas
+        if (project?.id) {
+          updateValidationPlan(project.id, {
+            customer: generatedDraft.customer,
+            problem: generatedDraft.problem,
+            offer: generatedDraft.offer,
+            pricing: generatedDraft.pricing,
+            test_method: generatedDraft.testMethod,
+            period: generatedDraft.period,
+            threshold: generatedDraft.threshold,
+            target_revenue: newTarget,
+            generated: true,
+            status: 'draft'
+          }).catch(e => console.warn('[Phase1] DB plan sync warning:', e))
+
+          updateCoLaunchProject(project.id, {
+            planGenerated: true,
+            plan_generated: true,
+            validationPlan: { ...generatedDraft, generated: true },
+            validation_plan: { ...generatedDraft, generated: true },
+            presaleTarget: newTarget,
+            presale_target: newTarget,
+            targetRevenue: newTarget,
+            target_revenue: newTarget
+          }).catch(e => console.warn('[Phase1] DB project sync warning:', e))
+        }
+
         setSaveStatus('saved')
-        showNotification('AI Validation Plan generated and saved.')
+        showNotification('AI Validation Plan generated and synced with database.')
         setTimeout(() => setSaveStatus('idle'), 2500)
       }
     } catch (err) {
@@ -1006,7 +1080,7 @@ export default function Phase1Validate({
     campaignKit?.autonomousEmailDelivery?.recipientEmail || project?.creatorEmail || project?.creator_email || ''
   )
   const [isAutonomousEnabled, setIsAutonomousEnabled] = useState(
-    campaignKit?.autonomousEmailDelivery?.enabled !== false
+    Boolean(campaignKit?.autonomousEmailDelivery?.enabled)
   )
   const [creatorTimezone, setCreatorTimezone] = useState(
     campaignKit?.autonomousEmailDelivery?.timezone ||
@@ -1936,144 +2010,188 @@ export default function Phase1Validate({
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <span>1. Validation Plan Specification</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                  AI / Manual Input
+                  {hasPlanGenerated ? 'AI Generated / Editable' : 'AI Architect'}
                 </span>
               </h3>
               <p className="text-xs text-slate-500">
-                Define customer, problem, offer, pricing, test method, validation period and success threshold — generate with AI or enter manually.
+                Define customer, problem, offer, pricing, test method, validation period and success threshold — generate with AI tailored to your Section 1 concept.
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={generatePlan}
                 disabled={isGenerating}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300" />
-                    <span>Generating...</span>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                    <span>Generating Plan...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Generate Plan</span>
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
+                    <span>{hasPlanGenerated ? 'Update Plan' : 'Generate Plan'}</span>
                   </>
                 )}
               </button>
-              <button
-                onClick={saveAll}
-                disabled={saveStatus === 'saving'}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer ${
-                  saveStatus === 'saved'
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600 font-extrabold'
-                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold'
-                }`}
-              >
-                {saveStatus === 'saving' ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700" />
-                    <span>Saving...</span>
-                  </>
-                ) : saveStatus === 'saved' ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-white" />
-                    <span>Saved!</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Save</span>
-                  </>
-                )}
-              </button>
+              {hasPlanGenerated && (
+                <button
+                  onClick={saveAll}
+                  disabled={saveStatus === 'saving'}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer ${
+                    saveStatus === 'saved'
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600 font-extrabold'
+                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold'
+                  }`}
+                >
+                  {saveStatus === 'saving' ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700" />
+                      <span>Saving...</span>
+                    </>
+                  ) : saveStatus === 'saved' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-white" />
+                      <span>Saved!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>Save</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4 text-xs">
-            {[
-              ['customer', 'Target Customer'], ['problem', 'Problem'], ['offer', 'Offer'],
-              ['pricing', 'Pricing & Deposits'], ['testMethod', 'Test Method'], ['period', 'Validation Period'],
-              ['threshold', 'Success Threshold']
-            ].map(([field, label]) => (
-              <label key={field} className={`p-3.5 rounded-xl bg-slate-50 border ${field === 'threshold' ? 'border-emerald-500/30 bg-emerald-50/40' : 'border-slate-200 focus-within:border-slate-400'} space-y-1.5 block ${field === 'testMethod' ? 'md:col-span-2' : ''} transition-all`}>
-                <div className="flex items-center justify-between">
-                  <span className={`${field === 'threshold' ? 'text-emerald-700' : 'text-slate-600'} font-bold uppercase tracking-wider text-[10px]`}>{label}</span>
-                  <div className="flex items-center gap-1.5">
-                    {field === 'pricing' && (plan.pricing?.includes('AI Experiment') || campaignKit?.pricingConfig?.activeExperimentTitle) && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
-                        <span>AI Variant Active</span>
-                      </span>
-                    )}
-                    <span className="text-[10px] text-slate-400">editable</span>
-                  </div>
-                </div>
-                <textarea
-                  value={plan[field] || ''}
-                  onChange={event => updatePlan(field, event.target.value)}
-                  rows={field === 'testMethod' ? 3 : 2}
-                  className="w-full mt-1 resize-y bg-transparent text-slate-900 outline-none placeholder:text-slate-400 font-sans leading-relaxed text-xs"
-                  placeholder={
-                    field === 'customer'
-                      ? 'e.g., Creator businesses & solo founders...'
-                      : field === 'problem'
-                      ? 'e.g., High friction in client onboarding & manual workflow...'
-                      : field === 'offer'
-                      ? 'e.g., Founding Member VIP Access & lifetime platform pass...'
-                      : field === 'pricing'
-                      ? 'e.g., $29/mo Starter • $79/mo Pro...'
-                      : field === 'testMethod'
-                      ? 'e.g., 1) Video announcement, 2) 10 user interviews, 3) 48-hour presale sprint...'
-                      : field === 'period'
-                      ? 'e.g., 14 days...'
-                      : 'e.g., $5,000 in presales or 50 paid founding reservations...'
-                  }
-                />
-              </label>
-            ))}
-          </div>
+          {/* If Validation Plan is actively generating */}
+          {isGenerating ? (
+            <Phase1ValidateSkeleton />
+          ) : !hasPlanGenerated ? (
+            <div className="p-8 sm:p-12 rounded-2xl bg-white border border-dashed border-slate-200 text-center space-y-4 max-w-xl mx-auto my-6 shadow-xs text-slate-900">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto shadow-2xs border"
+                style={{
+                  backgroundColor: theme?.badgeBg || '#F8FAFC',
+                  borderColor: theme?.badgeBorder || '#E2E8F0',
+                  color: theme?.primaryHex || '#0F172A'
+                }}
+              >
+                <Target className="w-8 h-8" style={{ color: theme?.primaryHex || '#0F172A' }} />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h4 className="text-base font-bold text-slate-900">Plan Specification Ready to Generate</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Generate a concrete, quantified validation plan specification (target customer, acute problem, founding offer, pricing & deposit terms, test method, sprint timeline, and revenue threshold) tailored for {project?.creatorName || 'the creator'} launching {project?.selectedConcept?.name || project?.productName || 'the product'}.
+                </p>
+              </div>
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={generatePlan}
+                  disabled={isGenerating}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-900 hover:bg-black text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-white" />
+                  <span>Generate Plan Specification with AI</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid md:grid-cols-2 gap-4 text-xs">
+                {[
+                  ['customer', 'Target Customer'], ['problem', 'Problem'], ['offer', 'Offer'],
+                  ['pricing', 'Pricing & Deposits'], ['testMethod', 'Test Method'], ['period', 'Validation Period'],
+                  ['threshold', 'Success Threshold']
+                ].map(([field, label]) => (
+                  <label key={field} className={`p-3.5 rounded-xl bg-slate-50 border ${field === 'threshold' ? 'border-emerald-500/30 bg-emerald-50/40' : 'border-slate-200 focus-within:border-slate-400'} space-y-1.5 block ${field === 'testMethod' ? 'md:col-span-2' : ''} transition-all`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`${field === 'threshold' ? 'text-emerald-700' : 'text-slate-600'} font-bold uppercase tracking-wider text-[10px]`}>{label}</span>
+                      <div className="flex items-center gap-1.5">
+                        {field === 'pricing' && (plan.pricing?.includes('AI Experiment') || campaignKit?.pricingConfig?.activeExperimentTitle) && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                            <span>AI Variant Active</span>
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-400">editable</span>
+                      </div>
+                    </div>
+                    <textarea
+                      value={plan[field] || ''}
+                      onChange={event => updatePlan(field, event.target.value)}
+                      rows={field === 'testMethod' ? 3 : 2}
+                      className="w-full mt-1 resize-y bg-transparent text-slate-900 outline-none placeholder:text-slate-400 font-sans leading-relaxed text-xs"
+                      placeholder={
+                        field === 'customer'
+                          ? 'e.g., Creator businesses & solo founders...'
+                          : field === 'problem'
+                          ? 'e.g., High friction in client onboarding & manual workflow...'
+                          : field === 'offer'
+                          ? 'e.g., Founding Member VIP Access & lifetime platform pass...'
+                          : field === 'pricing'
+                          ? 'e.g., $29/mo Starter • $79/mo Pro...'
+                          : field === 'testMethod'
+                          ? 'e.g., 1) Video announcement, 2) 10 user interviews, 3) 48-hour presale sprint...'
+                          : field === 'period'
+                          ? 'e.g., 14 days...'
+                          : 'e.g., $5,000 in presales or 50 paid founding reservations...'
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
 
-          <div className="pt-2 flex justify-end">
-            <button
-              onClick={async () => {
-                saveAll()
-                const updatedPlan = { ...(plan || {}), status: 'approved', locked: true }
-                const updated = {
-                  ...(project || {}),
-                  validationPlan: updatedPlan,
-                  planLocked: true,
-                  phase1Step1Done: true
-                }
-                if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
-                if (project?.id) {
-                  updateValidationPlan(project.id, {
-                    customer: plan.customer || '',
-                    problem: plan.problem || '',
-                    offer: plan.offer || '',
-                    pricing: plan.pricing || '',
-                    test_method: plan.testMethod || '',
-                    period: plan.period || '',
-                    threshold: plan.threshold || '',
-                    target_revenue: presaleTarget,
-                    status: 'approved',
-                    locked: true
-                  }).catch(e => console.warn(e))
-                  updateCoLaunchProject(project.id, {
-                    planLocked: true,
-                    phase1Step1Done: true
-                  }).catch(e => console.warn(e))
-                }
-                showNotification('Validation plan approved and locked. Advancing to Assets.')
-                setActiveStep('assets')
-                onSelectStep?.('assets')
-              }}
-              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm active:scale-95"
-            >
-              <span>Next: Build Validation Assets</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={async () => {
+                    saveAll()
+                    const updatedPlan = { ...(plan || {}), status: 'approved', locked: true, generated: true }
+                    const updated = {
+                      ...(project || {}),
+                      planGenerated: true,
+                      validationPlan: updatedPlan,
+                      planLocked: true,
+                      phase1Step1Done: true
+                    }
+                    if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
+                    if (project?.id) {
+                      updateValidationPlan(project.id, {
+                        customer: plan.customer || '',
+                        problem: plan.problem || '',
+                        offer: plan.offer || '',
+                        pricing: plan.pricing || '',
+                        test_method: plan.testMethod || '',
+                        period: plan.period || '',
+                        threshold: plan.threshold || '',
+                        target_revenue: presaleTarget,
+                        status: 'approved',
+                        locked: true,
+                        generated: true
+                      }).catch(e => console.warn(e))
+                      updateCoLaunchProject(project.id, {
+                        planGenerated: true,
+                        plan_generated: true,
+                        planLocked: true,
+                        phase1Step1Done: true,
+                        validationPlan: updatedPlan,
+                        validation_plan: updatedPlan
+                      }).catch(e => console.warn(e))
+                    }
+                    showNotification('Validation plan approved and locked. Advancing to Assets.')
+                    setActiveStep('assets')
+                    onSelectStep?.('assets')
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm active:scale-95"
+                >
+                  <span>Next: Build Validation Assets</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -2139,12 +2257,13 @@ export default function Phase1Validate({
                     <label className="text-[10px] text-slate-500 block font-bold">Product Name</label>
                     <input
                       type="text"
-                      value={project?.productName || ''}
+                      value={assetName}
                       onChange={e => {
                         const val = e.target.value
-                        if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), productName: val }))
+                        setAssetName(val)
+                        updateAssetField('productName', val)
                       }}
-                      placeholder="e.g. FlutterFlow Flow AI"
+                      placeholder="e.g. CircuitSync OS"
                       className="w-full mt-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-900 font-bold outline-none focus:border-slate-500"
                     />
                   </div>
@@ -2153,12 +2272,13 @@ export default function Phase1Validate({
                     <label className="text-[10px] text-slate-500 block font-bold">Positioning Statement</label>
                     <textarea
                       rows={2}
-                      value={project?.productTagline || ''}
+                      value={assetTagline}
                       onChange={e => {
                         const val = e.target.value
-                        if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), productTagline: val }))
+                        setAssetTagline(val)
+                        updateAssetField('productTagline', val)
                       }}
-                      placeholder="e.g. Autonomous AI workflow engine tailored to mobile app creators"
+                      placeholder="e.g. Autonomous AI workflow engine tailored to creators"
                       className="w-full mt-1 p-2.5 rounded-lg bg-white border border-slate-200 text-slate-800 outline-none resize-none focus:border-slate-500"
                     />
                   </div>
@@ -2168,10 +2288,11 @@ export default function Phase1Validate({
                       <label className="text-[10px] text-slate-500 block font-bold">Brand Tag / Tone</label>
                       <input
                         type="text"
-                        value={project?.brandTone || 'Modern, Minimal, Dark SaaS'}
+                        value={assetTone}
                         onChange={e => {
                           const val = e.target.value
-                          if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), brandTone: val }))
+                          setAssetTone(val)
+                          updateAssetField('brandTone', val)
                         }}
                         className="w-full mt-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-800 text-xs outline-none focus:border-slate-500"
                       />
@@ -2180,10 +2301,11 @@ export default function Phase1Validate({
                       <label className="text-[10px] text-slate-500 block font-bold">Target Audience</label>
                       <input
                         type="text"
-                        value={project?.targetAudience || project?.niche || 'Mobile Developers & Creators'}
+                        value={assetAudience}
                         onChange={e => {
                           const val = e.target.value
-                          if (onUpdateProject) onUpdateProject(p => ({ ...(p || {}), targetAudience: val, niche: val }))
+                          setAssetAudience(val)
+                          updateAssetField('targetAudience', val)
                         }}
                         className="w-full mt-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-800 text-xs outline-none focus:border-slate-500"
                       />

@@ -16,6 +16,8 @@ import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import PostVisualMockup from './PostVisualMockup'
 import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards } from '../../utils/stepGuards'
 import { parseMainPricingAmount, parseConceptPricing } from '../../utils/pricing'
+import { resolveCreatorTheme, getThemeCssVariables } from '../../utils/creatorTheme'
+import CreatorBrandThemePicker from './CreatorBrandThemePicker'
 
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
@@ -35,6 +37,23 @@ export default function CreatorPortal({ portalId }) {
   const [avatarLoadError, setAvatarLoadError] = useState(false)
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const chatMessagesEndRef = useRef(null)
+
+  const [activeTheme, setActiveTheme] = useState(null)
+  const theme = activeTheme || resolveCreatorTheme(
+    project?.brandColor || project?.colorTheme || project?.selectedConcept?.brandColor,
+    project?.niche,
+    project?.productName
+  )
+
+  useEffect(() => {
+    const handleThemeEvent = (e) => {
+      if (e?.detail) {
+        setActiveTheme(e.detail)
+      }
+    }
+    window.addEventListener('forge_theme_changed', handleThemeEvent)
+    return () => window.removeEventListener('forge_theme_changed', handleThemeEvent)
+  }, [])
 
   const productName = project?.productName || project?.name || 'Software Co-Launch'
   const creatorName = project?.creatorName || 'Creator Partner'
@@ -690,14 +709,20 @@ export default function CreatorPortal({ portalId }) {
 
   return (
     <div
-      className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex flex-col relative antialiased selection:bg-emerald-100 selection:text-emerald-900"
+      className="min-h-screen font-sans flex flex-col relative antialiased selection:bg-slate-200 selection:text-slate-900"
       style={{
-        backgroundImage: 'radial-gradient(#cbd5e1 1.25px, transparent 1.25px)',
+        backgroundColor: theme.bgCanvas,
+        color: theme.textHeading,
+        backgroundImage: `radial-gradient(${theme.dotColor} 1.25px, transparent 1.25px)`,
         backgroundSize: '20px 20px',
+        ...getThemeCssVariables(theme)
       }}
     >
+      {/* Top Accent Gradient Bar matching Brand Theme */}
+      <div className="h-1 w-full shrink-0 z-50 sticky top-0" style={{ background: theme.gradientAccent }} />
+
       {/* ── TOP NAV HEADER ──────────────────────────────────────────────────────── */}
-      <header className="border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-2xs w-full max-w-full">
+      <header className="border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-1 z-50 shadow-2xs w-full max-w-full">
         <div className="h-13 sm:h-14 flex items-center justify-between px-2.5 sm:px-6 gap-1.5 sm:gap-2 w-full">
           {/* Brand / Partner Identity */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1 sm:flex-initial">
@@ -724,7 +749,14 @@ export default function CreatorPortal({ portalId }) {
                 <span className="font-extrabold text-slate-900 tracking-tight text-xs sm:text-sm truncate max-w-[80px] xs:max-w-[120px] sm:max-w-[180px] md:max-w-[240px]">
                   {productName}
                 </span>
-                <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300/80 shrink-0">
+                <span
+                  className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0"
+                  style={{
+                    backgroundColor: theme.badgeBg,
+                    color: theme.badgeText,
+                    borderColor: theme.badgeBorder
+                  }}
+                >
                   50/50
                 </span>
               </div>
@@ -800,7 +832,8 @@ export default function CreatorPortal({ portalId }) {
                 <button
                   type="button"
                   onClick={() => setShowDiyModal(true)}
-                  className="h-8 flex items-center gap-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
+                  className="h-8 flex items-center gap-1.5 px-3 rounded-lg text-white text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
+                  style={{ backgroundColor: theme.accentBtnBg, color: theme.accentBtnText }}
                 >
                   <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
                   <span>Upgrade to Co-Builder (${cobuilderPrice})</span>
@@ -808,24 +841,51 @@ export default function CreatorPortal({ portalId }) {
               </div>
             )}
 
+            {/* Brand Theme Palette Picker (AI / Admin) */}
+            <CreatorBrandThemePicker
+              project={project}
+              currentTheme={theme}
+              onThemeSelect={setActiveTheme}
+            />
+
             {/* Revenue Share Pill */}
             <div className="h-8 flex items-center gap-1.5 pl-2 border-l border-slate-200">
-              <div className="px-2 py-0.5 rounded-lg bg-emerald-50/80 border border-emerald-200 flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-800">
-                <DollarSign className="w-3 h-3 text-emerald-600 shrink-0" />
-                <span className="text-[10px] text-emerald-600 font-sans font-semibold">
+              <div
+                className="px-2 py-0.5 rounded-lg border flex items-center gap-1 text-[11px] font-mono font-bold"
+                style={{
+                  backgroundColor: theme.badgeBg,
+                  borderColor: theme.badgeBorder,
+                  color: theme.badgeText
+                }}
+              >
+                <DollarSign className="w-3 h-3 shrink-0" style={{ color: theme.primaryHex }} />
+                <span className="text-[10px] font-sans font-semibold opacity-80">
                   {isDiyActive ? '100% Pool:' : '50%:'}
                 </span>
-                <span className="text-emerald-700 font-extrabold">
+                <span className="font-extrabold" style={{ color: theme.primaryHex }}>
                   ${(isDiyActive ? presalesRevenue : creatorRevenueShare).toLocaleString()}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Mobile Right Controls: Compact Revenue Badge + Toggle Menu Button */}
+          {/* Mobile Right Controls: Compact Revenue Badge + Theme Picker + Toggle Menu Button */}
           <div className="flex lg:hidden items-center gap-1.5 shrink-0">
-            <div className="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-0.5 text-[10px] sm:text-xs font-mono font-bold text-emerald-800">
-              <DollarSign className="w-3 h-3 text-emerald-600 shrink-0" />
+            <CreatorBrandThemePicker
+              project={project}
+              currentTheme={theme}
+              onThemeSelect={setActiveTheme}
+            />
+
+            <div
+              className="px-2 py-1 rounded-lg border flex items-center gap-0.5 text-[10px] sm:text-xs font-mono font-bold"
+              style={{
+                backgroundColor: theme.badgeBg,
+                borderColor: theme.badgeBorder,
+                color: theme.badgeText
+              }}
+            >
+              <DollarSign className="w-3 h-3 shrink-0" style={{ color: theme.primaryHex }} />
               <span>${(isDiyActive ? presalesRevenue : creatorRevenueShare).toLocaleString()}</span>
             </div>
 
@@ -1660,8 +1720,8 @@ export default function CreatorPortal({ portalId }) {
               <div className="space-y-2">
                 <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5">
                   <div
-                    className="bg-slate-900 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${Math.max(2, targetPct)}%` }}
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.max(2, targetPct)}%`, background: theme.gradientAccent }}
                   />
                 </div>
                 <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
@@ -1675,7 +1735,7 @@ export default function CreatorPortal({ portalId }) {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">Your 50% Profit Share</span>
-                  <span className="text-base font-extrabold text-emerald-700 font-mono mt-0.5 block">
+                  <span className="text-base font-extrabold font-mono mt-0.5 block" style={{ color: theme.primaryHex }}>
                     ${creatorRevenueShare.toLocaleString()}
                   </span>
                   <span className="text-[10px] text-slate-400 block mt-0.5">Automated payout routing</span>
@@ -1699,7 +1759,7 @@ export default function CreatorPortal({ portalId }) {
                   <span className="text-base font-extrabold text-slate-900 font-mono mt-0.5 block">
                     {completedTasksCount} / {totalTasksCount} done
                   </span>
-                  <span className="text-[10px] text-emerald-700 font-bold block mt-0.5">
+                  <span className="text-[10px] font-bold block mt-0.5" style={{ color: theme.primaryHex }}>
                     {totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0}% complete
                   </span>
                 </div>
@@ -1730,9 +1790,10 @@ export default function CreatorPortal({ portalId }) {
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                         isActive
-                          ? 'bg-slate-900 text-white shadow-xs'
+                          ? 'text-white shadow-xs'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                       }`}
+                      style={isActive ? { backgroundColor: theme.primaryHex, color: theme.accentBtnText } : {}}
                     >
                       <span>{tab.label}</span>
                       {tab.count && (

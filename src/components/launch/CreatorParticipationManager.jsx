@@ -50,6 +50,8 @@ import { updatePageSEO } from '../../utils/seo'
 import { getExpiringItem, removeExpiringItem } from '../../utils/expiringStorage'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import DIYSubscriptionModal from './DIYSubscriptionModal'
+import { resolveCreatorTheme } from '../../utils/creatorTheme'
+import { startParticipationTour } from '../../utils/driverTour'
 
 export default function CreatorParticipationManager() {
   const [projects, setProjects] = useState([])
@@ -60,6 +62,14 @@ export default function CreatorParticipationManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const [toast, setToast] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
+
+  // Auto-launch Participation Manager Guided Tour if not already dismissed in this browser
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startParticipationTour(false)
+    }, 1200)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Theme State: 'light' or 'dark' (defaults to light per user request)
   const [theme, setTheme] = useState(() => {
@@ -768,7 +778,7 @@ export default function CreatorParticipationManager() {
   return (
     <div className={`min-h-screen ${isLight ? 'bg-[#f0f2f5] text-slate-900 selection:bg-amber-500/20 selection:text-amber-900' : 'bg-[#07090e] text-white selection:bg-amber-500/30 selection:text-amber-200'} flex flex-col font-sans transition-colors duration-200`}>
       {/* Top Banner & Header */}
-      <header className={`sticky top-0 z-40 ${isLight ? 'bg-white/95 border-slate-200/90 shadow-2xs' : 'bg-[#07090e]/90 border-white/[0.08] shadow-2xl'} backdrop-blur-xl border-b`}>
+      <header id="tour-participation-header" className={`sticky top-0 z-40 ${isLight ? 'bg-white/95 border-slate-200/90 shadow-2xs' : 'bg-[#07090e]/90 border-white/[0.08] shadow-2xl'} backdrop-blur-xl border-b`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3.5">
             <button
@@ -806,6 +816,7 @@ export default function CreatorParticipationManager() {
           <div className="flex items-center gap-2.5 ml-auto">
             {/* Dynamic Pass Fee Quick-Edit Button */}
             <button
+              id="tour-participation-pass-fee"
               type="button"
               onClick={() => {
                 setGlobalPriceInput(defaultPassPrice || 0)
@@ -836,6 +847,17 @@ export default function CreatorParticipationManager() {
                 }`}>
                 Edit
               </span>
+            </button>
+
+            {/* Driver.js Interactive Workflow Tour Trigger */}
+            <button
+              type="button"
+              onClick={() => startParticipationTour(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              title="Start Guided Walkthrough (Driver.js)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+              <span>Workflow Tour</span>
             </button>
 
             {/* Real-time status indicator */}
@@ -892,7 +914,7 @@ export default function CreatorParticipationManager() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 space-y-3.5">
         {/* Equity Architecture Notice */}
-        <div className={`px-4 py-3 rounded-xl ${isLight ? 'bg-white border-slate-200/90 text-slate-800 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] text-white shadow-lg'} border flex flex-col md:flex-row md:items-center justify-between gap-3`}>
+        <div id="tour-participation-equity-banner" className={`px-4 py-3 rounded-xl ${isLight ? 'bg-white border-slate-200/90 text-slate-800 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] text-white shadow-lg'} border flex flex-col md:flex-row md:items-center justify-between gap-3`}>
           <div className="flex items-start gap-3">
             <div className={`p-1.5 rounded-lg ${isLight ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'} border shrink-0`}>
               <ShieldCheck className="w-5 h-5" />
@@ -921,7 +943,7 @@ export default function CreatorParticipationManager() {
         </div>
 
         {/* KPI Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        <div id="tour-participation-kpis" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {/* Card 1: Total Co-Launches */}
           <div className={`p-3 rounded-xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08] shadow-sm'} border space-y-0.5`}>
             <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider block`}>
@@ -981,7 +1003,7 @@ export default function CreatorParticipationManager() {
         </div>
 
         {/* Filter and Search Ribbon */}
-        <div className={`px-3 py-2 rounded-xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08]'} border flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2`}>
+        <div id="tour-participation-filters" className={`px-3 py-2 rounded-xl ${isLight ? 'bg-white border-slate-200/90 shadow-2xs' : 'bg-white/[0.02] border-white/[0.08]'} border flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2`}>
           {/* Track Filter Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             <button
@@ -1225,7 +1247,7 @@ export default function CreatorParticipationManager() {
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div id="tour-participation-list" className="space-y-3">
             {filteredProjects.map((proj) => {
               const isCoBuilder = proj.isDIY || proj.diySubscription?.active
               const isDeclined = proj.diyOfferStatus === 'declined'
@@ -1294,9 +1316,31 @@ export default function CreatorParticipationManager() {
                           <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider`}>
                             Venture Software Product
                           </span>
-                          <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'} font-mono`}>
-                            Phase {proj.currentPhase || 1} · {proj.status || 'validating'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {(() => {
+                              const projTheme = resolveCreatorTheme(proj.brandColor || proj.colorTheme)
+                              return (
+                                <span
+                                  className="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded border flex items-center gap-1 shadow-2xs"
+                                  style={{
+                                    backgroundColor: projTheme.badgeBg,
+                                    borderColor: projTheme.badgeBorder,
+                                    color: projTheme.badgeText
+                                  }}
+                                  title={`Brand Color decided by AI/Admin: ${projTheme.name} (${projTheme.primaryHex})`}
+                                >
+                                  <span
+                                    className="w-2 h-2 rounded-full shrink-0 shadow-xs"
+                                    style={{ backgroundColor: projTheme.primaryHex }}
+                                  />
+                                  <span>{projTheme.name}</span>
+                                </span>
+                              )
+                            })()}
+                            <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'} font-mono`}>
+                              Phase {proj.currentPhase || 1}
+                            </span>
+                          </div>
                         </div>
                         <p className={`text-xs font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
                           {proj.productName || 'New Venture'}{' '}

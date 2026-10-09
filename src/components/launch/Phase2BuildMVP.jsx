@@ -318,6 +318,8 @@ export default function Phase2BuildMVP({
   const [newTaskAssigned, setNewTaskAssigned] = useState('AI Agent')
   const [newTaskEstimate, setNewTaskEstimate] = useState('1 Day')
 
+  const p2TasksSanitizedRef = useRef({})
+
   // Synchronize all Phase 2 states when project changes to prevent former creator data leakage
   useEffect(() => {
     if (!project) return
@@ -335,7 +337,10 @@ export default function Phase2BuildMVP({
       if (!hasRealExec && project.engineeringTasks.every(t => t.status === 'Completed')) {
         const fresh = project.engineeringTasks.map(t => ({ ...t, status: 'Ready' }))
         setEngineeringTasks(fresh)
-        handleSavePlan(buildPlan, fresh)
+        if (!p2TasksSanitizedRef.current[project.id]) {
+          p2TasksSanitizedRef.current[project.id] = true
+          handleSavePlan(buildPlan, fresh)
+        }
       } else {
         setEngineeringTasks(project.engineeringTasks)
       }

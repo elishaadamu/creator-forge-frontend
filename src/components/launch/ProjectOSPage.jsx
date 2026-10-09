@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Layers, ArrowLeft, Users, ExternalLink, RefreshCw, ChevronDown,
-  Check, Sparkles, ShieldCheck, Rocket, AlertCircle, Plus, LayoutGrid, Zap, Loader2
+  Check, Sparkles, ShieldCheck, Rocket, AlertCircle, Plus, LayoutGrid, Zap, Loader2, Workflow
 } from 'lucide-react'
 import ProjectOS from './ProjectOS'
 import { ProjectOSSkeleton } from './Section2Skeletons'
 import DIYSubscriptionModal from './DIYSubscriptionModal'
+import WorkflowWiringTutorial from './WorkflowWiringTutorial'
+import { startSection2Tour } from '../../utils/driverTour'
 import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import {
   getCoLaunchProjects,
@@ -32,6 +34,16 @@ export default function ProjectOSPage() {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false)
   const [showDiyModal, setShowDiyModal] = useState(false)
   const [toast, setToast] = useState(null)
+  const [showWorkflowTutorial, setShowWorkflowTutorial] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('forge_workflow_tutorial_dismissed') !== 'true'
+      } catch {
+        return false
+      }
+    }
+    return false
+  })
 
   const [cobuilderPassPrice, setCobuilderPassPrice] = useState(0)
   const [isPassPriceLoading, setIsPassPriceLoading] = useState(true)
@@ -293,7 +305,8 @@ export default function ProjectOSPage() {
   }
 
   // Handle live updates from Phase 1-4 components
-  const handleUpdateActiveProject = async (updater) => {
+  const updateDbTimerRef = useRef(null)
+  const handleUpdateActiveProject = useCallback((updater) => {
     let resolved
     setActiveProject(prev => {
       resolved = typeof updater === 'function' ? updater(prev) : updater
@@ -302,23 +315,26 @@ export default function ProjectOSPage() {
     if (!resolved || !resolved.id) return
     setProjects((prev) => prev.map((p) => (p.id === resolved.id ? resolved : p)))
 
-    try {
-      await updateCoLaunchProject(resolved.id, {
-        ...resolved,
-        currentPhase: resolved.currentPhase,
-        current_phase: resolved.currentPhase,
-        status: resolved.status,
-        campaignKit: resolved.campaignKit,
-        campaign_kit: resolved.campaignKit,
-        metadataInfo: {
-          ...(resolved.metadataInfo || {}),
-          campaign_kit: resolved.campaignKit || resolved.metadataInfo?.campaign_kit
-        }
-      })
-    } catch (err) {
-      console.warn('[ProjectOSPage] Error saving project update:', err)
-    }
-  }
+    if (updateDbTimerRef.current) clearTimeout(updateDbTimerRef.current)
+    updateDbTimerRef.current = setTimeout(async () => {
+      try {
+        await updateCoLaunchProject(resolved.id, {
+          ...resolved,
+          currentPhase: resolved.currentPhase,
+          current_phase: resolved.currentPhase,
+          status: resolved.status,
+          campaignKit: resolved.campaignKit,
+          campaign_kit: resolved.campaignKit,
+          metadataInfo: {
+            ...(resolved.metadataInfo || {}),
+            campaign_kit: resolved.campaignKit || resolved.metadataInfo?.campaign_kit
+          }
+        })
+      } catch (err) {
+        console.warn('[ProjectOSPage] Error saving project update:', err)
+      }
+    }, 600)
+  }, [])
 
   // Handle resetting project state back to Phase 1
   const handleResetProject = async (projectId) => {
@@ -569,6 +585,28 @@ export default function ProjectOSPage() {
             <ExternalLink className="w-3 h-3 text-slate-400" />
           </a>
 
+          {/* Driver.js Interactive Tour Trigger */}
+          <button
+            type="button"
+            onClick={() => startSection2Tour(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 transition-all text-xs font-bold shadow-2xs cursor-pointer"
+            title="Start Interactive Guided Walkthrough (Driver.js)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+            <span className="hidden sm:inline">Workflow Tour</span>
+          </button>
+
+          {/* Text-Based Workflow Wiring Tutorial Trigger */}
+          <button
+            type="button"
+            onClick={() => setShowWorkflowTutorial(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 transition-all text-xs font-bold shadow-2xs cursor-pointer"
+            title="Open Interactive Workflow Wiring Architecture Guide"
+          >
+            <Workflow className="w-3.5 h-3.5 text-slate-700" />
+            <span className="hidden sm:inline">Wiring Guide</span>
+          </button>
+
           <button
             type="button"
             onClick={() => loadProjects(true)}
@@ -645,6 +683,12 @@ export default function ProjectOSPage() {
           onSuccess={handleDiySubscribeSuccess}
         />
       )}
+
+      {/* Interactive Text-Based Workflow Wiring Tutorial Modal */}
+      <WorkflowWiringTutorial
+        isOpen={showWorkflowTutorial}
+        onClose={() => setShowWorkflowTutorial(false)}
+      />
     </div>
   )
 }
