@@ -32,7 +32,8 @@ import {
   Sun,
   Moon,
   MoreHorizontal,
-  RotateCcw
+  RotateCcw,
+  Loader2
 } from 'lucide-react'
 import {
   getCoLaunchProjects,
@@ -92,17 +93,36 @@ export default function CreatorParticipationManager() {
   const [actionModalProject, setActionModalProject] = useState(null)
 
   // Dynamic Co-Builder Pass Price States
-  const [defaultPassPrice, setDefaultPassPrice] = useState(50)
+  const [defaultPassPrice, setDefaultPassPrice] = useState(0)
+  const [isPassPriceLoading, setIsPassPriceLoading] = useState(true)
 
   useEffect(() => {
     // Purge any legacy localStorage fee key to ensure DB is the sole source of truth
     try { localStorage.removeItem('forge_cobuilder_pass_price') } catch (e) { }
 
+    import('../../services/opsApi').then(({ getWorkflowState }) => {
+      getWorkflowState().then((wf) => {
+        const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price
+        if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
+          setDefaultPassPrice(Number(dbFee))
+        } else {
+          setDefaultPassPrice(0)
+        }
+        setIsPassPriceLoading(false)
+      }).catch(() => {
+        setDefaultPassPrice(0)
+        setIsPassPriceLoading(false)
+      })
+    })
+
     const handlePriceEvent = (e) => {
       const p = e?.detail
       if (p !== undefined && p !== null && !isNaN(Number(p))) {
         setDefaultPassPrice(Number(p))
+      } else {
+        setDefaultPassPrice(0)
       }
+      setIsPassPriceLoading(false)
     }
     window.addEventListener('forge_pass_price_changed', handlePriceEvent)
     return () => {
@@ -112,18 +132,18 @@ export default function CreatorParticipationManager() {
 
   // Global Pass Price Modal
   const [showGlobalPriceModal, setShowGlobalPriceModal] = useState(false)
-  const [globalPriceInput, setGlobalPriceInput] = useState(50)
+  const [globalPriceInput, setGlobalPriceInput] = useState(0)
   const [updatePendingWithGlobal, setUpdatePendingWithGlobal] = useState(true)
   const [isSavingGlobalPrice, setIsSavingGlobalPrice] = useState(false)
 
   // Per-Creator Custom Price Modal
   const [customPriceModalProject, setCustomPriceModalProject] = useState(null)
-  const [customPriceInput, setCustomPriceInput] = useState(50)
+  const [customPriceInput, setCustomPriceInput] = useState(0)
   const [isSavingCustomPrice, setIsSavingCustomPrice] = useState(false)
 
   // Helper to resolve pass price for any project (custom or default)
   const getProjectPassPrice = useCallback((proj) => {
-    if (!proj) return defaultPassPrice || 50
+    if (!proj) return defaultPassPrice || 0
     if (proj.diySubscription?.amount && !isNaN(Number(proj.diySubscription.amount))) {
       return Number(proj.diySubscription.amount)
     }
@@ -144,7 +164,7 @@ export default function CreatorParticipationManager() {
         return Number(metaFee)
       }
     }
-    return defaultPassPrice || 50
+    return defaultPassPrice || 0
   }, [defaultPassPrice])
 
   // Open custom price modal for a project
@@ -313,8 +333,13 @@ export default function CreatorParticipationManager() {
         const dbFee = wf.default_pass_price ?? wf.cobuilder_pass_price ?? wf.extra_state?.default_pass_price ?? wf.extra_state?.cobuilder_pass_price
         if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
           setDefaultPassPrice(Number(dbFee))
+        } else {
+          setDefaultPassPrice(0)
         }
+      } else {
+        setDefaultPassPrice(0)
       }
+      setIsPassPriceLoading(false)
 
       if (projRes.status === 'fulfilled' && projRes.value) {
         const list = Array.isArray(projRes.value) ? projRes.value : projRes.value?.projects || []
@@ -783,7 +808,7 @@ export default function CreatorParticipationManager() {
             <button
               type="button"
               onClick={() => {
-                setGlobalPriceInput(defaultPassPrice || 50)
+                setGlobalPriceInput(defaultPassPrice || 0)
                 setShowGlobalPriceModal(true)
               }}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 ${isLight
@@ -796,8 +821,14 @@ export default function CreatorParticipationManager() {
                 }`}>
                 <DollarSign className="w-3.5 h-3.5" />
               </div>
-              <span className={isLight ? 'text-slate-700' : 'text-slate-300'}>
-                Pass Fee: <strong className={`font-black font-mono ${isLight ? 'text-slate-950' : 'text-white'}`}>${defaultPassPrice || 50} USD</strong>
+              <span className={`flex items-center gap-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                Pass Fee: <strong className={`font-black font-mono ${isLight ? 'text-slate-950' : 'text-white'}`}>
+                  {isPassPriceLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin inline-block ml-0.5" />
+                  ) : (
+                    `$${defaultPassPrice || 0} USD`
+                  )}
+                </strong>
               </span>
               <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ml-0.5 ${isLight
                   ? 'bg-slate-100 text-slate-600 border-slate-200/80'

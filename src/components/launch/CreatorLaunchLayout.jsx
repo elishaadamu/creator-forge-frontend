@@ -95,7 +95,8 @@ export default function CreatorLaunchLayout({
   const [showSection1Menu, setShowSection1Menu] = useState(false)
   const [showSection1Sidebar, setShowSection1Sidebar] = useState(false)
 
-  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(50)
+  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(0)
+  const [isPassPriceLoading, setIsPassPriceLoading] = useState(true)
 
   useEffect(() => {
     try { localStorage.removeItem('forge_cobuilder_pass_price') } catch (e) { }
@@ -104,7 +105,10 @@ export default function CreatorLaunchLayout({
       const p = e?.detail
       if (p !== undefined && p !== null && !isNaN(Number(p))) {
         setCobuilderPassPrice(Number(p))
+      } else {
+        setCobuilderPassPrice(0)
       }
+      setIsPassPriceLoading(false)
     }
     window.addEventListener('forge_pass_price_changed', handlePriceEvent)
     return () => {
@@ -621,7 +625,10 @@ export default function CreatorLaunchLayout({
           const dbFee = ws?.default_pass_price ?? ws?.cobuilder_pass_price ?? ws?.extra_state?.default_pass_price ?? ws?.extra_state?.cobuilder_pass_price
           if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
             setCobuilderPassPrice(Number(dbFee))
+          } else {
+            setCobuilderPassPrice(0)
           }
+          setIsPassPriceLoading(false)
           const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
           const urlSec = searchParams?.get('section')
           // Do NOT auto-switch clean /launch to section2 just because of backend DB state.
@@ -629,6 +636,9 @@ export default function CreatorLaunchLayout({
           if (urlSec === 'section2' && ws.active_section === 'section2') {
             setActiveSection('section2')
           }
+        } else if (isMounted) {
+          setCobuilderPassPrice(0)
+          setIsPassPriceLoading(false)
         }
 
         if (isMounted && projectsRes.status === 'fulfilled' && projectsRes.value) {
@@ -1014,7 +1024,15 @@ export default function CreatorLaunchLayout({
               title="Dedicated Creator Participation & Co-Builder Console"
             >
               <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>Co-Builders (${cobuilderPassPrice})</span>
+              <span className="flex items-center gap-1">
+                Co-Builders (
+                {isPassPriceLoading ? (
+                  <Loader2 className="w-3 h-3 text-amber-500 animate-spin inline-block" />
+                ) : (
+                  `$${cobuilderPassPrice || 0}`
+                )}
+                )
+              </span>
               <ExternalLink className="w-3 h-3 text-slate-400" />
             </a>
           </div>
@@ -1265,7 +1283,15 @@ export default function CreatorLaunchLayout({
                 >
                   <span className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-amber-600" />
-                    <span>Co-Builder Passes (${cobuilderPassPrice})</span>
+                    <span className="flex items-center gap-1">
+                      Co-Builder Passes (
+                      {isPassPriceLoading ? (
+                        <Loader2 className="w-3 h-3 text-amber-600 animate-spin inline-block" />
+                      ) : (
+                        `$${cobuilderPassPrice || 0}`
+                      )}
+                      )
+                    </span>
                   </span>
                   <ExternalLink className="w-3 h-3 text-amber-500" />
                 </button>

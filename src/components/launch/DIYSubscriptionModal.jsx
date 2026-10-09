@@ -44,7 +44,7 @@ export default function DIYSubscriptionModal({
   const [dedicatedUrl, setDedicatedUrl] = useState('')
   const [copiedUrl, setCopiedUrl] = useState(false)
   const [emailNotice, setEmailNotice] = useState('')
-  const [dbPassPrice, setDbPassPrice] = useState(50)
+  const [dbPassPrice, setDbPassPrice] = useState(0)
 
   // Handle ESC key to dismiss modal
   useEffect(() => {
@@ -65,13 +65,19 @@ export default function DIYSubscriptionModal({
       const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price
       if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
         setDbPassPrice(Number(dbFee))
+      } else {
+        setDbPassPrice(0)
       }
-    }).catch(() => {})
+    }).catch(() => {
+      setDbPassPrice(0)
+    })
 
     const handlePriceEvent = (e) => {
       const p = e?.detail
       if (p !== undefined && p !== null && !isNaN(Number(p))) {
         setDbPassPrice(Number(p))
+      } else {
+        setDbPassPrice(0)
       }
     }
     window.addEventListener('forge_pass_price_changed', handlePriceEvent)

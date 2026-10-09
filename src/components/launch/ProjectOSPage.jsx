@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Layers, ArrowLeft, Users, ExternalLink, RefreshCw, ChevronDown,
-  Check, Sparkles, ShieldCheck, Rocket, AlertCircle, Plus, LayoutGrid, Zap
+  Check, Sparkles, ShieldCheck, Rocket, AlertCircle, Plus, LayoutGrid, Zap, Loader2
 } from 'lucide-react'
 import ProjectOS from './ProjectOS'
 import { ProjectOSSkeleton } from './Section2Skeletons'
@@ -33,7 +33,8 @@ export default function ProjectOSPage() {
   const [showDiyModal, setShowDiyModal] = useState(false)
   const [toast, setToast] = useState(null)
 
-  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(50)
+  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(0)
+  const [isPassPriceLoading, setIsPassPriceLoading] = useState(true)
 
   useEffect(() => {
     try { localStorage.removeItem('forge_cobuilder_pass_price') } catch (e) { }
@@ -42,14 +43,23 @@ export default function ProjectOSPage() {
       const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price
       if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
         setCobuilderPassPrice(Number(dbFee))
+      } else {
+        setCobuilderPassPrice(0)
       }
-    }).catch(() => { })
+      setIsPassPriceLoading(false)
+    }).catch(() => {
+      setCobuilderPassPrice(0)
+      setIsPassPriceLoading(false)
+    })
 
     const handlePriceEvent = (e) => {
       const p = e?.detail
       if (p !== undefined && p !== null && !isNaN(Number(p))) {
         setCobuilderPassPrice(Number(p))
+      } else {
+        setCobuilderPassPrice(0)
       }
+      setIsPassPriceLoading(false)
     }
     window.addEventListener('forge_pass_price_changed', handlePriceEvent)
     return () => {
@@ -310,27 +320,62 @@ export default function ProjectOSPage() {
     }
   }
 
-  // Handle resetting project state
+  // Handle resetting project state back to Phase 1
   const handleResetProject = async (projectId) => {
-    if (!projectId) return
-    const confirmed = window.confirm(
-      'Are you sure you want to reset this co-launch project back to Phase 1 (Validate)? Pre-orders, build files, and gate decisions will be cleared.'
-    )
-    if (!confirmed) return
+    const targetId = projectId || activeProject?.id
+    if (!targetId || !activeProject) return
+
+    try {
+      localStorage.removeItem(`forge_p1_step_${targetId}`)
+      localStorage.removeItem(`forge_p2_step_${targetId}`)
+      localStorage.removeItem(`forge_p3_step_${targetId}`)
+      localStorage.removeItem(`forge_p1_progress_${targetId}`)
+      localStorage.removeItem(`forge_p2_progress_${targetId}`)
+      localStorage.removeItem(`forge_p3_progress_${targetId}`)
+    } catch (e) { }
 
     const resetPayload = {
       ...activeProject,
       currentPhase: 1,
+      current_phase: 1,
+      currentStep: 'plan',
+      current_step: 'plan',
       status: 'validating',
+      phase1Passed: false,
+      phase2Passed: false,
+      p1Complete: false,
+      p2Complete: false,
+      buildPlanApproved: false,
+      buildCompleted: false,
+      mvpBuildDone: false,
+      betaTestingCompleted: false,
+      betaApproved: false,
+      step2Done: false,
+      step3Done: false,
       gateDecisions: [],
       presaleOrders: [],
       engineeringTasks: [],
       betaFeedback: [],
-      qaResults: null
+      qaResults: null,
+      decisionTelemetry: null,
+      metadataInfo: {
+        ...(activeProject?.metadataInfo || activeProject?.metadata_info || {}),
+        p1Complete: false,
+        p2Complete: false,
+        phase1Passed: false,
+        phase2Passed: false,
+        buildPlanApproved: false,
+        buildCompleted: false,
+        mvpBuildDone: false,
+        betaTestingCompleted: false,
+        betaApproved: false,
+        step2Done: false,
+        step3Done: false,
+      }
     }
 
     await handleUpdateActiveProject(resetPayload)
-    showToast('success', 'Project Reset', 'Project reset cleanly to Phase 1.')
+    showToast('success', 'Project Reset', 'Project reset cleanly to Phase 1 (Validate).')
   }
 
   // Handle successful DIY Creator subscription unlock (Stripe/PayPal)
@@ -500,7 +545,15 @@ export default function ProjectOSPage() {
             title="Open Dedicated Creator Participation & Co-Builder Console"
           >
             <Zap className="w-3.5 h-3.5 text-amber-700" />
-            <span>Co-Builder Passes (${cobuilderPassPrice})</span>
+            <span className="flex items-center gap-1">
+              Co-Builder Passes (
+              {isPassPriceLoading ? (
+                <Loader2 className="w-3 h-3 text-amber-700 animate-spin inline-block" />
+              ) : (
+                `$${cobuilderPassPrice || 0}`
+              )}
+              )
+            </span>
             <ExternalLink className="w-3 h-3 text-amber-700" />
           </a>
 

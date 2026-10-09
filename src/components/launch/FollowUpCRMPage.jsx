@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import CreatorFollowUpCRM from "./CreatorFollowUpCRM";
 import { getCreators, getThreads, pollInboxReplies, updateCreatorDetails, deleteCreator, getWorkflowState, getCoLaunchProjects } from "../../services/opsApi";
 import { updatePageSEO } from "../../utils/seo";
-import { Users, ExternalLink, RefreshCw, Rocket, ShieldCheck, CheckCircle, AlertCircle, X, Target, Layers, Zap, MessageSquare, ShieldAlert } from "lucide-react";
+import { Users, ExternalLink, RefreshCw, Rocket, ShieldCheck, CheckCircle, AlertCircle, X, Target, Layers, Zap, MessageSquare, ShieldAlert, Loader2 } from "lucide-react";
 import { CRMSkeleton } from "./Section2Skeletons";
 import CreatorForgeLogo from "../ui/CreatorForgeLogo";
 import { HeroShallowPolygons } from "../ui/FloatingPolygons";
@@ -15,7 +15,8 @@ export default function FollowUpCRMPage() {
   const [loading, setLoading] = useState(true);
   const [isSyncingImap, setIsSyncingImap] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
-  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(50);
+  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(0);
+  const [isPassPriceLoading, setIsPassPriceLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
@@ -25,7 +26,10 @@ export default function FollowUpCRMPage() {
       const p = e?.detail;
       if (p !== undefined && p !== null && !isNaN(Number(p))) {
         setCobuilderPassPrice(Number(p));
+      } else {
+        setCobuilderPassPrice(0);
       }
+      setIsPassPriceLoading(false);
     };
     window.addEventListener('forge_pass_price_changed', handlePriceEvent);
     return () => {
@@ -81,8 +85,13 @@ export default function FollowUpCRMPage() {
         const dbFee = ws?.default_pass_price ?? ws?.cobuilder_pass_price ?? ws?.extra_state?.default_pass_price ?? ws?.extra_state?.cobuilder_pass_price;
         if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
           setCobuilderPassPrice(Number(dbFee));
+        } else {
+          setCobuilderPassPrice(0);
         }
+      } else {
+        setCobuilderPassPrice(0);
       }
+      setIsPassPriceLoading(false);
       if (projectsRes.status === "fulfilled" && projectsRes.value) {
         setProjects(Array.isArray(projectsRes.value) ? projectsRes.value : []);
       }
@@ -288,7 +297,15 @@ export default function FollowUpCRMPage() {
               title="Dedicated Creator Participation & Co-Builder Console"
             >
               <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>Co-Builders (${cobuilderPassPrice})</span>
+              <span className="flex items-center gap-1">
+                Co-Builders (
+                {isPassPriceLoading ? (
+                  <Loader2 className="w-3 h-3 text-amber-500 animate-spin inline-block" />
+                ) : (
+                  `$${cobuilderPassPrice || 0}`
+                )}
+                )
+              </span>
             </a>
           </div>
         </div>

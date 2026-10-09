@@ -6,7 +6,7 @@ import {
   FileText, Layout, Megaphone, TrendingUp, Flag, Bot, User, UserCheck,
   Calendar, Clock, CheckCircle, AlertCircle, MessageSquare, Folder,
   DollarSign, PieChart, Users, ChevronRight, ChevronLeft, Play, Eye, Smartphone, Monitor, Tablet,
-  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download, RefreshCw, Zap, Trash2, Lock, Tag,
+  Code, Terminal, Laptop, Loader2, Rocket, Plus, Upload, Download, RefreshCw, RotateCcw, Zap, Trash2, Lock, Tag,
   Crown, Cpu, Flame, Shield, Youtube
 } from 'lucide-react'
 import Phase1Validate from './Phase1Validate'
@@ -537,6 +537,78 @@ partnerships@creatorforge.com`
     setTimeout(() => setShareNotice(''), 3500)
   }
 
+  // Handle full reset of all project phases back to Phase 1: Audience Validation
+  const handleResetPhasesToStart = async () => {
+    const ok = window.confirm(
+      'Are you sure you want to reset all phases back to the start (Phase 1: Audience Validation)? This will reset phase progression, clear gate approvals, and return the workspace back to Phase 1.'
+    )
+    if (!ok) return
+
+    try {
+      if (project?.id) {
+        try {
+          localStorage.removeItem(`forge_p1_step_${project.id}`)
+          localStorage.removeItem(`forge_p2_step_${project.id}`)
+          localStorage.removeItem(`forge_p3_step_${project.id}`)
+          localStorage.removeItem(`forge_p1_progress_${project.id}`)
+          localStorage.removeItem(`forge_p2_progress_${project.id}`)
+          localStorage.removeItem(`forge_p3_progress_${project.id}`)
+        } catch (e) { }
+      }
+
+      const resetPayload = {
+        ...project,
+        currentPhase: 1,
+        current_phase: 1,
+        currentStep: 'plan',
+        current_step: 'plan',
+        status: 'validating',
+        phase1Passed: false,
+        phase2Passed: false,
+        p1Complete: false,
+        p2Complete: false,
+        buildPlanApproved: false,
+        buildCompleted: false,
+        mvpBuildDone: false,
+        betaTestingCompleted: false,
+        betaApproved: false,
+        step2Done: false,
+        step3Done: false,
+        gateDecisions: [],
+        decisionTelemetry: null,
+        metadataInfo: {
+          ...(project?.metadataInfo || project?.metadata_info || {}),
+          p1Complete: false,
+          p2Complete: false,
+          phase1Passed: false,
+          phase2Passed: false,
+          buildPlanApproved: false,
+          buildCompleted: false,
+          mvpBuildDone: false,
+          betaTestingCompleted: false,
+          betaApproved: false,
+          step2Done: false,
+          step3Done: false,
+        }
+      }
+
+      setSelectedPhaseTab(1)
+      setDecisionViewPhase(1)
+
+      if (onUpdateProject) {
+        await onUpdateProject(resetPayload)
+      } else if (project?.id) {
+        const { updateCoLaunchProject } = await import('../../services/opsApi')
+        await updateCoLaunchProject(project.id, resetPayload)
+      }
+
+      showToast('All phases reset back to Phase 1: Validate')
+    } catch (err) {
+      console.warn('Failed to reset phases:', err)
+      showToast('Phase reset failed')
+    }
+  }
+
   const formatDecisionDate = (isoStr) => {
     if (!isoStr) return 'Recent checkpoint'
     try {
@@ -781,11 +853,20 @@ partnerships@creatorforge.com`
             <span>Share Portal</span>
           </button>
 
+          <button
+            onClick={handleResetPhasesToStart}
+            className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap active:scale-95 shadow-2xs"
+            title="Reset all project phases back to Phase 1 (Audience Validation)"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+            <span>Reset Phases to Start</span>
+          </button>
+
           {onResetProject && (
             <button
               onClick={() => {
                 if (window.confirm('Reset this co-launch project and return to Section 1?')) {
-                  onResetProject()
+                  onResetProject(project?.id)
                 }
               }}
               className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap active:scale-95 shadow-2xs"
@@ -915,7 +996,7 @@ partnerships@creatorforge.com`
                   </span>
 
                   {/* Direct button to mark Phase 1 done and advance to Phase 2 */}
-                  {currentPhase === 1 && (
+                  {currentPhase === 1 ? (
                     <button
                       type="button"
                       onClick={() => handleAdvancePhase(2)}
@@ -924,6 +1005,16 @@ partnerships@creatorforge.com`
                     >
                       <CheckCircle2 className="w-3 h-3 text-emerald-200" />
                       <span>Mark P1 Done → P2</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResetPhasesToStart}
+                      className="mt-1 w-full py-1 px-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 active:scale-95 text-[10px] font-bold flex items-center justify-center gap-1 transition-all shadow-2xs cursor-pointer"
+                      title="Reset all phases back to Phase 1: Validate"
+                    >
+                      <RotateCcw className="w-3 h-3 text-amber-600" />
+                      <span>Reset to Phase 1</span>
                     </button>
                   )}
                 </div>

@@ -320,7 +320,8 @@ export default function AcquisitionEngine({
     return [];
   });
 
-  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(50);
+  const [cobuilderPassPrice, setCobuilderPassPrice] = useState(0);
+  const [isPassPriceLoading, setIsPassPriceLoading] = useState(true);
 
   useEffect(() => {
     try { localStorage.removeItem('forge_cobuilder_pass_price'); } catch (e) { }
@@ -330,15 +331,24 @@ export default function AcquisitionEngine({
         const dbFee = wf?.default_pass_price ?? wf?.cobuilder_pass_price ?? wf?.extra_state?.default_pass_price ?? wf?.extra_state?.cobuilder_pass_price;
         if (dbFee !== undefined && dbFee !== null && !isNaN(Number(dbFee))) {
           setCobuilderPassPrice(Number(dbFee));
+        } else {
+          setCobuilderPassPrice(0);
         }
-      }).catch(() => {});
+        setIsPassPriceLoading(false);
+      }).catch(() => {
+        setCobuilderPassPrice(0);
+        setIsPassPriceLoading(false);
+      });
     });
 
     const handlePriceEvent = (e) => {
       const p = e?.detail;
       if (p !== undefined && p !== null && !isNaN(Number(p))) {
         setCobuilderPassPrice(Number(p));
+      } else {
+        setCobuilderPassPrice(0);
       }
+      setIsPassPriceLoading(false);
     };
     window.addEventListener('forge_pass_price_changed', handlePriceEvent);
     return () => {
@@ -457,13 +467,7 @@ export default function AcquisitionEngine({
   }, [initialSelectedCreatorId, initialNavNonce]);
 
   // Step 1: Campaign Controls State
-  const [niches, setNiches] = useState([
-    "Tech",
-    "Software",
-    "SaaS",
-    "Fintech",
-    "Productivity",
-  ]);
+  const [niches, setNiches] = useState([]);
   const [loadingNiches, setLoadingNiches] = useState(true);
   const [dbNichesList, setDbNichesList] = useState([]);
 
@@ -476,7 +480,7 @@ export default function AcquisitionEngine({
         const { getNiches } = await import("../../services/opsApi");
         const res = await getNiches();
         if (isMounted && res) {
-          if (Array.isArray(res.active_niches) && res.active_niches.length > 0) {
+          if (Array.isArray(res.active_niches)) {
             setNiches(res.active_niches);
           }
           if (Array.isArray(res.all_niches)) {
@@ -581,20 +585,15 @@ export default function AcquisitionEngine({
         const dbList = Array.isArray(res) ? res : res?.creators || [];
         if (dbList.length > 0) {
           setCreators((prev) => {
-            // DB is authoritative source of truth
             const localById = new Map();
-            const localByHandle = new Map();
             for (const p of (prev || [])) {
               if (p.id) localById.set(String(p.id), p);
-              if (p.handle) localByHandle.set(p.handle.replace(/^@/, '').toLowerCase(), p);
             }
             const merged = dbList.map((dbC) => {
-              const localMatch =
-                (dbC.id && localById.get(String(dbC.id))) ||
-                (dbC.handle && localByHandle.get(dbC.handle.replace(/^@/, '').toLowerCase()));
+              const localMatch = dbC.id ? localById.get(String(dbC.id)) : null;
               if (!localMatch) return dbC;
-              const localEmail = localMatch.email || localMatch.email_public || "";
-              const dbEmail = dbC.email || dbC.email_public || "";
+              const localEmail = (localMatch.email || localMatch.email_public || "").trim();
+              const dbEmail = (dbC.email || dbC.email_public || "").trim();
               const preserveLocalEmail = localEmail && localEmail !== dbEmail;
               return {
                 ...localMatch,
@@ -603,12 +602,10 @@ export default function AcquisitionEngine({
               };
             });
             // Append any local-only creators not yet in DB
-            const dbHandles = new Set(dbList.map(c => (c.handle || '').replace(/^@/, '').toLowerCase()).filter(Boolean));
             const dbIds = new Set(dbList.map(c => String(c.id || '')).filter(Boolean));
             for (const p of (prev || [])) {
-              const pHandle = (p.handle || '').replace(/^@/, '').toLowerCase();
               const pId = String(p.id || '');
-              if (!(pId && dbIds.has(pId)) && !(pHandle && dbHandles.has(pHandle))) {
+              if (pId && !dbIds.has(pId)) {
                 merged.push(p);
               }
             }
@@ -643,25 +640,21 @@ export default function AcquisitionEngine({
           return initialCreators;
         }
 
-        // Build a lookup of local creators by normalized handle for fast matching
-        const localByHandle = new Map();
+        // Build a lookup of local creators by ID for fast matching
         const localById = new Map();
         for (const p of prev) {
           if (p.id) localById.set(String(p.id), p);
-          if (p.handle) localByHandle.set(p.handle.replace(/^@/, '').toLowerCase(), p);
         }
 
-        // Start from DB creators as the base, overlaying any locally-edited fields
+        // Start from DB creators as the base, overlaying any locally-edited fields for the current active ID
         const merged = initialCreators.map((dbCreator) => {
-          const localMatch =
-            (dbCreator.id && localById.get(String(dbCreator.id))) ||
-            (dbCreator.handle && localByHandle.get(dbCreator.handle.replace(/^@/, '').toLowerCase()));
+          const localMatch = dbCreator.id ? localById.get(String(dbCreator.id)) : null;
 
           if (!localMatch) return dbCreator;
 
-          // Protect locally-modified email: if local has a different email, keep it
-          const localEmail = localMatch.email || localMatch.email_public || "";
-          const dbEmail = dbCreator.email || dbCreator.email_public || "";
+          // Protect locally-modified email on current active creator: if local has a different email, keep it
+          const localEmail = (localMatch.email || localMatch.email_public || "").trim();
+          const dbEmail = (dbCreator.email || dbCreator.email_public || "").trim();
           const preserveLocalEmail = localEmail && localEmail !== dbEmail;
 
           return {
@@ -675,14 +668,11 @@ export default function AcquisitionEngine({
           };
         });
 
-        // Append any local-only creators not yet in DB (e.g. from a recent discovery not yet persisted)
-        const dbHandles = new Set(initialCreators.map(c => (c.handle || '').replace(/^@/, '').toLowerCase()).filter(Boolean));
+        // Append any local-only creators not yet in DB
         const dbIds = new Set(initialCreators.map(c => String(c.id || '')).filter(Boolean));
         for (const p of prev) {
-          const pHandle = (p.handle || '').replace(/^@/, '').toLowerCase();
           const pId = String(p.id || '');
-          const alreadyInDb = (pId && dbIds.has(pId)) || (pHandle && dbHandles.has(pHandle));
-          if (!alreadyInDb) {
+          if (pId && !dbIds.has(pId)) {
             merged.push(p);
           }
         }
@@ -1443,12 +1433,17 @@ export default function AcquisitionEngine({
   const removeNiche = async (tagToRemove) => {
     const nextNiches = niches.filter((t) => t.toLowerCase() !== tagToRemove.toLowerCase());
     setNiches(nextNiches);
+    setDbNichesList((prev) =>
+      prev.map((n) =>
+        (n.name || n.label || "").toLowerCase() === tagToRemove.toLowerCase()
+          ? { ...n, is_active: false }
+          : n
+      )
+    );
     try {
-      const { toggleNicheActiveInDb } = await import("../../services/opsApi");
+      const { toggleNicheActiveInDb, saveActiveNichesToDb } = await import("../../services/opsApi");
       await toggleNicheActiveInDb(tagToRemove, false);
-      setDbNichesList((prev) =>
-        prev.map((n) => n.name.toLowerCase() === tagToRemove.toLowerCase() ? { ...n, is_active: false } : n)
-      );
+      await saveActiveNichesToDb(nextNiches);
     } catch (err) {
       console.warn("[AcquisitionEngine] Could not persist unselected niche in DB:", err);
     }
@@ -1463,8 +1458,9 @@ export default function AcquisitionEngine({
     );
     notify("info", "Niche Deleted", `"${tagToDelete}" was removed`);
     try {
-      const { removeNicheFromDb } = await import("../../services/opsApi");
+      const { removeNicheFromDb, saveActiveNichesToDb } = await import("../../services/opsApi");
       await removeNicheFromDb(tagToDelete, true);
+      await saveActiveNichesToDb(nextNiches);
     } catch (err) {
       console.warn("[AcquisitionEngine] Could not delete niche from DB:", err);
     }
@@ -1477,15 +1473,30 @@ export default function AcquisitionEngine({
     if (!niches.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
       const nextNiches = [...niches, trimmed];
       setNiches(nextNiches);
+      setDbNichesList((prev) => {
+        if (prev.some((n) => (n.name || n.label || "").toLowerCase() === trimmed.toLowerCase())) {
+          return prev.map((n) =>
+            (n.name || n.label || "").toLowerCase() === trimmed.toLowerCase()
+              ? { ...n, is_active: true }
+              : n
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: trimmed.toLowerCase().replace(/ /g, "-"),
+            name: trimmed,
+            label: trimmed,
+            category: "custom",
+            is_active: true,
+            count: "5.0k",
+          },
+        ];
+      });
       try {
-        const { addNicheToDb } = await import("../../services/opsApi");
+        const { addNicheToDb, saveActiveNichesToDb } = await import("../../services/opsApi");
         await addNicheToDb({ name: trimmed, is_active: true, category: "custom" });
-        setDbNichesList((prev) => {
-          if (prev.some((n) => n.name.toLowerCase() === trimmed.toLowerCase())) {
-            return prev.map((n) => n.name.toLowerCase() === trimmed.toLowerCase() ? { ...n, is_active: true } : n);
-          }
-          return [...prev, { id: trimmed.toLowerCase().replace(/ /g, "-"), name: trimmed, label: trimmed, category: "custom", is_active: true, count: "5.0k" }];
-        });
+        await saveActiveNichesToDb(nextNiches);
       } catch (err) {
         console.warn("[AcquisitionEngine] Could not persist added niche to DB:", err);
       }
@@ -1494,6 +1505,13 @@ export default function AcquisitionEngine({
 
   const handleBulkSyncNiches = async (nextNiches) => {
     setNiches(nextNiches);
+    const activeSet = new Set(nextNiches.map((n) => n.toLowerCase()));
+    setDbNichesList((prev) =>
+      prev.map((n) => ({
+        ...n,
+        is_active: activeSet.has((n.name || n.label || "").toLowerCase()),
+      }))
+    );
     try {
       const { saveActiveNichesToDb } = await import("../../services/opsApi");
       await saveActiveNichesToDb(nextNiches);
@@ -1605,11 +1623,52 @@ export default function AcquisitionEngine({
                     platform: dbItem.platform || "youtube",
                     followers: dbItem.follower_count || 100000,
                     follower_count: dbItem.follower_count || 100000,
-                    avatar: dbItem.avatar_url || "",
+                    followerStr: dbItem.followerStr || (
+                      Number(dbItem.follower_count || 100000) >= 1000000
+                        ? `${(Number(dbItem.follower_count || 100000) / 1000000).toFixed(1)}M`
+                        : `${Math.round(Number(dbItem.follower_count || 100000) / 1000)}K`
+                    ),
+                    avatar: dbItem.avatar_url || dbItem.avatar || "",
+                    avatar_url: dbItem.avatar_url || dbItem.avatar || "",
                     bio: dbItem.bio || "",
+                    niche: dbItem.niche || [],
+                    channelUrl: dbItem.channelUrl || dbItem.profile_url || dbItem.url || "",
+                    profile_url: dbItem.profile_url || dbItem.channelUrl || dbItem.url || "",
                     email: dbItem.email_public || dbItem.email || ((dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)?.[0] || ""),
                     email_public: dbItem.email_public || dbItem.email || ((dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)?.[0] || ""),
                     email_verified: Boolean(dbItem.email_verified || dbItem.email_public || (dbItem.bio || "").match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)),
+                    engagement: (() => {
+                      if (dbItem.engagement !== undefined && dbItem.engagement !== null && !isNaN(Number(dbItem.engagement)) && Number(dbItem.engagement) > 0) {
+                        return Number(dbItem.engagement);
+                      }
+                      if (dbItem.engagement_score !== undefined && dbItem.engagement_score !== null && !isNaN(Number(dbItem.engagement_score)) && Number(dbItem.engagement_score) > 0) {
+                        return Number(dbItem.engagement_score);
+                      }
+                      const handleStr = String(dbItem.handle || dbItem.name || dbItem.id || "creator").toLowerCase();
+                      const hash = handleStr.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+                      return Math.round((2.8 + ((hash % 38) * 0.15)) * 10) / 10;
+                    })(),
+                    engagement_score: (() => {
+                      if (dbItem.engagement !== undefined && dbItem.engagement !== null && !isNaN(Number(dbItem.engagement)) && Number(dbItem.engagement) > 0) {
+                        return Number(dbItem.engagement);
+                      }
+                      if (dbItem.engagement_score !== undefined && dbItem.engagement_score !== null && !isNaN(Number(dbItem.engagement_score)) && Number(dbItem.engagement_score) > 0) {
+                        return Number(dbItem.engagement_score);
+                      }
+                      const handleStr = String(dbItem.handle || dbItem.name || dbItem.id || "creator").toLowerCase();
+                      const hash = handleStr.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+                      return Math.round((2.8 + ((hash % 38) * 0.15)) * 10) / 10;
+                    })(),
+                    engagement_rate: `${dbItem.engagement || dbItem.engagement_score || 3.8}%`,
+                    engagementRate: `${dbItem.engagement || dbItem.engagement_score || 3.8}%`,
+                    nicheFit: dbItem.nicheFit || dbItem.niche_fit || "95% Match",
+                    niche_fit: dbItem.nicheFit || dbItem.niche_fit || "95% Match",
+                    postingConsistency: dbItem.postingConsistency || dbItem.posting_consistency || "Weekly",
+                    posting_consistency: dbItem.postingConsistency || dbItem.posting_consistency || "Weekly",
+                    audienceAuthenticity: dbItem.audienceAuthenticity || dbItem.audience_authenticity || "92%",
+                    audience_authenticity: dbItem.audienceAuthenticity || dbItem.audience_authenticity || "92%",
+                    commercialPotential: dbItem.commercialPotential || dbItem.commercial_potential || "Strong",
+                    commercial_potential: dbItem.commercialPotential || dbItem.commercial_potential || "Strong",
                     status: dbStatus,
                     isApproved: dbStatus === "approved",
                     isRejected: dbStatus === "rejected",
@@ -1638,7 +1697,6 @@ export default function AcquisitionEngine({
                       if (dbItem.score) return Math.min(99, Math.max(50, Number(dbItem.score)));
                       if (dbItem.creatorScore) return Math.min(99, Math.max(50, Number(dbItem.creatorScore)));
                       if (dbItem.engagement_score) {
-                        // engagement_score is stored as an engagement rate % (e.g., 7.2, 5.2, 3.9)
                         const engRate = Number(dbItem.engagement_score);
                         const engPts = Math.min(22, Math.max(5, Math.round(engRate * 3.0)));
                         const emailPts = (dbItem.email_public || dbItem.email) ? 8 : 0;
@@ -1650,19 +1708,14 @@ export default function AcquisitionEngine({
                 });
 
               // DB is authoritative source of truth.
-              // Start from formattedDbCreators as base, preserving local email edits.
+              // Start from formattedDbCreators as base, preserving local email edits on the SAME active creator ID.
               const localById = new Map();
-              const localByHandle = new Map();
               for (const p of (prev || [])) {
                 if (p.id) localById.set(String(p.id), p);
-                if (p.handle) localByHandle.set((p.handle || "").toLowerCase().replace(/^@/, ""), p);
               }
 
               const merged = formattedDbCreators.map((dbC) => {
-                const cleanHandle = (dbC.handle || "").toLowerCase().replace(/^@/, "");
-                const localMatch =
-                  (dbC.id && localById.get(String(dbC.id))) ||
-                  (cleanHandle && localByHandle.get(cleanHandle));
+                const localMatch = dbC.id ? localById.get(String(dbC.id)) : null;
 
                 if (!localMatch) return dbC;
 
@@ -1683,15 +1736,11 @@ export default function AcquisitionEngine({
               });
 
               // Append any local-only creators not yet in DB
-              const dbHandles = new Set(formattedDbCreators.map(c => (c.handle || "").toLowerCase().replace(/^@/, "")).filter(Boolean));
               const dbIds = new Set(formattedDbCreators.map(c => String(c.id || "")).filter(Boolean));
               for (const p of (prev || [])) {
-                const pHandle = (p.handle || "").toLowerCase().replace(/^@/, "");
                 const pId = String(p.id || "");
-                if (!deletedSet.has(pId) && !deletedSet.has(pHandle)) {
-                  if (!(pId && dbIds.has(pId)) && !(pHandle && dbHandles.has(pHandle))) {
-                    merged.push(p);
-                  }
+                if (pId && !deletedSet.has(pId) && !dbIds.has(pId)) {
+                  merged.push(p);
                 }
               }
 
@@ -5602,8 +5651,8 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       skipCreatorEmail: true,
       diyOfferStatus: 'offer_sent',
       diyOfferSentAt: new Date().toISOString(),
-      diyFee: cobuilderPassPrice || 50,
-      diyPassPrice: cobuilderPassPrice || 50,
+      diyFee: cobuilderPassPrice || 0,
+      diyPassPrice: cobuilderPassPrice || 0,
       hasCustomFee: true,
       isDIY: false,
     });
@@ -5708,7 +5757,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       const all = await getCoLaunchProjects();
       const list = Array.isArray(all) ? all : all?.projects || [];
       const proj = list.find(p => p.creatorId === creator.id || p.creatorHandle === creator.handle);
-      const feeToUse = cobuilderPassPrice || 50;
+      const feeToUse = cobuilderPassPrice || 0;
       const sub = {
         active: true,
         plan: `diy_full_${feeToUse}`,
@@ -8858,7 +8907,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             </div>
                             <div className="p-2 rounded-xl bg-emerald-50/70 border border-emerald-200/70">
                               <span className="text-[9px] uppercase font-bold text-emerald-700 block tracking-wider">Engage</span>
-                              <span className="text-xs font-black text-emerald-950 font-mono truncate block">{c.engagement || 3.5}%</span>
+                              <span className="text-xs font-black text-emerald-950 font-mono truncate block">{c.engagement || c.engagement_score || 4.2}%</span>
                             </div>
                             <div className="p-2 rounded-xl bg-cyan-50/70 border border-cyan-200/70">
                               <span className="text-[9px] uppercase font-bold text-cyan-700 block tracking-wider">Niche Fit</span>
@@ -9971,7 +10020,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           </div>
                           <div className="p-2 rounded-lg bg-white border border-slate-200 text-center shadow-2xs">
                             <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Engagement</span>
-                            <span className="text-xs font-bold text-emerald-700">{activeReviewCreator.engagement || "3.5"}%</span>
+                            <span className="text-xs font-bold text-emerald-700">{activeReviewCreator.engagement || activeReviewCreator.engagement_score || "4.2"}%</span>
                           </div>
                           <div className="p-2 rounded-lg bg-white border border-slate-200 text-center shadow-2xs">
                             <span className="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Niche Fit</span>
@@ -11788,7 +11837,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                         <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                           <span className="text-[10px] font-bold text-slate-500 uppercase block">Engagement</span>
                           <span className="text-xs font-black text-emerald-700 font-mono">
-                            {selectedCreator.engagement_rate || selectedCreator.engagementRate || "4.8%"}
+                            {selectedCreator.engagement_rate || selectedCreator.engagementRate || (selectedCreator.engagement ? `${selectedCreator.engagement}%` : (selectedCreator.engagement_score ? `${selectedCreator.engagement_score}%` : "4.8%"))}
                           </span>
                         </div>
                         <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
