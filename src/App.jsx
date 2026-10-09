@@ -22,6 +22,7 @@ import AdminErrorLogPage from './components/launch/AdminErrorLogPage'
 import ProjectOSPage from './components/launch/ProjectOSPage'
 import CreatorParticipationManager from './components/launch/CreatorParticipationManager'
 import BetaTestingPortal from './components/launch/BetaTestingPortal'
+import LaunchAuth from './components/launch/LaunchAuth'
 import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys } from './services/ai'
@@ -836,12 +837,20 @@ export default function App() {
 
   // /follow-up-crm or /crm route — standalone Creator Follow-Up & Reply Status CRM
   if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/follow-up-crm') || window.location.pathname === '/crm')) {
-    return <FollowUpCRMPage />
+    return (
+      <LaunchAuth>
+        <FollowUpCRMPage />
+      </LaunchAuth>
+    )
   }
 
   // /admin-error-log or /error-log route — standalone Pipeline Intelligence & Exception Dashboard
   if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin-error-log') || window.location.pathname.startsWith('/error-log') || window.location.pathname === '/errors')) {
-    return <AdminErrorLogPage />
+    return (
+      <LaunchAuth>
+        <AdminErrorLogPage />
+      </LaunchAuth>
+    )
   }
 
   // /project-os or /projects route — standalone Co-Launch Project Operations Center
@@ -850,7 +859,11 @@ export default function App() {
     window.location.pathname.startsWith('/projects') ||
     window.location.pathname === '/project'
   )) {
-    return <ProjectOSPage />
+    return (
+      <LaunchAuth>
+        <ProjectOSPage />
+      </LaunchAuth>
+    )
   }
 
   // /participation-manager, /co-builders, /participation route — dedicated admin creator participation & $50 pass console
@@ -860,12 +873,20 @@ export default function App() {
     window.location.pathname.startsWith('/cobuilder-admin') ||
     window.location.pathname === '/participation'
   )) {
-    return <CreatorParticipationManager />
+    return (
+      <LaunchAuth>
+        <CreatorParticipationManager />
+      </LaunchAuth>
+    )
   }
 
   // /launch or /creator-launch route — standalone Creator Launch OS (Operator Master Command Center)
   if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/launch') || window.location.pathname.startsWith('/creator-launch'))) {
-    return <CreatorLaunchLayout />
+    return (
+      <LaunchAuth>
+        <CreatorLaunchLayout />
+      </LaunchAuth>
+    )
   }
 
   // /ops route — internal operator pipeline panel (login-protected)

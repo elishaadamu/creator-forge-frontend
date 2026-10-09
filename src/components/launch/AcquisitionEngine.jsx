@@ -380,10 +380,6 @@ export default function AcquisitionEngine({
       const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       const stepParam = Number(searchParams?.get('step'));
       if (stepParam >= 1 && stepParam <= 6) return stepParam;
-      const savedStep = Number(
-        getExpiringItem("forge_launch_acquisition_step"),
-      );
-      if (savedStep >= 1 && savedStep <= 6) return savedStep;
       return 1;
     } catch {
       return 1;
@@ -1542,7 +1538,11 @@ export default function AcquisitionEngine({
         if (isMounted && ws) {
           const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
           const urlStep = Number(searchParams?.get('step'));
-          if (!urlStep && !initialActiveStep && !isInitialLoadDone.current && ws.active_step && ws.active_step >= 1 && ws.active_step <= 6) {
+          if (urlStep && urlStep >= 1 && urlStep <= 6) {
+            setActiveStep(urlStep);
+          } else if (initialActiveStep && initialActiveStep >= 1 && initialActiveStep <= 6) {
+            setActiveStep(initialActiveStep);
+          } else if (!isInitialLoadDone.current && ws.active_step && ws.active_step >= 1 && ws.active_step <= 6 && (ws.active_step <= 2 || ws.selected_creator_id)) {
             setActiveStep(ws.active_step);
           }
           if (ws.selected_creator_id && !initialSelectedCreatorId) {

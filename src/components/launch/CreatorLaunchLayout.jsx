@@ -11,6 +11,8 @@ import { updatePageSEO } from '../../utils/seo'
 import { getExpiringItem, setExpiringItem, removeExpiringItem, ONE_HOUR_MS } from '../../utils/expiringStorage'
 import FloatingPolygons, { HeroShallowPolygons } from '../ui/FloatingPolygons'
 
+import { logoutLaunchAuth } from './LaunchAuth'
+
 export default function CreatorLaunchLayout({
   initialProject = null,
   initialCreators = [],
@@ -220,6 +222,7 @@ export default function CreatorLaunchLayout({
   // Logout handler: resets pipeline to Section 1, Step 1, locks Section 2, and cleans caches
   const handleLogout = () => {
     try {
+      logoutLaunchAuth()
       localStorage.removeItem('forge_active_session')
       localStorage.removeItem('forge_user_profile')
       localStorage.removeItem('forge_login_timestamp')
