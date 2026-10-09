@@ -274,7 +274,7 @@ export default function LaunchAuth({ children }) {
             <button
               type="submit"
               disabled={loading || !identifier.trim() || !password}
-              className="relative w-full group overflow-hidden flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm tracking-wide shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="relative w-full group flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm tracking-wide shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {loading ? (
                 <>
@@ -288,8 +288,8 @@ export default function LaunchAuth({ children }) {
                 </>
               )}
               {/* Signature Beacon Accent Dot */}
-              <span className="absolute -top-1 -right-1 flex h-3 w-3 pointer-events-none items-center justify-center">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#C8FF3D] border-2 border-slate-900 shadow-xs" />
+              <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 pointer-events-none items-center justify-center z-10">
+                <span className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm ring-1 ring-slate-900/10" />
               </span>
             </button>
           </form>
