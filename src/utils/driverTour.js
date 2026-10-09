@@ -92,13 +92,29 @@ function createManagedTour({ steps, dismissKey, onDoneText = 'Done ✓' }) {
     showProgress: true,
     animate: true,
     allowClose: true,
-    overlayColor: 'rgba(15, 23, 42, 0.78)',
+    overlayClickBehavior: 'close',
     stagePadding: 8,
     stageRadius: 14,
     popoverClass: 'creator-forge-driver-popover',
     nextBtnText: 'Next Step →',
     prevBtnText: '← Back',
     doneBtnText: onDoneText,
+    onPopoverRender: (popover, { driver: drv }) => {
+      if (popover?.closeButton) {
+        popover.closeButton.onclick = (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          safeDismissAndClose(drv)
+        }
+      }
+      if (popover?.nextButton && drv.isLastStep()) {
+        popover.nextButton.onclick = (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          safeDismissAndClose(drv)
+        }
+      }
+    },
     onDoneClick: (element, step, { driver }) => {
       safeDismissAndClose(driver)
     },

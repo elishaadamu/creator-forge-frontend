@@ -16,8 +16,8 @@ import CreatorForgeLogo from '../ui/CreatorForgeLogo'
 import PostVisualMockup from './PostVisualMockup'
 import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards } from '../../utils/stepGuards'
 import { parseMainPricingAmount, parseConceptPricing } from '../../utils/pricing'
-import { resolveCreatorTheme, getThemeCssVariables } from '../../utils/creatorTheme'
 import CreatorBrandThemePicker from './CreatorBrandThemePicker'
+import { startCreatorPortalPrePaymentTour, startCreatorPortalPostPaymentTour } from '../../utils/driverTour'
 
 export default function CreatorPortal({ portalId }) {
   const [loading, setLoading] = useState(true)
@@ -206,6 +206,18 @@ export default function CreatorPortal({ portalId }) {
 
   // The database is the ONLY source of truth for payment status. No localStorage mocking!
   const isDiyActive = Boolean(isDiyFromDb || isExplicitUrlPaid)
+
+  // Auto-launch Creator Portal tour (Pre-payment or Post-payment) based on payment status
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isDiyActive) {
+        startCreatorPortalPostPaymentTour(false)
+      } else {
+        startCreatorPortalPrePaymentTour(false)
+      }
+    }, 1200)
+    return () => clearTimeout(timer)
+  }, [isDiyActive])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -722,7 +734,7 @@ export default function CreatorPortal({ portalId }) {
       <div className="h-1 w-full shrink-0 z-50 sticky top-0" style={{ background: theme.gradientAccent }} />
 
       {/* ── TOP NAV HEADER ──────────────────────────────────────────────────────── */}
-      <header className="border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-1 z-50 shadow-2xs w-full max-w-full">
+      <header id="tour-portal-header" className="border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-1 z-50 shadow-2xs w-full max-w-full">
         <div className="h-13 sm:h-14 flex items-center justify-between px-2.5 sm:px-6 gap-1.5 sm:gap-2 w-full">
           {/* Brand / Partner Identity */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1 sm:flex-initial">
@@ -804,7 +816,7 @@ export default function CreatorPortal({ portalId }) {
           <div className="hidden lg:flex items-center gap-2 shrink-0">
             {/* Track Indicator & Upgrade Pass Action */}
             {isDiyActive ? (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] font-mono font-bold shadow-2xs">
+              <div id="tour-portal-badge" className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] font-mono font-bold shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                 <span>Track 1: Co-Builder (${cobuilderPrice} Paid)</span>
               </div>
@@ -848,8 +860,19 @@ export default function CreatorPortal({ portalId }) {
               onThemeSelect={setActiveTheme}
             />
 
+            {/* Driver.js Interactive Workflow Tour Trigger */}
+            <button
+              type="button"
+              onClick={() => isDiyActive ? startCreatorPortalPostPaymentTour(true) : startCreatorPortalPrePaymentTour(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold transition-all shadow-2xs cursor-pointer shrink-0"
+              title="Start Guided Walkthrough (Driver.js)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span className="hidden sm:inline">Workflow Tour</span>
+            </button>
+
             {/* Revenue Share Pill */}
-            <div className="h-8 flex items-center gap-1.5 pl-2 border-l border-slate-200">
+            <div id="tour-portal-equity" className="h-8 flex items-center gap-1.5 pl-2 border-l border-slate-200">
               <div
                 className="px-2 py-0.5 rounded-lg border flex items-center gap-1 text-[11px] font-mono font-bold"
                 style={{
@@ -1173,7 +1196,7 @@ export default function CreatorPortal({ portalId }) {
 
         {/* ── INTERACTIVE CO-BUILDER PASS ($50 USD) UPGRADE BANNER ──────────────── */}
         {!isDiyActive && !isTrackChoicePending && (
-          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 border border-emerald-300/80 rounded-2xl p-4 sm:px-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div id="tour-portal-track-card" className="bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 border border-emerald-300/80 rounded-2xl p-4 sm:px-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Zap className="w-5 h-5 text-amber-400 fill-amber-400" />
@@ -1191,6 +1214,7 @@ export default function CreatorPortal({ portalId }) {
               </div>
             </div>
             <button
+              id="tour-portal-unlock-btn"
               type="button"
               onClick={() => setShowDiyModal(true)}
               className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all duration-150 shadow-sm hover:shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] shrink-0 whitespace-nowrap"
@@ -1447,7 +1471,7 @@ export default function CreatorPortal({ portalId }) {
 
               {/* Right Column: PREVIEW DECK - VENTURE SUMMARY (4 of 12 cols) */}
               <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
+                <div id="tour-portal-blueprint" className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
@@ -1579,7 +1603,9 @@ export default function CreatorPortal({ portalId }) {
           /* ── PROJECTOS WORKSPACE VIEW ────────────────────────────────────────── */
           <div className="space-y-6">
             {isDiyActive ? (
-              <ProjectOS project={project} onUpdateProject={handleUpdateProject} userRole="creator" isDIY={isDiyActive} />
+              <div id="tour-portal-workspace" className="space-y-4">
+                <ProjectOS project={project} onUpdateProject={handleUpdateProject} userRole="creator" isDIY={isDiyActive} />
+              </div>
             ) : (
               /* Studio Managed Status Dashboard */
               <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
@@ -1924,7 +1950,7 @@ export default function CreatorPortal({ portalId }) {
 
                 {/* TAB 2: COPYABLE LAUNCH CONTENT */}
                 {activeTab === 'scripts' && (
-                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5">
+                  <div id="tour-portal-campaigns" className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div>
                         <div className="flex items-center gap-2">
@@ -2119,7 +2145,7 @@ export default function CreatorPortal({ portalId }) {
 
                 {/* TAB 4: STUDIO CHAT & MESSAGES */}
                 {activeTab === 'messages' && (
-                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+                  <div id="tour-portal-chat" className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div>
                         <h3 className="font-bold text-slate-900 text-sm">Studio Chat & Co-Founder Dispatch</h3>
