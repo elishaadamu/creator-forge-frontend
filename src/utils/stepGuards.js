@@ -27,8 +27,7 @@ export function getPhase1StepGuards(project = {}) {
     project.validationPlan?.locked === true ||
     project.validationPlan?.approved === true ||
     project.validationPlan?.status === 'approved' ||
-    project.validationPlan?.status === 'locked' ||
-    project.validationPlan?.status === 'ready'
+    project.validationPlan?.status === 'locked'
   );
 
   // Step 2: Build Validation Assets (Requires Step 1 to be done)
@@ -100,7 +99,7 @@ export function getPhase1StepGuards(project = {}) {
 
   // Step access unlock status (each step requires the preceding step to be completed)
   const canAccessStep1 = true;
-  const canAccessStep2 = isStep1Done || Boolean(project.validationPlan?.threshold || project.validationPlan?.offer);
+  const canAccessStep2 = isStep1Done;
   const canAccessStep3 = isStep1Done && (isStep2Done || Boolean(project.landingPageApproved || project.assetsApproved));
   const canAccessStep4 = isStep1Done && isStep2Done && (isStep3Done || Boolean(resolvedKit));
   const canAccessStep5 = allPriorStepsDone || isStep4Done;

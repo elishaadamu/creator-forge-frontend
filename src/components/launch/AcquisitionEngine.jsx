@@ -5604,20 +5604,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
     setLaunchStepIndex(3);
     await new Promise((r) => setTimeout(r, 550));
 
-    const smartInitialPlan = buildSmartFallbackPlan({
-      productName: concept?.name,
-      productTagline: concept?.tagline,
-      creatorName: selectedCreator.name || selectedCreator.display_name,
-      handle: selectedCreator.handle,
-      followers: selectedCreator.followerStr || selectedCreator.follower_count,
-      niche: selectedCreator.niche,
-      pricing: concept?.pricing,
-      revenueModel: concept?.revenueModel,
-      mvpDifficulty: concept?.mvpDifficulty,
-    });
+    const cleanInitialPlan = {
+      customer: concept?.customer || '',
+      problem: concept?.problem || '',
+      offer: '',
+      pricing: '',
+      testMethod: '',
+      period: '',
+      threshold: '',
+      status: 'draft',
+      locked: false,
+    };
 
-    const parsedTargetMatch = smartInitialPlan.threshold.match(/\$([0-9,]+)/);
-    const parsedTargetVal = parsedTargetMatch ? Number(parsedTargetMatch[1].replace(/,/g, '')) : 12500;
+    const parsedTargetVal = 12500;
 
     onCreateProject({
       creatorId: selectedCreator.id,
@@ -5646,7 +5645,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
       presaleTarget: parsedTargetVal,
       targetRevenue: parsedTargetVal,
       currentPhase: 1,
-      validationPlan: smartInitialPlan,
+      phase1Step1Done: false,
+      planLocked: false,
+      validationPlan: cleanInitialPlan,
       portalLinkSent: true,
       skipCreatorEmail: true,
       diyOfferStatus: 'offer_sent',

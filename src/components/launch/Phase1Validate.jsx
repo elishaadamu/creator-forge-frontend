@@ -32,10 +32,7 @@ import {
   generateCampaignSocialImage,
   generateCampaignVideo,
   sendCampaignPostEmail,
-  toggleAutonomousCampaignDelivery,
-  startCampaignSimulation,
-  getCampaignSimulationStatus,
-  stopCampaignSimulation
+  toggleAutonomousCampaignDelivery
 } from '../../services/opsApi'
 import {
   parseMainPricingAmount,
@@ -378,11 +375,13 @@ export default function Phase1Validate({
       setPlan({
         customer: project.customer || project.targetAudience || '',
         problem: project.problem || '',
-        offer: `${project.productName || 'Product'} Founding Access: ${project.productTagline || ''}`,
-        pricing: project.selectedConcept?.pricing || project.pricing || '$29/mo Starter • $79/mo Pro',
-        testMethod: '1) Co-founder video announcement, 2) 10 user interviews, 3) 48-hour Founding Pre-Order sprint',
-        period: '14 days',
-        threshold: '$5,000 in pre-sales or 50 paid founding reservations'
+        offer: '',
+        pricing: '',
+        testMethod: '',
+        period: '',
+        threshold: '',
+        status: 'draft',
+        locked: false
       })
     }
 
@@ -672,7 +671,7 @@ export default function Phase1Validate({
   const generatePlan = async () => {
     setIsGenerating(true)
     setSaveStatus('saving')
-    showNotification('🤖 Architecting 30-day AI Validation Plan...')
+    showNotification('Architecting 30-day AI Validation Plan...')
     try {
       let generated = null
       if (api?.generateValidationPlan) {
@@ -682,11 +681,16 @@ export default function Phase1Validate({
       }
 
       if (generated) {
-        setPlan(generated)
+        const generatedDraft = {
+          ...generated,
+          status: 'draft',
+          locked: false
+        }
+        setPlan(generatedDraft)
         const newTarget = parseThresholdAmount(generated.threshold) || 12500
         const updated = {
           ...(project || {}),
-          validationPlan: generated,
+          validationPlan: generatedDraft,
           presaleTarget: newTarget,
           targetRevenue: newTarget,
           campaignKit,
@@ -697,12 +701,12 @@ export default function Phase1Validate({
         if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
 
         setSaveStatus('saved')
-        showNotification('✓ AI Validation Plan generated & saved to database!')
+        showNotification('AI Validation Plan generated and saved.')
         setTimeout(() => setSaveStatus('idle'), 2500)
       }
     } catch (err) {
       console.error('Validation plan error:', err)
-      showNotification(`❌ Failed to generate validation plan: ${err.message || 'Please verify AI keys.'}`)
+      showNotification(`Failed to generate validation plan: ${err.message || 'Please verify AI keys.'}`)
       setSaveStatus('idle')
     } finally {
       setIsGenerating(false)
@@ -711,7 +715,7 @@ export default function Phase1Validate({
 
   const generateCampaign = async () => {
     setIsGeneratingCampaign(true)
-    showNotification('🚀 Generating AI Campaign Kit: tailored roadmap, video scripts & posts...')
+    showNotification('Generating AI Campaign Kit: tailored roadmap, video scripts & posts...')
     try {
       let projectForGen = project
       const hasPosts = (Array.isArray(project?.recentPosts) && project.recentPosts.length > 0) ||
@@ -810,30 +814,16 @@ export default function Phase1Validate({
           }).catch(e => console.warn(e))
         }
 
-        showNotification('✓ Creator campaign assets generated with AI & saved to database!')
+        showNotification('Creator campaign assets generated with AI and saved to database.')
 
         // Auto-generate post graphic (OpenAI) and video teaser (Veo 3.1) in parallel
-        showNotification('🚀 Generating AI Campaign: image & video teaser...')
+        showNotification('Generating AI Campaign: image & video teaser...')
         handleGeneratePostImage(null, generated).catch(e => console.warn('Auto image gen warning:', e))
         handleGenerateCampaignVideo(null, generated).catch(e => console.warn('Auto video gen warning:', e))
-
-        // Auto-configure autonomous email delivery every 24 hours in creator timezone
-        const creatorEmailAddr = autonomousEmail || project?.creatorEmail || project?.creator_email || ''
-        const tzToUse = creatorTimezone || detectedTimezone
-        const countryToUse = creatorCountry || 'United States'
-        if (project?.id && creatorEmailAddr) {
-          toggleAutonomousCampaignDelivery(project.id, {
-            enabled: true,
-            recipientEmail: creatorEmailAddr,
-            preferredHour: 0,
-            timezone: tzToUse,
-            country: countryToUse
-          }).catch(e => console.warn('Auto email config warning:', e))
-        }
       }
     } catch (err) {
       console.error('Campaign generation error:', err)
-      showNotification(`❌ Failed to generate campaign assets: ${err.message || 'Please retry.'}`)
+      showNotification(`Failed to generate campaign assets: ${err.message || 'Please retry.'}`)
     } finally {
       setIsGeneratingCampaign(false)
     }
@@ -847,7 +837,7 @@ export default function Phase1Validate({
     const baseKit = targetKit || campaignKit || {}
     setImageGenError(null)
     setIsGeneratingImage(true)
-    showNotification('🎨 Generating image (OpenAI Astra)...')
+    showNotification('Generating image (OpenAI Astra)...')
     try {
       const promptToUse = typeof customPrompt === 'string' && customPrompt.trim()
         ? customPrompt.trim()
@@ -899,7 +889,7 @@ export default function Phase1Validate({
             metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: { ...(curr?.metadataInfo?.campaign_kit || {}), ...nextKit } }
           }))
         }
-        showNotification('✨ Image generated & saved!')
+        showNotification('Image generated and saved.')
       } else {
         throw new Error(res?.detail || 'Failed to generate image')
       }
@@ -907,7 +897,7 @@ export default function Phase1Validate({
       console.error('Image generation error:', err)
       const cleanMsg = err?.message || 'Image generation failed. Please try again.'
       setImageGenError(cleanMsg)
-      showNotification(`❌ Image generation failed: ${cleanMsg}`)
+      showNotification(`Image generation failed: ${cleanMsg}`)
     } finally {
       setIsGeneratingImage(false)
     }
@@ -921,7 +911,7 @@ export default function Phase1Validate({
     const baseKit = targetKit || campaignKit || {}
     setVideoGenError(null)
     setIsGeneratingVideo(true)
-    showNotification('🎬 Generating video (Veo 3.1)...')
+    showNotification('Generating video (Veo 3.1)...')
     try {
       const promptToUse = typeof customPrompt === 'string' && customPrompt.trim()
         ? customPrompt.trim()
@@ -981,7 +971,7 @@ export default function Phase1Validate({
             metadataInfo: { ...(curr?.metadataInfo || {}), campaign_kit: { ...(curr?.metadataInfo?.campaign_kit || {}), ...nextKit } }
           }))
         }
-        showNotification('🎬 Video generated & saved!')
+        showNotification('Video generated and saved.')
       } else {
         throw new Error(res?.detail || 'Failed to generate video')
       }
@@ -989,7 +979,7 @@ export default function Phase1Validate({
       console.error('Video generation error:', err)
       const cleanMsg = err?.message || 'Video generation failed. Please try again.'
       setVideoGenError(cleanMsg)
-      showNotification(`❌ Video generation failed: ${cleanMsg}`)
+      showNotification(`Video generation failed: ${cleanMsg}`)
     } finally {
       setIsGeneratingVideo(false)
     }
@@ -1066,7 +1056,7 @@ export default function Phase1Validate({
         recipientEmail: autonomousEmail || undefined
       })
       if (res?.success) {
-        showNotification(`📬 Post Kit sent to ${res.recipient}! Check inbox.`)
+        showNotification(`Post Kit sent to ${res.recipient}. Check inbox.`)
         if (res?.project?.validationCampaign?.campaignKit) {
           setCampaignKit(res.project.validationCampaign.campaignKit)
         } else {
@@ -1084,7 +1074,7 @@ export default function Phase1Validate({
       }
     } catch (err) {
       console.error('Email dispatch error:', err)
-      showNotification(`❌ Could not send post kit: ${err.message || 'Check email configuration'}`)
+      showNotification(`Could not send post kit: ${err.message || 'Check email configuration'}`)
     } finally {
       setSendingEmailTaskId(null)
       setIsSendingTodayEmail(false)
@@ -1124,71 +1114,12 @@ export default function Phase1Validate({
             dispatchSchedule: `Every 24 Hours (${tzToUse})`
           }
         }))
-        showNotification(enabled ? '✅ Autonomous post delivery active: Every 24 hours!' : '⏸️ 24-Hour delivery paused.')
+        showNotification(enabled ? 'Autonomous post delivery active: Every 24 hours.' : '24-Hour delivery paused.')
       }
     } catch (err) {
-      showNotification(`❌ Failed to update delivery settings: ${err.message}`)
+      showNotification(`Failed to update delivery settings: ${err.message}`)
     } finally {
       setIsSavingAutonomousConfig(false)
-    }
-  }
-
-  const [simulationState, setSimulationState] = useState(null)
-  const [isStartingSimulation, setIsStartingSimulation] = useState(false)
-
-  // Poll autonomous simulation status periodically (tab-aware)
-  useEffect(() => {
-    if (!project?.id) return
-    let timer = null
-    const pollSim = async () => {
-      if (typeof document !== 'undefined' && document.hidden) return
-      try {
-        const res = await getCampaignSimulationStatus(project.id)
-        if (res?.simulation) {
-          setSimulationState(res.simulation)
-        }
-      } catch (e) {
-        // quiet fallback
-      }
-    }
-    pollSim()
-    const isSimActive = simulationState?.status === 'running' || simulationState?.status === 'in_progress'
-    const intervalMs = isSimActive ? 10000 : 45000
-    timer = setInterval(pollSim, intervalMs)
-    return () => {
-      if (timer) clearInterval(timer)
-    }
-  }, [project?.id, simulationState?.status])
-
-  const handleStartSimulation = async () => {
-    if (!project?.id) return
-    setIsStartingSimulation(true)
-    try {
-      const res = await startCampaignSimulation(project.id, {
-        recipientEmail: autonomousEmail || undefined,
-        intervalSeconds: 42
-      })
-      if (res?.success) {
-        showNotification(`🚀 5-Minute autonomous dispatch started! Delivering posts every 42s to ${autonomousEmail || 'creator inbox'}.`)
-        setSimulationState(res.status)
-      } else {
-        throw new Error(res?.detail || res?.message || 'Failed to start simulation')
-      }
-    } catch (err) {
-      showNotification(`❌ Error starting simulation: ${err.message}`)
-    } finally {
-      setIsStartingSimulation(false)
-    }
-  }
-
-  const handleStopSimulation = async () => {
-    if (!project?.id) return
-    try {
-      await stopCampaignSimulation(project.id)
-      showNotification('🛑 Autonomous test stopped.')
-      setSimulationState(prev => prev ? { ...prev, running: false, status: 'cancelled' } : null)
-    } catch (err) {
-      showNotification(`❌ Error stopping simulation: ${err.message}`)
     }
   }
 
@@ -1201,14 +1132,14 @@ export default function Phase1Validate({
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    showNotification('📥 Asset download started!')
+    showNotification('Asset download started.')
   }
 
   const handleCopyTextWithFeedback = (text, taskId) => {
     if (!text) return
     navigator.clipboard.writeText(text)
     setCopiedTaskId(taskId)
-    showNotification('📋 Caption copied to clipboard!')
+    showNotification('Caption copied to clipboard.')
     setTimeout(() => setCopiedTaskId(null), 2500)
   }
 
@@ -1240,7 +1171,7 @@ export default function Phase1Validate({
     
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text)
-      showNotification('WhatsApp nudge message copied to clipboard!')
+      showNotification('WhatsApp nudge message copied to clipboard.')
     }
     const phone = (project?.creatorPhone || '').replace(/[^0-9]/g, '')
     if (phone) {
@@ -1268,7 +1199,7 @@ export default function Phase1Validate({
 
   const handleGenerateSurvey = async () => {
     setIsGeneratingSurvey(true)
-    showNotification('🤖 Generating dynamic AI discovery survey questions...')
+    showNotification('Generating dynamic AI discovery survey questions...')
     try {
       const generated = await generateDiscoverySurveyAI(project)
       if (generated) {
@@ -1283,11 +1214,11 @@ export default function Phase1Validate({
             research_survey: generated
           }).catch(e => console.warn('[Phase1] DB survey sync warning:', e))
         }
-        showNotification('✓ Dynamic AI discovery survey generated & saved!')
+        showNotification('Dynamic AI discovery survey generated and saved.')
       }
     } catch (err) {
       console.error('Survey generation error:', err)
-      showNotification(`❌ Failed to generate survey questions: ${err.message || 'Please retry.'}`)
+      showNotification(`Failed to generate survey questions: ${err.message || 'Please retry.'}`)
     } finally {
       setIsGeneratingSurvey(false)
     }
@@ -2005,18 +1936,18 @@ export default function Phase1Validate({
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <span>1. Validation Plan Specification</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                  AI Generated
+                  AI / Manual Input
                 </span>
               </h3>
               <p className="text-xs text-slate-500">
-                AI defines customer, problem, offer, pricing, test method, validation period + success threshold.
+                Define customer, problem, offer, pricing, test method, validation period and success threshold — generate with AI or enter manually.
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={generatePlan}
                 disabled={isGenerating}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm cursor-pointer"
               >
                 {isGenerating ? (
                   <>
@@ -2033,7 +1964,7 @@ export default function Phase1Validate({
               <button
                 onClick={saveAll}
                 disabled={saveStatus === 'saving'}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer ${
                   saveStatus === 'saved'
                     ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600 font-extrabold'
                     : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold'
@@ -2083,7 +2014,21 @@ export default function Phase1Validate({
                   onChange={event => updatePlan(field, event.target.value)}
                   rows={field === 'testMethod' ? 3 : 2}
                   className="w-full mt-1 resize-y bg-transparent text-slate-900 outline-none placeholder:text-slate-400 font-sans leading-relaxed text-xs"
-                  placeholder={`Click 'Generate Plan with AI' or enter ${label.toLowerCase()}...`}
+                  placeholder={
+                    field === 'customer'
+                      ? 'e.g., Creator businesses & solo founders...'
+                      : field === 'problem'
+                      ? 'e.g., High friction in client onboarding & manual workflow...'
+                      : field === 'offer'
+                      ? 'e.g., Founding Member VIP Access & lifetime platform pass...'
+                      : field === 'pricing'
+                      ? 'e.g., $29/mo Starter • $79/mo Pro...'
+                      : field === 'testMethod'
+                      ? 'e.g., 1) Video announcement, 2) 10 user interviews, 3) 48-hour presale sprint...'
+                      : field === 'period'
+                      ? 'e.g., 14 days...'
+                      : 'e.g., $5,000 in presales or 50 paid founding reservations...'
+                  }
                 />
               </label>
             ))}
@@ -2093,27 +2038,33 @@ export default function Phase1Validate({
             <button
               onClick={async () => {
                 saveAll()
+                const updatedPlan = { ...(plan || {}), status: 'approved', locked: true }
                 const updated = {
                   ...(project || {}),
-                  validationPlan: { ...(plan || {}), status: 'approved', locked: true },
-                  planLocked: true
+                  validationPlan: updatedPlan,
+                  planLocked: true,
+                  phase1Step1Done: true
                 }
                 if (onUpdateProject) onUpdateProject(prev => ({ ...(prev || {}), ...updated }))
                 if (project?.id) {
                   updateValidationPlan(project.id, {
-                    customer: plan.customer,
-                    problem: plan.problem,
-                    offer: plan.offer,
-                    pricing: plan.pricing,
-                    test_method: plan.testMethod,
-                    period: plan.period,
-                    threshold: plan.threshold,
+                    customer: plan.customer || '',
+                    problem: plan.problem || '',
+                    offer: plan.offer || '',
+                    pricing: plan.pricing || '',
+                    test_method: plan.testMethod || '',
+                    period: plan.period || '',
+                    threshold: plan.threshold || '',
                     target_revenue: presaleTarget,
                     status: 'approved',
                     locked: true
                   }).catch(e => console.warn(e))
+                  updateCoLaunchProject(project.id, {
+                    planLocked: true,
+                    phase1Step1Done: true
+                  }).catch(e => console.warn(e))
                 }
-                showNotification('Validation plan approved & locked! Advancing to Assets.')
+                showNotification('Validation plan approved and locked. Advancing to Assets.')
                 setActiveStep('assets')
                 onSelectStep?.('assets')
               }}
@@ -3439,59 +3390,8 @@ export default function Phase1Validate({
                         >
                           {isAutonomousEnabled ? 'Pause 24-Hour Dispatch' : 'Enable 24-Hour Dispatch'}
                         </button>
-                        <button
-                          type="button"
-                          onClick={simulationState?.running ? handleStopSimulation : handleStartSimulation}
-                          disabled={isStartingSimulation}
-                          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                            simulationState?.running
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 shadow-2xs'
-                              : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs'
-                          }`}
-                        >
-                          {simulationState?.running ? (
-                            <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
-                              <span>Stop 5-Min Test ({simulationState?.completed || 0}/{simulationState?.total || 7})</span>
-                            </>
-                          ) : (
-                            <>
-                              <Zap className="w-3.5 h-3.5 text-amber-300" />
-                              <span>Test 5-Min Dispatch</span>
-                            </>
-                          )}
-                        </button>
                       </div>
                     </div>
-
-                    {simulationState?.logs?.length > 0 && (
-                      <div className="mt-3 p-3 bg-white/90 rounded-xl border border-indigo-100 shadow-2xs text-xs">
-                        <div className="flex items-center justify-between font-bold text-slate-800 mb-1.5">
-                          <span className="flex items-center gap-1.5">
-                            {simulationState.running ? (
-                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            ) : simulationState.status === 'completed' ? (
-                              <span>✅</span>
-                            ) : (
-                              <span>🛑</span>
-                            )}
-                            Autonomous 5-Min Dispatch Sequence {simulationState.running ? 'Running' : simulationState.status === 'completed' ? 'Completed' : 'Stopped'}
-                          </span>
-                          <span className="text-[11px] font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 font-bold">
-                            {simulationState.completed} / {simulationState.total} Delivered
-                          </span>
-                        </div>
-                        <div className="flex gap-1.5 overflow-x-auto py-1">
-                          {simulationState.logs.map((log, lIdx) => (
-                            <div key={lIdx} className="shrink-0 bg-slate-50 border border-slate-200/80 rounded-lg px-2.5 py-1 text-[11px] flex items-center gap-1.5">
-                              <span className="font-bold text-slate-700">Day {log.day}:</span>
-                              <span className="text-slate-600 truncate max-w-[130px]">{log.title}</span>
-                              <span className="text-emerald-600 font-bold">✓</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Header & Progress */}
@@ -5547,7 +5447,7 @@ export default function Phase1Validate({
                   }`}
                 >
                   <span className="font-extrabold">1. Plan</span>
-                  <span className="font-mono">{isStep1Done ? '✓ Done' : '❌ Required'}</span>
+                  <span className="font-mono">{isStep1Done ? 'Done' : 'Required'}</span>
                 </button>
                 <button
                   onClick={() => handleStepChange('assets')}
@@ -5561,7 +5461,7 @@ export default function Phase1Validate({
                   }`}
                 >
                   <span className="font-extrabold">2. Assets</span>
-                  <span className="font-mono">{isStep2Done ? '✓ Done' : '❌ Required'}</span>
+                  <span className="font-mono">{isStep2Done ? 'Done' : 'Required'}</span>
                 </button>
                 <button
                   onClick={() => handleStepChange('campaign')}
@@ -5575,7 +5475,7 @@ export default function Phase1Validate({
                   }`}
                 >
                   <span className="font-extrabold">3. Campaign</span>
-                  <span className="font-mono">{isStep3Done ? '✓ Done' : '❌ Required'}</span>
+                  <span className="font-mono">{isStep3Done ? 'Done' : 'Required'}</span>
                 </button>
                 <button
                   onClick={() => handleStepChange('optimize')}
@@ -5589,7 +5489,7 @@ export default function Phase1Validate({
                   }`}
                 >
                   <span className="font-extrabold">4. Optimize</span>
-                  <span className="font-mono">{isStep4Done ? '✓ Done' : '❌ Required'}</span>
+                  <span className="font-mono">{isStep4Done ? 'Done' : 'Required'}</span>
                 </button>
               </div>
               <div className="flex items-center justify-end pt-1">

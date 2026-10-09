@@ -1252,7 +1252,7 @@ export default function LeadList({ onCountChange }) {
       setPlatformFilter(found.platform)
       setSearch(found.handle)
     } else {
-      showToast(`"@${search}" not found in database. Click "⚡ Scrape" to fetch them!`, 'error')
+      showToast(`"@${search}" not found in database. Click "Scrape" to fetch them!`, 'error')
     }
   }
 

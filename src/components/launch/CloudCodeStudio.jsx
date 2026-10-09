@@ -865,9 +865,9 @@ export default function CloudCodeStudio({
     setAiPromptText('')
     setTerminalLogs(prev => [
       ...prev,
-      `[code-assist] ⚡ Synthesizing detailed production code for ${activeFile.name}: "${prompt}"...`
+      `[code-assist] Synthesizing detailed production code for ${activeFile.name}: "${prompt}"...`
     ])
-    showToast?.(`🤖 AI is synthesizing production code for ${activeFile.name}...`, 'info')
+    showToast?.(`AI is synthesizing production code for ${activeFile.name}...`, 'info')
 
     try {
       const generatedCode = await editOrGenerateCodeFileAI(
@@ -895,16 +895,16 @@ export default function CloudCodeStudio({
         const lineCount = formattedCode.split('\n').length
         setTerminalLogs(prev => [
           ...prev,
-          `[code-assist] ✓ Generated ${lineCount} lines of rich code for ${activeFile.name}!`
+          `[code-assist] Generated ${lineCount} lines of rich code for ${activeFile.name}!`
         ])
-        showToast?.(`✓ AI generated ${lineCount} lines for ${activeFile.name}!`, 'success')
+        showToast?.(`AI generated ${lineCount} lines for ${activeFile.name}!`, 'success')
       }
     } catch (err) {
       setTerminalLogs(prev => [
         ...prev,
-        `[code-assist] ⚠️ Error during code synthesis: ${err.message}`
+        `[code-assist] Error during code synthesis: ${err.message}`
       ])
-      showToast?.(`❌ AI synthesis error: ${err.message}`, 'error')
+      showToast?.(`AI synthesis error: ${err.message}`, 'error')
     } finally {
       setIsAiPrompting(false)
     }
