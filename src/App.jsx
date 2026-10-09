@@ -48,12 +48,12 @@ const STEPS = [
 
 // Subtle accent colors per platform — kept low-opacity so B&W stays dominant
 const PLATFORM_ACCENTS = {
-  youtube:   { color: '#ff3b30', rgb: '255,59,48'   },
-  instagram: { color: '#e1306c', rgb: '225,48,108'  },
-  twitter:   { color: '#60a5fa', rgb: '96,165,250'  },
-  tiktok:    { color: '#00c8c8', rgb: '0,200,200'   },
-  twitch:    { color: '#9146ff', rgb: '145,70,255'  },
-  other:     { color: '#ffffff', rgb: '255,255,255' },
+  youtube: { color: '#ff3b30', rgb: '255,59,48' },
+  instagram: { color: '#e1306c', rgb: '225,48,108' },
+  twitter: { color: '#60a5fa', rgb: '96,165,250' },
+  tiktok: { color: '#00c8c8', rgb: '0,200,200' },
+  twitch: { color: '#9146ff', rgb: '145,70,255' },
+  other: { color: '#ffffff', rgb: '255,255,255' },
 }
 
 export function getAccent(platform) {
@@ -75,25 +75,25 @@ function GlobalToast({ toast, onClose }) {
   }, [onClose])
 
   const isSuccess = toast.type === 'success'
-  const isError   = toast.type === 'error'
+  const isError = toast.type === 'error'
 
   const accent = isSuccess
     ? {
-        rgb: '52,211,153', // emerald-400
-        gradient: 'linear-gradient(90deg, #34d399 0%, #10b981 100%)',
-        iconColor: '#34d399',
-        border: 'rgba(52,211,153,0.15)',
-        bgGlow: 'rgba(52,211,153,0.06)'
-      }
+      rgb: '52,211,153', // emerald-400
+      gradient: 'linear-gradient(90deg, #34d399 0%, #10b981 100%)',
+      iconColor: '#34d399',
+      border: 'rgba(52,211,153,0.15)',
+      bgGlow: 'rgba(52,211,153,0.06)'
+    }
     : isError
-    ? {
+      ? {
         rgb: '248,113,113', // red-400
         gradient: 'linear-gradient(90deg, #f87171 0%, #ef4444 100%)',
         iconColor: '#f87171',
         border: 'rgba(248,113,113,0.15)',
         bgGlow: 'rgba(248,113,113,0.06)'
       }
-    : {
+      : {
         rgb: '96,165,250', // blue-400
         gradient: 'linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%)',
         iconColor: '#60a5fa',
@@ -244,7 +244,7 @@ export default function App() {
           return cachedStep
         }
       }
-    } catch {}
+    } catch { }
     return 'welcome'
   })
 
@@ -269,7 +269,7 @@ export default function App() {
   // Lives at the root so it persists across all tab/page navigation.
   const [bgJobs, setBgJobs] = useState({})
   const abortControllersRef = useRef({})
-  
+
   // API Keys modal state
   const [apiModalOpen, setApiModalOpen] = useState(false)
   const [dbLoadedTimestamp, setDbLoadedTimestamp] = useState(0)
@@ -453,11 +453,11 @@ export default function App() {
     const cData = currentCreatorData || creatorData
     const h = cData?.handle || 'default'
     const hLower = h.toLowerCase()
-    
+
     const calendar_data = {}
     const launch_pack_data = {}
     const studio_data = {}
-    
+
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
       if (key && key.startsWith('forge_calendar_')) {
@@ -507,7 +507,7 @@ export default function App() {
     if (newStep === 'login') path = '/login'
     else if (newStep === 'signup') path = '/signup'
     else if (newStep === 'dashboard') path = '/dashboard'
-    
+
     if (window.location.pathname !== path) {
       window.history.pushState(null, '', path)
     }
@@ -519,7 +519,7 @@ export default function App() {
         .toLowerCase()
         .replace(/^@/, '')
         .replace(/[^a-z0-9_-]/g, '') || 'creatorforgeweb'
-      
+
       const profile = {
         username: mockUsername,
         email: 'creatorforgeweb@gmail.com',
@@ -532,7 +532,7 @@ export default function App() {
       const calendar_data = {}
       const launch_pack_data = {}
       const studio_data = {}
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
         if (key && key.startsWith('forge_calendar_')) {
@@ -562,17 +562,17 @@ export default function App() {
           studio_data
         })
       })
-      .then(res => res.json())
-      .then(data => {
-        console.log('[Forge] Auto-registered demo account successfully:', data)
-        setUserProfile(profile)
-        navigate('dashboard')
-      })
-      .catch(err => {
-        console.warn('[Forge] Demo auto-registration failed or user exists, continuing anyway:', err)
-        setUserProfile(profile)
-        navigate('dashboard')
-      })
+        .then(res => res.json())
+        .then(data => {
+          console.log('[Forge] Auto-registered demo account successfully:', data)
+          setUserProfile(profile)
+          navigate('dashboard')
+        })
+        .catch(err => {
+          console.warn('[Forge] Demo auto-registration failed or user exists, continuing anyway:', err)
+          setUserProfile(profile)
+          navigate('dashboard')
+        })
     } else {
       const idx = STEPS.indexOf(step)
       if (idx < STEPS.length - 1) navigate(STEPS[idx + 1])
@@ -679,7 +679,7 @@ export default function App() {
           navigate('login')
         }
       }
-      
+
       const onboardTs = parseInt(localStorage.getItem('forge_onboarding_timestamp') || '0', 10)
       if (onboardTs > 0 && now - onboardTs > 3600000) {
         localStorage.removeItem('forge_onboarding_step')
@@ -910,21 +910,21 @@ export default function App() {
   }
 
   const screens = {
-    'welcome':      <Welcome />,
+    'welcome': <Welcome />,
     'creator-link': <CreatorLink />,
-    'analyzing':    <Analyzing />,
-    'blueprint':    <Blueprint />,
-    'preview':      <Preview />,
-    'building':     <Building />,
-    'pre-finish':   <PreFinish />,
-    'celebration':  <Celebration />,
-    'signup':       <Signup />,
-    'login':        <Login />,
+    'analyzing': <Analyzing />,
+    'blueprint': <Blueprint />,
+    'preview': <Preview />,
+    'building': <Building />,
+    'pre-finish': <PreFinish />,
+    'celebration': <Celebration />,
+    'signup': <Signup />,
+    'login': <Login />,
   }
 
   return (
     <ForgeContext.Provider value={ctx}>
-      <div className={`min-h-screen ${step === 'welcome' ? 'bg-white text-slate-900' : 'bg-forge-bg text-white'} overflow-x-hidden`}>
+      <div className={`min-h-screen ${step === 'welcome' || step === 'login' ? 'bg-white text-slate-900' : 'bg-forge-bg text-white'} overflow-x-hidden`}>
         {screens[step] || <Welcome />}
       </div>
       {globalToast && (
