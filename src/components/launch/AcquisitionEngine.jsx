@@ -2186,1139 +2186,22 @@ export default function AcquisitionEngine({
     }));
   };
 
-  // ── Helper to ensure all creators have tailored, rich product concepts ───────
+  // ── Helper to ensure all creators have tailored product concepts (AI-Generated Only) ──
   const ensureCreatorConcepts = (c) => {
     if (!c) return [];
-    const d_name = c.name || c.display_name || c.handle || "Creator";
-    const first_name = d_name.split(" ")[0] || "Creator";
-    const primary_niche = Array.isArray(c.niche)
-      ? c.niche.join(", ")
-      : c.niche || "Tech";
-    const nicheLower = primary_niche.toLowerCase();
-    const score = c.creatorScore || c.score || 88;
-
-    // Check category archetype
-    let category = "tech";
-    if (
-      nicheLower.includes("finance") ||
-      nicheLower.includes("fintech") ||
-      nicheLower.includes("money") ||
-      nicheLower.includes("invest") ||
-      nicheLower.includes("crypto")
-    ) {
-      category = "finance";
-    } else if (
-      nicheLower.includes("video") ||
-      nicheLower.includes("edit") ||
-      nicheLower.includes("premiere") ||
-      nicheLower.includes("davinci") ||
-      nicheLower.includes("film")
-    ) {
-      category = "video_editing";
-    } else if (
-      nicheLower.includes("game") ||
-      nicheLower.includes("gaming") ||
-      nicheLower.includes("unity") ||
-      nicheLower.includes("unreal")
-    ) {
-      category = "game_dev";
-    } else if (
-      nicheLower.includes("productiv") ||
-      nicheLower.includes("study") ||
-      nicheLower.includes("notion") ||
-      nicheLower.includes("habit") ||
-      nicheLower.includes("life")
-    ) {
-      category = "productivity";
-    } else if (
-      nicheLower.includes("data") ||
-      nicheLower.includes("machine learning") ||
-      nicheLower.includes("ai") ||
-      nicheLower.includes("python")
-    ) {
-      category = "data_ai";
-    } else if (
-      nicheLower.includes("cyber") ||
-      nicheLower.includes("security") ||
-      nicheLower.includes("hack")
-    ) {
-      category = "cybersecurity";
-    } else if (
-      nicheLower.includes("saas") ||
-      nicheLower.includes("founder") ||
-      nicheLower.includes("startup") ||
-      nicheLower.includes("business")
-    ) {
-      category = "business_founder";
-    } else if (
-      nicheLower.includes("podcast") ||
-      nicheLower.includes("audio") ||
-      nicheLower.includes("voice")
-    ) {
-      category = "podcast_audio";
+    if (c.hasAiConcepts && Array.isArray(c.productConcepts) && c.productConcepts.length > 0) {
+      return c.productConcepts;
     }
-
-    // Replace stale generic developer concepts if creator is NOT in coding
-    const hasExistingValid =
-      c.productConcepts &&
-      c.productConcepts.length > 0 &&
-      c.productConcepts[0].keyFeatures;
-    const isStaleDev =
-      c.productConcepts?.[0]?.tagline?.includes("developers") &&
-      category !== "tech";
-    if (hasExistingValid && !isStaleDev) {
-      return ensureDistinctPricing(c.productConcepts);
-    }
-
-    switch (category) {
-      case "productivity":
-        return [
-          {
-            id: `p1_${c.id}`,
-            name: `${first_name} Executive OS`,
-            tagline: `All-in-one digital operating system, smart time-blocking & personal execution dashboard`,
-            customer: `Knowledge workers, solopreneurs, students & ambitious professionals seeking high daily output`,
-            problem: `App fatigue—juggling disconnected tools for task tracking, calendar planning, reading notes, and daily habits with zero cohesion`,
-            keyFeatures: [
-              `Unified daily command center with smart calendar time-blocking`,
-              `Second Brain knowledge capture & automated progressive summarization`,
-              `Goal & habit tracking engine with weekly reflection prompts`,
-              `Curated executive templates derived from ${first_name}'s proven systems`,
-            ],
-            audienceEvidence: `Over 540+ comments asking for downloadable templates, productivity setups, and system walkthroughs`,
-            pricing: "$19/mo Starter • $49/mo Pro",
-            revenueModel:
-              "SaaS Subscription • 50/50 Revenue Share • Projected $22.4K MRR at 2.8% audience conversion",
-            competition: `Generic tools like Notion or Todoist require tedious manual setup. ${first_name} OS works instantly out-of-the-box with built-in accountability.`,
-            mvpDifficulty: "Low (2 weeks)",
-            opportunityScore: Math.min(98, score + 3),
-            rationale: `Directly monetizes viewers who want to implement ${first_name}'s exact life-planning and productivity operating system.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}os.app`,
-              primaryMetric: "$22.4K MRR",
-              activeMetric: "1,280 Daily Planners",
-              efficiencyMetric: "88% Habit Completion",
-            },
-          },
-          {
-            id: `p2_${c.id}`,
-            name: `${first_name} Flow AI`,
-            tagline: `Context-aware Second Brain AI assistant & automated weekly review copilot`,
-            customer: `Busy professionals, founders & creators looking to synthesize reading notes and automate task triage`,
-            problem: `Information overload—saving hundreds of articles, book notes, and tasks that are never reviewed or acted upon`,
-            keyFeatures: [
-              `AI note synthesizer that automatically extracts action items from reading logs`,
-              `Weekly AI review engine that analyzes accomplishments and flags stalled goals`,
-              `Voice memo to structured task & project board transformer`,
-              `Context-aware search & synthesis across your entire personal knowledge base`,
-            ],
-            audienceEvidence: `360+ community inquiries requesting an AI assistant trained on ${first_name}'s thinking frameworks and note-taking methods`,
-            pricing: "$29/mo Pro • $79/mo Team",
-            revenueModel:
-              "Usage-tiered SaaS • 50/50 Co-founder Split • Projected $26.8K MRR within 60 days of launch",
-            competition: `Standard ChatGPT/Claude lack personal knowledge base integration and structured task triage workflows`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(96, score + 1),
-            rationale: `Solves the ubiquitous problem of knowledge hoarding by turning saved notes into active daily execution.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}flow.ai`,
-              primaryMetric: "$26.8K MRR",
-              activeMetric: "940 AI Reviews/Day",
-              efficiencyMetric: "4.9/5 User Rating",
-            },
-          },
-          {
-            id: `p3_${c.id}`,
-            name: `${first_name} Academy Hub`,
-            tagline: `Interactive sprint challenges, deep work co-working rooms & verified systems vault`,
-            customer: `Aspiring creators & career pivoters seeking structured accountability and peer review`,
-            problem: `Passive video watching yields low retention; learners lack interactive accountability, peer feedback, and structured implementation sprints`,
-            keyFeatures: [
-              "30-Day system building challenges with progress accountability checkpoints",
-              "Curated vault of vetted SOPs, production checklists & execution templates",
-              "Weekly live co-working deep work rooms & hot-seat audits",
-              "Verified milestone badges & community peer feedback network",
-            ],
-            audienceEvidence: `High recurring questions on Patreon/Discord asking for structured practice environments and feedback`,
-            pricing: "$79/mo Annual • $19/mo Community",
-            revenueModel:
-              "Hybrid SaaS & Community Tier • 50/50 Split • High retention with sub-3% churn rate",
-            competition: `Generic platforms like Coursera/Udemy lack live cohort interactivity and the creator's authoritative lifestyle trust`,
-            mvpDifficulty: "Medium (3-4 weeks)",
-            opportunityScore: Math.min(93, score - 2),
-            rationale: `Transforms free YouTube viewers into high-LTV recurring community members with lasting habit changes.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}hub.io`,
-              primaryMetric: "$34.8K MRR",
-              activeMetric: "1,620 Members",
-              efficiencyMetric: "92% Completion Rate",
-            },
-          },
-        ];
-
-      case "finance":
-        return [
-          {
-            id: `p1_${c.id}`,
-            name: `${first_name} Wealth OS`,
-            tagline: `Automated portfolio asset allocation, dividend tracking, and rebalancing workspace`,
-            customer: `Retail investors, FIRE aspirants & wealth builders seeking institutional-grade clarity`,
-            problem: `Messy, manual spreadsheets that break easily and lack automated dividend projections, tax-loss harvesting cues, and risk-weighted rebalancing`,
-            keyFeatures: [
-              `Multi-brokerage API portfolio aggregation & unified net worth tracking`,
-              `Automated target allocation rebalancing calculator with buy/sell recommendations`,
-              `Dividend cash flow calendar with compounding reinvestment projections`,
-              `Downside risk & asset class correlation stress-testing engine`,
-            ],
-            audienceEvidence: `Over 620+ comments across top financial teardowns asking for portfolio models and rebalancing tools`,
-            pricing: "$24/mo Starter • $69/mo Pro",
-            revenueModel:
-              "SaaS Subscription • 50/50 Revenue Share • Projected $28.5K MRR at 2.4% audience conversion",
-            competition: `Traditional tools (Empower, Kubera) are either bloated or cost-prohibitive. ${first_name} Wealth OS delivers clear, unbiased portfolio insights.`,
-            mvpDifficulty: "Low-Medium (3 weeks)",
-            opportunityScore: Math.min(98, score + 3),
-            rationale: `Capitalizes on high financial intent and trust in ${first_name}'s market analysis.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}wealth.app`,
-              primaryMetric: "$28.5K MRR",
-              activeMetric: "1,420 Active Portfolios",
-              efficiencyMetric: "96% Rebalancing Accuracy",
-            },
-          },
-          {
-            id: `p2_${c.id}`,
-            name: `${first_name} Alpha AI`,
-            tagline: `Autonomous 10-K financial teardown, earnings call synthesis & valuation copilot`,
-            customer: `Active stock pickers, analysts & serious retail investors looking to evaluate companies faster`,
-            problem: `Retail investors lack the 40+ hours needed every quarter to read 150-page financial filings and listen to earnings calls`,
-            keyFeatures: [
-              `Automated 10-K & quarterly earnings transcript breakdown with red-flag detection`,
-              `Discounted cash flow (DCF) model generator with customizable growth assumptions`,
-              `Competitor moat analysis & financial health ratio benchmarking`,
-              `Insider buying & institutional 13F filing change alert feed`,
-            ],
-            audienceEvidence: `410+ requests for ${first_name}'s custom valuation models and company research checklists`,
-            pricing: "$39/mo Pro • $99/mo Investor",
-            revenueModel:
-              "Usage-tiered SaaS • 50/50 Co-founder Split • Projected $31.2K MRR within 60 days of launch",
-            competition: `Bloomberg/FactSet cost $25,000/yr. Standard ChatGPT hallucinates financial tables. ${first_name} Alpha AI provides verified SEC data.`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(96, score + 1),
-            rationale: `Delivers institutional-grade research capabilities at a price accessible to retail investors.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}alpha.ai`,
-              primaryMetric: "$31.2K MRR",
-              activeMetric: "880 Active Analysts",
-              efficiencyMetric: "4.95/5 Analysis Rating",
-            },
-          },
-          {
-            id: `p3_${c.id}`,
-            name: `${first_name} Capital Club`,
-            tagline: `Macroeconomic briefing sprints, interactive DCF sandbox & verified investor community`,
-            customer: `Serious investors seeking structured macroeconomic context and verified peer discussion`,
-            problem: `Social media finance groups are filled with hype, pump-and-dump schemes, and lack rigorous financial reasoning`,
-            keyFeatures: [
-              "Monthly deep-dive macroeconomic thesis briefings and sector allocation blueprints",
-              "Interactive valuation spreadsheet sandbox with live scenario modeling",
-              "Private vetted investor forum with verified asset allocation benchmarks",
-              "Quarterly live portfolio AMA and risk audit sessions",
-            ],
-            audienceEvidence: `High recurring inquiries regarding private mastermind access and ongoing portfolio commentary`,
-            pricing: "$89/mo Annual • $29/mo Community",
-            revenueModel:
-              "Hybrid SaaS & Mastermind Tier • 50/50 Split • High retention with sub-2% churn rate",
-            competition: `Generic investing newsletters provide passive reading without interactive tools or vetted peer networks`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(93, score - 2),
-            rationale: `Builds a high-trust, high-LTV investor community with strong recurring membership stability.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}capital.io`,
-              primaryMetric: "$38.2K MRR",
-              activeMetric: "920 Verified Investors",
-              efficiencyMetric: "94% Retention Rate",
-            },
-          },
-        ];
-
-      case "video_editing":
-        return [
-          {
-            id: `p1_${c.id}`,
-            name: `${first_name} Timeline OS`,
-            tagline: `Smart NLE timeline assistant & automated asset management plugin for Premiere & DaVinci`,
-            customer: `Commercial video editors, YouTube creators & agency post-production teams`,
-            problem: `Editors waste 40% of their project time manually organizing b-roll, syncing multitrack audio, and keyframing transitions`,
-            keyFeatures: [
-              `One-click automated silence cutting & timeline cleanup`,
-              `Integrated preset browser for instant drag-and-drop SFX, LUTs, and motion graphics`,
-              `Automated subtitle generation with custom typography presets and animated styling`,
-              `Client revision marker sync directly into the editing timeline`,
-            ],
-            audienceEvidence: `Over 480+ comments asking for ${first_name}'s exact presets, timeline shortcuts, and asset packs`,
-            pricing: "$29/mo Starter • $79/mo Studio",
-            revenueModel:
-              "SaaS Plugin Subscription • 50/50 Revenue Share • Projected $21.5K MRR at 3.1% audience conversion",
-            competition: `Generic stock marketplaces (Envato) are uncurated clutter. ${first_name} Timeline OS delivers curated, production-tested assets.`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(98, score + 3),
-            rationale: `Saves video editors 5+ hours on every project, making the subscription an instant no-brainer purchase.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}timeline.app`,
-              primaryMetric: "$21.5K MRR",
-              activeMetric: "840 Active Editors",
-              efficiencyMetric: "62% Faster Turnaround",
-            },
-          },
-          {
-            id: `p2_${c.id}`,
-            name: `${first_name} Cut AI`,
-            tagline: `AI-assisted pacing heatmap analyzer, auto-b-roll matcher & rough-cut generator`,
-            customer: `Solo creators, podcast editors & agencies producing high-volume content`,
-            problem: `Manually reviewing hours of raw footage to find optimal cut points and matching b-roll causes severe turnaround bottlenecks`,
-            keyFeatures: [
-              `Smart pacing heatmaps highlighting viewer drop-off risk spots in edits`,
-              `Semantic b-roll search across local project folders using natural language`,
-              `Multi-cam auto-switching based on voice activity and emotion tracking`,
-              `Automated aspect ratio re-framing for TikTok and Shorts`,
-            ],
-            audienceEvidence: `320+ community requests for workflow tools that accelerate assembly and rough-cut editing`,
-            pricing: "$39/mo Pro • $99/mo Agency",
-            revenueModel:
-              "Usage-tiered SaaS • 50/50 Co-founder Split • Projected $27.4K MRR within 60 days of launch",
-            competition: `Standard video AI tools create low-quality automated shorts. ${first_name} Cut AI assists professional editors inside their NLE.`,
-            mvpDifficulty: "Medium-High (4 weeks)",
-            opportunityScore: Math.min(96, score + 1),
-            rationale: `Solves the initial assembly bottleneck for commercial creators.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}cut.ai`,
-              primaryMetric: "$27.4K MRR",
-              activeMetric: "690 Projects Processed/Day",
-              efficiencyMetric: "4.88/5 Pacing Score",
-            },
-          },
-          {
-            id: `p3_${c.id}`,
-            name: `${first_name} Post Hub`,
-            tagline: `Commercial editing agency portal, client proofing pipeline & asset masterclasses`,
-            customer: `Freelance editors and boutique post-production agencies managing multiple client deliverables`,
-            problem: `Scattered client feedback via WhatsApp, Google Drive, and email leads to endless revisions and unpaid scope creep`,
-            keyFeatures: [
-              "Frame-accurate client video review and approval player with drawn annotations",
-              "Automated invoice escrow and final deliverable watermarking until payment is released",
-              "Curated vault of sound design, title cards & transition packs updated monthly",
-              "Private community job board with vetted editing gigs",
-            ],
-            audienceEvidence: `High volume of inquiries from junior editors wanting to land higher-paying corporate clients`,
-            pricing: "$69/mo Annual • $24/mo Community",
-            revenueModel:
-              "Hybrid SaaS & Agency Portal • 50/50 Split • High retention with sub-3% churn rate",
-            competition: `Frame.io is built for Hollywood enterprises. ${first_name} Post Hub is built specifically for YouTube and social video agencies.`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(93, score - 2),
-            rationale: `Directly helps editors make more money from clients while streamlining their delivery operations.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}posthub.io`,
-              primaryMetric: "$31.8K MRR",
-              activeMetric: "1,120 Agency Users",
-              efficiencyMetric: "95% On-Time Delivery",
-            },
-          },
-        ];
-
-      case "game_dev":
-        return [
-          {
-            id: `p1_${c.id}`,
-            name: `${first_name} Engine Kit`,
-            tagline: `Modular game architecture framework, responsive character controllers & state machines`,
-            customer: `Indie game developers, solo creators & technical artists building commercial releases`,
-            problem: `Indie developers waste 6+ months building boilerplate movement, save serialization, and state machines instead of actual gameplay`,
-            keyFeatures: [
-              `Plug-and-play 2D/3D character controllers with responsive input buffering`,
-              `Visual hierarchical state machine editor with live gameplay debugging`,
-              `Cross-platform save/load serialization engine with cloud sync`,
-              `Modular inventory, dialogue tree & quest tracking systems`,
-            ],
-            audienceEvidence: `Over 510+ comments on devlogs asking for downloadable project files and controller mechanics`,
-            pricing: "$29/mo Starter • $89/mo Studio",
-            revenueModel:
-              "SaaS Architecture Toolkit • 50/50 Revenue Share • Projected $19.4K MRR at 2.6% audience conversion",
-            competition: `Generic asset store plugins often have abandoned documentation. ${first_name} Engine Kit is battle-tested in live videos.`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(98, score + 3),
-            rationale: `Accelerates indie game production timelines from years to months.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}kit.app`,
-              primaryMetric: "$19.4K MRR",
-              activeMetric: "780 Active Studios",
-              efficiencyMetric: "80% Less Boilerplate",
-            },
-          },
-          {
-            id: `p2_${c.id}`,
-            name: `${first_name} Shader AI`,
-            tagline: `Visual shader graph generator, performance profiler & asset optimization assistant`,
-            customer: `Indie builders seeking AAA visual fidelity without deep HLSL/GLSL programming experience`,
-            problem: `Writing custom shaders and optimizing draw calls is notoriously complex and stalls indie game visual polish`,
-            keyFeatures: [
-              `Natural language to visual shader graph generator with live preview`,
-              `Automated draw-call and overdraw bottleneck analyzer`,
-              `Mobile & Steam Deck GPU optimization recommendations`,
-              `One-click procedural material and texture stylizer`,
-            ],
-            audienceEvidence: `340+ requests for shader tutorials and performance profiling workflows`,
-            pricing: "$39/mo Pro • $99/mo Studio",
-            revenueModel:
-              "Usage-tiered SaaS • 50/50 Co-founder Split • Projected $23.6K MRR within 60 days of launch",
-            competition: `Complex DCC tools (Blender, Houdini) are disconnected from game engines. ${first_name} Shader AI integrates directly into runtime.`,
-            mvpDifficulty: "Medium-High (4 weeks)",
-            opportunityScore: Math.min(96, score + 1),
-            rationale: `Empowers solo developers to achieve stunning visual effects without hiring expensive technical artists.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}shader.ai`,
-              primaryMetric: "$23.6K MRR",
-              activeMetric: "1,120 Shaders Compiled/Day",
-              efficiencyMetric: "4.91/5 Performance Rating",
-            },
-          },
-          {
-            id: `p3_${c.id}`,
-            name: `${first_name} GameLab Hub`,
-            tagline: `Indie game publishing portal, playtest feedback pipeline & verified launch academy`,
-            customer: `Solo developers and small indie studios preparing for Steam and console launches`,
-            problem: `Great indie games fail because developers launch without playtester feedback, marketing wishlists, or publisher readiness`,
-            keyFeatures: [
-              "Automated playtest build distribution with in-game bug reporting and heatmap telemetry",
-              "Steam page conversion audit and capsule art A/B testing analyzer",
-              "Curated directory of vetted publisher contracts, pitch decks & press contacts",
-              "Monthly live showcase AMA with industry veterans and publishers",
-            ],
-            audienceEvidence: `High volume of comments asking how to get publishers and increase Steam wishlists`,
-            pricing: "$79/mo Annual • $29/mo Community",
-            revenueModel:
-              "Hybrid SaaS & Publishing Hub • 50/50 Split • High retention with sub-3% churn rate",
-            competition: `Generic indie forums lack structured telemetry tools and actionable publishing roadmaps`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(93, score - 2),
-            rationale: `Directly impacts commercial success and Steam launch sales for indie creators.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}gamelab.io`,
-              primaryMetric: "$28.4K MRR",
-              activeMetric: "940 Active Games",
-              efficiencyMetric: "91% Playtest Rating",
-            },
-          },
-        ];
-
-      case "data_ai":
-        return [
-          {
-            id: `p1_${c.id}`,
-            name: `${first_name} Data OS`,
-            tagline: `Automated exploratory data analysis (EDA), smart pandas pipelines & model benchmarking workspace`,
-            customer: `Data analysts, ML engineers, researchers & students transitioning into data science`,
-            problem: `Data professionals spend 80% of their time writing repetitive pandas cleaning boilerplate, configuring environments, and formatting missing data`,
-            keyFeatures: [
-              `One-click automated exploratory data analysis (EDA) with interactive distribution charts`,
-              `Smart pandas pipeline generator for automated imputation and feature encoding`,
-              `Pre-built ML model benchmark comparison matrix with SHAP explainability`,
-              `Cloud notebook synchronization and instant FastAPI production export`,
-            ],
-            audienceEvidence: `Over 580+ comments requesting clean datasets, starter notebooks, and deployment scripts`,
-            pricing: "$29/mo Starter • $79/mo Pro",
-            revenueModel:
-              "SaaS Subscription • 50/50 Revenue Share • Projected $24.8K MRR at 2.7% audience conversion",
-            competition: `Generic notebooks (Jupyter, Colab) require manual library setup. ${first_name} Data OS automates the tedious 80% of data prep.`,
-            mvpDifficulty: "Low-Medium (2-3 weeks)",
-            opportunityScore: Math.min(98, score + 3),
-            rationale: `Directly monetizes viewers who want to fast-track their data engineering and modeling pipelines.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}data.app`,
-              primaryMetric: "$24.8K MRR",
-              activeMetric: "1,150 Data Pipelines",
-              efficiencyMetric: "78% Faster EDA",
-            },
-          },
-          {
-            id: `p2_${c.id}`,
-            name: `${first_name} Model Flow AI`,
-            tagline: `Fine-tuning assistant, GPU environment validator & automated model deployment copilot`,
-            customer: `Intermediate & advanced ML practitioners fine-tuning open-source LLMs and computer vision models`,
-            problem: `Configuring CUDA drivers, optimizing batch sizes, and preventing out-of-memory (OOM) GPU crashes is a massive barrier to production deployment`,
-            keyFeatures: [
-              `Automated GPU environment checker and VRAM optimization calculator`,
-              `LoRA and QLoRA fine-tuning workflow generator for open-source foundation models`,
-              `Automated model evaluation benchmark against standard industry datasets`,
-              `One-click Docker containerization and serverless GPU endpoint deployment`,
-            ],
-            audienceEvidence: `390+ requests for practical fine-tuning guides and production deployment blueprints`,
-            pricing: "$49/mo Pro • $129/mo Team",
-            revenueModel:
-              "Usage-tiered SaaS • 50/50 Co-founder Split • Projected $29.5K MRR within 60 days of launch",
-            competition: `AWS SageMaker and GCP Vertex are enterprise-bloated and expensive. ${first_name} Model Flow AI is streamlined for indie practitioners.`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(96, score + 1),
-            rationale: `Removes the infrastructure friction from modern machine learning workflows.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}flow.ai`,
-              primaryMetric: "$29.5K MRR",
-              activeMetric: "740 Models Trained/Day",
-              efficiencyMetric: "4.93/5 Deployment Success",
-            },
-          },
-          {
-            id: `p3_${c.id}`,
-            name: `${first_name} DataLab Hub`,
-            tagline: `Interactive industry project sandboxes, real-world datasets & data science career accelerator`,
-            customer: `Aspiring data scientists and analysts looking to build hireable, production-grade portfolios`,
-            problem: `Toy datasets like Iris and Titanic don't prepare learners for real-world messy corporate data or technical interview take-homes`,
-            keyFeatures: [
-              "Curated library of proprietary, messy real-world industry datasets (Fintech, Health, E-commerce)",
-              "Interactive in-browser Python sandboxes with automated test suite grading",
-              "Monthly live dataset teardowns and technical interview simulation sprints",
-              "Verified portfolio project badges reviewed by senior industry practitioners",
-            ],
-            audienceEvidence: `High demand on community channels for project reviews and portfolio coaching`,
-            pricing: "$89/mo Annual • $24/mo Community",
-            revenueModel:
-              "Hybrid SaaS & Learning Hub • 50/50 Split • High retention with sub-3% churn rate",
-            competition: `Coursera and DataCamp offer rigid, multiple-choice courses without genuine production portfolio artifacts`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(93, score - 2),
-            rationale: `Directly helps students transition into six-figure data science careers.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}datalab.io`,
-              primaryMetric: "$33.6K MRR",
-              activeMetric: "1,420 Enrolled Analysts",
-              efficiencyMetric: "93% Portfolio Placement",
-            },
-          },
-        ];
-
-      case "business_founder":
-        return [
-          {
-            id: `p1_${c.id}`,
-            name: `${first_name} Founder OS`,
-            tagline: `All-in-one lean startup validation, waitlist conversion & pre-sale sprint workspace`,
-            customer: `Aspiring founders, solopreneurs, indie hackers & operators launching micro-SaaS businesses`,
-            problem: `Founders spend 3–6 months building products in isolation without pre-validating customer demand or collecting deposits`,
-            keyFeatures: [
-              `High-converting demand-testing landing page builder with integrated Stripe pre-orders`,
-              `Automated competitor reverse-engineering & pricing benchmark engine`,
-              `Customer interview questionnaire generator and sentiment tagger`,
-              `Launch roadmap checklist tracking MRR milestones and retention cohorts`,
-            ],
-            audienceEvidence: `Over 680+ comments asking how to find profitable product ideas and acquire initial paying users`,
-            pricing: "$29/mo Starter • $79/mo Pro",
-            revenueModel:
-              "SaaS Subscription • 50/50 Revenue Share • Projected $26.4K MRR at 2.9% audience conversion",
-            competition: `Passive startup blogs give advice without software execution. ${first_name} Founder OS actively collects customer demand and revenue.`,
-            mvpDifficulty: "Low-Medium (2-3 weeks)",
-            opportunityScore: Math.min(98, score + 3),
-            rationale: `Directly empowers subscribers to launch revenue-generating digital products.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}founder.app`,
-              primaryMetric: "$26.4K MRR",
-              activeMetric: "1,040 Launched Startups",
-              efficiencyMetric: "$380 Avg Pre-Sales/User",
-            },
-          },
-          {
-            id: `p2_${c.id}`,
-            name: `${first_name} Traction AI`,
-            tagline: `AI growth strategist, cold acquisition copywriter & distribution engine`,
-            customer: `Early-stage bootstrapped founders struggling with customer acquisition and outbound sales`,
-            problem: `Technical founders know how to build code but lack marketing skills, resulting in zero-traffic launches`,
-            keyFeatures: [
-              `AI cold email & LinkedIn outreach personalization generator tailored to target ICP`,
-              `Reddit & Twitter organic distribution monitor that flags high-intent customer conversations`,
-              `Product Hunt & community launch copy generator with proven high-converting hooks`,
-              `Automated SEO content brief generator targeting high-intent buyer keywords`,
-            ],
-            audienceEvidence: `420+ questions regarding customer acquisition channels and cold outreach conversion rates`,
-            pricing: "$49/mo Pro • $129/mo Team",
-            revenueModel:
-              "Usage-tiered SaaS • 50/50 Co-founder Split • Projected $32.8K MRR within 60 days of launch",
-            competition: `Generic AI copywriters write fluffy blog posts. ${first_name} Traction AI focuses exclusively on B2B customer acquisition funnels.`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(96, score + 1),
-            rationale: `Solves the single biggest reason startups fail: lack of distribution and sales.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}traction.ai`,
-              primaryMetric: "$32.8K MRR",
-              activeMetric: "12,400 Leads Reached/Day",
-              efficiencyMetric: "18.4% Reply Rate",
-            },
-          },
-          {
-            id: `p3_${c.id}`,
-            name: `${first_name} Micro-SaaS Club`,
-            tagline: `Private founder revenue sprint, vetted acquisition dealflow & launch mastermind`,
-            customer: `Serious bootstrappers and digital operators seeking vetted revenue benchmarks and peer accountability`,
-            problem: `Building alone is isolating; founders lack trusted peer reviews, legal contracts, and accountability partners`,
-            keyFeatures: [
-              "Monthly revenue verification sprint with public leaderboard and cohort accountability",
-              "Vetted legal contract vault (co-founder agreements, advisory shares, asset sale agreements)",
-              "Private dealflow channel for acquiring and selling micro-SaaS apps under $100K ARR",
-              "Bi-weekly live teardown masterclasses with founders making $50K+ MRR",
-            ],
-            audienceEvidence: `High demand for private founder mastermind access and real-revenue case study data`,
-            pricing: "$99/mo Annual • $29/mo Community",
-            revenueModel:
-              "Hybrid SaaS & Mastermind • 50/50 Split • Sub-2% churn rate with high annual LTV",
-            competition: `Public forums like Indie Hackers are overrun by spam. ${first_name} Micro-SaaS Club offers vetted, verified-revenue founders.`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(93, score - 2),
-            rationale: `Builds a prestigious, high-retention community asset with high lifetime value.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}saasclub.io`,
-              primaryMetric: "$41.2K MRR",
-              activeMetric: "860 Verified Founders",
-              efficiencyMetric: "96% Annual Renewal",
-            },
-          },
-        ];
-
-      default:
-        // Coding / Software Development Archetype
-        return [
-          {
-            id: `p1_${c.id}`,
-            name: `${first_name} OS`,
-            tagline: `All-in-one automated software workspace for ${primary_niche} developers & creators`,
-            customer: `${primary_niche} professionals, indie builders & active tutorial subscribers`,
-            problem: `Fragmented tooling, repetitive manual configurations, and lack of specialized ${primary_niche} workflow templates`,
-            keyFeatures: [
-              `Pre-built ${primary_niche} automation templates & scripts`,
-              "One-click cloud workspace deployment",
-              "AI-assisted code & workflow generation",
-              `Private community template sharing & syncing`,
-            ],
-            audienceEvidence: `Over 480+ comments across recent uploads asking for downloadable starter templates and setup shortcuts`,
-            pricing: "$29/mo Starter • $79/mo Pro",
-            revenueModel:
-              "SaaS Subscription • 50/50 Revenue Share • Projected $16.8K MRR at 2.5% audience conversion",
-            competition: `Generic tools like Notion or GitHub templates lack dedicated ${primary_niche} runtime execution and creator-branded workflows`,
-            mvpDifficulty: "Low (2 weeks)",
-            opportunityScore: Math.min(98, score + 3),
-            rationale: `Directly monetizes existing tutorial viewers who repeatedly ask for project codebases and workflow automation.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}os.app`,
-              primaryMetric: "$14.2K MRR",
-              activeMetric: "520 Active Builders",
-              efficiencyMetric: "94% Workflow Speedup",
-            },
-          },
-          {
-            id: `p2_${c.id}`,
-            name: `${first_name} Flow AI`,
-            tagline: `Autonomous AI copilot & analysis pipeline tailored for ${primary_niche}`,
-            customer: `Intermediate & advanced ${primary_niche} practitioners looking to automate complex tasks`,
-            problem: `Existing LLMs lack domain context for ${primary_niche} best practices, resulting in hallucinated syntax and slow debugging`,
-            keyFeatures: [
-              `Specialized ${primary_niche} fine-tuned agent assistant`,
-              "Automated error analysis & instant repair recommendations",
-              "Batch asset & code transformation engine",
-              "Direct IDE & terminal integrations",
-            ],
-            audienceEvidence: `310+ community threads requesting an AI assistant trained specifically on ${first_name}'s teaching methodology and stack`,
-            pricing: "$49/mo Pro • $129/mo Team",
-            revenueModel:
-              "Usage-tiered SaaS • 50/50 Co-founder Split • Projected $24.5K MRR within 60 days of launch",
-            competition: `Standard ChatGPT/Claude lack deep context for ${primary_niche} frameworks and creator's proprietary boilerplates`,
-            mvpDifficulty: "Medium (3 weeks)",
-            opportunityScore: Math.min(96, score + 1),
-            rationale: `Massive willingness to pay for specialized AI workflows that eliminate hours of manual debugging.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}flow.ai`,
-              primaryMetric: "$21.8K MRR",
-              activeMetric: "890 AI Queries/Day",
-              efficiencyMetric: "4.9/5 User Rating",
-            },
-          },
-          {
-            id: `p3_${c.id}`,
-            name: `${first_name} Pro Hub`,
-            tagline: `Premium interactive masterclass hub, live sandboxes & vetted tool directory`,
-            customer: `Aspiring professionals transitioning into ${primary_niche} careers`,
-            problem: `Passive video watching yields low retention; learners lack interactive sandbox environments and feedback loops`,
-            keyFeatures: [
-              "Interactive in-browser coding sandbox with real-time test verification",
-              `Curated ${primary_niche} component library & verified templates`,
-              "Weekly private code reviews & live co-working sessions",
-              "Verified completion certificate & portfolio showcase",
-            ],
-            audienceEvidence: `High recurring questions on Patreon/Discord asking for structured practice environments and feedback`,
-            pricing: "$99/mo Annual • $19/mo Community",
-            revenueModel:
-              "Hybrid SaaS & Community Tier • 50/50 Split • High retention with sub-3% churn rate",
-            competition: `Generic platforms like Coursera/Udemy lack live sandbox interactivity and the creator's authoritative brand trust`,
-            mvpDifficulty: "Medium (3-4 weeks)",
-            opportunityScore: Math.min(93, score - 2),
-            rationale: `Transforms free YouTube/TikTok viewers into high-LTV recurring members.`,
-            mockup: {
-              appUrl: `${first_name.toLowerCase()}prohub.io`,
-              primaryMetric: "$32.4K MRR",
-              activeMetric: "1,450 Members",
-              efficiencyMetric: "91% Completion Rate",
-            },
-          },
-        ];
-    }
+    return [];
   };
 
-  // ── Helper to dynamically generate 100% tailored audience research signals ─
+  // ── Helper to retrieve dynamic audience research signals (AI-Generated Only) ────────
   const getCreatorAudienceIntelligence = (creator) => {
     if (!creator) return null;
     if (creator.audienceIntelligence && creator.audienceIntelligence.topContent) {
       return creator.audienceIntelligence;
     }
-
-    const nicheRaw = Array.isArray(creator.niche)
-      ? creator.niche.join(" ")
-      : creator.niche || "";
-    const nicheLower = nicheRaw.toLowerCase();
-    const bio = (creator.bio || "").toLowerCase();
-    const name =
-      creator.name || creator.display_name || creator.handle || "Creator";
-    const followers = creator.follower_count || 100000;
-    const avgViews = Math.round(followers * (0.28 + (followers % 17) * 0.01));
-    const commentsEstimate = Math.round(followers * 0.0035) + 140;
-
-    // Determine category archetype
-    let category = "tech";
-    if (
-      nicheLower.includes("finance") ||
-      nicheLower.includes("fintech") ||
-      nicheLower.includes("money") ||
-      nicheLower.includes("invest") ||
-      nicheLower.includes("crypto")
-    ) {
-      category = "finance";
-    } else if (
-      nicheLower.includes("video") ||
-      nicheLower.includes("edit") ||
-      nicheLower.includes("premiere") ||
-      nicheLower.includes("davinci") ||
-      nicheLower.includes("film")
-    ) {
-      category = "video_editing";
-    } else if (
-      nicheLower.includes("game") ||
-      nicheLower.includes("gaming") ||
-      nicheLower.includes("unity") ||
-      nicheLower.includes("unreal")
-    ) {
-      category = "game_dev";
-    } else if (
-      nicheLower.includes("productiv") ||
-      nicheLower.includes("study") ||
-      nicheLower.includes("notion") ||
-      nicheLower.includes("habit") ||
-      nicheLower.includes("life")
-    ) {
-      category = "productivity";
-    } else if (
-      nicheLower.includes("data") ||
-      nicheLower.includes("machine learning") ||
-      nicheLower.includes("ai") ||
-      nicheLower.includes("python")
-    ) {
-      category = "data_ai";
-    } else if (
-      nicheLower.includes("cyber") ||
-      nicheLower.includes("security") ||
-      nicheLower.includes("hack")
-    ) {
-      category = "cybersecurity";
-    } else if (
-      nicheLower.includes("saas") ||
-      nicheLower.includes("founder") ||
-      nicheLower.includes("startup") ||
-      nicheLower.includes("business")
-    ) {
-      category = "business_founder";
-    } else if (
-      nicheLower.includes("podcast") ||
-      nicheLower.includes("audio") ||
-      nicheLower.includes("voice")
-    ) {
-      category = "podcast_audio";
-    }
-
-    const cleanHandle = String(creator.handle || creator.cleanHandle || "").replace(/^@/, "").trim();
-    let realComments = [];
-    if (Array.isArray(creator.comments) && creator.comments.length > 0) {
-      realComments = creator.comments;
-    } else if (Array.isArray(creator.audienceComments) && creator.audienceComments.length > 0) {
-      realComments = creator.audienceComments;
-    } else if (Array.isArray(creator.recent_comments) && creator.recent_comments.length > 0) {
-      realComments = creator.recent_comments;
-    } else if (typeof window !== "undefined" && cleanHandle) {
-      try {
-        const c = sessionStorage.getItem(`forge_creator_comments_${cleanHandle}`) || localStorage.getItem(`forge_creator_comments_${cleanHandle}`);
-        if (c) {
-          const parsed = JSON.parse(c);
-          if (Array.isArray(parsed) && parsed.length > 0) realComments = parsed;
-        }
-      } catch (e) {}
-    }
-
-    const firstValidComment = realComments.find((c) => {
-      const q = c.quote || c.text;
-      return q && String(q).trim().length > 5;
-    });
-
-    const recurringQuestionsData = firstValidComment
-      ? {
-          badge: "Verified Inquiry",
-          quote: `"${String(firstValidComment.quote || firstValidComment.text).trim()}"`,
-          author: firstValidComment.author || "@viewer",
-          metricLabel: `${realComments.length} verified audience comments extracted from channel`,
-          hasRealComment: true,
-        }
-      : {
-          badge: "Pending Ingestion",
-          quote: null,
-          author: null,
-          metricLabel: "No public comments extracted yet from channel uploads",
-          hasRealComment: false,
-        };
-
-    switch (category) {
-      case "finance":
-        return {
-          topContent: {
-            badge: "High Alpha Tier",
-            headline:
-              "Portfolio breakdowns & risk asset models generate highest viewer watch-time.",
-            metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
-            multiplier: "5.2x higher engagement on allocation breakdowns",
-          },
-          recurringQuestions: recurringQuestionsData,
-          painPoints: {
-            badge: "Capital Risk",
-            description:
-              "Subscribers struggle with manual spreadsheet tracking, tax reporting friction, and expensive wealth-management fees.",
-            communityLabel: `Identified in ${nicheRaw || "Personal Finance"} community`,
-          },
-          demographics: {
-            badge: "Tier 1 Capital",
-            description:
-              "68% retail investors, aspiring FIRE practitioners & finance professionals aged 24–48 seeking compounding tools.",
-            purchasingPower:
-              "High purchasing power & paid tool subscription affinity",
-          },
-          monetization: {
-            badge: "Under-Monetized",
-            description:
-              "Currently reliant on YouTube AdSense & brokerage affiliate sponsorships. Lacks a proprietary recurring fintech tool.",
-            recommendation:
-              "Prime co-founder candidate for automated portfolio SaaS",
-          },
-          competitors: {
-            badge: "91% Intent",
-            description:
-              "Existing platforms (Empower, Kubera) are either bloated or cost-prohibitive. Direct trust in creator drives zero-CAC conversion.",
-            moat: "Organic authority & recurring video demonstrations",
-          },
-        };
-
-      case "video_editing":
-        return {
-          topContent: {
-            badge: "Workflow Tier",
-            headline:
-              "Pacing breakdowns, preset demonstrations, and transition tutorials achieve peak shares.",
-            metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
-            multiplier: "4.6x higher bookmark rate on asset guides",
-          },
-          recurringQuestions: recurringQuestionsData,
-          painPoints: {
-            badge: "Time Sink",
-            description:
-              "Editors spend 40% of their project time on manual audio ducking, keyframing, and repetitive timeline cleanup.",
-            communityLabel: `Identified in ${nicheRaw || "Video Editing"} community`,
-          },
-          demographics: {
-            badge: "Freelance & Studio",
-            description:
-              "74% commercial editors, YouTube creators & agency video leads aged 19–36 optimizing client turnarounds.",
-            purchasingPower: "Strong B2B expensed software budget",
-          },
-          monetization: {
-            badge: "One-Off Assets",
-            description:
-              "Selling sporadic one-time Gumroad digital asset packs without recurring monthly subscription retention.",
-            recommendation:
-              "Ideal candidate for AI-assisted timeline automation plugin",
-          },
-          competitors: {
-            badge: "89% Intent",
-            description:
-              "Stock marketplaces (Envato, Motion Array) are uncurated clutter. Creator-branded plugin carries instant creator validation.",
-            moat: "Daily timeline usage shown in every tutorial",
-          },
-        };
-
-      case "game_dev":
-        return {
-          topContent: {
-            badge: "Build In Public",
-            headline:
-              "Game architecture devlogs, shader breakdowns, and mechanics implementation videos drive massive retention.",
-            metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
-            multiplier: "6.1x longer average watch duration",
-          },
-          recurringQuestions: recurringQuestionsData,
-          painPoints: {
-            badge: "Engine Friction",
-            description:
-              "Indie builders get trapped in boilerplate mechanics, performance profiling bottlenecks, and multiplatform build pipelines.",
-            communityLabel: `Identified in ${nicheRaw || "Indie Game"} community`,
-          },
-          demographics: {
-            badge: "Indie Creators",
-            description:
-              "80% solo developers, technical artists & game design students aged 18–34 building commercial releases.",
-            purchasingPower: "High willingness to pay for development speedups",
-          },
-          monetization: {
-            badge: "Under-Monetized",
-            description:
-              "Ad revenue and sporadic Patreon donations without proprietary creator toolkits or recurring game asset subscriptions.",
-            recommendation: "Prime candidate for modular mechanic toolkit SaaS",
-          },
-          competitors: {
-            badge: "86% Intent",
-            description:
-              "Generic asset store plugins often have abandoned documentation. Creator-maintained tools offer continuous trusted updates.",
-            moat: "Live gameplay proof of concept in videos",
-          },
-        };
-
-      case "data_ai":
-        return {
-          topContent: {
-            badge: "Benchmark Tier",
-            headline:
-              "Hands-on pipeline implementations, model fine-tuning, and dataset transformations dominate watch time.",
-            metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
-            multiplier: "5.4x higher GitHub repository stars",
-          },
-          recurringQuestions: recurringQuestionsData,
-          painPoints: {
-            badge: "Infra Headaches",
-            description:
-              "Students and engineers get stuck configuring GPU environments, CUDA versions, and messy data ingestion scripts.",
-            communityLabel: `Identified in ${nicheRaw || "Data Science & AI"} community`,
-          },
-          demographics: {
-            badge: "High Value Tech",
-            description:
-              "76% data scientists, ML engineers, researchers & analysts aged 22–40 seeking production readiness.",
-            purchasingPower: "Top-tier corporate & personal software spend",
-          },
-          monetization: {
-            badge: "Consulting / Ads",
-            description:
-              "Relying on platform ad revenue or one-off consulting. Missing a recurring cloud computation or workflow subscription.",
-            recommendation:
-              "Target candidate for automated dataset & model copilot",
-          },
-          competitors: {
-            badge: "93% Intent",
-            description:
-              "AWS/GCP are complex and intimidating. A focused, opinionated creator workflow layer dramatically accelerates learning.",
-            moat: "Educational authority and community trust",
-          },
-        };
-
-      case "cybersecurity":
-        return {
-          topContent: {
-            badge: "Exploit Lab Tier",
-            headline:
-              "Penetration testing labs, vulnerability walkthroughs, and security hardening tutorials achieve maximum viral reach.",
-            metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
-            multiplier: "4.9x higher repeat re-watches",
-          },
-          recurringQuestions: recurringQuestionsData,
-          painPoints: {
-            badge: "Lab Setup Friction",
-            description:
-              "Students struggle with manual vulnerable VM setups, broken tool dependencies, and configuring network bridges.",
-            communityLabel: `Identified in ${nicheRaw || "Cybersecurity"} community`,
-          },
-          demographics: {
-            badge: "Security Professionals",
-            description:
-              "70% SOC analysts, pen-testers, sysadmins & cybersecurity students aged 20–38 aiming for professional certifications.",
-            purchasingPower: "High willingness to expense professional tooling",
-          },
-          monetization: {
-            badge: "Course / Ad Dependent",
-            description:
-              "Monetizing via one-off course sales or YouTube views. No proprietary recurring penetration testing or lab platform.",
-            recommendation:
-              "Candidate for cloud-hosted practice lab subscription",
-          },
-          competitors: {
-            badge: "90% Intent",
-            description:
-              "Platforms like TryHackMe are generalized. A specialized creator lab tied to specific video tutorials has zero friction.",
-            moat: "Authoritative reputation and vetted walkthroughs",
-          },
-        };
-
-      case "productivity":
-        return {
-          topContent: {
-            badge: "Systems Tier",
-            headline:
-              "Day-in-the-life desk setups, digital note-taking architectures, and time-audit systems get massive traction.",
-            metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
-            multiplier: "5.8x higher viral external shares",
-          },
-          recurringQuestions: recurringQuestionsData,
-          painPoints: {
-            badge: "Disjointed Tools",
-            description:
-              "Users suffer from app fatigue—juggling Notion, calendars, task managers, and habit trackers with zero sync.",
-            communityLabel: `Identified in ${nicheRaw || "Productivity"} community`,
-          },
-          demographics: {
-            badge: "Knowledge Workers",
-            description:
-              "65% knowledge workers, college students, founders & managers aged 20–38 striving for high performance.",
-            purchasingPower:
-              "High adoption rate for subscription productivity apps",
-          },
-          monetization: {
-            badge: "Affiliate Heavy",
-            description:
-              "Earning through brand affiliate links and occasional digital planners. No recurring software platform asset.",
-            recommendation: "Prime candidate for all-in-one daily executive OS",
-          },
-          competitors: {
-            badge: "87% Intent",
-            description:
-              "Generic apps (Todoist, Notion) require tedious setup. An out-of-the-box pre-configured creator app wins immediately.",
-            moat: "Aesthetic alignment and personal brand lifestyle buy-in",
-          },
-        };
-
-      case "business_founder":
-        return {
-          topContent: {
-            badge: "Revenue Teardown",
-            headline:
-              "SaaS revenue case studies, bootstrapping breakdowns, and growth experiment logs generate viral bookmarking.",
-            metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
-            multiplier: "6.5x higher save and bookmark rate",
-          },
-          recurringQuestions: recurringQuestionsData,
-          painPoints: {
-            badge: "Execution Void",
-            description:
-              "Aspiring founders spend weeks researching instead of validating demand, collecting payments, and acquiring early users.",
-            communityLabel: `Identified in ${nicheRaw || "Startup & SaaS"} community`,
-          },
-          demographics: {
-            badge: "Founders & Builders",
-            description:
-              "82% founders, indie hackers, agency owners & operators aged 23–45 focused on high-ROI outcomes.",
-            purchasingPower: "Extremely high B2B payment conversion",
-          },
-          monetization: {
-            badge: "Content / Sponsorship",
-            description:
-              "Monetizing content via newsletters and sponsorships rather than owning the transactional software infrastructure.",
-            recommendation:
-              "Ideal candidate for founder validation and metrics suite",
-          },
-          competitors: {
-            badge: "94% Intent",
-            description:
-              "Traditional accelerators and directories provide passive reading. Actionable software co-launches create immediate equity value.",
-            moat: "Direct audience pipeline of motivated early adopters",
-          },
-        };
-
-      case "podcast_audio":
-        return {
-          topContent: {
-            badge: "Broadcast Tier",
-            headline:
-              "Microphone shootouts, acoustic treatment guides, and automated multitrack leveling tutorials drive loyal viewership.",
-            metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
-            multiplier: "4.7x higher retention on sound treatment tests",
-          },
-          recurringQuestions: recurringQuestionsData,
-          painPoints: {
-            badge: "Post-Production Hell",
-            description:
-              "Podcasters spend hours removing background noise, leveling multi-speaker cross-talk, and creating video audiograms.",
-            communityLabel: `Identified in ${nicheRaw || "Podcast & Audio"} community`,
-          },
-          demographics: {
-            badge: "Audio Creators",
-            description:
-              "69% podcasters, voiceover artists, audio engineers & agency producers aged 22–45 seeking studio clarity.",
-            purchasingPower:
-              "High willingness to pay for automated sound cleanup",
-          },
-          monetization: {
-            badge: "Sponsorship Heavy",
-            description:
-              "Monetizing purely via host-read brand sponsorships with zero recurring software subscription equity.",
-            recommendation:
-              "Prime candidate for automated podcast mastering & clip generator SaaS",
-          },
-          competitors: {
-            badge: "88% Intent",
-            description:
-              "Descript and Riverside offer generic suites. An audio-first specialized creator tool captures the enthusiast tier.",
-            moat: "Crystal-clear audio quality proven in every episode",
-          },
-        };
-
-      default:
-        return {
-          topContent: {
-            badge: "Viral Tier",
-            headline: `Step-by-step ${nicheRaw || "technical"} implementation guides average 4.8x higher retention than general uploads.`,
-            metricLabel: `Avg Views: ~${avgViews.toLocaleString()} / video`,
-            multiplier: "4.8x higher retention on build tutorials",
-          },
-          recurringQuestions: recurringQuestionsData,
-          painPoints: {
-            badge: "Unmet Need",
-            description: `Subscribers struggle with manual environment configurations, dependency mismatches, and fragmented toolchains in ${nicheRaw || "development"}.`,
-            communityLabel: `Identified in ${nicheRaw || "Technical"} community`,
-          },
-          demographics: {
-            badge: "Builders & Devs",
-            description: `72% practitioners, junior-to-mid professionals & indie builders aged 21–38 looking to master ${nicheRaw || "practical skills"}.`,
-            purchasingPower: "High purchasing power & dev tool budget tier",
-          },
-          monetization: {
-            badge: "Under-Monetized",
-            description:
-              "Relying primarily on platform AdSense & sporadic brand integrations. No proprietary recurring SaaS software asset.",
-            recommendation:
-              "Prime candidate for 50/50 SaaS co-founding partnership",
-          },
-          competitors: {
-            badge: "88% Intent",
-            description:
-              "Competitors offer generic, unopinionated boilerplates. Creator-branded software has built-in trust and zero CAC.",
-            moat: "Direct organic distribution from video pipeline",
-          },
-        };
-    }
+    return null;
   };
 
   // ── Auto-Advance on Positive Reply State (Disabled for strict Human Review Gate) ─
@@ -4275,10 +3158,11 @@ export default function AcquisitionEngine({
     ? {
       ...rawSelectedCreator,
       productConcepts:
-        rawSelectedCreator.productConcepts &&
+        rawSelectedCreator.hasAiConcepts &&
+          rawSelectedCreator.productConcepts &&
           rawSelectedCreator.productConcepts.length > 0
           ? rawSelectedCreator.productConcepts
-          : (activeStep === 5 ? null : ensureCreatorConcepts(rawSelectedCreator)),
+          : null,
     }
     : null;
   const [autoLaunchCountdown, setAutoLaunchCountdown] = useState(null);
@@ -4387,18 +3271,19 @@ export default function AcquisitionEngine({
 
       // If on Step 5 and creator does not have real AI concepts yet, auto-trigger AI synthesis
       if (activeStep === 5) {
-        const hasRealAi =
-          selectedCreator.hasAiConcepts ||
-          (selectedCreator.productConcepts &&
-            selectedCreator.productConcepts.length > 0 &&
-            selectedCreator.audienceIntelligence?.topContent);
+        const hasRealAi = Boolean(
+          selectedCreator.hasAiConcepts &&
+          selectedCreator.productConcepts &&
+          selectedCreator.productConcepts.length > 0 &&
+          selectedCreator.audienceIntelligence?.topContent
+        );
 
         if (!hasRealAi && !isSynthesizingStep5Ai && !step5Error) {
           handleSynthesizeStep5Ai(selectedCreator);
         }
       }
     }
-  }, [activeStep, selectedCreator?.id, selectedCreator?.productConcepts?.length]);
+  }, [activeStep, selectedCreator?.id, selectedCreator?.hasAiConcepts, selectedCreator?.productConcepts?.length, isSynthesizingStep5Ai, step5Error]);
 
   // Automatic Channel Comments Fetcher for Selected Creator
   useEffect(() => {
@@ -4868,6 +3753,14 @@ export default function AcquisitionEngine({
               : c,
           ),
         );
+        if (res.product_concepts && res.product_concepts.length > 0) {
+          const firstId = res.product_concepts[0].id;
+          setSelectedConceptId(firstId);
+          setCreatorConceptSelectionMap((prev) => ({
+            ...prev,
+            [creator.id]: firstId,
+          }));
+        }
         if (res.pitch_email) {
           setCustomPitchSubject(res.pitch_email.subject);
           setCustomPitchBody(res.pitch_email.body);
@@ -10536,9 +9429,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
           {/* Step 5 Audience & Concept Review Status Banner */}
           {(() => {
             const hasRealAi = Boolean(
-              selectedCreator?.hasAiConcepts ||
-              (selectedCreator?.productConcepts?.length > 0 &&
-                selectedCreator?.audienceIntelligence?.topContent),
+              selectedCreator?.hasAiConcepts &&
+              selectedCreator?.productConcepts?.length > 0 &&
+              selectedCreator?.audienceIntelligence?.topContent,
             );
             const showStep5Skeleton = Boolean(
               isSynthesizingStep5Ai || (!hasRealAi && !step5Error),
@@ -10564,7 +9457,7 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                           <span>AI Audience Intelligence & Co-Launch Synthesis in Progress</span>
                         </span>
                         <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-mono border border-emerald-200 font-bold">
-                          Live Engine
+                          Live AI Engine
                         </span>
                       </div>
                       <p className="text-xs text-slate-500">
@@ -10646,17 +9539,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 onClick={() => handleSynthesizeStep5Ai(selectedCreator)}
                 disabled={isSynthesizingStep5Ai}
                 className="h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 whitespace-nowrap shadow-2xs"
-                title="Use AI to re-engineer 3 concepts & audience intelligence"
+                title="Use AI to generate 3 concepts & audience intelligence"
               >
                 {isSynthesizingStep5Ai ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-500" />
                 ) : (
-                  <Sparkles className="w-3.5 h-3.5 text-slate-500" />
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                 )}
                 <span>
                   {isSynthesizingStep5Ai
-                    ? "Synthesizing..."
-                    : "Regenerate Ideas"}
+                    ? "Generating with AI..."
+                    : selectedCreator?.hasAiConcepts
+                    ? "Regenerate Ideas"
+                    : "Generate with AI"}
                 </span>
               </button>
 
@@ -10699,12 +9594,9 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   disabled={
                     isSendingPitch ||
                     isSynthesizingStep5Ai ||
-                    (!selectedCreator?.hasAiConcepts &&
-                      !(
-                        selectedCreator?.productConcepts?.length > 0 &&
-                        selectedCreator?.audienceIntelligence?.topContent
-                      ) &&
-                      !step5Error)
+                    !selectedCreator?.hasAiConcepts ||
+                    !selectedCreator?.productConcepts?.length ||
+                    Boolean(step5Error)
                   }
                   className="relative inline-flex items-center justify-center gap-2 h-9 px-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium text-xs shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
                   title="Send the 3 product concepts directly to the creator's email and advance to Step 6"
@@ -10743,16 +9635,14 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                   className="px-4 py-2 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                 >
                   <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Retry Synthesis</span>
+                  <span>Generate with AI (Retry)</span>
                 </button>
               </div>
             </div>
           ) : isSynthesizingStep5Ai ||
-            (!selectedCreator?.hasAiConcepts &&
-              !(
-                selectedCreator?.productConcepts?.length > 0 &&
-                selectedCreator?.audienceIntelligence?.topContent
-              )) ? (
+            (!selectedCreator?.hasAiConcepts ||
+              !selectedCreator?.productConcepts?.length ||
+              !selectedCreator?.audienceIntelligence?.topContent) ? (
             <Step5SkeletonLoader
               creatorName={
                 selectedCreator?.name ||

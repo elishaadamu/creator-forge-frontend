@@ -24,43 +24,51 @@ export const WORKFLOW_STAGES = [
     steps: [
       {
         id: 's1_step1',
-        title: 'Step 1: Niche Discovery',
-        whatHappens: 'Operator selects or adds target creator verticals (e.g. Software, Mobile Dev, Electronics Repair, CAD Engineering).',
-        wiringInput: 'Operator domain preference & market filters.',
-        wiringOutput: 'Active niche search query broadcast to the discovery engine.',
-        howToFulfill: 'Select a recommended niche card (e.g. Software & Tech) or type a custom niche. Click "Proceed to Discovery".'
+        title: 'Step 1: Campaign Setup',
+        whatHappens: 'Operator configures campaign targeting, selects creator niches (e.g. Software, Mobile Dev, Electronics Repair), specifies platform filters, and sets candidate search parameters.',
+        wiringInput: 'Operator niche preferences, platform filters, and qualification parameters.',
+        wiringOutput: 'Active campaign queries broadcast to autonomous scraper and qualification bus.',
+        howToFulfill: 'Select or add target niches, filter platforms, and click "Proceed to Find & Qualify".'
       },
       {
         id: 's1_step2',
-        title: 'Step 2: Creator Scraper & Intelligence',
-        whatHappens: 'Scrapes YouTube channels for subscriber numbers, video view velocity, upload frequencies, and contact links.',
-        wiringInput: 'Niche search parameters.',
-        wiringOutput: 'Structured creator dossiers with email contacts, avatars, and video lists.',
-        howToFulfill: 'Click "Start Autonomous Discovery" or manually add a creator channel handle. Review discovered creator cards.'
+        title: 'Step 2: Find & Qualify',
+        whatHappens: 'Autonomous scraping extracts creator subscribers, average views, engagement rate, channel bios, and direct contact emails.',
+        wiringInput: 'Campaign niche parameters and qualification filters.',
+        wiringOutput: 'Structured creator dossiers with validated reach, contact emails, and engagement scores.',
+        howToFulfill: 'Click "Start Autonomous Discovery" or add creators. Review scraped dossiers and qualify channels.'
       },
       {
         id: 's1_step3',
-        title: 'Step 3: Channel Audit & Audience Grounding',
-        whatHappens: 'AI analyzes recent video transcripts, recurring comment complaints, and high-frequency software tool requests from viewers.',
-        wiringInput: 'Recent video transcripts & channel metadata.',
-        wiringOutput: 'Validated audience problems, skill gaps, and willingness-to-pay signals.',
-        howToFulfill: 'Click "Audience Grounding & Audit" on any creator card to verify authentic community pain points.'
+        title: 'Step 3: Direct Outreach',
+        whatHappens: 'Generates personalized cold emails citing specific channel content and shared 50/50 partnership economics, dispatched via integrated SMTP.',
+        wiringInput: 'Creator dossiers, contact emails, and channel grounding signals.',
+        wiringOutput: 'Dispatched cold outreach emails with IMAP reply monitoring & thread tracking.',
+        howToFulfill: 'Review personalized email drafts, refine messaging if desired, and click "Dispatch Cold Outreach".'
       },
       {
         id: 's1_step4',
-        title: 'Step 4: AI Cold Outreach & Direct Pitch',
-        whatHappens: 'Generates a personalized pitch email referencing specific channel topics and shared 50/50 equity economics.',
-        wiringInput: 'Creator grounding analysis & contact email.',
-        wiringOutput: 'Dispatched email with IMAP reply monitoring & classification.',
-        howToFulfill: 'Review the generated pitch email, adjust offer details if desired, and click "Send Pitch to Creator".'
+        title: 'Step 4: Interested Review',
+        whatHappens: 'Monitors real inbound email replies via IMAP. AI classifies creator sentiment (Interested, Awaiting, Declined) and alerts the operator.',
+        wiringInput: 'Inbound creator email responses via IMAP thread sync.',
+        wiringOutput: 'Sentiment-classified leads ready for concept development and audience intelligence.',
+        howToFulfill: 'Review incoming creator replies, inspect sentiment badges, and approve interested creators to advance to Step 5.'
       },
       {
         id: 's1_step5',
-        title: 'Step 5: Co-Launch Pitch & Concept Selection',
-        whatHappens: 'AI generates 3 distinct, high-margin software concepts tailored to the creator. Operator selects the primary concept to co-launch.',
-        wiringInput: 'Audience grounding + Creator domain expertise.',
-        wiringOutput: 'Primary Chosen Concept + Automatic creation of Co-Launch Venture in MongoDB database.',
-        howToFulfill: 'Compare Concept 1, 2, and 3. Select the best concept (e.g. CircuitSync OS) and click "Lock Concept & Initialize Venture".'
+        title: 'Step 5: Audience & Ideas',
+        whatHappens: 'AI conducts deep audience research from transcripts and comments, then autonomously synthesizes 3 distinct software concepts with tiered pricing and UI mockups.',
+        wiringInput: 'Creator channel metrics, video transcripts, community pain points, and optional prompt steering.',
+        wiringOutput: 'Deep 7-pillar audience research intelligence + 3 tailored software product concepts.',
+        howToFulfill: 'Watch AI synthesize audience intelligence and 3 software concepts live (with skeleton loader). Refine concepts with steering prompts or edit fields.'
+      },
+      {
+        id: 's1_step6',
+        title: 'Step 6: Pitch & Select',
+        whatHappens: 'Operator reviews the software concepts with the creator, selects the winning concept, and initializes the Co-Launch Venture into Section 2.',
+        wiringInput: 'Approved software concept blueprints and verified creator partnership agreement.',
+        wiringOutput: 'Primary Chosen Concept locked into MongoDB co_launch_projects and synchronized to Section 2 (Phase 1).',
+        howToFulfill: 'Select the winning concept (e.g. Concept 1), verify partnership commitment, and click "Lock Concept & Initialize Venture".'
       }
     ]
   },
@@ -364,9 +372,9 @@ export default function WorkflowWiringTutorial({ isOpen, onClose }) {
                   ? 'bg-amber-950/60 border-amber-500/60 text-amber-200'
                   : 'bg-white/5 border-white/10 text-slate-400'
               }`}>
-                <div className="text-[10px] font-mono uppercase text-slate-400">Step S1</div>
-                <div className="font-bold text-xs truncate">Creator Pitch</div>
-                <div className="text-[10px] opacity-75 mt-0.5">Outputs: Chosen Concept</div>
+                <div className="text-[10px] font-mono uppercase text-slate-400">Section 1</div>
+                <div className="font-bold text-xs truncate">Acquisition Engine</div>
+                <div className="text-[10px] opacity-75 mt-0.5">Outputs: 6-Step Pipeline & Concept</div>
               </div>
 
               <div className={`p-2.5 rounded-xl border transition-all ${

@@ -17,6 +17,7 @@ import PostVisualMockup from './PostVisualMockup'
 import { getPhase1StepGuards, getPhase2StepGuards, getPhase3StepGuards } from '../../utils/stepGuards'
 import { parseMainPricingAmount, parseConceptPricing } from '../../utils/pricing'
 import CreatorBrandThemePicker from './CreatorBrandThemePicker'
+import { resolveCreatorTheme, getThemeCssVariables } from '../../utils/creatorTheme'
 import { startCreatorPortalPrePaymentTour, startCreatorPortalPostPaymentTour } from '../../utils/driverTour'
 
 export default function CreatorPortal({ portalId }) {
@@ -207,17 +208,7 @@ export default function CreatorPortal({ portalId }) {
   // The database is the ONLY source of truth for payment status. No localStorage mocking!
   const isDiyActive = Boolean(isDiyFromDb || isExplicitUrlPaid)
 
-  // Auto-launch Creator Portal tour (Pre-payment or Post-payment) based on payment status
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isDiyActive) {
-        startCreatorPortalPostPaymentTour(false)
-      } else {
-        startCreatorPortalPrePaymentTour(false)
-      }
-    }, 1200)
-    return () => clearTimeout(timer)
-  }, [isDiyActive])
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

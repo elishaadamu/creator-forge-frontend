@@ -729,13 +729,7 @@ partnerships@creatorforge.com`
   const [showWiringTutorial, setShowWiringTutorial] = useState(false)
   const [expandedTaskGroundingId, setExpandedTaskGroundingId] = useState(null)
 
-  // Auto-launch Section 2 Driver.js Tour if not already dismissed in this browser
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      startSection2Tour(false)
-    }, 1400)
-    return () => clearTimeout(timer)
-  }, [])
+
 
   const audienceGroundingData = getProjectAudienceGrounding(project)
 

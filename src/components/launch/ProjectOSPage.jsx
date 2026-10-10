@@ -34,16 +34,7 @@ export default function ProjectOSPage() {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false)
   const [showDiyModal, setShowDiyModal] = useState(false)
   const [toast, setToast] = useState(null)
-  const [showWorkflowTutorial, setShowWorkflowTutorial] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return localStorage.getItem('forge_workflow_tutorial_dismissed') !== 'true'
-      } catch {
-        return false
-      }
-    }
-    return false
-  })
+  const [showWorkflowTutorial, setShowWorkflowTutorial] = useState(false)
 
   const [cobuilderPassPrice, setCobuilderPassPrice] = useState(0)
   const [isPassPriceLoading, setIsPassPriceLoading] = useState(true)

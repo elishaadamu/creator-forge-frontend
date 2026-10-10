@@ -44,13 +44,7 @@ export default function CreatorLaunchLayout({
     } catch (e) { }
   }, [])
 
-  // Auto-launch Section 1 Driver.js Tour if not already dismissed in this browser
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      startSection1Tour(false)
-    }, 1200)
-    return () => clearTimeout(timer)
-  }, [])
+
 
   const [activeSection, setActiveSection] = useState('section1')
 

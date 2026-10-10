@@ -54,13 +54,7 @@ export default function AdminPipelineLookup({
     return [];
   }, [rawCreators]);
 
-  // Auto-launch Admin Dashboard Guided Tour if not already dismissed in this browser
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      startAdminDashboardTour(false)
-    }, 1200)
-    return () => clearTimeout(timer)
-  }, [])
+
 
   const realThreads = useMemo(() => {
     if (Array.isArray(rawThreads)) return rawThreads;
