@@ -89,7 +89,7 @@ export const WORKFLOW_STAGES = [
         id: 'p1_step1',
         title: 'Step 1: Validation Plan Specification',
         whatHappens: 'Defines the Target Customer (ICP), Core Problem Statement, Value Proposition Offer, and Founding Pricing Model ($49 deposit / $149 lifetime).',
-        wiringInput: 'Chosen Concept data wired directly from Section 1 Step 5.',
+        wiringInput: 'Chosen Concept data wired directly from Section 1 Step 6 (Pitch & Select).',
         wiringOutput: 'Approved Validation Plan synchronized to MongoDB co_launch_projects collection.',
         howToFulfill: 'Review AI-generated customer, problem, and offer fields. Edit or refine details, then click "Lock & Save Validation Plan".'
       },

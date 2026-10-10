@@ -747,6 +747,7 @@ export default function AcquisitionEngine({
     }
   });
   const [step5Error, setStep5Error] = useState(null);
+  const [isSynthesizingStep5Ai, setIsSynthesizingStep5Ai] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(null);
   const [replyFilter, setReplyFilter] = useState("all");
   const [showFollowUpCRM, setShowFollowUpCRM] = useState(false);
@@ -3253,7 +3254,7 @@ export default function AcquisitionEngine({
     }
   };
 
-  // ── Step 5 & 6 Concept Selection & AI Trigger Initializer ─────────────────
+  // ── Step 5 & 6 Concept Selection Initializer ─────────────────
   useEffect(() => {
     if (selectedCreator) {
       const detectedChoice = aiDetectedChoiceMap[selectedCreator.id];
@@ -3268,22 +3269,8 @@ export default function AcquisitionEngine({
       } else if (concepts && concepts.length > 0 && !selectedConceptId) {
         setSelectedConceptId(concepts[0].id);
       }
-
-      // If on Step 5 and creator does not have real AI concepts yet, auto-trigger AI synthesis
-      if (activeStep === 5) {
-        const hasRealAi = Boolean(
-          selectedCreator.hasAiConcepts &&
-          selectedCreator.productConcepts &&
-          selectedCreator.productConcepts.length > 0 &&
-          selectedCreator.audienceIntelligence?.topContent
-        );
-
-        if (!hasRealAi && !isSynthesizingStep5Ai && !step5Error) {
-          handleSynthesizeStep5Ai(selectedCreator);
-        }
-      }
     }
-  }, [activeStep, selectedCreator?.id, selectedCreator?.hasAiConcepts, selectedCreator?.productConcepts?.length, isSynthesizingStep5Ai, step5Error]);
+  }, [selectedCreator?.id, selectedCreator?.productConcepts?.length]);
 
   // Automatic Channel Comments Fetcher for Selected Creator
   useEffect(() => {
@@ -3705,8 +3692,6 @@ export default function AcquisitionEngine({
   };
 
   // ── Step 5: AI Audience Analysis & Automatic Advance to Step 6 ─────────────
-  const [isSynthesizingStep5Ai, setIsSynthesizingStep5Ai] = useState(false);
-
   const handleSynthesizeStep5Ai = async (creator = selectedCreator, customPromptText = null) => {
     if (!creator) return;
     setIsSynthesizingStep5Ai(true);
@@ -3797,6 +3782,29 @@ export default function AcquisitionEngine({
       setIsSynthesizingStep5Ai(false);
     }
   };
+
+  // ── Step 5: Automatically trigger AI Synthesis if creator has no concepts yet ──
+  useEffect(() => {
+    if (activeStep === 5 && selectedCreator) {
+      const hasRealAi = Boolean(
+        selectedCreator.hasAiConcepts &&
+        selectedCreator.productConcepts &&
+        selectedCreator.productConcepts.length > 0 &&
+        selectedCreator.audienceIntelligence?.topContent
+      );
+
+      if (!hasRealAi && !isSynthesizingStep5Ai && !step5Error) {
+        handleSynthesizeStep5Ai(selectedCreator);
+      }
+    }
+  }, [
+    activeStep,
+    selectedCreator?.id,
+    selectedCreator?.hasAiConcepts,
+    selectedCreator?.productConcepts?.length,
+    isSynthesizingStep5Ai,
+    step5Error,
+  ]);
 
   // Handler to persist user edits on any product concept and refresh proposal email
   const handleSaveConcept = (updatedConcept) => {
